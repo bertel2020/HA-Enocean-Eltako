@@ -39,6 +39,15 @@ async def _start(hass: HomeAssistant, model: str):
     return await hass.config_entries.flow.async_configure(result["flow_id"], {"model": model})
 
 
+async def _name(hass: HomeAssistant, result, name: str | None = None):
+    """Last step: keep the suggested gateway name or enter one."""
+    assert result["step_id"] == "name"
+    default = next(iter(result["data_schema"].schema)).default()
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"name": name or default}
+    )
+
+
 async def test_fam_usb_via_ser2net_reads_base_id(hass: HomeAssistant, fake_esp2) -> None:
     result = await _start(hass, "fam_usb")
     assert result["type"] is FlowResultType.MENU
@@ -50,8 +59,9 @@ async def test_fam_usb_via_ser2net_reads_base_id(hass: HomeAssistant, fake_esp2)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
     )
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Eltako FAM-USB FF-B7-44-80"
+    assert result["title"] == "Eltako FAM-USB"
     assert result["data"] == {
         "model": "fam_usb",
         "device": {"type": "tcp", "host": "127.0.0.1", "port": fake_esp2.port},
@@ -72,6 +82,7 @@ async def test_fam_usb_serial(hass: HomeAssistant, fake_esp2) -> None:
         "custom_components.enocean_eltako.config_flow.probe_gateway", return_value=0xFFB74480
     ) as probe:
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"path": PORT})
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["device"] == {
         "type": "serial",
@@ -124,6 +135,7 @@ async def test_base_id_entered_when_gateway_is_silent(hass: HomeAssistant, fake_
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"base_id": "ff:aa:80:00"}
     )
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["base_id"] == "FF-AA-80-00"
     assert result["data"]["device"]["type"] == "tcp"
@@ -139,8 +151,9 @@ async def test_network_gateway_esp3_skips_menu(hass: HomeAssistant) -> None:
         )
     finally:
         await server.stop()
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "PioTek MGW-ETH FF-8A-1B-00"
+    assert result["title"] == "PioTek MGW-ETH"
 
 
 async def test_duplicate_base_id_aborts(hass: HomeAssistant, fake_esp2) -> None:
@@ -176,6 +189,7 @@ async def test_fam14_joins_bus_group_of_fgw14_on_demand(hass: HomeAssistant, fak
     )
     assert result["step_id"] == "bus_group"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"bus_group": "b1"})
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["bus_group"] == "b1"
     assert result["options"] == {"message_delay": 10, "mode": "on_demand"}
@@ -192,6 +206,7 @@ async def test_first_bus_gateway_creates_new_group(hass: HomeAssistant, fake_esp
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"base_id": "FF-80-80-00"}
     )
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert len(result["data"]["bus_group"]) == 8
     assert result["options"]["mode"] == "always"
@@ -249,8 +264,9 @@ async def test_zeroconf_discovers_mgw(hass: HomeAssistant) -> None:
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     finally:
         await server.stop()
+    result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "PioTek MGW-ETH FF-8A-1B-00"
+    assert result["title"] == "PioTek MGW-ETH"
     assert result["result"].unique_id == "FF-8A-1B-00"
     assert result["data"]["model"] == "mgw_eth"
 
@@ -303,3 +319,17 @@ async def test_zeroconf_confirm_cannot_connect(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["step_id"] == "zeroconf_confirm"
     assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_gateway_gets_the_entered_name(hass: HomeAssistant, fake_esp2) -> None:
+    result = await _start(hass, "fam_usb")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["description_placeholders"]["base_id"] == "FF-B7-44-80"
+    result = await _name(hass, result, "  Funk Erdgeschoss ")
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Funk Erdgeschoss"

@@ -39,6 +39,7 @@ from .const import (
     CONF_MESSAGE_DELAY,
     CONF_MODE,
     CONF_MODEL,
+    CONF_NAME,
     CONF_PATH,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
@@ -83,6 +84,8 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
         self._model: GatewayModel | None = None
         self._connection: Connection | None = None
         self._base_id = 0
+        self._data: dict[str, Any] = {}
+        self._options: dict[str, Any] = {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -295,19 +298,41 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
         self, bus_group: str | None = None, joins_group: bool = False
     ) -> ConfigFlowResult:
         assert self._model is not None and self._connection is not None
-        data: dict[str, Any] = {
+        self._data = {
             CONF_MODEL: self._model.key,
             CONF_DEVICE: self._connection.as_dict(),
             CONF_BASE_ID: format_id(self._base_id),
         }
-        options: dict[str, Any] = {CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY}
+        self._options = {CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY}
         if bus_group is not None:
-            data[CONF_BUS_GROUP] = bus_group
+            self._data[CONF_BUS_GROUP] = bus_group
             # A FAM14 next to another bus gateway is only needed for failover and import.
             on_demand = self._model.key == "fam14" and joins_group
-            options[CONF_MODE] = MODE_ON_DEMAND if on_demand else MODE_ALWAYS
+            self._options[CONF_MODE] = MODE_ON_DEMAND if on_demand else MODE_ALWAYS
+        return self._async_show_name()
+
+    def _model_name(self) -> str:
+        assert self._model is not None
+        return self._model.name
+
+    @callback
+    def _async_show_name(self) -> ConfigFlowResult:
+        return self.async_show_form(
+            step_id="name",
+            data_schema=vol.Schema(
+                {vol.Required(CONF_NAME, default=self._model_name()): TextSelector()}
+            ),
+            description_placeholders={"base_id": format_id(self._base_id)},
+        )
+
+    async def async_step_name(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Last step: the gateway's name, shown on the integration page and its device."""
+        if user_input is None:
+            return self._async_show_name()
         return self.async_create_entry(
-            title=f"{self._model.name} {format_id(self._base_id)}", data=data, options=options
+            title=user_input[CONF_NAME].strip() or self._model_name(),
+            data=self._data,
+            options=self._options,
         )
 
     @staticmethod

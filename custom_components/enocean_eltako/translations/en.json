@@ -61,6 +61,16 @@
       "zeroconf_confirm": {
         "title": "Gateway found",
         "description": "A {model} was found at {connection}. Add it?"
+      },
+      "name": {
+        "title": "Name",
+        "description": "Connected, base ID {base_id}. Give the gateway a name, for example by where it is or what it reaches.",
+        "data": {
+          "name": "Name"
+        },
+        "data_description": {
+          "name": "Shown on the integration page and as the gateway device. Rename later in the entry's menu."
+        }
       }
     },
     "error": {

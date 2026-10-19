@@ -61,6 +61,16 @@
       "zeroconf_confirm": {
         "title": "Gateway gefunden",
         "description": "Unter {connection} wurde ein {model} gefunden. Hinzufügen?"
+      },
+      "name": {
+        "title": "Name",
+        "description": "Verbunden, Base-ID {base_id}. Gib dem Gateway einen Namen, zum Beispiel nach Ort oder Reichweite.",
+        "data": {
+          "name": "Name"
+        },
+        "data_description": {
+          "name": "Erscheint auf der Integrationsseite und als Gateway-Gerät. Später über das Menü des Eintrags umbenennen."
+        }
       }
     },
     "error": {

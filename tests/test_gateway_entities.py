@@ -91,3 +91,15 @@ async def test_reconnect_button(hass: HomeAssistant, gateway) -> None:
         await asyncio.sleep(0.02)
     assert seen[0] == "off"
     assert hass.states.get(connection).state == "on"
+
+
+async def test_renaming_the_entry_renames_the_gateway_device(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    server.connected.clear()
+    hass.config_entries.async_update_entry(entry, title="Funk Erdgeschoss")
+    await hass.async_block_till_done()
+    await asyncio.wait_for(server.connected.wait(), 5)
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    assert device.name == "Funk Erdgeschoss"
