@@ -16,7 +16,7 @@ from homeassistant.const import Platform
 from .const import CONF_EEP, CONF_MODEL
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import heating, shutter, switching
-from .protocol.eep.model import encode
+from .protocol.eep.model import Field, encode
 from .protocol.eep.std.profiles import PROFILES
 from .protocol.telegram import Rorg
 
@@ -34,6 +34,7 @@ OPT_DOUBLE_PRESS = "double_press"  # E6: max seconds between the presses of a do
 OPT_STATUS_REQUEST = "status_request"  # E2: actuator answers "send confirmation" (FL62, FD62)
 OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
 OPT_CALIBRATION = "calibration"  # I6 cover: passive | before_move
+OPT_FIELDS = "fields"  # device added by EEP: the profile values shown as sensors
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -353,6 +354,19 @@ EEP_OPTIONS: dict[str, EEPRef] = {
     **{eep_option(EEPRef(eep, "std")): EEPRef(eep, "std") for eep in GENERIC_EEPS},
     **{option: _option_ref(option) for option in EEP_TO_MODEL},
 }
+
+
+GENERIC_SKIPPED_FIELDS = {"LRN", "LRNB"}  # teach-in bits are no reading
+
+
+def generic_fields(eep: str) -> list[tuple[str, Field]]:
+    """(sensor key, field) for every value of a standard profile, first case wins."""
+    seen: dict[str, Field] = {}
+    for case in PROFILES[eep].cases:
+        for f in case.fields:
+            if f.shortcut not in GENERIC_SKIPPED_FIELDS:
+                seen.setdefault(f.shortcut, f)
+    return [(f"eep_{shortcut.lower()}", f) for shortcut, f in seen.items()]
 
 
 def generic_model(ref: EEPRef) -> DeviceModel:

@@ -16,6 +16,7 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -35,6 +36,7 @@ from .catalog import (
     OPT_CALIBRATION,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
+    OPT_FIELDS,
     OPT_INVERT,
     OPT_LONG_PRESS,
     OPT_OFF_BUTTON,
@@ -49,6 +51,7 @@ from .catalog import (
     OPT_UNAVAILABLE_WHEN_SILENT,
     DeviceModel,
     categories_of,
+    generic_fields,
     generic_model,
     model_for,
     models_in,
@@ -115,6 +118,7 @@ def candidates(rorg: int, teach_in: TeachIn4BS | None) -> list[str]:
 
 OPTION_KEYS = (
     OPT_PLATFORM,
+    OPT_FIELDS,
     OPT_TIME_OPENS,
     OPT_TIME_CLOSES,
     OPT_INVERT,
@@ -562,6 +566,15 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 SelectSelectorConfig(
                     options=[Platform.LIGHT.value, Platform.SWITCH.value],
                     translation_key=OPT_PLATFORM,
+                )
+            )
+        if model.id == GENERIC_EEP and model.receive is not None:
+            fields = generic_fields(model.receive.eep)
+            schema[vol.Required(OPT_FIELDS, default=[k for k, _f in fields])] = SelectSelector(
+                SelectSelectorConfig(
+                    options=[SelectOptionDict(value=k, label=f.name) for k, f in fields],
+                    multiple=True,
+                    mode=SelectSelectorMode.LIST,
                 )
             )
         if OPT_TIME_OPENS in model.options:

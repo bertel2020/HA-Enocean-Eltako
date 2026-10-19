@@ -387,7 +387,8 @@
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
             "double_press": "Double press within",
-            "calibration": "Calibration"
+            "calibration": "Calibration",
+            "fields": "Shown values"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -398,7 +399,8 @@
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
-            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points."
+            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
+            "fields": "Values of the profile that become sensors."
           }
         },
         "reconfigure": {
@@ -424,7 +426,8 @@
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
             "double_press": "Double press within",
-            "calibration": "Calibration"
+            "calibration": "Calibration",
+            "fields": "Shown values"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -434,7 +437,8 @@
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
-            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points."
+            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
+            "fields": "Values of the profile that become sensors."
           }
         },
         "address": {

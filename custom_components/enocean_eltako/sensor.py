@@ -36,12 +36,11 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import GENERIC_EEP
+from .catalog import GENERIC_EEP, OPT_FIELDS, generic_fields
 from .const import CONF_MODEL
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
-from .protocol.eep.std.profiles import PROFILES
 from .protocol.ids import format_id
 from .protocol.models import MODELS
 
@@ -250,27 +249,24 @@ SENSORS["psc"] = tuple(
 )
 
 
-# fields that carry no reading of a generic device
-_NOT_A_READING = {"LRN", "LRNB"}
 _NO_UNIT = {"N/A", "1"}
 
 
 def generic_descriptions(eep: str) -> tuple[EnOceanSensorDescription, ...]:
     """One sensor per field of a standard profile, named and unitized as in the EEP."""
-    seen: dict[str, EnOceanSensorDescription] = {}
-    for case in PROFILES[eep].cases:
-        for f in case.fields:
-            if f.shortcut in _NOT_A_READING or f.shortcut in seen:
-                continue
-            scaled = f.scale is not None or f.scale_ref is not None
-            seen[f.shortcut] = EnOceanSensorDescription(
-                key=f"eep_{f.shortcut.lower()}",
+    descriptions = []
+    for key, f in generic_fields(eep):
+        scaled = f.scale is not None or f.scale_ref is not None
+        descriptions.append(
+            EnOceanSensorDescription(
+                key=key,
                 name=f.name,
                 native_unit_of_measurement=None if f.unit in _NO_UNIT else f.unit,
                 state_class=SensorStateClass.MEASUREMENT if scaled else None,
                 value_fn=_field(f.shortcut, 2 if scaled else None),
             )
-    return tuple(seen.values())
+        )
+    return tuple(descriptions)
 
 
 async def async_setup_entry(
@@ -298,6 +294,8 @@ async def async_setup_entry(
         descriptions = SENSORS.get(device.model.kind, ())
         if device.model.kind == GENERIC_EEP and device.model.receive is not None:
             descriptions = generic_descriptions(device.model.receive.eep)
+            if (chosen := device.options.get(OPT_FIELDS)) is not None:
+                descriptions = tuple(d for d in descriptions if d.key in chosen)
         entities: list[SensorEntity] = [EnOceanSensor(device, d) for d in descriptions]
         if device.model.kind == "meter":
             entities.append(MeterTotalSensor(device))

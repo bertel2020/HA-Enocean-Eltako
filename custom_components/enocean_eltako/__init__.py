@@ -20,10 +20,13 @@ from homeassistant.helpers.typing import ConfigType
 from .catalog import (
     CATALOG,
     CENTRAL,
+    GENERIC_EEP,
+    OPT_FIELDS,
     OPT_PLATFORM,
     OPT_STATUS_REQUEST,
     PLATFORMS,
     STATUS_REQUEST,
+    generic_fields,
 )
 from .const import (
     CONF_BASE_ID,
@@ -225,6 +228,11 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
             chosen = device.options.get(OPT_PLATFORM, default)
             other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
             stale.append((other, f"{prefix}_{'light' if other == Platform.LIGHT else 'switch'}"))
+        if device.model.id == GENERIC_EEP and device.model.receive is not None:
+            chosen = device.options.get(OPT_FIELDS)
+            for key, _field in generic_fields(device.model.receive.eep):
+                if chosen is not None and key not in chosen:
+                    stale.append((Platform.SENSOR, f"{prefix}_{key}"))
         for profile in device.model.senders:
             if profile.id not in device.senders:
                 stale.append((Platform.SENSOR, f"{prefix}_sender_id_{profile.id}"))

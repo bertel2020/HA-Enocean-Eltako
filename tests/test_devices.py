@@ -1194,3 +1194,23 @@ async def test_gas_and_water_meters(hass: HomeAssistant, gateway) -> None:
     gas = hass.states.get(_entity(hass, "sensor", f"{BASE}_05-00-00-14_1_volume"))
     assert gas.state == "unknown"
     assert gas.attributes["device_class"] == "gas"
+
+
+async def test_generic_device_shows_chosen_fields(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "eep"})
+    result = await configure(result["flow_id"], {"eep": "std_a5_04_02"})
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    options = result["data_schema"].schema["fields"].config["options"]
+    assert [o["value"] for o in options] == ["eep_hum", "eep_tmp", "eep_tsn"]
+    result = await configure(
+        result["flow_id"],
+        {"name": "Nur Temperatur", "device_id": "05-11-22-34", "fields": ["eep_tmp"]},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    prefix = f"{BASE}_05-11-22-34_1"
+    assert _entity(hass, "sensor", f"{prefix}_eep_tmp") is not None
+    assert _entity(hass, "sensor", f"{prefix}_eep_hum") is None
