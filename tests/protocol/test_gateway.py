@@ -111,3 +111,23 @@ async def test_missing_serial_port_raises_oserror() -> None:
 
     with pytest.raises(OSError):
         await Gateway(Protocol.ESP2, SerialConnection("/dev/does-not-exist", 9600)).connect()
+
+
+@pytest.mark.parametrize("fake", [Protocol.ESP2], indirect=True)
+async def test_bus_polling_is_dropped_before_dispatch(fake: FakeGateway) -> None:
+    received: list[RadioTelegram] = []
+    gw = Gateway(fake.protocol, TcpConnection("127.0.0.1", fake.port), on_telegram=received.append)
+    await gw.connect()
+    await fake.connected.wait()
+    for address in range(1, 21):
+        fake.push(esp2.Esp2Frame(esp2.HSeq.TCT, esp2.BUS_POLL, bytes(4), 0, address).encode())
+        fake.push(esp2.Esp2Frame(esp2.HSeq.RMT, esp2.BUS_EMPTY, bytes(4)).encode())
+    fake.push(esp2.Esp2Frame(esp2.HSeq.RMT, 0x07, bytes.fromhex("01000009"), 0x12, 0).encode())
+    for _ in range(100):
+        if received:
+            break
+        await asyncio.sleep(0.01)
+    assert [t.sender for t in received] == [0x12]
+    assert gw.polls_dropped == 40
+    assert await gw.read_base_id() == 0xFFB74480  # bus traffic does not answer the command
+    await gw.close()

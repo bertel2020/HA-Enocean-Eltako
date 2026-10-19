@@ -45,9 +45,16 @@
       },
       "base_id": {
         "title": "Base ID",
-        "description": "The {model} did not report its base ID. Enter it (for example FF-AA-80-00); it is printed on the device or shown by the PCT14 tool.",
+        "description": "The {model} did not report its base ID. Enter it (for example FF-AA-80-00); it is printed on the device or shown by PCT14. For the FAM14 it is read from its memory later, with the bus import.",
         "data": {
           "base_id": "Base ID"
+        }
+      },
+      "bus_group": {
+        "title": "Bus",
+        "description": "Is this gateway on the same RS485 bus as an existing one? Gateways on the same bus form a bus group: commands for bus actors fail over between them.",
+        "data": {
+          "bus_group": "Bus"
         }
       }
     },
@@ -67,7 +74,19 @@
         "mgw_eth": "PioTek MGW-ETH",
         "symcon_lan": "Symcon EnOcean LAN Gateway",
         "esp3": "Generic ESP3 (USB 300, TCM 310 …)",
-        "esp2": "Generic ESP2"
+        "esp2": "Generic ESP2",
+        "fam14": "Eltako FAM14"
+      }
+    },
+    "bus_group": {
+      "options": {
+        "new": "New bus"
+      }
+    },
+    "mode": {
+      "options": {
+        "always": "Always connected",
+        "on_demand": "On demand"
       }
     }
   },
@@ -88,6 +107,21 @@
         "config_entry_id": {
           "name": "Gateway",
           "description": "Only telegrams of this gateway; empty for all."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gateway options",
+        "data": {
+          "message_delay": "Pause between telegrams",
+          "mode": "Connection"
+        },
+        "data_description": {
+          "message_delay": "Minimum time between two telegrams sent by this gateway.",
+          "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between."
         }
       }
     }

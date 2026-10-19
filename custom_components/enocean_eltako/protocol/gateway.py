@@ -36,16 +36,15 @@ class _Codec:
             return esp2.parse_base_id(item)
         return esp3.parse_base_id(item)
 
-    def is_response(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
+    def answers_base_id(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
+        """ESP3 answers in order; ESP2 also sends unrelated messages (OK, INF_INIT, bus)."""
         if isinstance(item, esp2.Esp2Frame):
-            return item.hseq == esp2.HSeq.RMT
+            return item.hseq == esp2.HSeq.RMT and item.org in (esp2.MSG_INF_IDBASE, esp2.MSG_ERR)
         return item.packet_type == esp3.PacketType.RESPONSE
 
-    def answers_base_id(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
-        """ESP3 answers in order; ESP2 also sends unrelated messages (OK, INF_INIT)."""
-        if isinstance(item, esp2.Esp2Frame):
-            return item.org in (esp2.MSG_INF_IDBASE, esp2.MSG_ERR)
-        return True
+    def is_noise(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
+        """Bus polling and empty answers: dropped before they reach the dispatcher."""
+        return isinstance(item, esp2.Esp2Frame) and esp2.is_bus_control(item)
 
     def radio(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> RadioTelegram | None:
         if isinstance(item, esp2.Esp2Frame):
@@ -90,6 +89,7 @@ class Gateway:
         self._response: asyncio.Future[esp2.Esp2Frame | esp3.Esp3Packet] | None = None
         self._response_match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool] | None = None
         self.telegrams_received = 0
+        self.polls_dropped = 0
 
     @property
     def connected(self) -> bool:
@@ -136,7 +136,12 @@ class Gateway:
         await self._write(self._codec.encode_radio(telegram))
 
     async def close(self) -> None:
+        """Disconnect for good; run() returns."""
         self._closing = True
+        await self._disconnect()
+
+    async def disconnect(self) -> None:
+        """Disconnect without stopping for good (on-demand gateways)."""
         await self._disconnect()
 
     async def _command(
@@ -177,14 +182,16 @@ class Gateway:
             await self._disconnect()
 
     def _handle(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> None:
-        if self._codec.is_response(item):
-            if (
-                self._response is not None
-                and not self._response.done()
-                and self._response_match is not None
-                and self._response_match(item)
-            ):
-                self._response.set_result(item)
+        if (
+            self._response is not None
+            and not self._response.done()
+            and self._response_match is not None
+            and self._response_match(item)
+        ):
+            self._response.set_result(item)
+            return
+        if self._codec.is_noise(item):
+            self.polls_dropped += 1
             return
         telegram = self._codec.radio(item)
         if telegram is None:

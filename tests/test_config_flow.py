@@ -154,3 +154,67 @@ async def test_duplicate_base_id_aborts(hass: HomeAssistant, fake_esp2) -> None:
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_fam14_joins_bus_group_of_fgw14_on_demand(hass: HomeAssistant, fake_esp2) -> None:
+    MockConfigEntry(
+        domain=DOMAIN,
+        title="Eltako FGW14-USB FF-AA-80-00",
+        unique_id="FF-AA-80-00",
+        data={"model": "fgw14_usb", "bus_group": "b1"},
+    ).add_to_hass(hass)
+    result = await _start(hass, "fam14")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["step_id"] == "base_id"  # FAM14 does not report it over ESP2
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"base_id": "FF-80-80-00"}
+    )
+    assert result["step_id"] == "bus_group"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"bus_group": "b1"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["bus_group"] == "b1"
+    assert result["options"] == {"message_delay": 10, "mode": "on_demand"}
+
+
+async def test_first_bus_gateway_creates_new_group(hass: HomeAssistant, fake_esp2) -> None:
+    result = await _start(hass, "fam14")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"base_id": "FF-80-80-00"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert len(result["data"]["bus_group"]) == 8
+    assert result["options"]["mode"] == "always"
+
+
+async def test_options_flow(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={"model": "fam14", "bus_group": "b1"},
+        options={"message_delay": 10, "mode": "always"},
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert set(result["data_schema"].schema) == {"message_delay", "mode"}
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"message_delay": 25.0, "mode": "on_demand"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options == {"message_delay": 25, "mode": "on_demand"}
+
+
+async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert set(result["data_schema"].schema) == {"message_delay"}

@@ -64,3 +64,24 @@ def test_encode_radio_rejects_vld() -> None:
 
     with pytest.raises(ValueError):
         esp2.encode_radio(RadioTelegram(rorg=Rorg.VLD, data=b"\x01", sender=1))
+
+
+def test_bus_poll_and_empty_answer_are_bus_control() -> None:
+    poll = esp2.Esp2Frame(esp2.HSeq.TCT, esp2.BUS_POLL, bytes(4), 0, 0x12)
+    empty = esp2.Esp2Frame(esp2.HSeq.RMT, esp2.BUS_EMPTY, bytes(4), 0, 0)
+    for frame in (poll, empty):
+        (decoded,) = esp2.Esp2Decoder().feed(frame.encode())
+        assert esp2.is_bus_control(decoded)
+        assert esp2.decode_radio(decoded) is None
+    base_id = esp2.Esp2Frame(esp2.HSeq.RMT, esp2.MSG_INF_IDBASE, bytes(4))
+    assert not esp2.is_bus_control(base_id)
+
+
+def test_bus_actor_answer_is_a_radio_telegram() -> None:
+    # FSR14 at bus address 0x12 answers a poll: RMT, ORG 07, layout like a radio telegram
+    frame = esp2.Esp2Frame(esp2.HSeq.RMT, 0x07, bytes.fromhex("01000009"), 0x00000012, 0x00)
+    (decoded,) = esp2.Esp2Decoder().feed(frame.encode())
+    assert not esp2.is_bus_control(decoded)
+    assert esp2.decode_radio(decoded) == RadioTelegram(
+        rorg=Rorg.BS4, data=bytes.fromhex("01000009"), sender=0x12, status=0
+    )

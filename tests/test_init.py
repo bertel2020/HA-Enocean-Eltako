@@ -141,3 +141,59 @@ async def test_sender_pool_is_persisted(hass: HomeAssistant, hass_storage) -> No
     await hass.async_block_till_done()
     assert f"{DOMAIN}.senders.{entry.entry_id}" not in hass_storage
     await server.stop()
+
+
+async def test_bus_group_with_on_demand_fam14(hass: HomeAssistant) -> None:
+    from custom_components.enocean_eltako.protocol.send_queue import SendResult
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+
+    fgw = await FakeGateway(Protocol.ESP2).start()
+    fam = await FakeGateway(Protocol.ESP2).start()
+    e_fgw = MockConfigEntry(
+        domain=DOMAIN,
+        title="FGW14-USB",
+        unique_id="FF-AA-80-00",
+        data={
+            "model": "fgw14_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": fgw.port},
+            "base_id": "FF-AA-80-00",
+            "bus_group": "b1",
+        },
+        options={"message_delay": 0, "mode": "always"},
+    )
+    e_fam = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM14",
+        unique_id="FF-80-80-00",
+        data={
+            "model": "fam14",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": fam.port},
+            "base_id": "FF-80-80-00",
+            "bus_group": "b1",
+        },
+        options={"message_delay": 0, "mode": "on_demand"},
+    )
+    e_fgw.add_to_hass(hass)
+    e_fam.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(e_fgw.entry_id)  # sets up both entries
+    await hass.async_block_till_done()
+    assert not e_fam.runtime_data.gateway.connected  # on demand
+    bus = e_fgw.runtime_data.bus
+    assert bus is e_fam.runtime_data.bus
+    assert len(bus.group) == 2
+    assert bus.senders.pool.allocate("fsr14") == 0x0000B000
+
+    command = RadioTelegram(Rorg.BS4, bytes.fromhex("01000009"), 0x0000B000)
+    assert await bus.group.submit(command) == SendResult.SENT
+    assert not e_fam.runtime_data.gateway.connected
+    await fgw.stop()  # FGW14-USB fails
+    await asyncio.sleep(0.1)
+    assert await bus.group.submit(command) == SendResult.SENT
+    assert e_fam.runtime_data.gateway.connected
+    assert bus.group.failovers == 1
+
+    hub = e_fgw.runtime_data.hub
+    assert await hass.config_entries.async_unload(e_fam.entry_id)
+    assert await hass.config_entries.async_unload(e_fgw.entry_id)
+    assert hub.bus_groups == {}
+    await fam.stop()

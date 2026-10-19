@@ -97,12 +97,30 @@ class Esp2Decoder:
 
 
 def decode_radio(frame: Esp2Frame) -> RadioTelegram | None:
-    """Radio telegram from an RRT/TRT frame; None for gateway messages and unknown ORGs."""
-    if frame.hseq not in (HSeq.RRT, HSeq.TRT) or frame.org not in ORG_TO_RORG:
+    """Radio telegram from an RRT/TRT frame, or from an RMT frame with ORG 05/06/07.
+
+    On the Eltako RS485 bus, actors answer the FAM14 poll with RMT frames laid out like
+    radio telegrams (data, sender ID, status). None for gateway and bus control messages.
+    """
+    if frame.hseq not in (HSeq.RRT, HSeq.TRT, HSeq.RMT) or frame.org not in ORG_TO_RORG:
         return None
     rorg = ORG_TO_RORG[frame.org]
     data = frame.data if rorg == Rorg.BS4 else frame.data[:1]
     return RadioTelegram(rorg=rorg, data=data, sender=frame.sender, status=frame.status)
+
+
+# Eltako bus control (TCT requests, RMT answers), distinguished by ORG.
+BUS_DISCOVERY = 0xF0
+BUS_MEMORY = 0xF1
+BUS_EMPTY = 0xF8  # "nothing to send" answer to a poll
+BUS_POLL = 0xFC
+BUS_POLL_FORCED = 0xFE
+BUS_LOCK = 0xFF  # address FF locks, 00 unlocks
+
+
+def is_bus_control(frame: Esp2Frame) -> bool:
+    """Polls, empty answers and other bus management frames of the FAM14 bus."""
+    return frame.hseq in (HSeq.TCT, HSeq.RMT) and frame.org >= BUS_DISCOVERY
 
 
 def encode_radio(telegram: RadioTelegram) -> bytes:

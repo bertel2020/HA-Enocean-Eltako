@@ -13,3 +13,10 @@ CONF_PATH: Final = "path"
 CONF_BAUDRATE: Final = "baudrate"
 
 BAUDRATES: Final = (9600, 57600, 115200)
+CONF_BUS_GROUP: Final = "bus_group"
+CONF_MODE: Final = "mode"
+CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
+
+MODE_ALWAYS: Final = "always"
+MODE_ON_DEMAND: Final = "on_demand"  # bus gateway connected only for failover / import
+DEFAULT_MESSAGE_DELAY: Final = 10

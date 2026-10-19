@@ -1,4 +1,4 @@
-"""Persistence of the sender ID pool of one gateway entry."""
+"""Persistence of sender ID pools: one per radio gateway entry, one per bus group."""
 
 from __future__ import annotations
 
@@ -12,16 +12,24 @@ STORAGE_VERSION = 1
 SAVE_DELAY = 5  # seconds
 
 
-def _store(hass: HomeAssistant, entry_id: str) -> Store[dict]:
-    return Store(hass, STORAGE_VERSION, f"{DOMAIN}.senders.{entry_id}")
+def radio_key(entry_id: str) -> str:
+    return entry_id
+
+
+def bus_key(group: str) -> str:
+    return f"bus_{group}"
+
+
+def _store(hass: HomeAssistant, key: str) -> Store[dict]:
+    return Store(hass, STORAGE_VERSION, f"{DOMAIN}.senders.{key}")
 
 
 class SenderStore:
     """Loads a pool on setup and saves it (debounced) after every change."""
 
-    def __init__(self, hass: HomeAssistant, entry_id: str, pool: SenderPool) -> None:
+    def __init__(self, hass: HomeAssistant, key: str, pool: SenderPool) -> None:
         self.pool = pool
-        self._store = _store(hass, entry_id)
+        self._store = _store(hass, key)
 
     async def async_load(self) -> None:
         if (data := await self._store.async_load()) is not None:
@@ -31,5 +39,5 @@ class SenderStore:
         self._store.async_delay_save(self.pool.as_dict, SAVE_DELAY)
 
 
-async def async_remove_store(hass: HomeAssistant, entry_id: str) -> None:
-    await _store(hass, entry_id).async_remove()
+async def async_remove_store(hass: HomeAssistant, key: str) -> None:
+    await _store(hass, key).async_remove()

@@ -45,9 +45,16 @@
       },
       "base_id": {
         "title": "Base-ID",
-        "description": "Der {model} hat seine Base-ID nicht gemeldet. Gib sie ein (zum Beispiel FF-AA-80-00); sie steht auf dem Gerät oder im PCT14.",
+        "description": "Der {model} hat seine Base-ID nicht gemeldet. Gib sie ein (zum Beispiel FF-AA-80-00); sie steht auf dem Gerät oder im PCT14. Beim FAM14 wird sie später mit dem Bus-Import aus seinem Speicher gelesen.",
         "data": {
           "base_id": "Base-ID"
+        }
+      },
+      "bus_group": {
+        "title": "Bus",
+        "description": "Hängt dieses Gateway am selben RS485-Bus wie ein vorhandenes? Gateways am selben Bus bilden eine Bus-Gruppe: Befehle an Bus-Aktoren weichen bei Ausfall auf das andere Gateway aus.",
+        "data": {
+          "bus_group": "Bus"
         }
       }
     },
@@ -67,7 +74,19 @@
         "mgw_eth": "PioTek MGW-ETH",
         "symcon_lan": "Symcon EnOcean LAN Gateway",
         "esp3": "Generisch ESP3 (USB 300, TCM 310 …)",
-        "esp2": "Generisch ESP2"
+        "esp2": "Generisch ESP2",
+        "fam14": "Eltako FAM14"
+      }
+    },
+    "bus_group": {
+      "options": {
+        "new": "Neuer Bus"
+      }
+    },
+    "mode": {
+      "options": {
+        "always": "Immer verbunden",
+        "on_demand": "Bei Bedarf"
       }
     }
   },
@@ -88,6 +107,21 @@
         "config_entry_id": {
           "name": "Gateway",
           "description": "Nur Telegramme dieses Gateways; leer für alle."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gateway-Optionen",
+        "data": {
+          "message_delay": "Pause zwischen Telegrammen",
+          "mode": "Verbindung"
+        },
+        "data_description": {
+          "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
+          "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen."
         }
       }
     }
