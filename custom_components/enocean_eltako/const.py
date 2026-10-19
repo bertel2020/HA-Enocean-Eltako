@@ -23,7 +23,6 @@ MODE_ON_DEMAND: Final = "on_demand"  # bus gateway connected only for failover /
 DEFAULT_MESSAGE_DELAY: Final = 10
 
 SUBENTRY_DEVICE: Final = "device"
-SUBENTRY_IMPORT: Final = "import"  # one-time import of the old eltako YAML
 CONF_DEVICE_ID: Final = "device_id"
 CONF_SENDER_ID: Final = "sender_id"
 CONF_SENDERS: Final = "senders"  # [{"profile": "controller", "sender_id": "FF-B7-44-81"}, ...]

@@ -62,11 +62,6 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
   dem Katalog wählen.
 - **Per EEP** (Experte): Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert.
 
-Umstieg von der alten Eltako-Integration (`eltako:` im YAML)? Im Menü des Gateways
-**Aus alter Eltako-Integration importieren** wählen: Nach einer Vorschau werden die Geräte mit
-ihren IDs, Sender-IDs (eingelernte Aktoren schalten also weiter) und Namen angelegt. Die alte
-Integration läuft weiter, bis du sie entfernst.
-
 Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 
 <!-- devices:start -->

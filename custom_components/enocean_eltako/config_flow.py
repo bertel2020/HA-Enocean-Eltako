@@ -46,9 +46,7 @@ from .const import (
     DOMAIN,
     MODE_ALWAYS,
     MODE_ON_DEMAND,
-    SUBENTRY_IMPORT,
 )
-from .import_flow import ImportSubentryFlow
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel
@@ -378,7 +376,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_supported_subentry_types(
         cls, config_entry: ConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
-        return {**SUBENTRY_FLOWS, SUBENTRY_IMPORT: ImportSubentryFlow}
+        return dict(SUBENTRY_FLOWS)
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):

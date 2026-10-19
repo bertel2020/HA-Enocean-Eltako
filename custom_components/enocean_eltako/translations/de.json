@@ -496,32 +496,6 @@
         "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten.",
         "measure_open": "Rollladen wird ganz geöffnet …"
       }
-    },
-    "import": {
-      "entry_type": "Import",
-      "initiate_flow": {
-        "user": "Aus alter Eltako-Integration importieren"
-      },
-      "step": {
-        "gateway": {
-          "title": "Altes Gateway",
-          "description": "Die alte Konfiguration hat mehrere Gateways. Wessen Geräte gehören zu diesem Gateway?",
-          "data": {
-            "gateway": "Gateway"
-          }
-        },
-        "preview": {
-          "title": "Import",
-          "description": "Aus {gateway}:\n\n**{create_count} Geräte werden angelegt**, mit ihren IDs, Sender-IDs und Namen:\n{create}\n\n{existing_count} sind hier schon eingerichtet. Nicht übernommen ({skipped_count}):\n{skipped}\n\nDie alte Integration läuft weiter; ihre Entitäten bleiben, bis du sie entfernst. Mit Absenden werden die Geräte angelegt."
-        }
-      },
-      "abort": {
-        "gateway_not_loaded": "Das Gateway ist nicht geladen. Prüfe zuerst seine Verbindung.",
-        "config_unreadable": "Die Konfiguration (configuration.yaml) ließ sich nicht lesen.",
-        "no_old_config": "Keine `eltako:`-Konfiguration mit Gateway gefunden.",
-        "nothing_to_import": "Nichts Neues zu importieren: {existing} Geräte sind schon eingerichtet. Nicht unterstützt:\n{skipped}",
-        "imported": "{count} Geräte wurden angelegt.\n\nHeizungsaktoren brauchen noch ihren Raumtemperatur-Sensor (Gerät neu konfigurieren):\n{heating}\n\nSender-IDs außerhalb des Bereichs dieses Gateways, nicht übernommen:\n{dropped}"
-      }
     }
   },
   "entity": {

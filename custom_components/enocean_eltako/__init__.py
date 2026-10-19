@@ -43,7 +43,6 @@ from .const import (
 from .device import EnOceanDevice
 from .health import async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
-from .import_flow import IMPORTING
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
@@ -260,12 +259,7 @@ def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) 
 
 
 async def _async_reload_on_change(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Subentries added or removed: rebuild devices and entities.
-
-    The YAML import adds many subentries at once and reloads once when it is done.
-    """
-    if entry.entry_id in hass.data.get(IMPORTING, ()):
-        return
+    """Subentries added or removed: rebuild devices and entities."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 

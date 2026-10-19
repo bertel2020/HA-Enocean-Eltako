@@ -496,32 +496,6 @@
         "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now.",
         "measure_open": "Opening the cover fully …"
       }
-    },
-    "import": {
-      "entry_type": "Import",
-      "initiate_flow": {
-        "user": "Import from the old Eltako integration"
-      },
-      "step": {
-        "gateway": {
-          "title": "Old gateway",
-          "description": "The old configuration has several gateways. Whose devices belong to this gateway?",
-          "data": {
-            "gateway": "Gateway"
-          }
-        },
-        "preview": {
-          "title": "Import",
-          "description": "From {gateway}:\n\n**{create_count} devices are created** with their IDs, sender IDs and names:\n{create}\n\n{existing_count} are already set up here. Not imported ({skipped_count}):\n{skipped}\n\nThe old integration keeps running; its entities stay until you remove it. Submit to create the devices."
-        }
-      },
-      "abort": {
-        "gateway_not_loaded": "The gateway is not loaded. Check its connection first.",
-        "config_unreadable": "The configuration (configuration.yaml) could not be read.",
-        "no_old_config": "No `eltako:` configuration with a gateway was found.",
-        "nothing_to_import": "Nothing new to import: {existing} devices are already set up. Not supported:\n{skipped}",
-        "imported": "{count} devices were created.\n\nHeating actuators need their room temperature sensor (reconfigure the device):\n{heating}\n\nSender IDs outside this gateway's range, not taken over:\n{dropped}"
-      }
     }
   },
   "entity": {
