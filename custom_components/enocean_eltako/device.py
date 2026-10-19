@@ -74,9 +74,10 @@ class EnOceanDevice:
 
     @callback
     def _on_received(self, received: ReceivedTelegram) -> None:
-        if self.model.receive is None:
-            return
-        values = decode_telegram(self.model.receive, received.telegram)
+        values = None
+        for ref in (self.model.receive, *self.model.receive_extra):
+            if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
+                break
         if values is None:
             return
         self.last_received = received

@@ -49,7 +49,12 @@ class Profile:
 
     @property
     def data_length(self) -> int:
-        return 4 if self.rorg == 0xA5 else 1 if self.rorg in (0xF6, 0xD5) else 0
+        if self.rorg == 0xA5:
+            return 4
+        if self.rorg in (0xF6, 0xD5):
+            return 1
+        # VLD: as long as the furthest field of any case
+        return max(((f.offset + f.size + 7) // 8 for c in self.cases for f in c.fields), default=1)
 
 
 def get_bits(data: bytes, offset: int, size: int) -> int:
@@ -69,6 +74,8 @@ def set_bits(data: bytearray, offset: int, size: int, value: int) -> None:
 def _matches(case: Case, data: bytes, status: int) -> bool:
     for cond in case.conditions:
         source = bytes([status]) if cond.status else data
+        if cond.offset + cond.size > len(source) * 8:
+            return False
         if get_bits(source, cond.offset, cond.size) != cond.value:
             return False
     return True
@@ -98,12 +105,13 @@ def decode(profile: Profile, data: bytes, status: int = 0) -> dict[str, Any]:
     case = find_case(profile, data, status)
     if case is None:
         return {}
-    raw = {f.shortcut: get_bits(data, f.offset, f.size) for f in case.fields}
+    fields = [f for f in case.fields if f.offset + f.size <= len(data) * 8]  # VLD: variable length
+    raw = {f.shortcut: get_bits(data, f.offset, f.size) for f in fields}
     values: dict[str, Any] = {}
-    for f in case.fields:
+    for f in fields:
         value: Any = raw[f.shortcut]
         if f.scale_ref is not None and f.raw is not None:
-            ref_field = next((r for r in case.fields if r.shortcut == f.scale_ref), None)
+            ref_field = next((r for r in fields if r.shortcut == f.scale_ref), None)
             ref_scale = ref_field.enum_scale.get(raw[f.scale_ref]) if ref_field else None
             if ref_scale is not None:
                 value = _scale(value, f.raw, ref_scale)

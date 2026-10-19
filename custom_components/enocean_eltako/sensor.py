@@ -182,6 +182,9 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
 }
 
 
+SENSORS["psc"] = tuple(d for d in SENSORS["meter"] if d.key != "energy_tariff_1")
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EnOceanEltakoConfigEntry,

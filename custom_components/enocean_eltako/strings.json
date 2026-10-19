@@ -121,7 +121,8 @@
         "fbh": "Motion and brightness sensor (FBH65 …)",
         "co2": "CO2 sensor (FCO2TF65)",
         "room_controller": "Room controller (FUTH, FTR65HS …)",
-        "weather": "Weather station (FWS61, FWG14)"
+        "weather": "Weather station (FWS61, FWG14)",
+        "psc": "Permundo PSC132 / PSC234 plug"
       }
     },
     "routing": {

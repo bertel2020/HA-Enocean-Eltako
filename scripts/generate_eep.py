@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".eep_cache"
 TARGET = ROOT / "custom_components/enocean_eltako/protocol/eep/std/profiles.py"
 
+# Profiles that only point to a shared definition (EEP Viewer <ref>), e.g. D2-01-09 -> D2-01-00
+REFERENCES = {"D2-01-09": "D2-01-00"}
+
 # Profiles generated today (phase 2: the EEPs of the reference system); extend deliberately.
 PROFILES = (
     "A5-04-02",
@@ -30,6 +33,7 @@ PROFILES = (
     "A5-13-01",
     "A5-13-02",
     "A5-38-08",
+    "D2-01-00",
     "D5-00-01",
     "F6-02-01",
     "F6-02-02",
@@ -118,7 +122,7 @@ def _field(df: ET.Element) -> str | None:
 def _conditions(case: ET.Element) -> list[str]:
     cond = case.find("condition")
     if cond is None:
-        return []
+        return _command_condition(case)
     out = []
     for c in cond:
         status = c.tag == "statusfield"
@@ -127,6 +131,22 @@ def _conditions(case: ET.Element) -> list[str]:
             f"{_int(c.findtext('value'))}{', status=True' if status else ''})"
         )
     return out
+
+
+def _command_condition(case: ET.Element) -> list[str]:
+    """Cases told apart only by a command field with one enum value (D2-01 CMD, A5-38-08 COM)."""
+    for df in case.findall("datafield"):
+        if _clean(df.findtext("shortcut")) not in ("CMD", "COM"):
+            continue
+        values = [
+            v for item in df.iter("item") if (v := _maybe_int(item.findtext("value"))) is not None
+        ]
+        if len(values) == 1:
+            return [
+                f"Condition({_int(df.findtext('bitoffs'))}, {_int(df.findtext('bitsize'))}, "
+                f"{values[0]})"
+            ]
+    return []
 
 
 def generate_profile(eep: str) -> str:
@@ -165,7 +185,12 @@ def render() -> str:
         '"""\n\n'
         "# ruff: noqa: E501\n\n"
         "from ..model import Case, Condition, Field, Profile\n\n"
-        "PROFILES: dict[str, Profile] = {\n" + body + "}\n"
+        "PROFILES: dict[str, Profile] = {\n"
+        + body
+        + "}\n"
+        + "".join(
+            f'PROFILES["{alias}"] = PROFILES["{target}"]\n' for alias, target in REFERENCES.items()
+        )
     )
 
 

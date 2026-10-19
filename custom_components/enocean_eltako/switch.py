@@ -14,7 +14,7 @@ from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_PLATFORM
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
-from .light import switch_actuator
+from .light import on_state, switch_actuator
 
 PARALLEL_UPDATES = 0
 
@@ -25,7 +25,10 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        if device.model.id == "switch" and device.options.get(OPT_PLATFORM) == Platform.SWITCH:
+        platform = device.options.get(OPT_PLATFORM)
+        if (device.model.id == "switch" and platform == Platform.SWITCH) or (
+            device.model.id == "psc" and platform in (None, Platform.SWITCH)
+        ):
             async_add_entities([EnOceanSwitch(device)], config_subentry_id=subentry_id)
 
 
@@ -47,7 +50,8 @@ class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
         switch_actuator(self._device, False)
 
     def _apply(self, values: dict[str, Any]) -> bool:
-        if "on" not in values or values["on"] == self._attr_is_on:
+        on = on_state(values)
+        if on is None or on == self._attr_is_on:
             return False
-        self._attr_is_on = values["on"]
+        self._attr_is_on = on
         return True

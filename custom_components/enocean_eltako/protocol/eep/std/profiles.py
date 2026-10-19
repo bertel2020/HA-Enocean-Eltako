@@ -155,6 +155,7 @@ PROFILES: dict[str, Profile] = {
                     Field("DEL", "Delay or duration", 30, 1, enum=(0, 1)),
                     Field("SW", "Switching Command", 31, 1, enum=(0, 1)),
                 ),
+                conditions=(Condition(0, 8, 1),),
             ),
             Case(
                 fields=(
@@ -228,6 +229,195 @@ PROFILES: dict[str, Profile] = {
                     Field("SMF", "Service Mode Flag", 31, 1, enum=(0, 1)),
                 ),
                 conditions=(Condition(0, 8, 7),),
+            ),
+        ),
+    ),
+    "D2-01-00": Profile(
+        "D2-01-00",
+        0xD2,
+        (
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(1,)),
+                    Field("DV", "Dim value", 8, 3, enum=(0, 1, 2, 3, 4)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field("OV", "Output value", 17, 7, enum=(0, 127)),
+                ),
+                conditions=(Condition(4, 4, 1),),
+            ),
+            Case(
+                fields=(
+                    Field("d/e", "Taught-in devices", 0, 1, enum=(0, 1)),
+                    Field("CMD", "Command ID", 4, 4, enum=(2,)),
+                    Field("OC", "Over current shut down", 8, 1, enum=(0, 1)),
+                    Field("RO", "reset over current shut down", 9, 1, enum=(0, 1)),
+                    Field("LC", "Local control", 10, 1, enum=(0, 1)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field("DT3", "Dim timer 3", 20, 4, enum=(0,)),
+                    Field("DT1", "Dim timer 1", 28, 4, enum=(0,)),
+                    Field("DT2", "Dim timer 2", 16, 4, enum=(0,)),
+                    Field("d/n", "User interface indication", 24, 1, enum=(0, 1)),
+                    Field("PF", "Power Failure", 25, 1, enum=(0, 1)),
+                    Field("DS", "Default state", 26, 2, enum=(0, 1, 2, 3)),
+                ),
+                conditions=(Condition(4, 4, 2),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(3,)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                ),
+                conditions=(Condition(4, 4, 3),),
+            ),
+            Case(
+                fields=(
+                    Field("PF", "Power Failure", 0, 1, enum=(0, 1)),
+                    Field("PFD", "Power Failure Detection", 1, 1, enum=(0, 1)),
+                    Field("CMD", "Command ID", 4, 4, enum=(4,)),
+                    Field("OC", "Over current switch off", 8, 1, enum=(0, 1)),
+                    Field("EL", "Error level", 9, 2, enum=(0, 1, 2, 3)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field("LC", "Local control", 16, 1, enum=(0, 1)),
+                    Field("OV", "Output value", 17, 7, enum=(0, 127)),
+                ),
+                conditions=(Condition(4, 4, 4),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(5,)),
+                    Field("RM", "Report measurement", 8, 1, enum=(0, 1)),
+                    Field("RE", "Reset measurement", 9, 1, enum=(0, 1)),
+                    Field("e/p", "Measurement mode", 10, 1, enum=(0, 1)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field(
+                        "MD_LSB",
+                        "Measurement delta to be reported (LSB)",
+                        16,
+                        4,
+                        unit="N/A",
+                        raw=(0, 4095),
+                        scale=(0.0, 4095.0),
+                    ),
+                    Field(
+                        "MD_MSB",
+                        "Measurement delta to be reported (MSB)",
+                        24,
+                        8,
+                        unit="N/A",
+                        raw=(0, 4095),
+                        scale=(0.0, 4095.0),
+                    ),
+                    Field("UN", "Unit", 21, 3, enum=(0, 1, 2, 3, 4)),
+                    Field(
+                        "MAT",
+                        "Maximum time between two subsequent actuator messages",
+                        32,
+                        8,
+                        enum=(0,),
+                    ),
+                    Field(
+                        "MIT",
+                        "Minimum time between two subsequent actuator messages",
+                        40,
+                        8,
+                        enum=(0,),
+                    ),
+                ),
+                conditions=(Condition(4, 4, 5),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(6,)),
+                    Field("qu", "Query", 10, 1, enum=(0, 1)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                ),
+                conditions=(Condition(4, 4, 6),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(7,)),
+                    Field("UN", "Unit", 8, 3, enum=(0, 1, 2, 3, 4)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field(
+                        "MV", "Measurement value (4 bytes)", 16, 32, unit="N/A", raw=(0, 4294967295)
+                    ),
+                ),
+                conditions=(Condition(4, 4, 7),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(8,)),
+                    Field("PM", "Pilotwire mode", 13, 3, enum=(0, 1, 2, 3, 4, 5)),
+                ),
+                conditions=(Condition(4, 4, 8),),
+            ),
+            Case(
+                fields=(Field("CMD", "Command ID", 4, 4, enum=(9,)),),
+                conditions=(Condition(4, 4, 9),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(10,)),
+                    Field("PM", "Pilotwire mode", 13, 3, enum=(0, 1, 2, 3, 4, 5)),
+                ),
+                conditions=(Condition(4, 4, 10),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(11,)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field("AOT", "Auto OFF Timer", 16, 16, enum=(0, 65535)),
+                    Field("DOT", "Delay OFF Timer", 32, 16, enum=(0, 65535)),
+                    Field("EBM", "External Switch/Push Button", 48, 2, enum=(0, 1, 2, 3)),
+                    Field("SWT", "2-state switch", 50, 1, enum=(0, 1)),
+                ),
+                conditions=(Condition(4, 4, 11),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(12,)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                ),
+                conditions=(Condition(4, 4, 12),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(13,)),
+                    Field("I/O", "I/O channel", 11, 5, enum=(30, 31)),
+                    Field("AOT", "Auto OFF Timer", 16, 16, enum=(0, 65535)),
+                    Field("DOT", "Delay OFF Timer", 32, 16, enum=(0, 65535)),
+                    Field("EBM", "External Switch/Push Button", 48, 2, enum=(0, 1, 2, 3)),
+                    Field("SWT", "2-state switch", 50, 1, enum=(0, 1)),
+                ),
+                conditions=(Condition(4, 4, 13),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(15,)),
+                    Field("ECID", "Extended Command ID", 8, 8, enum=(0,)),
+                    Field("I/O", "I/O Channel", 16, 5, enum=(30, 31)),
+                    Field("MAXV", "Maximum Value", 25, 7, enum=(0,)),
+                    Field("MINV", "Minimum Value", 33, 7),
+                ),
+                conditions=(Condition(4, 4, 15),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(15,)),
+                    Field("ECID", "Extended Command ID", 8, 8, enum=(1,)),
+                    Field("I/O", "I/O Channel", 16, 5, enum=(30, 31)),
+                ),
+                conditions=(Condition(4, 4, 15),),
+            ),
+            Case(
+                fields=(
+                    Field("CMD", "Command ID", 4, 4, enum=(15,)),
+                    Field("ECID", "Extended Command ID", 8, 8, enum=(2,)),
+                    Field("I/O", "I/O Channel", 16, 5, enum=(30, 31)),
+                    Field("MAXV", "Maximum Value", 25, 7, enum=(0,)),
+                    Field("MINV", "Minimum Value", 33, 7),
+                ),
+                conditions=(Condition(4, 4, 15),),
             ),
         ),
     ),
@@ -310,3 +500,4 @@ PROFILES: dict[str, Profile] = {
         ),
     ),
 }
+PROFILES["D2-01-09"] = PROFILES["D2-01-00"]

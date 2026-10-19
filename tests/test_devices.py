@@ -461,3 +461,64 @@ async def test_learn_timeout_offers_retry(hass: HomeAssistant, gateway, monkeypa
     result = await hass.config_entries.subentries.async_configure(result["flow_id"])
     assert result["step_id"] == "learn_timeout"
     assert result["menu_options"] == ["learn", "device"]
+
+
+@pytest.fixture
+async def esp3_gateway(hass: HomeAssistant, request):
+    """MGW-ETH-like ESP3 gateway (VLD telegrams need ESP3)."""
+    server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="PioTek MGW-ETH FF-8A-1B-00",
+        unique_id="FF-8A-1B-00",
+        data={
+            "model": "mgw_eth",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-8A-1B-00",
+        },
+        options={"message_delay": 0},
+        subentries_data=request.param,
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    yield entry, server
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+@pytest.mark.parametrize(
+    "esp3_gateway",
+    [
+        [
+            _subentry(
+                "psc",
+                "05-1A-2B-3C",
+                "Zwischenstecker",
+                senders=[{"profile": "controller", "sender_id": "FF-8A-1B-05"}],
+                platform="switch",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_psc_switch_status_and_meter(hass: HomeAssistant, esp3_gateway) -> None:
+    from custom_components.enocean_eltako.protocol import esp3
+
+    _entry, server = esp3_gateway
+    psc = 0x051A2B3C
+    prefix = "FF-8A-1B-00_05-1A-2B-3C_1"
+    server.push(esp3.encode_radio(RadioTelegram(0xD2, bytes.fromhex("0460E4"), psc)))
+    server.push(esp3.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00002A0C"), psc)))
+    await _settle(hass)
+    switch = _entity(hass, "switch", f"{prefix}_switch")
+    assert hass.states.get(switch).state == "on"
+    assert float(hass.states.get(_entity(hass, "sensor", f"{prefix}_power")).state) == 42
+    await hass.services.async_call("switch", "turn_off", {"entity_id": switch})
+    await _settle(hass)
+    off = esp3.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("02000008"), 0xFF8A1B05))
+    assert off in bytes(server.received)
+    server.push(esp3.encode_radio(RadioTelegram(0xD2, bytes.fromhex("046080"), psc)))
+    await _settle(hass)
+    assert hass.states.get(switch).state == "off"

@@ -121,7 +121,8 @@
         "fbh": "Bewegungs- und Helligkeitssensor (FBH65 …)",
         "co2": "CO2-Sensor (FCO2TF65)",
         "room_controller": "Raumregler (FUTH, FTR65HS …)",
-        "weather": "Wetterstation (FWS61, FWG14)"
+        "weather": "Wetterstation (FWS61, FWG14)",
+        "psc": "Permundo PSC132 / PSC234 Zwischenstecker"
       }
     },
     "routing": {

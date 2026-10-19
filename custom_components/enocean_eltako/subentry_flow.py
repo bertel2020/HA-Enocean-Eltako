@@ -61,7 +61,7 @@ def expected_rorgs(model: DeviceModel) -> set[int]:
     if model.receive is None:
         return set()
     rorgs = set(_RORG_BY_PREFIX.get(model.receive.eep[:2], ()))
-    for extra in getattr(model, "receive_extra", ()):
+    for extra in model.receive_extra:
         rorgs |= _RORG_BY_PREFIX.get(extra.eep[:2], set())
     return rorgs
 
@@ -250,8 +250,9 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             else:
                 key = vol.Optional(field)
             schema[key] = TextSelector()
-        if model.id == "switch":
-            schema[vol.Required(OPT_PLATFORM, default=Platform.LIGHT.value)] = SelectSelector(
+        if model.id in ("switch", "psc"):
+            default = Platform.LIGHT.value if model.id == "switch" else Platform.SWITCH.value
+            schema[vol.Required(OPT_PLATFORM, default=default)] = SelectSelector(
                 SelectSelectorConfig(
                     options=[Platform.LIGHT.value, Platform.SWITCH.value],
                     translation_key=OPT_PLATFORM,

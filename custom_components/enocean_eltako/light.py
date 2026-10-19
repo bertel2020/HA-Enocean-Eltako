@@ -20,11 +20,22 @@ PARALLEL_UPDATES = 0
 
 
 def switch_actuator(device: EnOceanDevice, on: bool) -> None:
-    """Central command when configured, otherwise the rocker (0x70 on, 0x50 off)."""
-    if device.has_sender(CENTRAL.id):
-        device.send(switching.encode_switch(on), profile=CENTRAL.id, key="switch")
-    else:
-        device.press(ROCKER.id, ROCKER_PRESS_UP if on else ROCKER_PRESS_DOWN)
+    """A profile with an on/off command when configured, otherwise the rocker (0x70/0x50)."""
+    for profile_id in device.senders:
+        profile = device.model.sender_profile(profile_id)
+        if profile.switch_fn is not None:
+            device.send(profile.switch_fn(on), profile=profile_id, key="switch")
+            return
+    device.press(ROCKER.id, ROCKER_PRESS_UP if on else ROCKER_PRESS_DOWN)
+
+
+def on_state(values: dict[str, Any]) -> bool | None:
+    """On/off from an Eltako status ("on") or a D2-01 actuator status response (OV)."""
+    if "on" in values:
+        return bool(values["on"])
+    if values.get("CMD") == 4 and "OV" in values:
+        return values["OV"] > 0
+    return None
 
 
 async def async_setup_entry(
@@ -38,7 +49,7 @@ async def async_setup_entry(
         elif (
             device.model.id == "switch"
             and device.options.get(OPT_PLATFORM, Platform.LIGHT) == Platform.LIGHT
-        ):
+        ) or (device.model.id == "psc" and device.options.get(OPT_PLATFORM) == Platform.LIGHT):
             async_add_entities([EnOceanSwitchLight(device)], config_subentry_id=subentry_id)
 
 
@@ -62,9 +73,10 @@ class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
         switch_actuator(self._device, False)
 
     def _apply(self, values: dict[str, Any]) -> bool:
-        if "on" not in values or values["on"] == self._attr_is_on:
+        on = on_state(values)
+        if on is None or on == self._attr_is_on:
             return False
-        self._attr_is_on = values["on"]
+        self._attr_is_on = on
         return True
 
 
