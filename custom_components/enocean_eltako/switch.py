@@ -14,7 +14,7 @@ from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_PLATFORM
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
-from .protocol.eep.eltako import switching
+from .light import switch_actuator
 
 PARALLEL_UPDATES = 0
 
@@ -41,10 +41,10 @@ class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
             self._attr_is_on = last.state == "on"
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        self._device.send(switching.encode_switch(True), key="switch")
+        switch_actuator(self._device, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        self._device.send(switching.encode_switch(False), key="switch")
+        switch_actuator(self._device, False)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         if "on" not in values or values["on"] == self._attr_is_on:

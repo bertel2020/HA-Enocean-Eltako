@@ -123,6 +123,13 @@
         "room_controller": "Raumregler (FUTH, FTR65HS …)",
         "weather": "Wetterstation (FWS61, FWG14)"
       }
+    },
+    "routing": {
+      "options": {
+        "controller": "Controller",
+        "direction_rocker": "Richtungstaster",
+        "both": "Beide"
+      }
     }
   },
   "exceptions": {
@@ -183,22 +190,48 @@
         },
         "device": {
           "title": "Gerät",
-          "description": "Beispiele: {examples}. Empfängt {receive}, sendet {send}.",
+          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.",
           "data": {
             "name": "Name",
             "device_id": "Geräte-ID",
-            "sender_id": "Sender-ID",
             "platform": "Art",
             "time_opens": "Laufzeit auf",
             "time_closes": "Laufzeit ab",
             "device_class": "Art",
-            "invert": "Umkehren"
+            "invert": "Umkehren",
+            "sender_central": "Sender-ID: Zentralbefehl (A5-38-08)",
+            "sender_rocker": "Sender-ID: Taster (F6-02-01)",
+            "sender_controller": "Sender-ID: Controller (H5-3F-7F)",
+            "sender_direction_rocker": "Sender-ID: Richtungstaster (F6-02-01)",
+            "routing": "Fahren über"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
-            "sender_id": "ID, mit der Home Assistant sendet; vorgeschlagen ist die nächste freie dieses Gateways. Mit dem Einlern-Button im Aktor einlernen.",
             "time_opens": "Volle Laufzeit von zu nach auf.",
-            "time_closes": "Volle Laufzeit von auf nach zu."
+            "time_closes": "Volle Laufzeit von auf nach zu.",
+            "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist."
+          }
+        },
+        "reconfigure": {
+          "title": "Gerät bearbeiten",
+          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.",
+          "data": {
+            "name": "Name",
+            "platform": "Art",
+            "time_opens": "Laufzeit auf",
+            "time_closes": "Laufzeit ab",
+            "device_class": "Art",
+            "invert": "Umkehren",
+            "sender_central": "Sender-ID: Zentralbefehl (A5-38-08)",
+            "sender_rocker": "Sender-ID: Taster (F6-02-01)",
+            "sender_controller": "Sender-ID: Controller (H5-3F-7F)",
+            "sender_direction_rocker": "Sender-ID: Richtungstaster (F6-02-01)",
+            "routing": "Fahren über"
+          },
+          "data_description": {
+            "time_opens": "Volle Laufzeit von zu nach auf.",
+            "time_closes": "Volle Laufzeit von auf nach zu.",
+            "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist."
           }
         }
       },
@@ -212,7 +245,8 @@
         "sender_pool_exhausted": "Keine freie Sender-ID mehr."
       },
       "abort": {
-        "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist."
+        "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
+        "reconfigure_successful": "Gerät aktualisiert."
       }
     }
   },
@@ -270,8 +304,17 @@
       }
     },
     "button": {
-      "teach_in": {
-        "name": "Einlernen"
+      "teach_in_central": {
+        "name": "Einlernen Zentralbefehl"
+      },
+      "teach_in_rocker": {
+        "name": "Einlernen Taster"
+      },
+      "teach_in_controller": {
+        "name": "Einlernen Controller"
+      },
+      "teach_in_direction_rocker": {
+        "name": "Einlernen Richtungstaster"
       }
     }
   }

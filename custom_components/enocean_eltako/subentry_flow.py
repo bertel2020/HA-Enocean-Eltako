@@ -1,4 +1,4 @@
-"""Subentry flow: add a device to a gateway (catalog model, ID, sender ID, options)."""
+"""Subentry flow: add or reconfigure a device (catalog model, ID, senders, options)."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from .catalog import (
     OPT_DEVICE_CLASS,
     OPT_INVERT,
     OPT_PLATFORM,
+    OPT_ROUTING,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
     DeviceModel,
@@ -31,29 +32,39 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_MODEL,
     CONF_NAME,
+    CONF_PROFILE,
     CONF_SENDER_ID,
+    CONF_SENDERS,
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
 from .protocol.ids import format_id, parse_id
-from .protocol.sender_pool import SenderIdError
+from .protocol.sender_pool import SenderIdError, SenderPool
 
 DEVICE_CLASSES = ["door", "window", "garage_door", "opening"]
+OPTION_KEYS = (OPT_PLATFORM, OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_INVERT, OPT_ROUTING)
 
 
-def sender_owner(device_id: int) -> str:
-    return f"device:{format_id(device_id)}"
+def sender_owner(device_id: int, profile: str) -> str:
+    return f"device:{format_id(device_id)}:{profile}"
+
+
+def sender_field(profile: str) -> str:
+    return f"sender_{profile}"
 
 
 class DeviceSubentryFlow(ConfigSubentryFlow):
-    """Add a device: choose the model, then ID, sender and model options."""
+    """Add a device: model, then name, ID, senders and options. Reconfigure: all but the ID."""
 
     def __init__(self) -> None:
         self._model: DeviceModel | None = None
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+    def _loaded(self) -> bool:
         entry = self._get_entry()
-        if not hasattr(entry, "runtime_data") or entry.runtime_data is None:
+        return getattr(entry, "runtime_data", None) is not None
+
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
         if user_input is not None:
             self._model = CATALOG[user_input[CONF_MODEL]]
@@ -77,11 +88,10 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         assert self._model is not None
-        model = self._model
         entry = self._get_entry()
-        pool = entry.runtime_data.senders.pool
         errors: dict[str, str] = {}
         if user_input is not None:
+            device_id = None
             try:
                 device_id = parse_id(user_input[CONF_DEVICE_ID])
             except ValueError:
@@ -89,46 +99,81 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             else:
                 if any(s.unique_id == format_id(device_id) for s in entry.subentries.values()):
                     errors[CONF_DEVICE_ID] = "already_configured"
-            sender_id = None
-            if model.actuator and not errors:
-                try:
-                    sender_id = parse_id(user_input[CONF_SENDER_ID])
-                    pool.assign(sender_id, sender_owner(device_id))
-                except ValueError as err:
-                    reason = err.reason if isinstance(err, SenderIdError) else "invalid_id"
-                    errors[CONF_SENDER_ID] = f"sender_{reason}"
-            if not errors:
-                # saved now: creating the subentry reloads the entry and the pool with it
-                await entry.runtime_data.senders.async_save()
-                data: dict[str, Any] = {
-                    "schema": SUBENTRY_SCHEMA,
-                    CONF_MODEL: model.id,
-                    CONF_DEVICE_ID: format_id(device_id),
-                }
-                if sender_id is not None:
-                    data[CONF_SENDER_ID] = format_id(sender_id)
-                for key in (OPT_PLATFORM, OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_INVERT):
-                    if key in user_input:
-                        data[key] = user_input[key]
-                if user_input.get(OPT_DEVICE_CLASS):
-                    data[OPT_DEVICE_CLASS] = user_input[OPT_DEVICE_CLASS]
-                return self.async_create_entry(
-                    title=user_input[CONF_NAME], data=data, unique_id=format_id(device_id)
-                )
-
-        schema: dict[Any, Any] = {
+            if device_id is not None and not errors:
+                result = await self._async_save(user_input, device_id, {}, errors)
+                if result is not None:
+                    return self.async_create_entry(
+                        title=user_input[CONF_NAME], data=result, unique_id=format_id(device_id)
+                    )
+        schema = {
             vol.Required(CONF_NAME): TextSelector(),
             vol.Required(CONF_DEVICE_ID): TextSelector(),
+            **self._fields(self._model, {}),
         }
-        if model.actuator:
-            suggested = pool.next_free()
-            key = (
-                vol.Required(CONF_SENDER_ID, default=format_id(suggested))
-                if suggested is not None
-                else vol.Required(CONF_SENDER_ID)
-            )
+        return self._form("device", schema, user_input, errors)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        if not self._loaded():
+            return self.async_abort(reason="gateway_not_loaded")
+        subentry = self._get_reconfigure_subentry()
+        data = dict(subentry.data)
+        self._model = model = CATALOG[data[CONF_MODEL]]
+        device_id = parse_id(data[CONF_DEVICE_ID])
+        current = {s[CONF_PROFILE]: s[CONF_SENDER_ID] for s in data.get(CONF_SENDERS, ())}
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            result = await self._async_save(user_input, device_id, current, errors)
+            if result is not None:
+                return self.async_update_and_abort(
+                    self._get_entry(), subentry, title=user_input[CONF_NAME], data=result
+                )
+        suggested = {
+            CONF_NAME: subentry.title,
+            **{k: data[k] for k in (*OPTION_KEYS, OPT_DEVICE_CLASS) if k in data},
+            **{sender_field(p): s for p, s in current.items()},
+        }
+        schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
+        return self._form("reconfigure", schema, user_input or suggested, errors)
+
+    def _form(
+        self,
+        step_id: str,
+        schema: dict[Any, Any],
+        values: dict[str, Any] | None,
+        errors: dict[str, str],
+    ) -> SubentryFlowResult:
+        assert self._model is not None
+        model = self._model
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=self.add_suggested_values_to_schema(vol.Schema(schema), values),
+            errors=errors,
+            description_placeholders={
+                "examples": model.examples,
+                "receive": str(model.receive) if model.receive else "-",
+                "send": ", ".join(f"{p.id} ({p.eep})" for p in model.senders) or "-",
+            },
+        )
+
+    def _pool(self) -> SenderPool:
+        return self._get_entry().runtime_data.senders.pool
+
+    def _fields(self, model: DeviceModel, current: dict[str, str]) -> dict[Any, Any]:
+        """Sender IDs (first profile required, suggested from the pool) and model options."""
+        schema: dict[Any, Any] = {}
+        for index, profile in enumerate(model.senders):
+            field = sender_field(profile.id)
+            if index == 0:
+                suggested = current.get(profile.id)
+                if suggested is None and (free := self._pool().next_free()) is not None:
+                    suggested = format_id(free)
+                key = vol.Required(field, default=suggested) if suggested else vol.Required(field)
+            else:
+                key = vol.Optional(field)
             schema[key] = TextSelector()
-        if len(model.platforms) > 1 and model.id == "switch":
+        if model.id == "switch":
             schema[vol.Required(OPT_PLATFORM, default=Platform.LIGHT.value)] = SelectSelector(
                 SelectSelectorConfig(
                     options=[Platform.LIGHT.value, Platform.SWITCH.value],
@@ -146,22 +191,87 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                         mode=NumberSelectorMode.BOX,
                     )
                 )
+        if OPT_ROUTING in model.options:
+            schema[vol.Required(OPT_ROUTING, default=model.senders[0].id)] = SelectSelector(
+                SelectSelectorConfig(
+                    options=[*(p.id for p in model.senders), "both"],
+                    translation_key=OPT_ROUTING,
+                )
+            )
         if OPT_DEVICE_CLASS in model.options:
             schema[vol.Required(OPT_DEVICE_CLASS, default="window")] = SelectSelector(
                 SelectSelectorConfig(options=DEVICE_CLASSES, translation_key=OPT_DEVICE_CLASS)
             )
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
-        return self.async_show_form(
-            step_id="device",
-            data_schema=self.add_suggested_values_to_schema(vol.Schema(schema), user_input),
-            errors=errors,
-            description_placeholders={
-                "examples": model.examples,
-                "receive": str(model.receive) if model.receive else "-",
-                "send": str(model.send) if model.send else "-",
-            },
-        )
+        return schema
+
+    async def _async_save(
+        self,
+        user_input: dict[str, Any],
+        device_id: int,
+        current: dict[str, str],
+        errors: dict[str, str],
+    ) -> dict[str, Any] | None:
+        """Validate and assign sender IDs; returns the subentry data or None on errors."""
+        assert self._model is not None
+        model = self._model
+        pool = self._pool()
+        wanted: dict[str, int] = {}
+        for profile in model.senders:
+            text = (user_input.get(sender_field(profile.id)) or "").strip()
+            if not text:
+                continue
+            try:
+                sender = parse_id(text)
+            except ValueError:
+                errors[sender_field(profile.id)] = "sender_invalid_id"
+                continue
+            if sender in wanted.values():
+                errors[sender_field(profile.id)] = "sender_in_use"
+                continue
+            wanted[profile.id] = sender
+        if errors:
+            return None
+        released = {
+            p: parse_id(s)
+            for p, s in current.items()
+            if p not in wanted or format_id(wanted[p]) != s
+        }
+        assigned: list[int] = []
+        for profile, sender in wanted.items():
+            if current.get(profile) == format_id(sender):
+                continue
+            try:
+                pool.assign(sender, sender_owner(device_id, profile))
+            except SenderIdError as err:
+                errors[sender_field(profile)] = f"sender_{err.reason}"
+                continue
+            assigned.append(sender)
+        if errors:
+            for sender in assigned:  # roll back this attempt
+                pool.release(sender)
+                pool.confirm_teach_out(sender)
+            return None
+        for sender in released.values():
+            pool.release(sender)  # blocked until the teach-out is confirmed
+        # saved now: changing subentries reloads the entry and the pool with it
+        await self._get_entry().runtime_data.senders.async_save()
+        data: dict[str, Any] = {
+            "schema": SUBENTRY_SCHEMA,
+            CONF_MODEL: model.id,
+            CONF_DEVICE_ID: format_id(device_id),
+        }
+        if wanted:
+            data[CONF_SENDERS] = [
+                {CONF_PROFILE: p, CONF_SENDER_ID: format_id(s)} for p, s in wanted.items()
+            ]
+        for key in OPTION_KEYS:
+            if key in user_input:
+                data[key] = user_input[key]
+        if user_input.get(OPT_DEVICE_CLASS):
+            data[OPT_DEVICE_CLASS] = user_input[OPT_DEVICE_CLASS]
+        return data
 
 
 SUBENTRY_FLOWS = {SUBENTRY_DEVICE: DeviceSubentryFlow}

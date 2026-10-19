@@ -1,4 +1,4 @@
-"""Teach-in button per actuator: sends the teach-in telegram from the device's sender ID."""
+"""Teach-in buttons: one per sender profile of an actuator."""
 
 from __future__ import annotations
 
@@ -22,19 +22,24 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        if device.model.teach_in is not None and device.sender_id is not None:
-            async_add_entities([TeachInButton(device)], config_subentry_id=subentry_id)
+        async_add_entities(
+            [TeachInButton(device, profile) for profile in device.senders],
+            config_subentry_id=subentry_id,
+        )
 
 
 class TeachInButton(EnOceanEntity, ButtonEntity):
-    _attr_translation_key = "teach_in"
+    """Sends the teach-in telegram of one sender profile (4BS teach-in or rocker press)."""
+
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, device: EnOceanDevice) -> None:
-        super().__init__(device, "teach_in")
+    def __init__(self, device: EnOceanDevice, profile: str) -> None:
+        super().__init__(device, f"teach_in_{profile}")
+        self._profile = profile
+        self._attr_translation_key = f"teach_in_{profile}"
 
     async def async_press(self) -> None:
-        self._device.teach_in()
+        self._device.teach_in(self._profile)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False

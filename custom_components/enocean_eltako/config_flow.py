@@ -77,7 +77,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
     """Add a gateway: model, connection, connection test, base ID."""
 
     VERSION = 1
-    MINOR_VERSION = 1
+    MINOR_VERSION = 2  # 1.2: device subentries list their senders (schema 2)
 
     def __init__(self) -> None:
         self._model: GatewayModel | None = None

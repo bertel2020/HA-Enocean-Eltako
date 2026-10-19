@@ -35,7 +35,7 @@ async def async_get_config_entry_diagnostics(
                 "title": d.subentry.title,
                 "model": d.model.id,
                 "device_id": format_id(d.device_id),
-                "sender_id": format_id(d.sender_id) if d.sender_id is not None else None,
+                "senders": {profile: format_id(s) for profile, s in d.senders.items()},
                 "receive_eep": str(d.model.receive) if d.model.receive else None,
                 "send_eep": str(d.model.send) if d.model.send else None,
                 "last_telegram": d.last_received.timestamp if d.last_received else None,

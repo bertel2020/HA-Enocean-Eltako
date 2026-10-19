@@ -11,7 +11,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
-from .catalog import PLATFORMS
+from .catalog import CATALOG, PLATFORMS
 from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
@@ -19,6 +19,9 @@ from .const import (
     CONF_MESSAGE_DELAY,
     CONF_MODE,
     CONF_MODEL,
+    CONF_PROFILE,
+    CONF_SENDER_ID,
+    CONF_SENDERS,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
     MODE_ALWAYS,
@@ -63,6 +66,25 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the telegram monitor websocket API and services."""
     async_setup_websocket(hass)
     async_setup_services(hass)
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> bool:
+    """1.1 -> 1.2: device subentries move "sender_id" into "senders" (schema 2)."""
+    if entry.version > 1:
+        return False  # downgrade not supported
+    if entry.minor_version < 2:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 2:
+                continue
+            model = CATALOG.get(data.get(CONF_MODEL, ""))
+            sender = data.pop(CONF_SENDER_ID, None)
+            if sender and model and model.senders:
+                data[CONF_SENDERS] = [{CONF_PROFILE: model.senders[0].id, CONF_SENDER_ID: sender}]
+            data["schema"] = 2
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=2)
     return True
 
 
@@ -140,10 +162,10 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
     runtime = entry.runtime_data
     owners = set()
     for subentry_id, subentry in entry.subentries.items():
-        device = EnOceanDevice(entry, subentry)
+        device = EnOceanDevice(hass, entry, subentry)
         runtime.devices[subentry_id] = device
         entry.async_on_unload(device.start())
-        owners.add(sender_owner(device.device_id))
+        owners.update(sender_owner(device.device_id, p) for p in device.senders)
     pool = runtime.senders.pool
     released = False
     for sender, allocation in pool.allocations():

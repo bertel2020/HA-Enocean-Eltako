@@ -123,6 +123,13 @@
         "room_controller": "Room controller (FUTH, FTR65HS …)",
         "weather": "Weather station (FWS61, FWG14)"
       }
+    },
+    "routing": {
+      "options": {
+        "controller": "Controller",
+        "direction_rocker": "Direction rocker",
+        "both": "Both"
+      }
     }
   },
   "exceptions": {
@@ -183,22 +190,48 @@
         },
         "device": {
           "title": "Device",
-          "description": "Examples: {examples}. Receives {receive}, sends {send}.",
+          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.",
           "data": {
             "name": "Name",
             "device_id": "Device ID",
-            "sender_id": "Sender ID",
             "platform": "Type",
             "time_opens": "Travel time up",
             "time_closes": "Travel time down",
             "device_class": "Kind",
-            "invert": "Invert"
+            "invert": "Invert",
+            "sender_central": "Sender ID: Central command (A5-38-08)",
+            "sender_rocker": "Sender ID: Rocker (F6-02-01)",
+            "sender_controller": "Sender ID: Controller (H5-3F-7F)",
+            "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
+            "routing": "Moved by"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
-            "sender_id": "ID Home Assistant sends from; suggested is the next free one of this gateway. Teach it in on the actuator with the teach-in button.",
             "time_opens": "Full travel time from closed to open.",
-            "time_closes": "Full travel time from open to closed."
+            "time_closes": "Full travel time from open to closed.",
+            "routing": "Which sender moves the cover. Positions always use the controller when it is set."
+          }
+        },
+        "reconfigure": {
+          "title": "Reconfigure device",
+          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.",
+          "data": {
+            "name": "Name",
+            "platform": "Type",
+            "time_opens": "Travel time up",
+            "time_closes": "Travel time down",
+            "device_class": "Kind",
+            "invert": "Invert",
+            "sender_central": "Sender ID: Central command (A5-38-08)",
+            "sender_rocker": "Sender ID: Rocker (F6-02-01)",
+            "sender_controller": "Sender ID: Controller (H5-3F-7F)",
+            "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
+            "routing": "Moved by"
+          },
+          "data_description": {
+            "time_opens": "Full travel time from closed to open.",
+            "time_closes": "Full travel time from open to closed.",
+            "routing": "Which sender moves the cover. Positions always use the controller when it is set."
           }
         }
       },
@@ -212,7 +245,8 @@
         "sender_pool_exhausted": "No free sender ID left."
       },
       "abort": {
-        "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
+        "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
+        "reconfigure_successful": "Device updated."
       }
     }
   },
@@ -270,8 +304,17 @@
       }
     },
     "button": {
-      "teach_in": {
-        "name": "Teach-in"
+      "teach_in_central": {
+        "name": "Teach-in central command"
+      },
+      "teach_in_rocker": {
+        "name": "Teach-in rocker"
+      },
+      "teach_in_controller": {
+        "name": "Teach-in controller"
+      },
+      "teach_in_direction_rocker": {
+        "name": "Teach-in direction rocker"
       }
     }
   }
