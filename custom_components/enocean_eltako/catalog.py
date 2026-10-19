@@ -162,8 +162,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="lighting",
             group=GROUP_ENOCEAN,
             senders=(PSC_CONTROLLER,),
-            # D2-01-09 needs an ESP3 gateway; behind an ESP2 gateway (FAM-USB) the state
-            # comes only from RPS 0x70/0x50 telegrams as today in the old integration
+            # D2-01-09 state over ESP3, and over Eltako ESP2 gateways as ORG 0xD2
             receive_extra=(_ref("A5-12-01:std"), _ref("M5-38-08:eltako")),
             interval=600,  # power repeated every 10 min
             manufacturer="Permundo",

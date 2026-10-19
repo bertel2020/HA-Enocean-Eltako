@@ -21,8 +21,9 @@ class HSeq(IntEnum):
     TCT = 0b101  # transmit command telegram (gateway command)
 
 
-# ESP2 ORG <-> RORG; ESP2 knows no VLD/MSC/UTE.
-ORG_TO_RORG = {0x05: Rorg.RPS, 0x06: Rorg.BS1, 0x07: Rorg.BS4}
+# ESP2 ORG <-> RORG. VLD is an Eltako extension (FAM-USB, FAM14): ORG 0xD2 with up to
+# 4 data bytes, zero-padded; longer VLD telegrams (e.g. D2-01 measurements) do not fit.
+ORG_TO_RORG = {0x05: Rorg.RPS, 0x06: Rorg.BS1, 0x07: Rorg.BS4, 0xD2: Rorg.VLD}
 RORG_TO_ORG = {rorg: org for org, rorg in ORG_TO_RORG.items()}
 
 # TCM120 commands (TCT) and messages (RMT), as used by FAM-USB.
@@ -97,7 +98,7 @@ class Esp2Decoder:
 
 
 def decode_radio(frame: Esp2Frame) -> RadioTelegram | None:
-    """Radio telegram from an RRT/TRT frame, or from an RMT frame with ORG 05/06/07.
+    """Radio telegram from an RRT/TRT frame, or from an RMT frame with ORG 05/06/07/D2.
 
     On the Eltako RS485 bus, actors answer the FAM14 poll with RMT frames laid out like
     radio telegrams (data, sender ID, status). None for gateway and bus control messages.
@@ -105,7 +106,7 @@ def decode_radio(frame: Esp2Frame) -> RadioTelegram | None:
     if frame.hseq not in (HSeq.RRT, HSeq.TRT, HSeq.RMT) or frame.org not in ORG_TO_RORG:
         return None
     rorg = ORG_TO_RORG[frame.org]
-    data = frame.data if rorg == Rorg.BS4 else frame.data[:1]
+    data = frame.data if rorg in (Rorg.BS4, Rorg.VLD) else frame.data[:1]
     return RadioTelegram(rorg=rorg, data=data, sender=frame.sender, status=frame.status)
 
 
@@ -124,11 +125,13 @@ def is_bus_control(frame: Esp2Frame) -> bool:
 
 
 def encode_radio(telegram: RadioTelegram) -> bytes:
-    """TRT frame for a radio telegram; ESP2 carries RPS, 1BS and 4BS only."""
+    """TRT frame for a radio telegram; ESP2 carries RPS, 1BS, 4BS and VLD up to 4 bytes."""
     if telegram.rorg not in RORG_TO_ORG:
         raise ValueError(f"ESP2 cannot send RORG {telegram.rorg:02X}")
-    expected = 4 if telegram.rorg == Rorg.BS4 else 1
-    if len(telegram.data) != expected:
+    if telegram.rorg == Rorg.VLD:
+        if not 1 <= len(telegram.data) <= 4:
+            raise ValueError("ESP2 carries VLD telegrams of 1 to 4 data bytes")
+    elif len(telegram.data) != (expected := 4 if telegram.rorg == Rorg.BS4 else 1):
         raise ValueError(f"RORG {telegram.rorg:02X} needs {expected} data bytes")
     return Esp2Frame(
         hseq=HSeq.TRT,

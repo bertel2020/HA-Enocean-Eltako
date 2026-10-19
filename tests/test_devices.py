@@ -655,9 +655,10 @@ async def test_last_seen_and_silence_repair(hass: HomeAssistant, gateway, monkey
     prefix = f"{BASE}_05-00-00-12_1"
     _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)
     await _settle(hass)
-    last_seen = hass.states.get(_entity(hass, "sensor", f"{prefix}_last_seen"))
-    assert last_seen.state not in ("unknown", "unavailable")
-    assert last_seen.attributes["telegrams"] == 1
+    last_seen = er.async_get(hass).async_get(_entity(hass, "sensor", f"{prefix}_last_seen"))
+    assert last_seen.disabled_by is er.RegistryEntryDisabler.INTEGRATION  # logbook noise
+    device = next(iter(entry.runtime_data.devices.values()))
+    assert device.stats.telegrams == 1 and device.stats.last_seen is not None
     power = _entity(hass, "sensor", f"{prefix}_power")
 
     later = time_module.time() + 3 * 600 + 60
@@ -1070,3 +1071,36 @@ async def test_back_entries_return_to_the_previous_menu(hass: HomeAssistant, gat
     result = await configure(flow_id, {"eep": "std_a5_04_02"})
     result = await configure(flow_id, {"next_step_id": "eep"})
     assert result["step_id"] == "eep"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("switch", "05-00-00-31", "Steckdose", platform="switch")]],
+    indirect=True,
+)
+async def test_type_change_removes_the_old_entity(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    registry = er.async_get(hass)
+    unique_id = f"{BASE}_05-00-00-31_1_light"
+    registry.async_get_or_create("light", DOMAIN, unique_id, config_entry=entry)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get_entity_id("light", DOMAIN, unique_id) is None
+    assert _entity(hass, "switch", f"{BASE}_05-00-00-31_1_switch") is not None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("psc", "FF-85-EF-81", "Zwischenstecker", platform="switch")]],
+    indirect=True,
+)
+async def test_psc_state_over_fam_usb(hass: HomeAssistant, gateway) -> None:
+    """FAM-USB passes the PSC's D2-01-09 status as ESP2 ORG 0xD2."""
+    _entry, server = gateway
+    switch = _entity(hass, "switch", f"{BASE}_FF-85-EF-81_1_switch")
+    _push(server, 0xD2, bytes.fromhex("0460E400"), 0xFF85EF81)
+    await _settle(hass)
+    assert hass.states.get(switch).state == "on"
+    _push(server, 0xD2, bytes.fromhex("04608000"), 0xFF85EF81)
+    await _settle(hass)
+    assert hass.states.get(switch).state == "off"

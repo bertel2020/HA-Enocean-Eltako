@@ -9,14 +9,22 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED, Platform
 from homeassistant.core import CoreState, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
-from .catalog import CATALOG, CENTRAL, OPT_STATUS_REQUEST, PLATFORMS, STATUS_REQUEST
+from .catalog import (
+    CATALOG,
+    CENTRAL,
+    OPT_PLATFORM,
+    OPT_STATUS_REQUEST,
+    PLATFORMS,
+    STATUS_REQUEST,
+)
 from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
@@ -191,6 +199,7 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         runtime.devices[subentry_id] = device
         entry.async_on_unload(device.start())
         owners.update(sender_owner(device.device_id, p) for p in device.senders)
+    _async_remove_other_platform(hass, entry)
     pool = runtime.senders.pool
     released = False
     for sender, allocation in pool.allocations():
@@ -203,6 +212,20 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
             released = True
     if released:
         runtime.senders.async_schedule_save()
+
+
+def _async_remove_other_platform(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """Switch shown as light or switch: drop the entity of the type no longer chosen."""
+    registry = er.async_get(hass)
+    for device in entry.runtime_data.devices.values():
+        if device.model.kind not in ("switch", "psc"):
+            continue
+        default = Platform.LIGHT if device.model.kind == "switch" else Platform.SWITCH
+        chosen = device.options.get(OPT_PLATFORM, default)
+        other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
+        unique_id = f"{device.unique_prefix}_1_{'light' if other == Platform.LIGHT else 'switch'}"
+        if entity_id := registry.async_get_entity_id(other, DOMAIN, unique_id):
+            registry.async_remove(entity_id)
 
 
 def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

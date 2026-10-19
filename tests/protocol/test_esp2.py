@@ -59,11 +59,23 @@ def test_encode_radio_roundtrip() -> None:
     assert esp2.decode_radio(frame) == telegram
 
 
-def test_encode_radio_rejects_vld() -> None:
+def test_vld_rides_on_org_d2() -> None:
+    """Eltako extension: VLD with up to 4 bytes, zero-padded (PSC state D2-01-09)."""
+    received = esp2.Esp2Frame(esp2.HSeq.RRT, 0xD2, bytes.fromhex("0460E400"), 0xFF85EF81, 0)
+    (frame,) = esp2.Esp2Decoder().feed(received.encode())
+    assert esp2.decode_radio(frame) == RadioTelegram(
+        rorg=Rorg.VLD, data=bytes.fromhex("0460E400"), sender=0xFF85EF81
+    )
+    raw = esp2.encode_radio(RadioTelegram(rorg=Rorg.VLD, data=b"\x03\x00", sender=1))
+    (sent,) = esp2.Esp2Decoder().feed(raw)
+    assert sent.org == 0xD2 and sent.data == bytes.fromhex("03000000")
+
+
+def test_encode_radio_rejects_long_vld() -> None:
     import pytest
 
     with pytest.raises(ValueError):
-        esp2.encode_radio(RadioTelegram(rorg=Rorg.VLD, data=b"\x01", sender=1))
+        esp2.encode_radio(RadioTelegram(rorg=Rorg.VLD, data=bytes(6), sender=1))
 
 
 def test_bus_poll_and_empty_answer_are_bus_control() -> None:

@@ -365,6 +365,9 @@ class _StatsSensor(EnOceanEntity, SensorEntity):
 class LastSeenSensor(_StatsSensor, RestoreEntity):
     _attr_translation_key = "last_seen"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
+    # changes with every telegram and would flood the logbook; silence is reported by the
+    # repair issue and the "unavailable when silent" option instead
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "last_seen")
