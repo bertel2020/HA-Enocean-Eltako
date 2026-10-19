@@ -1305,3 +1305,17 @@ async def test_meter_serial_number(hass: HomeAssistant, gateway) -> None:
     assert serial.state == "0A 1B 2C 3D"
     power = hass.states.get(_entity(hass, "sensor", f"{prefix}_power"))
     assert power.state == "unknown"  # the serial telegrams are no power readings
+
+
+async def test_device_form_shows_teach_in_hint(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "enocean"})
+    result = await configure(result["flow_id"], {"next_step_id": "enocean_lighting"})
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    assert "PSC132" in result["description_placeholders"]["hint"]
+    result = await _init_flow(hass, entry)
+    result = await _choose_model(hass, result["flow_id"], "contact")
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    assert result["description_placeholders"]["hint"] == ""  # sensors need no teach-in

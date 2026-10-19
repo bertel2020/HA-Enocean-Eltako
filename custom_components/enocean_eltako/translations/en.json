@@ -200,6 +200,14 @@
         "1": "Level 1",
         "2": "Level 2"
       }
+    },
+    "teach_hint": {
+      "options": {
+        "default": "Teach-in: put the actuator into learn mode (rotary switch LRN or learn button), then press the matching teach-in button on this device page.",
+        "psc": "Teach-in: start the learn mode on the PSC (PSC132: touch about 3 s, PSC234: more than 5 s, LED flashes red), then within 15 s press \"Teach in controller\" on this device page. The PSC first sends a request of its own, which is ignored. Done when the LED flashes green 5 times.",
+        "cover": "Teach-in: put the actuator into learn mode (FSB: function 180/200 for the controller, 10/30 for the direction rocker), then press the matching teach-in button on this device page.",
+        "heating_actuator": "Teach-in: put the actuator into learn mode for a room controller, then press \"Teach in controller\"; for cooling also teach in the cooling switch."
+      }
     }
   },
   "exceptions": {
@@ -375,7 +383,7 @@
         },
         "device": {
           "title": "Device",
-          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.",
+          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.\n\n{hint}",
           "data": {
             "name": "Name",
             "device_id": "Device ID",
@@ -421,7 +429,7 @@
         },
         "reconfigure": {
           "title": "Reconfigure device",
-          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.",
+          "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.\n\n{hint}",
           "data": {
             "name": "Name",
             "platform": "Type",

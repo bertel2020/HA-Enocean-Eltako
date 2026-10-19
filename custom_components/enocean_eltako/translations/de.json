@@ -200,6 +200,14 @@
         "1": "Stufe 1",
         "2": "Stufe 2"
       }
+    },
+    "teach_hint": {
+      "options": {
+        "default": "Anlernen: Aktor in den Lernmodus bringen (Drehschalter LRN oder Lerntaste), dann auf dieser Geräteseite den passenden Einlernen-Button drücken.",
+        "psc": "Anlernen: Lernmodus am PSC starten (PSC132: Touch ca. 3 s, PSC234: länger als 5 s, LED blinkt rot), dann innerhalb von 15 s auf dieser Geräteseite „Einlernen Controller“ drücken. Der PSC sendet vorher eine eigene Anfrage, die ignoriert wird. Fertig, wenn die LED 5× grün blinkt.",
+        "cover": "Anlernen: Aktor in den Lernmodus bringen (FSB: Funktion 180/200 für den Controller, 10/30 für den Richtungstaster), dann auf dieser Geräteseite den passenden Einlernen-Button drücken.",
+        "heating_actuator": "Anlernen: Aktor in den Lernmodus für einen Raumregler bringen, dann „Einlernen Controller“ drücken; für Kühlen zusätzlich den Kühlschalter einlernen."
+      }
     }
   },
   "exceptions": {
@@ -375,7 +383,7 @@
         },
         "device": {
           "title": "Gerät",
-          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.",
+          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.\n\n{hint}",
           "data": {
             "name": "Name",
             "device_id": "Geräte-ID",
@@ -421,7 +429,7 @@
         },
         "reconfigure": {
           "title": "Gerät bearbeiten",
-          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.",
+          "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.\n\n{hint}",
           "data": {
             "name": "Name",
             "platform": "Art",

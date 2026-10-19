@@ -22,6 +22,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
     TextSelector,
 )
+from homeassistant.helpers.translation import async_get_translations
 
 from .catalog import (
     CATALOG,
@@ -66,6 +67,7 @@ from .const import (
     CONF_PROFILE,
     CONF_SENDER_ID,
     CONF_SENDERS,
+    DOMAIN,
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
@@ -361,7 +363,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         }
         if user_input is None and self._learned is not None:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
-        return self._form("device", schema, user_input, errors)
+        return await self._form("device", schema, user_input, errors)
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -388,7 +390,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             **{sender_field(p): s for p, s in current.items()},
         }
         schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
-        return self._form("reconfigure", schema, user_input or suggested, errors)
+        return await self._form("reconfigure", schema, user_input or suggested, errors)
 
     async def async_step_cover_menu(
         self, user_input: dict[str, Any] | None = None
@@ -528,7 +530,17 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         future.add_done_callback(lambda _f: remove())
         return future
 
-    def _form(
+    async def _teach_hint(self, model: DeviceModel) -> str:
+        """How to put this kind into learn mode, for actuators (translated, may be empty)."""
+        if not model.senders:
+            return ""
+        translations = await async_get_translations(
+            self.hass, self.hass.config.language, "selector", [DOMAIN]
+        )
+        prefix = f"component.{DOMAIN}.selector.teach_hint.options."
+        return translations.get(prefix + model.kind) or translations.get(prefix + "default", "")
+
+    async def _form(
         self,
         step_id: str,
         schema: dict[Any, Any],
@@ -545,6 +557,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 "examples": model.examples or "-",
                 "receive": str(model.receive) if model.receive else "-",
                 "send": ", ".join(f"{p.id} ({p.eep})" for p in model.senders) or "-",
+                "hint": await self._teach_hint(model),
             },
         )
 
