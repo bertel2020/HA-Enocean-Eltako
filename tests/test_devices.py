@@ -659,7 +659,7 @@ async def test_last_seen_and_silence_repair(hass: HomeAssistant, gateway, monkey
 
     _push(server, 0x07, bytes.fromhex("0003E70C"), 0x05000012)  # heard again: 999 W
     await _settle(hass)
-    assert hass.states.get(power).state == "999"
+    assert float(hass.states.get(power).state) == 999
     monkeypatch.undo()
     entry.runtime_data.health_check()
     await hass.async_block_till_done()
