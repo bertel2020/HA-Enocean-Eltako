@@ -21,9 +21,11 @@
 <p align="center"><em><a href="README.de.md">Deutsche Version</a></em></p>
 
 > **Status: early development.** Gateways can be added (FAM-USB, FGW14-USB,
-> MGW-ETH, Symcon LAN, generic ESP2/ESP3; USB or ser2net) and stay connected.
-> Received telegrams show up in the diagnostics and can be recorded with the
-> action `enocean_eltako.capture`; there are no devices yet. Do not use it in
+> FAM14, MGW-ETH with discovery, Symcon LAN, generic ESP2/ESP3; USB or ser2net)
+> and stay connected. FGW14-USB and FAM14 on the same bus form a bus group with
+> failover; the FAM14 can stay disconnected until it is needed. Received
+> telegrams show up in the diagnostics and can be recorded with the action
+> `enocean_eltako.capture`; there are no devices yet. Do not use it in
 > production. The existing `eltako`
 > integration keeps running in parallel; this one uses its own domain
 > `enocean_eltako`.
