@@ -1,0 +1,7 @@
+{
+  "config": {
+    "abort": {
+      "not_implemented": "Die Einrichtung von Gateways ist noch nicht umgesetzt. Die Integration befindet sich in einer frühen Entwicklungsphase."
+    }
+  }
+}

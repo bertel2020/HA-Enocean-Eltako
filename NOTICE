@@ -1,0 +1,30 @@
+HA-Enocean-Eltako
+Copyright (c) 2026 Roberto / bertel2020
+Licensed under the MIT License (see LICENSE).
+
+All code in this repository is original work. It contains no code from other
+EnOcean or Eltako projects.
+
+EnOcean Equipment Profiles (EEP)
+--------------------------------
+The standard EEP codecs in custom_components/enocean_eltako/protocol/eep/std/
+are generated from the EnOcean Equipment Profiles published by the EnOcean
+Alliance (https://www.enocean-alliance.org). They contain technical facts only
+(bit positions, scaling, value tables); no specification text is reproduced.
+The official XML, PDF and test files are not part of this repository.
+
+According to the EnOcean Alliance, the EEP specification and definitions are
+free of charge for non-commercial purposes. Using them in the development of a
+product or service for sale requires membership in the EnOcean Alliance and/or
+joint ownership of the relevant IPR. If you use this code commercially, check
+these terms with the EnOcean Alliance yourself. The MIT License of this
+repository does not grant any rights to the EnOcean Alliance's specifications.
+
+Eltako telegram formats
+-----------------------
+Eltako-specific telegram layouts are implemented from Eltako's public document
+"Inhalte der Eltako-Funktelegramme" and device manuals. No text from these
+documents is reproduced.
+
+EnOcean is a registered trademark of EnOcean GmbH. Eltako is a registered
+trademark of Eltako GmbH. This project is not affiliated with either company.
