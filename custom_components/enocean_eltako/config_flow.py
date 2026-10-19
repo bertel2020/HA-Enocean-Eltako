@@ -42,14 +42,17 @@ from .const import (
     CONF_MODEL,
     CONF_NAME,
     CONF_PATH,
+    CONF_REPEATER,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
     MODE_ALWAYS,
     MODE_ON_DEMAND,
+    REPEATER_LEVELS,
+    REPEATER_UNCHANGED,
 )
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
-from .protocol.models import MODELS, GatewayModel
+from .protocol.models import MODELS, GatewayModel, Protocol
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .subentry_flow import SUBENTRY_FLOWS
 
@@ -380,7 +383,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
-    """Runtime options: send spacing and, for bus gateways, always vs on demand."""
+    """Runtime options: send spacing; bus gateways always vs on demand; ESP3 repeater."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -399,6 +402,14 @@ class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
                 SelectSelectorConfig(
                     options=[MODE_ALWAYS, MODE_ON_DEMAND],
                     translation_key=CONF_MODE,
+                    mode=SelectSelectorMode.LIST,
+                )
+            )
+        if MODELS[self.config_entry.data[CONF_MODEL]].protocol is Protocol.ESP3:
+            schema[vol.Required(CONF_REPEATER, default=REPEATER_UNCHANGED)] = SelectSelector(
+                SelectSelectorConfig(
+                    options=[REPEATER_UNCHANGED, *REPEATER_LEVELS],
+                    translation_key=CONF_REPEATER,
                     mode=SelectSelectorMode.LIST,
                 )
             )

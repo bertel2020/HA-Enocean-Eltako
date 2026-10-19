@@ -62,3 +62,17 @@ def test_decoder_resyncs_after_crc_error(corrupt: int) -> None:
     for byte in stream:
         packets += decoder.feed(bytes([byte]))
     assert packets == [esp3.Esp3Packet(esp3.PacketType.COMMON_COMMAND, b"\x08")]
+
+
+def test_encode_repeater() -> None:
+    import pytest
+
+    from custom_components.enocean_eltako.protocol import esp3
+
+    (packet,) = esp3.Esp3Decoder().feed(esp3.encode_repeater(2))
+    assert packet.packet_type == esp3.PacketType.COMMON_COMMAND
+    assert packet.data == bytes([esp3.CO_WR_REPEATER, 1, 2])
+    (off,) = esp3.Esp3Decoder().feed(esp3.encode_repeater(0))
+    assert off.data == bytes([esp3.CO_WR_REPEATER, 0, 0])
+    with pytest.raises(ValueError):
+        esp3.encode_repeater(3)

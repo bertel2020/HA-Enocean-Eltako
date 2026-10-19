@@ -103,3 +103,37 @@ async def test_renaming_the_entry_renames_the_gateway_device(hass: HomeAssistant
         (DOMAIN, entry.entry_id), entry.entry_id
     )
     assert device.name == "Funk Erdgeschoss"
+
+
+async def test_repeater_level_is_written_on_connect(hass: HomeAssistant) -> None:
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.enocean_eltako.protocol import esp3
+
+    server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-8A-1B-00",
+        data={
+            "model": "mgw_eth",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-8A-1B-00",
+        },
+        options={"message_delay": 0, "repeater": "2"},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    for _ in range(50):
+        if esp3.encode_repeater(2) in bytes(server.received):
+            break
+        await asyncio.sleep(0.02)
+    assert esp3.encode_repeater(2) in bytes(server.received)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_options_offer_repeater_only_for_esp3(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway  # FAM-USB, ESP2
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert "repeater" not in result["data_schema"].schema

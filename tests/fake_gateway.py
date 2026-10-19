@@ -54,6 +54,8 @@ class FakeGateway:
                         esp2.HSeq.RMT, esp2.MSG_INF_IDBASE, self.base_id.to_bytes(4, "big")
                     ).encode()
                 )
+            elif data[:7] == esp3.encode_repeater(0)[:7]:  # CO_WR_REPEATER header
+                writer.write(esp3.Esp3Packet(esp3.PacketType.RESPONSE, b"\x00").encode())
             elif data == esp3.encode_common_command(esp3.CO_RD_IDBASE):
                 writer.write(
                     esp3.Esp3Packet(

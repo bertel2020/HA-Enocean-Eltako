@@ -16,6 +16,9 @@ CONF_BAUDRATE: Final = "baudrate"
 BAUDRATES: Final = (9600, 57600, 115200)
 CONF_BUS_GROUP: Final = "bus_group"
 CONF_MODE: Final = "mode"
+CONF_REPEATER: Final = "repeater"  # ESP3 gateways: unchanged | off | 1 | 2
+REPEATER_UNCHANGED: Final = "unchanged"
+REPEATER_LEVELS: Final = {"off": 0, "1": 1, "2": 2}
 CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
 
 MODE_ALWAYS: Final = "always"

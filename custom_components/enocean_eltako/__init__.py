@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -36,12 +37,15 @@ from .const import (
     CONF_MODE,
     CONF_MODEL,
     CONF_PROFILE,
+    CONF_REPEATER,
     CONF_SENDER_ID,
     CONF_SENDERS,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
     MODE_ALWAYS,
     MODE_ON_DEMAND,
+    REPEATER_LEVELS,
+    REPEATER_UNCHANGED,
 )
 from .device import EnOceanDevice
 from .health import async_setup_health
@@ -50,7 +54,7 @@ from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
 from .protocol.ids import parse_id
-from .protocol.models import MODELS
+from .protocol.models import MODELS, Protocol
 from .protocol.send_queue import Priority, SendQueue
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram
@@ -59,6 +63,8 @@ from .senders import SenderStore, async_remove_store, bus_key, radio_key
 from .services import async_setup_services
 from .subentry_flow import sender_owner
 from .websocket import async_setup_websocket
+
+_LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -128,6 +134,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
             entry.runtime_data.disconnected_since = None if connected else time.time()
             for listener in list(entry.runtime_data.connection_listeners):
                 listener()
+            if connected:
+                _async_apply_repeater(hass, entry)
 
     gateway = Gateway(
         model.protocol,
@@ -183,6 +191,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         serial_number=entry.data[CONF_BASE_ID],
     )
     _async_setup_devices(hass, entry)
+    if gateway.connected:
+        _async_apply_repeater(hass, entry)
     entry.runtime_data.health_check = async_setup_health(hass, entry)
     _async_request_states(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -191,6 +201,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         entry.async_create_background_task(hass, gateway.run(), f"{DOMAIN} {entry.title}")
     entry.async_create_background_task(hass, queue.run(), f"{DOMAIN} {entry.title} queue")
     return True
+
+
+@callback
+def _async_apply_repeater(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """ESP3 gateways: set the chosen repeater level after every (re)connect."""
+    level = REPEATER_LEVELS.get(entry.options.get(CONF_REPEATER, REPEATER_UNCHANGED))
+    if level is None or MODELS[entry.data[CONF_MODEL]].protocol is not Protocol.ESP3:
+        return
+
+    async def write() -> None:
+        try:
+            ok = await entry.runtime_data.gateway.write_repeater(level)
+        except ConnectionError:
+            ok = False
+        if not ok:
+            _LOGGER.warning("%s did not accept repeater level %s", entry.title, level)
+
+    entry.async_create_background_task(hass, write(), f"{DOMAIN} {entry.title} repeater")
 
 
 def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

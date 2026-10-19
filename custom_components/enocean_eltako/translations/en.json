@@ -192,6 +192,14 @@
         "eltako_a5_12_02": "Eltako · A5-12-02 Gas meter",
         "eltako_a5_12_03": "Eltako · A5-12-03 Water meter"
       }
+    },
+    "repeater": {
+      "options": {
+        "unchanged": "Unchanged (gateway setting)",
+        "off": "Off",
+        "1": "Level 1",
+        "2": "Level 2"
+      }
     }
   },
   "exceptions": {
@@ -234,11 +242,13 @@
         "title": "Gateway options",
         "data": {
           "message_delay": "Pause between telegrams",
-          "mode": "Connection"
+          "mode": "Connection",
+          "repeater": "Repeater"
         },
         "data_description": {
           "message_delay": "Minimum time between two telegrams sent by this gateway.",
-          "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between."
+          "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between.",
+          "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect."
         }
       }
     }

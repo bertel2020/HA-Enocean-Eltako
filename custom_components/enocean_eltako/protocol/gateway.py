@@ -133,6 +133,19 @@ class Gateway:
         )
         return self._codec.base_id(response) if response is not None else None
 
+    async def write_repeater(self, level: int, timeout: float = 3) -> bool:
+        """ESP3 gateways: set the repeater (0 off, 1 or 2 levels); True when acknowledged."""
+        if self.protocol is not Protocol.ESP3:
+            raise ValueError("only ESP3 gateways have a repeater command")
+        response = await self._command(
+            esp3.encode_repeater(level),
+            timeout,
+            lambda item: (
+                isinstance(item, esp3.Esp3Packet) and item.packet_type == esp3.PacketType.RESPONSE
+            ),
+        )
+        return isinstance(response, esp3.Esp3Packet) and esp3.is_ok(response)
+
     async def send(self, telegram: RadioTelegram) -> None:
         """Write one radio telegram; raises ConnectionError when not connected."""
         await self._write(self._codec.encode_radio(telegram))

@@ -34,6 +34,7 @@ class ReturnCode(IntEnum):
 
 CO_RD_VERSION = 0x03
 CO_RD_IDBASE = 0x08
+CO_WR_REPEATER = 0x09  # REP_ENABLE (0/1), REP_LEVEL (0, 1 or 2)
 
 
 def _table() -> list[int]:
@@ -142,6 +143,17 @@ def encode_radio(telegram: RadioTelegram) -> bytes:
 
 def encode_common_command(code: int, params: bytes = b"") -> bytes:
     return Esp3Packet(PacketType.COMMON_COMMAND, bytes([code]) + params).encode()
+
+
+def encode_repeater(level: int) -> bytes:
+    """CO_WR_REPEATER: level 0 switches repeating off, 1 or 2 repeats once or twice."""
+    if level not in (0, 1, 2):
+        raise ValueError(f"repeater level must be 0, 1 or 2, not {level}")
+    return encode_common_command(CO_WR_REPEATER, bytes([1 if level else 0, level]))
+
+
+def is_ok(packet: Esp3Packet) -> bool:
+    return packet.packet_type == PacketType.RESPONSE and packet.data[:1] == bytes([ReturnCode.OK])
 
 
 def parse_base_id(packet: Esp3Packet) -> int | None:

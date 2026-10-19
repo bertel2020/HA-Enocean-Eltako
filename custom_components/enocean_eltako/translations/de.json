@@ -192,6 +192,14 @@
         "eltako_a5_12_02": "Eltako · A5-12-02 Gaszähler",
         "eltako_a5_12_03": "Eltako · A5-12-03 Wasserzähler"
       }
+    },
+    "repeater": {
+      "options": {
+        "unchanged": "Unverändert (Einstellung des Gateways)",
+        "off": "Aus",
+        "1": "Stufe 1",
+        "2": "Stufe 2"
+      }
     }
   },
   "exceptions": {
@@ -234,11 +242,13 @@
         "title": "Gateway-Optionen",
         "data": {
           "message_delay": "Pause zwischen Telegrammen",
-          "mode": "Verbindung"
+          "mode": "Verbindung",
+          "repeater": "Repeater"
         },
         "data_description": {
           "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
-          "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen."
+          "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen.",
+          "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt."
         }
       }
     }
