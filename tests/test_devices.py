@@ -1290,3 +1290,18 @@ async def test_blind_tilt(hass: HomeAssistant, gateway) -> None:
     state = hass.states.get(entity_id)
     assert state.attributes["current_tilt_position"] == 40
     assert state.attributes["current_position"] == 100
+
+
+@pytest.mark.parametrize(
+    "gateway", [[_subentry("meter", "05-00-00-15", "Zähler Küche")]], indirect=True
+)
+async def test_meter_serial_number(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    prefix = f"{BASE}_05-00-00-15_1"
+    _push(server, 0x07, bytes.fromhex("1B0A008F"), 0x05000015)  # S1 S0 00
+    _push(server, 0x07, bytes.fromhex("3D2C018F"), 0x05000015)  # S3 S2 01
+    await _settle(hass)
+    serial = hass.states.get(_entity(hass, "sensor", f"{prefix}_serial_number"))
+    assert serial.state == "0A 1B 2C 3D"
+    power = hass.states.get(_entity(hass, "sensor", f"{prefix}_power"))
+    assert power.state == "unknown"  # the serial telegrams are no power readings

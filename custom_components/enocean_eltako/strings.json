@@ -633,6 +633,9 @@
       },
       "sender_id_cooling": {
         "name": "Sender ID cooling switch"
+      },
+      "serial_number": {
+        "name": "Serial number"
       }
     },
     "binary_sensor": {

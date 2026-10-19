@@ -633,6 +633,9 @@
       },
       "sender_id_cooling": {
         "name": "Sender-ID Kühlschalter"
+      },
+      "serial_number": {
+        "name": "Seriennummer"
       }
     },
     "binary_sensor": {

@@ -299,6 +299,12 @@ async def async_setup_entry(
         entities: list[SensorEntity] = [EnOceanSensor(device, d) for d in descriptions]
         if device.model.kind == "meter":
             entities.append(MeterTotalSensor(device))
+        if (
+            device.model.receive is not None
+            and device.model.receive.variant == "eltako"
+            and (device.model.receive.eep.startswith("A5-12-"))
+        ):
+            entities.append(MeterSerialSensor(device))
         async_add_entities(entities, config_subentry_id=subentry_id)
 
 
@@ -335,6 +341,34 @@ def _decreases(current: Any, new: Any) -> bool:
         return current is not None and float(new) < float(current)
     except (TypeError, ValueError):
         return False
+
+
+class MeterSerialSensor(EnOceanEntity, RestoreSensor):
+    """E7: serial number of Eltako meters, sent in two telegrams (S0 S1, then S2 S3)."""
+
+    _attr_translation_key = "serial_number"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "serial_number")
+        self._parts: dict[int, bytes] = {}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None:
+            self._attr_native_value = last.native_value
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        if "serial_part" not in values:
+            return False
+        self._parts[values["serial_part"]] = values["serial_bytes"]
+        if len(self._parts) < 2:
+            return False
+        serial = (self._parts[0] + self._parts[1]).hex(" ").upper()
+        if serial == self._attr_native_value:
+            return False
+        self._attr_native_value = serial
+        return True
 
 
 class MeterTotalSensor(EnOceanEntity, RestoreSensor):

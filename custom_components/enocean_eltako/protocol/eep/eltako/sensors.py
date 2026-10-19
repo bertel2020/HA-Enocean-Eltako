@@ -10,8 +10,9 @@ A5-10-06:eltako (FUTH, FTR65HS, FTAF55D): DB3 = night setback 0...5 K
     DB0.0 = slide switch / day-night.
 
 A5-12-01/02/03:eltako (FWZ12, FSDG14, DSZ14DRS, F3Z14D for electricity, gas and water): data
-    telegrams as official; the meters also send their serial number in two telegrams with
-    DB0 = 0x8F, which a standard decoder would read as a current value. Those are dropped.
+    telegrams as official; the meters also send their serial number S0 S1 S2 S3 in two telegrams
+    with DB0 = 0x8F (TI 8, DT 1, DIV 3), which a standard decoder would read as a current value:
+    DB3..DB1 = S1 S0 00 and S3 S2 01. They are returned as serial parts, not as readings.
 
 A5-13-01:eltako (FWS61, FWG14): weather station sending two telegrams under one ID, told
     apart by the identifier in DB0.7...4 (1 = official A5-13-01 layout, 2 = A5-13-02).
@@ -43,9 +44,16 @@ def decode_room_controller(data: bytes) -> dict[str, Any] | None:
     }
 
 
+SERIAL_TELEGRAM = 0x8F
+
+
 def decode_meter(data: bytes, eep: str = "A5-12-01") -> dict[str, Any] | None:
-    if len(data) != 4 or not data[3] & 0x08 or data[3] == 0x8F:
+    if len(data) != 4 or not data[3] & 0x08:
         return None
+    if data[3] == SERIAL_TELEGRAM:
+        if data[2] not in (0, 1):
+            return None
+        return {"serial_part": data[2], "serial_bytes": bytes([data[1], data[0]])}
     values = decode(PROFILES[eep], data)
     values.pop("LRNB", None)
     return values
