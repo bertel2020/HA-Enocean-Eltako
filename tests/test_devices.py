@@ -1118,3 +1118,55 @@ async def test_enocean_id_sensor(hass: HomeAssistant, gateway) -> None:
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == "01-00-00-07"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-00-00-32",
+                "Licht",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-81"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-82"},
+                ],
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_sender_id_sensors(hass: HomeAssistant, gateway) -> None:
+    prefix = f"{BASE}_05-00-00-32_1"
+    central = hass.states.get(_entity(hass, "sensor", f"{prefix}_sender_id_central"))
+    rocker = hass.states.get(_entity(hass, "sensor", f"{prefix}_sender_id_rocker"))
+    assert central.state == "FF-B7-44-81"
+    assert rocker.state == "FF-B7-44-82"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-00-00-33",
+                "Flur",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-83"}],
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_removed_sender_profile_drops_its_entities(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    registry = er.async_get(hass)
+    prefix = f"{BASE}_05-00-00-33_1"
+    registry.async_get_or_create("sensor", DOMAIN, f"{prefix}_sender_id_rocker", config_entry=entry)
+    registry.async_get_or_create("button", DOMAIN, f"{prefix}_teach_in_rocker", config_entry=entry)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get_entity_id("sensor", DOMAIN, f"{prefix}_sender_id_rocker") is None
+    assert registry.async_get_entity_id("button", DOMAIN, f"{prefix}_teach_in_rocker") is None
+    assert _entity(hass, "sensor", f"{prefix}_sender_id_central") is not None

@@ -582,6 +582,18 @@
       },
       "enocean_id": {
         "name": "EnOcean ID"
+      },
+      "sender_id_central": {
+        "name": "Sender ID central command"
+      },
+      "sender_id_rocker": {
+        "name": "Sender ID rocker"
+      },
+      "sender_id_controller": {
+        "name": "Sender ID controller"
+      },
+      "sender_id_direction_rocker": {
+        "name": "Sender ID direction rocker"
       }
     },
     "binary_sensor": {

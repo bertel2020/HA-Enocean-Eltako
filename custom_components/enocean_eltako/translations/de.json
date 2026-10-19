@@ -582,6 +582,18 @@
       },
       "enocean_id": {
         "name": "EnOcean-ID"
+      },
+      "sender_id_central": {
+        "name": "Sender-ID Zentralbefehl"
+      },
+      "sender_id_rocker": {
+        "name": "Sender-ID Taster"
+      },
+      "sender_id_controller": {
+        "name": "Sender-ID Controller"
+      },
+      "sender_id_direction_rocker": {
+        "name": "Sender-ID Richtungstaster"
       }
     },
     "binary_sensor": {

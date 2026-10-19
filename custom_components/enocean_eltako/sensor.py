@@ -258,6 +258,7 @@ async def async_setup_entry(
             LastSeenSensor(device),
             RssiSensor(device),
             EnOceanIdSensor(device),
+            *(SenderIdSensor(device, profile) for profile in device.senders),
         ]
         if device.senders:
             diagnostics.append(CommandSuccessSensor(device))
@@ -377,6 +378,24 @@ class EnOceanIdSensor(EnOceanEntity, SensorEntity):
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "enocean_id")
         self._attr_native_value = format_id(device.device_id)
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class SenderIdSensor(EnOceanEntity, SensorEntity):
+    """Sender ID Home Assistant commands the device with, one per configured profile."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, device: EnOceanDevice, profile: str) -> None:
+        super().__init__(device, f"sender_id_{profile}")
+        self._attr_translation_key = f"sender_id_{profile}"
+        self._attr_native_value = format_id(device.senders[profile])
 
     @property
     def available(self) -> bool:

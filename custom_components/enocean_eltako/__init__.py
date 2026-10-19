@@ -199,7 +199,7 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         runtime.devices[subentry_id] = device
         entry.async_on_unload(device.start())
         owners.update(sender_owner(device.device_id, p) for p in device.senders)
-    _async_remove_other_platform(hass, entry)
+    _async_remove_stale_entities(hass, entry)
     pool = runtime.senders.pool
     released = False
     for sender, allocation in pool.allocations():
@@ -214,17 +214,23 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         runtime.senders.async_schedule_save()
 
 
-def _async_remove_other_platform(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Switch shown as light or switch: drop the entity of the type no longer chosen."""
+def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """Drop entities of choices no longer made: light vs. switch, removed sender profiles."""
     registry = er.async_get(hass)
+    stale: list[tuple[str, str]] = []
     for device in entry.runtime_data.devices.values():
-        if device.model.kind not in ("switch", "psc"):
-            continue
-        default = Platform.LIGHT if device.model.kind == "switch" else Platform.SWITCH
-        chosen = device.options.get(OPT_PLATFORM, default)
-        other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
-        unique_id = f"{device.unique_prefix}_1_{'light' if other == Platform.LIGHT else 'switch'}"
-        if entity_id := registry.async_get_entity_id(other, DOMAIN, unique_id):
+        prefix = f"{device.unique_prefix}_1"
+        if device.model.kind in ("switch", "psc"):
+            default = Platform.LIGHT if device.model.kind == "switch" else Platform.SWITCH
+            chosen = device.options.get(OPT_PLATFORM, default)
+            other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
+            stale.append((other, f"{prefix}_{'light' if other == Platform.LIGHT else 'switch'}"))
+        for profile in device.model.senders:
+            if profile.id not in device.senders:
+                stale.append((Platform.SENSOR, f"{prefix}_sender_id_{profile.id}"))
+                stale.append((Platform.BUTTON, f"{prefix}_teach_in_{profile.id}"))
+    for platform, unique_id in stale:
+        if entity_id := registry.async_get_entity_id(platform, DOMAIN, unique_id):
             registry.async_remove(entity_id)
 
 
