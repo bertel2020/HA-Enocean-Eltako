@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import voluptuous as vol
 from homeassistant.config_entries import (
+    SOURCE_ZEROCONF,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
@@ -26,6 +27,7 @@ from homeassistant.helpers.selector import (
     SerialPortSelector,
     TextSelector,
 )
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from .const import (
     BAUDRATES,
@@ -99,6 +101,41 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 }
             ),
+        )
+
+    async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
+        """A PioTek MGW-ETH announced itself (_bsc-sc-socket._tcp)."""
+        model = MODELS["mgw_eth"]
+        host = discovery_info.host
+        port = discovery_info.port or model.default_port or 0
+        for entry in self._async_current_entries(include_ignore=False):
+            device = entry.data.get(CONF_DEVICE, {})
+            if device.get("type") == "tcp" and device.get(CONF_HOST) == host:
+                return self.async_abort(reason="already_configured")
+        # until the base ID is known, the host identifies the discovery (and its "ignore")
+        await self.async_set_unique_id(f"zeroconf_{host}")
+        self._abort_if_unique_id_configured()
+        self._model = model
+        self._connection = TcpConnection(host, port)
+        self.context["title_placeholders"] = {"name": f"{model.name} ({host})"}
+        return await self.async_step_zeroconf_confirm()
+
+    async def async_step_zeroconf_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        assert self._model is not None and self._connection is not None
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            result = await self._async_test_connection(errors)
+            if result is not None:
+                return result
+        return self.async_show_form(
+            step_id="zeroconf_confirm",
+            errors=errors,
+            description_placeholders={
+                "model": self._model.name,
+                "connection": str(self._connection),
+            },
         )
 
     async def async_step_connection(
@@ -201,8 +238,14 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _async_create(self, base_id: int) -> ConfigFlowResult:
         assert self._model is not None
-        await self.async_set_unique_id(format_id(base_id))
-        self._abort_if_unique_id_configured()
+        await self.async_set_unique_id(format_id(base_id), raise_on_progress=False)
+        # a rediscovered gateway with a new address updates its entry
+        updates = (
+            {CONF_DEVICE: self._connection.as_dict()}
+            if self.source == SOURCE_ZEROCONF and self._connection is not None
+            else None
+        )
+        self._abort_if_unique_id_configured(updates=updates)
         self._base_id = base_id
         if self._model.bus:
             return await self.async_step_bus_group()

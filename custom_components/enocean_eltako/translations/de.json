@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Gateway hinzufügen",
@@ -56,6 +57,10 @@
         "data": {
           "bus_group": "Bus"
         }
+      },
+      "zeroconf_confirm": {
+        "title": "Gateway gefunden",
+        "description": "Unter {connection} wurde ein {model} gefunden. Hinzufügen?"
       }
     },
     "error": {

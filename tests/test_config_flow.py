@@ -218,3 +218,88 @@ async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> No
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert set(result["data_schema"].schema) == {"message_delay"}
+
+
+def _zeroconf(host: str, port: int):
+    from ipaddress import ip_address
+
+    from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+
+    return ZeroconfServiceInfo(
+        ip_address=ip_address(host),
+        ip_addresses=[ip_address(host)],
+        port=port,
+        hostname="mgw.local.",
+        type="_bsc-sc-socket._tcp.local.",
+        name="MGW._bsc-sc-socket._tcp.local.",
+        properties={},
+    )
+
+
+async def test_zeroconf_discovers_mgw(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_ZEROCONF},
+            data=_zeroconf("127.0.0.1", server.port),
+        )
+        assert result["step_id"] == "zeroconf_confirm"
+        assert result["description_placeholders"]["connection"] == f"127.0.0.1:{server.port}"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    finally:
+        await server.stop()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "PioTek MGW-ETH FF-8A-1B-00"
+    assert result["result"].unique_id == "FF-8A-1B-00"
+    assert result["data"]["model"] == "mgw_eth"
+
+
+async def test_zeroconf_known_host_aborts(hass: HomeAssistant) -> None:
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-8A-1B-00",
+        data={"model": "mgw_eth", "device": {"type": "tcp", "host": "127.0.0.1", "port": 5100}},
+    ).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=_zeroconf("127.0.0.1", 5100),
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_zeroconf_new_address_updates_entry(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-8A-1B-00",
+        data={"model": "mgw_eth", "device": {"type": "tcp", "host": "192.0.2.7", "port": 5100}},
+    )
+    entry.add_to_hass(hass)
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_ZEROCONF},
+            data=_zeroconf("127.0.0.1", server.port),
+        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    finally:
+        await server.stop()
+    assert result["type"] is FlowResultType.ABORT
+    assert entry.data["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
+
+
+async def test_zeroconf_confirm_cannot_connect(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP3).start()
+    port = server.port
+    await server.stop()
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=_zeroconf("127.0.0.1", port),
+    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["step_id"] == "zeroconf_confirm"
+    assert result["errors"] == {"base": "cannot_connect"}
