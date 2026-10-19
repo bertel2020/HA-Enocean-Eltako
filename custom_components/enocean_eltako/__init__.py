@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.core import CoreState, HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
-from .catalog import CATALOG, PLATFORMS
+from .catalog import CATALOG, CENTRAL, OPT_STATUS_REQUEST, PLATFORMS, STATUS_REQUEST
 from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
@@ -37,7 +40,7 @@ from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
 from .protocol.ids import parse_id
 from .protocol.models import MODELS
-from .protocol.send_queue import SendQueue
+from .protocol.send_queue import Priority, SendQueue
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
@@ -163,6 +166,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     )
     _async_setup_devices(hass, entry)
     entry.runtime_data.health_check = async_setup_health(hass, entry)
+    _async_request_states(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_change))
     if not on_demand:
@@ -192,6 +196,30 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
             released = True
     if released:
         runtime.senders.async_schedule_save()
+
+
+def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """E2: ask actuators that support it for their state, at background priority.
+
+    The send queue spaces them out; actuators without a query report on their next change.
+    """
+
+    @callback
+    def request(_event: Any = None) -> None:
+        for device in entry.runtime_data.devices.values():
+            if device.options.get(OPT_STATUS_REQUEST) and device.has_sender(CENTRAL.id):
+                with contextlib.suppress(HomeAssistantError):
+                    device.send(
+                        STATUS_REQUEST,
+                        profile=CENTRAL.id,
+                        priority=Priority.BACKGROUND,
+                        confirm=False,
+                    )
+
+    if hass.state is CoreState.running:
+        request()
+    else:
+        entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, request))
 
 
 async def _async_reload_on_change(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

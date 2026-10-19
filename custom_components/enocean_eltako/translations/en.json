@@ -223,7 +223,8 @@
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
             "send_interval": "Send interval",
-            "unavailable_when_silent": "Unavailable when silent"
+            "unavailable_when_silent": "Unavailable when silent",
+            "status_request": "Ask for the state at startup"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
@@ -232,7 +233,8 @@
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
-            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval."
+            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
+            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report."
           }
         },
         "reconfigure": {
@@ -254,7 +256,8 @@
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
             "send_interval": "Send interval",
-            "unavailable_when_silent": "Unavailable when silent"
+            "unavailable_when_silent": "Unavailable when silent",
+            "status_request": "Ask for the state at startup"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -262,7 +265,8 @@
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
-            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval."
+            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
+            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report."
           }
         },
         "address": {

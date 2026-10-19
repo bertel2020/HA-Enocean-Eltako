@@ -30,6 +30,7 @@ from .catalog import (
     OPT_PLATFORM,
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
+    OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
@@ -84,6 +85,7 @@ OPTION_KEYS = (
     OPT_TEMPERATURE_SENSOR,
     OPT_SEND_INTERVAL,
     OPT_UNAVAILABLE_WHEN_SILENT,
+    OPT_STATUS_REQUEST,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -319,6 +321,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             )
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
+        if OPT_STATUS_REQUEST in model.options:
+            schema[vol.Required(OPT_STATUS_REQUEST, default=False)] = BooleanSelector()
         if model.interval:
             schema[vol.Required(OPT_UNAVAILABLE_WHEN_SILENT, default=False)] = BooleanSelector()
         return schema

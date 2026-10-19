@@ -27,6 +27,7 @@ OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
 OPT_OFF_BUTTON = "off_button"  # button that switches off, or "released"
 OPT_TEMPERATURE_SENSOR = "temperature_sensor"  # heating: entity with the room temperature
 OPT_SEND_INTERVAL = "send_interval"  # heating: seconds between controller telegrams
+OPT_STATUS_REQUEST = "status_request"  # E2: actuator answers "send confirmation" (FL62, FD62)
 OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
@@ -51,6 +52,8 @@ def _std_switch(on: bool) -> bytes:
     return encode(profile, {"EDIM": 100 if on else 0, "RMP": 0, "LRNB": 1, "SW": int(on)}, case)
 
 
+# E2: "request confirmation telegram" understood by FL62, FR62, FD62 (4BS from the central sender)
+STATUS_REQUEST = bytes.fromhex("00000008")
 ROCKER_PRESS_UP = bytes([0x70])  # B0: on / up
 ROCKER_PRESS_DOWN = bytes([0x50])  # BI: off / down
 ROCKER_STATUS_PRESSED = 0x30
@@ -110,6 +113,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("M5-38-08:eltako"),
             (Platform.LIGHT, Platform.SWITCH),
             senders=(CENTRAL, ROCKER),
+            options=(OPT_STATUS_REQUEST,),
             examples="FSR61, FSR14, FL62, FSR71",
         ),
         DeviceModel(
@@ -117,6 +121,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("A5-38-08:eltako"),
             (Platform.LIGHT,),
             senders=(CENTRAL, ROCKER),
+            options=(OPT_STATUS_REQUEST,),
             examples="FUD14, FUD61, FD62",
         ),
         DeviceModel(

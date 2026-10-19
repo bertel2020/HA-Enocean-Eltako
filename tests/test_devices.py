@@ -688,3 +688,33 @@ async def test_rssi_from_esp3(hass: HomeAssistant, esp3_gateway) -> None:
     assert device.stats.rssi == -64
     assert (device.stats.rssi_min, device.stats.rssi_max) == (-64, -45)
     assert device.stats.repeat_count == 1
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-00-00-61",
+                "Licht FL62",
+                platform="light",
+                status_request=True,
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-B0"}],
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_state_request_and_assumed_state(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    await _settle(hass)
+    query = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00000008"), 0xFFB744B0))
+    assert query in bytes(server.received)
+    entity_id = _entity(hass, "light", f"{BASE}_05-00-00-61_1_light")
+    assert hass.states.get(entity_id).attributes.get("assumed_state") is True
+    _push(server, 0x05, b"\x50", 0x05000061, 0x30)
+    await _settle(hass)
+    state = hass.states.get(entity_id)
+    assert state.state == "off"
+    assert "assumed_state" not in state.attributes

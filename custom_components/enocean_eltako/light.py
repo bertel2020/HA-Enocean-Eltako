@@ -55,6 +55,7 @@ async def async_setup_entry(
 
 class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
     _attr_name = None
+    _assume_until_heard = True
     _attr_color_mode = ColorMode.ONOFF
     _attr_supported_color_modes = {ColorMode.ONOFF}
 

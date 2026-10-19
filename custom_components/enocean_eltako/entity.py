@@ -14,6 +14,9 @@ from .device import EnOceanDevice
 class EnOceanEntity(Entity):
     _attr_has_entity_name = True
     _attr_should_poll = False
+    # E2: actuator states restored after a restart count as assumed until the device reports
+    _assume_until_heard = False
+    _heard = False
 
     def __init__(self, device: EnOceanDevice, key: str) -> None:
         self._device = device
@@ -33,6 +36,10 @@ class EnOceanEntity(Entity):
             self.async_write_ha_state()
 
     @property
+    def assumed_state(self) -> bool:
+        return self._assume_until_heard and not self._heard
+
+    @property
     def available(self) -> bool:
         """E5 option: unavailable while the device is silent."""
         return not (self._device.silent and self._device.options.get(OPT_UNAVAILABLE_WHEN_SILENT))
@@ -40,7 +47,11 @@ class EnOceanEntity(Entity):
     @callback
     def _handle_values(self, values: dict[str, Any]) -> None:
         # write state only on a real change (cyclic repetitions are common)
-        if self._apply(values):
+        changed = self._apply(values)
+        if self._assume_until_heard and not self._heard:
+            self._heard = True
+            changed = True
+        if changed:
             self.async_write_ha_state()
 
     def _apply(self, values: dict[str, Any]) -> bool:

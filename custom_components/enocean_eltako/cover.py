@@ -62,6 +62,7 @@ async def async_setup_entry(
 
 class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
     _attr_name = None
+    _assume_until_heard = True
     _attr_device_class = CoverDeviceClass.SHUTTER
     _attr_supported_features = (
         CoverEntityFeature.OPEN

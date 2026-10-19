@@ -34,6 +34,7 @@ async def async_setup_entry(
 
 class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
     _attr_name = None
+    _assume_until_heard = True
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "switch")
