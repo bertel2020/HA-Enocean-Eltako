@@ -30,6 +30,10 @@ jobs:
         run: ruff format --check custom_components tests scripts
       - name: Protocol layer import check
         run: python scripts/check_protocol_imports.py
+      - name: Fetch official EEP definitions (not committed, see NOTICE)
+        run: python scripts/fetch_eep.py --generated
+      - name: Generated EEP profiles up to date
+        run: python scripts/generate_eep.py --check
       - name: Run tests
         run: python -m pytest -q
 

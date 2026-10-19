@@ -7,6 +7,7 @@ by the generator and tests during development and CI.
 Usage:
     python scripts/fetch_eep.py                 # all profiles
     python scripts/fetch_eep.py A5-38-08 D2-01  # profiles or prefixes
+    python scripts/fetch_eep.py --generated     # the profiles generate_eep.py needs
 """
 
 from __future__ import annotations
@@ -67,6 +68,11 @@ def _referenced_profile(path: Path) -> str | None:
 
 
 def main(argv: list[str]) -> int:
+    if argv == ["--generated"]:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from generate_eep import PROFILES
+
+        argv = list(PROFILES)
     CACHE.mkdir(exist_ok=True)
     raw = _get(INDEX_URL)
     if raw is None:
@@ -75,6 +81,7 @@ def main(argv: list[str]) -> int:
     (CACHE / "eep-viewer-desc.json").write_bytes(raw)
     profiles = list_profiles(json.loads(raw.decode("utf-8-sig")))
     wanted = [p for p in profiles if not argv or any(p.startswith(a.upper()) for a in argv)]
+    wanted += [a.upper() for a in argv if len(a) == 8 and a.upper() not in wanted]
     missing = 0
     queue = list(wanted)
     while queue:
