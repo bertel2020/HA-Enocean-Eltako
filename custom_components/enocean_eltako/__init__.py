@@ -8,14 +8,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_DEVICE, CONF_MODEL, DOMAIN
+from .const import CONF_BASE_ID, CONF_DEVICE, CONF_MODEL, DOMAIN
 from .hub import Hub, async_get_hub
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
+from .protocol.ids import parse_id
 from .protocol.models import MODELS
 from .protocol.send_queue import SendQueue
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
+from .senders import SenderStore, async_remove_store
 
 
 @dataclass
@@ -25,6 +27,7 @@ class GatewayRuntime:
     hub: Hub
     gateway: Gateway
     queue: SendQueue
+    senders: SenderStore
 
 
 type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
@@ -51,7 +54,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
             translation_placeholders={"connection": str(gateway.connection), "error": str(err)},
         ) from err
     queue = SendQueue(gateway.send, is_connected=lambda: gateway.connected)
-    entry.runtime_data = GatewayRuntime(hub=hub, gateway=gateway, queue=queue)
+    pool = hub.senders.create_pool(entry.entry_id, parse_id(entry.data[CONF_BASE_ID]))
+    entry.async_on_unload(lambda: hub.senders.remove_pool(entry.entry_id))
+    senders = SenderStore(hass, entry.entry_id, pool)
+    await senders.async_load()
+    entry.runtime_data = GatewayRuntime(hub=hub, gateway=gateway, queue=queue, senders=senders)
 
     @callback
     def confirm(received: ReceivedTelegram) -> None:
@@ -69,3 +76,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
     await entry.runtime_data.queue.stop()
     await entry.runtime_data.gateway.close()
     return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """Delete the stored sender pool."""
+    await async_remove_store(hass, entry.entry_id)

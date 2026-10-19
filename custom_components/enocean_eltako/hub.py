@@ -9,6 +9,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
 from .protocol.dispatcher import Dispatcher
+from .protocol.sender_pool import SenderRegistry
 
 
 @dataclass
@@ -16,6 +17,7 @@ class Hub:
     """One per Home Assistant instance; every gateway entry feeds its dispatcher."""
 
     dispatcher: Dispatcher = field(default_factory=Dispatcher)
+    senders: SenderRegistry = field(default_factory=SenderRegistry)
 
 
 DATA_HUB: HassKey[Hub] = HassKey(DOMAIN)

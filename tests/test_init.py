@@ -1,6 +1,7 @@
 """Entry setup and unload."""
 
 import asyncio
+from datetime import timedelta
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -112,4 +113,31 @@ async def test_send_queue_writes_to_the_gateway(hass: HomeAssistant) -> None:
     await asyncio.sleep(0.05)
     assert bytes(server.received).endswith(esp2.encode_radio(telegram))
     assert await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_sender_pool_is_persisted(hass: HomeAssistant, hass_storage) -> None:
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass_storage[f"{DOMAIN}.senders.{entry.entry_id}"] = {
+        "version": 1,
+        "key": f"{DOMAIN}.senders.{entry.entry_id}",
+        "data": {"allocations": {"FF-B7-44-80": {"owner": "kept", "state": "assigned"}}},
+    }
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    senders = entry.runtime_data.senders
+    assert senders.pool.allocate("cover") == 0xFFB74481
+    senders.async_schedule_save()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
+    await hass.async_block_till_done()
+    saved = hass_storage[f"{DOMAIN}.senders.{entry.entry_id}"]["data"]["allocations"]
+    assert saved["FF-B7-44-81"] == {"owner": "cover", "state": "assigned"}
+
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert f"{DOMAIN}.senders.{entry.entry_id}" not in hass_storage
     await server.stop()
