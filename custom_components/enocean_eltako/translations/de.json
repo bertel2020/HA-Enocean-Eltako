@@ -399,7 +399,9 @@
             "double_press": "Doppelt innerhalb",
             "calibration": "Kalibrierung",
             "fields": "Angezeigte Werte",
-            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)"
+            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
+            "vent_time": "Lüftungsschlitz-Zeit",
+            "tilt_time": "Wendezeit Lamellen"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -412,7 +414,9 @@
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
-            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist."
+            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
+            "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
+            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
           }
         },
         "reconfigure": {
@@ -440,7 +444,9 @@
             "double_press": "Doppelt innerhalb",
             "calibration": "Kalibrierung",
             "fields": "Angezeigte Werte",
-            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)"
+            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
+            "vent_time": "Lüftungsschlitz-Zeit",
+            "tilt_time": "Wendezeit Lamellen"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -452,7 +458,9 @@
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
-            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist."
+            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
+            "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
+            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
           }
         },
         "address": {

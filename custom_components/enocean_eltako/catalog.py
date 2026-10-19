@@ -23,6 +23,8 @@ from .protocol.telegram import Rorg
 OPT_PLATFORM = "platform"
 OPT_TIME_OPENS = "time_opens"
 OPT_TIME_CLOSES = "time_closes"
+OPT_VENT_TIME = "vent_time"  # shutters: seconds at the end of the down run closing the slots
+OPT_TILT_TIME = "tilt_time"  # blinds: seconds for a full turn of the slats (0 = shutter)
 OPT_INVERT = "invert"
 OPT_DEVICE_CLASS = "device_class"
 OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
@@ -157,7 +159,14 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.COVER,),
             category="covers",
             senders=(CONTROLLER, DIRECTION_ROCKER),
-            options=(OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_ROUTING, OPT_CALIBRATION),
+            options=(
+                OPT_TIME_OPENS,
+                OPT_TIME_CLOSES,
+                OPT_VENT_TIME,
+                OPT_TILT_TIME,
+                OPT_ROUTING,
+                OPT_CALIBRATION,
+            ),
             examples="FSB14, FSB61, FSB71, FJ62",
         ),
         DeviceModel(

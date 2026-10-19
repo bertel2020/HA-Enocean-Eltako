@@ -38,3 +38,48 @@ def test_overrun_into_end_and_penalties() -> None:
     cover.restarted()
     cover.no_answer()
     assert cover.inaccuracy == 33
+
+
+def test_vent_slots_position_one_is_down_with_slots_open() -> None:
+    from custom_components.enocean_eltako.cover_position import CoverPosition
+
+    # 30 s down incl. 4 s for the slots, 30 s up
+    cover = CoverPosition(time_opens=30, time_closes=30, vent_time=4)
+    cover.anchor(100)
+    up, seconds = cover.partial_run(1)
+    assert not up and seconds == 26  # down to the bottom, slots stay open
+    cover.driven(26, up=False)
+    assert cover.position == 1
+    cover.driven(4, up=False)  # the slots close
+    assert cover.position == 0
+    up, seconds = cover.partial_run(50)
+    assert up and round(seconds, 2) == round(4 + 49 / 99 * 26, 2)  # slots open first
+    cover.driven(2, up=True)  # half the slot time: slots open
+    assert cover.position == 1
+
+
+def test_vent_slots_stay_open_when_stopped_early() -> None:
+    from custom_components.enocean_eltako.cover_position import CoverPosition
+
+    cover = CoverPosition(time_opens=30, time_closes=30, vent_time=4)
+    cover.anchor(100)
+    cover.driven(27, up=False)  # 1 s into the slot zone
+    assert cover.position == 1
+
+
+def test_blind_turns_slats_before_height() -> None:
+    from custom_components.enocean_eltako.cover_position import CoverPosition
+
+    cover = CoverPosition(time_opens=40, time_closes=40, tilt_time=1.5)
+    cover.anchor(100)
+    assert cover.tilt == 100
+    cover.driven(1.5, up=False)  # only the slats close
+    assert cover.position == 100 and cover.tilt == 0
+    cover.driven(19.25, up=False)  # half the height
+    assert cover.position == 50 and cover.tilt == 0
+    up, seconds = cover.tilt_run(40)
+    assert up and round(seconds, 2) == 0.6
+    cover.driven(0.6, up=True)
+    assert cover.tilt == 40 and cover.position == 50
+    up, seconds = cover.partial_run(60)
+    assert up and round(seconds, 2) == round(0.9 + 0.1 * 38.5, 2)  # slats open, then height

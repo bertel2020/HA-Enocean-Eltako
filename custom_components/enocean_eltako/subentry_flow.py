@@ -46,9 +46,11 @@ from .catalog import (
     OPT_SEND_INTERVAL,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
+    OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
     OPT_UNAVAILABLE_WHEN_SILENT,
+    OPT_VENT_TIME,
     DeviceModel,
     categories_of,
     generic_fields,
@@ -119,6 +121,8 @@ def candidates(rorg: int, teach_in: TeachIn4BS | None) -> list[str]:
 OPTION_KEYS = (
     OPT_PLATFORM,
     OPT_FIELDS,
+    OPT_VENT_TIME,
+    OPT_TILT_TIME,
     OPT_TIME_OPENS,
     OPT_TIME_CLOSES,
     OPT_INVERT,
@@ -583,6 +587,17 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                     NumberSelectorConfig(
                         min=1,
                         max=300,
+                        step=0.1,
+                        unit_of_measurement="s",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                )
+        if OPT_VENT_TIME in model.options:
+            for opt in (OPT_VENT_TIME, OPT_TILT_TIME):
+                schema[vol.Required(opt, default=0)] = NumberSelector(
+                    NumberSelectorConfig(
+                        min=0,
+                        max=10,
                         step=0.1,
                         unit_of_measurement="s",
                         mode=NumberSelectorMode.BOX,

@@ -399,7 +399,9 @@
             "double_press": "Double press within",
             "calibration": "Calibration",
             "fields": "Shown values",
-            "sender_cooling": "Sender ID: cooling switch (F6-02-01)"
+            "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
+            "vent_time": "Vent slot time",
+            "tilt_time": "Slat turning time"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -412,7 +414,9 @@
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
-            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool."
+            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
+            "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
+            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
           }
         },
         "reconfigure": {
@@ -440,7 +444,9 @@
             "double_press": "Double press within",
             "calibration": "Calibration",
             "fields": "Shown values",
-            "sender_cooling": "Sender ID: cooling switch (F6-02-01)"
+            "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
+            "vent_time": "Vent slot time",
+            "tilt_time": "Slat turning time"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -452,7 +458,9 @@
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
-            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool."
+            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
+            "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
+            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
           }
         },
         "address": {

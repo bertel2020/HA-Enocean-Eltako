@@ -6,7 +6,9 @@ again stops). The routing option picks which one moves the cover (controller,
 direction_rocker or both); positions use the controller when present, otherwise the rocker
 with a timed stop.
 
-Position and inaccuracy follow cover_position.CoverPosition (I6). Commands to 0 % or 100 % are
+Position and inaccuracy follow cover_position.CoverPosition (I6), including vent slots of
+shutters (position 1 = down, slots open) and the slats of blinds (tilt position, turned with
+the 100 ms resolution of the controller command). Commands to 0 % or 100 % are
 always full runs with margin, which renews the anchor. Calibration strategy per cover:
 passive (anchor only when fully opened or closed anyway) or before an uncertain move (drive to
 the nearer end first when the inaccuracy exceeds the threshold). The calibrate button and the
@@ -22,6 +24,7 @@ from typing import Any
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
+    ATTR_TILT_POSITION,
     CoverDeviceClass,
     CoverEntity,
     CoverEntityFeature,
@@ -41,8 +44,10 @@ from .catalog import (
     DIRECTION_ROCKER,
     OPT_CALIBRATION,
     OPT_ROUTING,
+    OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
+    OPT_VENT_TIME,
     ROCKER_PRESS_DOWN,
     ROCKER_PRESS_UP,
 )
@@ -90,7 +95,18 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         self.position = CoverPosition(
             float(device.options.get(OPT_TIME_OPENS) or DEFAULT_TRAVEL_TIME),
             float(device.options.get(OPT_TIME_CLOSES) or DEFAULT_TRAVEL_TIME),
+            vent_time=float(device.options.get(OPT_VENT_TIME) or 0),
+            tilt_time=float(device.options.get(OPT_TILT_TIME) or 0),
         )
+        if self.position.is_blind:
+            self._attr_device_class = CoverDeviceClass.BLIND
+            self._attr_supported_features = (
+                self._attr_supported_features
+                | CoverEntityFeature.OPEN_TILT
+                | CoverEntityFeature.CLOSE_TILT
+                | CoverEntityFeature.STOP_TILT
+                | CoverEntityFeature.SET_TILT_POSITION
+            )
         self._before_move = device.options.get(OPT_CALIBRATION) == "before_move"
         self._attr_is_opening = False
         self._attr_is_closing = False
@@ -111,6 +127,10 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         return self.position.position
 
     @property
+    def current_cover_tilt_position(self) -> int | None:
+        return self.position.tilt if self.position.is_blind else None
+
+    @property
     def is_closed(self) -> bool | None:
         return None if self.position.position is None else self.position.position == 0
 
@@ -125,6 +145,8 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         await super().async_added_to_hass()
         if (last := await self.async_get_last_state()) is not None:
             self.position.position = last.attributes.get("current_position")
+            if self.position.is_blind:
+                self.position.tilt = last.attributes.get("current_tilt_position")
             if (inaccuracy := last.attributes.get("inaccuracy")) is not None:
                 self.position.inaccuracy = float(inaccuracy)
             self._last_calibrated = last.attributes.get("last_calibrated")
@@ -161,6 +183,26 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         if self._before_move and self.position.inaccuracy > DEFAULT_THRESHOLD:
             await self._drive_to_anchor(self.position.nearer_end())
         self._partial_run(target)
+
+    async def async_open_cover_tilt(self, **kwargs: Any) -> None:
+        await self.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 100})
+
+    async def async_close_cover_tilt(self, **kwargs: Any) -> None:
+        await self.async_set_cover_tilt_position(**{ATTR_TILT_POSITION: 0})
+
+    async def async_stop_cover_tilt(self, **kwargs: Any) -> None:
+        await self.async_stop_cover()
+
+    async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
+        """Turn the slats only: a short run in one direction (100 ms resolution)."""
+        if self.position.tilt is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="cover_position_unknown"
+            )
+        run = self.position.tilt_run(kwargs[ATTR_TILT_POSITION])
+        if run is not None:
+            up, seconds = run
+            self._run(shutter.UP if up else shutter.DOWN, seconds, full=False)
 
     async def async_calibrate(self) -> None:
         """Drive to the nearer end (anchor) and back to the previous position."""

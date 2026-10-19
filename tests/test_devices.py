@@ -1250,3 +1250,43 @@ async def test_heating_actuator_cooling(hass: HomeAssistant, room_sensor, gatewa
     _push(server, 0x05, b"\x70", 0x05000052, 0x30)  # actuator: normal operation
     await _settle(hass)
     assert hass.states.get(entity_id).attributes["hvac_action"] == "cooling"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-22",
+                "Jalousie",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-94"}],
+                time_opens=40,
+                time_closes=40,
+                tilt_time=1.5,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_blind_tilt(hass: HomeAssistant, gateway) -> None:
+    from custom_components.enocean_eltako.protocol.eep.eltako import shutter
+
+    _entry, server = gateway
+    entity_id = _entity(hass, "cover", f"{BASE}_05-00-00-22_1_cover")
+    assert hass.states.get(entity_id).attributes["device_class"] == "blind"
+    _push(server, 0x05, b"\x70", 0x05000022, 0x30)  # upper end position: slats open
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["current_tilt_position"] == 100
+    await hass.services.async_call(
+        "cover", "set_cover_tilt_position", {"entity_id": entity_id, "tilt_position": 40}
+    )
+    await _settle(hass)
+    turn = shutter.encode_command(shutter.DOWN, 0.9)  # 100 ms resolution
+    assert turn[3] & 0x02
+    assert esp2.encode_radio(RadioTelegram(Rorg.BS4, turn, 0xFFB74494)) in bytes(server.received)
+    _push(server, 0x07, bytes.fromhex("0009020A"), 0x05000022)  # drove down 0.9 s
+    await _settle(hass)
+    state = hass.states.get(entity_id)
+    assert state.attributes["current_tilt_position"] == 40
+    assert state.attributes["current_position"] == 100
