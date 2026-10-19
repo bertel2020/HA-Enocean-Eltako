@@ -95,3 +95,21 @@ async def test_received_telegrams_reach_the_dispatcher(hass: HomeAssistant) -> N
     assert got[0].gateway == entry.entry_id
     assert await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_send_queue_writes_to_the_gateway(hass: HomeAssistant) -> None:
+    from custom_components.enocean_eltako.protocol import esp2
+    from custom_components.enocean_eltako.protocol.send_queue import SendResult
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    telegram = RadioTelegram(Rorg.RPS, b"\x30", 0xFFB74481, 0x30)
+    assert await entry.runtime_data.queue.submit(telegram) == SendResult.SENT
+    await asyncio.sleep(0.05)
+    assert bytes(server.received).endswith(esp2.encode_radio(telegram))
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
