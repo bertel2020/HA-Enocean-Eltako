@@ -123,7 +123,8 @@
         "room_controller": "Room controller (FUTH, FTR65HS …)",
         "weather": "Weather station (FWS61, FWG14)",
         "psc": "Permundo PSC132 / PSC234 plug",
-        "rocker_contact": "Contact via rocker telegrams (FTS14EM, garage door …)"
+        "rocker_contact": "Contact via rocker telegrams (FTS14EM, garage door …)",
+        "heating_actuator": "Heating actuator, Home Assistant controls (FHK14, FAE14 …)"
       }
     },
     "routing": {
@@ -152,6 +153,9 @@
     },
     "gateway_not_connected": {
       "message": "{gateway} is not connected."
+    },
+    "room_controller_read_only": {
+      "message": "This room controller is operated on site; its setpoint cannot be changed from Home Assistant."
     }
   },
   "services": {
@@ -212,17 +216,21 @@
             "invert": "Invert",
             "sender_central": "Sender ID: Central command (A5-38-08)",
             "sender_rocker": "Sender ID: Rocker (F6-02-01)",
-            "sender_controller": "Sender ID: Controller (H5-3F-7F)",
+            "sender_controller": "Sender ID: controller",
             "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
             "routing": "Moved by",
             "on_button": "On with",
-            "off_button": "Off with"
+            "off_button": "Off with",
+            "temperature_sensor": "Room temperature",
+            "send_interval": "Send interval"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
             "time_opens": "Full travel time from closed to open.",
             "time_closes": "Full travel time from open to closed.",
-            "routing": "Which sender moves the cover. Positions always use the controller when it is set."
+            "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
+            "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
+            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h."
           }
         },
         "reconfigure": {
@@ -237,16 +245,20 @@
             "invert": "Invert",
             "sender_central": "Sender ID: Central command (A5-38-08)",
             "sender_rocker": "Sender ID: Rocker (F6-02-01)",
-            "sender_controller": "Sender ID: Controller (H5-3F-7F)",
+            "sender_controller": "Sender ID: controller",
             "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
             "routing": "Moved by",
             "on_button": "On with",
-            "off_button": "Off with"
+            "off_button": "Off with",
+            "temperature_sensor": "Room temperature",
+            "send_interval": "Send interval"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
             "time_closes": "Full travel time from open to closed.",
-            "routing": "Which sender moves the cover. Positions always use the controller when it is set."
+            "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
+            "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
+            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h."
           }
         },
         "address": {
@@ -314,6 +326,15 @@
       },
       "sun_east": {
         "name": "Sun east"
+      },
+      "heating_mode": {
+        "name": "Heating mode",
+        "state": {
+          "normal": "Normal",
+          "night_setback": "Night setback (−4 K)",
+          "setback": "Setback (−2 K)",
+          "off": "Off"
+        }
       }
     },
     "binary_sensor": {
@@ -350,6 +371,12 @@
       "teach_in_direction_rocker": {
         "name": "Teach-in direction rocker"
       }
+    }
+  },
+  "issues": {
+    "climate_silent": {
+      "title": "{name} has not been controlled for 45 minutes",
+      "description": "Home Assistant could not send setpoint and temperature to {name} for 45 minutes (gateway offline?). After 1 hour without a telegram the heating actuator switches to its fault mode with a fixed heating cycle."
     }
   }
 }

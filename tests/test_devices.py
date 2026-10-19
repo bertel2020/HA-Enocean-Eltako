@@ -6,6 +6,7 @@ import pytest
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -535,3 +536,93 @@ async def test_psc_switch_status_and_meter(hass: HomeAssistant, esp3_gateway) ->
     server.push(esp3.encode_radio(RadioTelegram(0xD2, bytes.fromhex("046080"), psc)))
     await _settle(hass)
     assert hass.states.get(switch).state == "off"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("room_controller", "05-00-00-41", "FUTH Bad")]],
+    indirect=True,
+)
+async def test_room_controller_climate_is_read_only(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    _push(server, 0x07, bytes.fromhex("007F8009"), 0x05000041)
+    await _settle(hass)
+    state = hass.states.get(_entity(hass, "climate", f"{BASE}_05-00-00-41_1_climate"))
+    assert state.state == "heat"
+    assert state.attributes["temperature"] == pytest.approx(19.9, abs=0.1)
+    assert state.attributes["current_temperature"] == pytest.approx(19.9, abs=0.2)
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "climate",
+            "set_temperature",
+            {"entity_id": state.entity_id, "temperature": 23},
+            blocking=True,
+        )
+
+
+@pytest.fixture
+def room_sensor(hass: HomeAssistant):
+    hass.states.async_set("sensor.bad_temperatur", "20.0", {"device_class": "temperature"})
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "heating_actuator",
+                "05-00-00-51",
+                "Heizung Bad",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-A0"}],
+                temperature_sensor="sensor.bad_temperatur",
+                send_interval=60,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_heating_actuator_controlled_by_ha(hass: HomeAssistant, room_sensor, gateway) -> None:
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.enocean_eltako.protocol.eep.eltako import heating
+
+    _entry, server = gateway
+    entity_id = _entity(hass, "climate", f"{BASE}_05-00-00-51_1_climate")
+    await _settle(hass)
+    first = heating.encode_controller(21.0, 20.0)
+    assert esp2.encode_radio(RadioTelegram(Rorg.BS4, first, 0xFFB744A0)) in bytes(server.received)
+
+    await hass.services.async_call(
+        "climate", "set_temperature", {"entity_id": entity_id, "temperature": 22.5}
+    )
+    await _settle(hass)
+    sent = esp2.encode_radio(
+        RadioTelegram(Rorg.BS4, heating.encode_controller(22.5, 20.0), 0xFFB744A0)
+    )
+    assert sent in bytes(server.received)
+
+    _push(server, 0x05, b"\x70", 0x05000051, 0x30)  # actuator: normal operation
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["hvac_action"] == "heating"
+    mode = hass.states.get(_entity(hass, "sensor", f"{BASE}_05-00-00-51_1_heating_mode"))
+    assert mode.state == "normal"
+
+    await hass.services.async_call(
+        "climate", "set_hvac_mode", {"entity_id": entity_id, "hvac_mode": "off"}
+    )
+    await _settle(hass)
+    off = esp2.encode_radio(RadioTelegram(Rorg.BS4, heating.encode_controller(0, 20.0), 0xFFB744A0))
+    assert off in bytes(server.received)
+    assert not ir.async_get(hass).issues
+
+
+def test_heating_controller_telegram() -> None:
+    from custom_components.enocean_eltako.protocol.eep.eltako import heating
+
+    assert heating.encode_controller(20.0, 20.0).hex() == "00807f08"
+    assert heating.encode_controller(20.0, 20.0, night_setback=2).hex() == "0c807f08"
+    assert heating.decode_status(b"\x50") == {"mode": "night_setback"}
+    assert heating.decode_status(bytes.fromhex("007F800F")) == {
+        "setpoint": 19.9,
+        "temperature": 19.9,
+    }

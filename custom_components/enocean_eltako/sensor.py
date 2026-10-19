@@ -182,6 +182,15 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
 }
 
 
+SENSORS["heating_actuator"] = (
+    EnOceanSensorDescription(
+        key="heating_mode",
+        translation_key="heating_mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=["normal", "night_setback", "setback", "off"],
+        value_fn=lambda v: v.get("mode"),
+    ),
+)
 SENSORS["psc"] = tuple(d for d in SENSORS["meter"] if d.key != "energy_tariff_1")
 
 

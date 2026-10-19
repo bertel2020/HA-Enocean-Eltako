@@ -10,6 +10,8 @@ from homeassistant.config_entries import ConfigSubentryFlow, SubentryFlowResult
 from homeassistant.const import Platform
 from homeassistant.helpers.selector import (
     BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -27,6 +29,8 @@ from .catalog import (
     OPT_ON_BUTTON,
     OPT_PLATFORM,
     OPT_ROUTING,
+    OPT_SEND_INTERVAL,
+    OPT_TEMPERATURE_SENSOR,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
     DeviceModel,
@@ -76,6 +80,8 @@ OPTION_KEYS = (
     OPT_ROUTING,
     OPT_ON_BUTTON,
     OPT_OFF_BUTTON,
+    OPT_TEMPERATURE_SENSOR,
+    OPT_SEND_INTERVAL,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -285,6 +291,15 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 SelectSelectorConfig(
                     options=[*(p.id for p in model.senders), "both"],
                     translation_key=OPT_ROUTING,
+                )
+            )
+        if OPT_TEMPERATURE_SENSOR in model.options:
+            schema[vol.Required(OPT_TEMPERATURE_SENSOR)] = EntitySelector(
+                EntitySelectorConfig(domain="sensor", device_class="temperature")
+            )
+            schema[vol.Required(OPT_SEND_INTERVAL, default=60)] = NumberSelector(
+                NumberSelectorConfig(
+                    min=10, max=600, step=10, unit_of_measurement="s", mode=NumberSelectorMode.BOX
                 )
             )
         if OPT_ON_BUTTON in model.options:

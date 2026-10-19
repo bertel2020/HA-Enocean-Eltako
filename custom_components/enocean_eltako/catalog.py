@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from homeassistant.const import Platform
 
 from .protocol.eep import EEPRef
-from .protocol.eep.eltako import shutter, switching
+from .protocol.eep.eltako import heating, shutter, switching
 from .protocol.eep.model import encode
 from .protocol.eep.std.profiles import PROFILES
 from .protocol.telegram import Rorg
@@ -25,6 +25,8 @@ OPT_INVERT = "invert"
 OPT_DEVICE_CLASS = "device_class"
 OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
 OPT_OFF_BUTTON = "off_button"  # button that switches off, or "released"
+OPT_TEMPERATURE_SENSOR = "temperature_sensor"  # heating: entity with the room temperature
+OPT_SEND_INTERVAL = "send_interval"  # heating: seconds between controller telegrams
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -62,6 +64,9 @@ PSC_CONTROLLER = SenderProfile(
 )
 ROCKER = SenderProfile("rocker", EEPRef("F6-02-01", "std"), Rorg.RPS, ROCKER_PRESS_UP)
 CONTROLLER = SenderProfile("controller", EEPRef("H5-3F-7F", "eltako"), Rorg.BS4, shutter.TEACH_IN)
+HEATING_CONTROLLER = SenderProfile(
+    "controller", EEPRef("A5-10-06", "eltako"), Rorg.BS4, heating.TEACH_IN
+)
 DIRECTION_ROCKER = SenderProfile(
     "direction_rocker", EEPRef("F6-02-01", "std"), Rorg.RPS, ROCKER_PRESS_UP
 )
@@ -166,9 +171,17 @@ CATALOG: dict[str, DeviceModel] = {
         ),
         DeviceModel("co2", _ref("A5-09-04:std"), (Platform.SENSOR,), examples="FCO2TF65"),
         DeviceModel(
+            "heating_actuator",
+            _ref("M5-10-06:eltako"),
+            (Platform.CLIMATE, Platform.SENSOR),
+            senders=(HEATING_CONTROLLER,),
+            options=(OPT_TEMPERATURE_SENSOR, OPT_SEND_INTERVAL),
+            examples="FHK14, FAE14, F4HK14, FHK61",
+        ),
+        DeviceModel(
             "room_controller",
             _ref("A5-10-06:eltako"),
-            (Platform.SENSOR,),
+            (Platform.CLIMATE, Platform.SENSOR),
             examples="FUTH, FTR65HS, FTAF55D",
         ),
         DeviceModel(
@@ -184,6 +197,7 @@ CATALOG: dict[str, DeviceModel] = {
 PLATFORMS: tuple[Platform, ...] = (
     Platform.BINARY_SENSOR,
     Platform.BUTTON,
+    Platform.CLIMATE,
     Platform.COVER,
     Platform.EVENT,
     Platform.LIGHT,
