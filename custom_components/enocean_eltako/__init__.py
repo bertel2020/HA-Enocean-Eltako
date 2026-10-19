@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_BASE_ID, CONF_DEVICE, CONF_MODEL, DOMAIN
 from .hub import Hub, async_get_hub
@@ -18,6 +20,10 @@ from .protocol.send_queue import SendQueue
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
 from .senders import SenderStore, async_remove_store
+from .services import async_setup_services
+from .websocket import async_setup_websocket
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 @dataclass
@@ -31,6 +37,13 @@ class GatewayRuntime:
 
 
 type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the telegram monitor websocket API and services."""
+    async_setup_websocket(hass)
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> bool:
@@ -53,7 +66,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
             translation_key="cannot_connect",
             translation_placeholders={"connection": str(gateway.connection), "error": str(err)},
         ) from err
-    queue = SendQueue(gateway.send, is_connected=lambda: gateway.connected)
+    queue = SendQueue(
+        gateway.send,
+        is_connected=lambda: gateway.connected,
+        on_sent=lambda telegram: hub.monitor.sent(entry.entry_id, telegram),
+    )
     pool = hub.senders.create_pool(entry.entry_id, parse_id(entry.data[CONF_BASE_ID]))
     entry.async_on_unload(lambda: hub.senders.remove_pool(entry.entry_id))
     senders = SenderStore(hass, entry.entry_id, pool)
@@ -75,6 +92,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
     """Stop the send queue and close the gateway connection."""
     await entry.runtime_data.queue.stop()
     await entry.runtime_data.gateway.close()
+    entry.runtime_data.hub.monitor.clear(entry.entry_id)
     return True
 
 

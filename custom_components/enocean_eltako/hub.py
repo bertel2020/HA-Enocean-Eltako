@@ -9,6 +9,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
 from .protocol.dispatcher import Dispatcher
+from .protocol.monitor import TelegramMonitor
 from .protocol.sender_pool import SenderRegistry
 
 
@@ -18,6 +19,10 @@ class Hub:
 
     dispatcher: Dispatcher = field(default_factory=Dispatcher)
     senders: SenderRegistry = field(default_factory=SenderRegistry)
+    monitor: TelegramMonitor = field(default_factory=TelegramMonitor)
+
+    def __post_init__(self) -> None:
+        self.dispatcher.add_monitor(self.monitor.received)
 
 
 DATA_HUB: HassKey[Hub] = HassKey(DOMAIN)

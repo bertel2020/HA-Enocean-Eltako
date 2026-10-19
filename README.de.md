@@ -22,7 +22,9 @@
 
 > **Status: frühe Entwicklung.** Gateways lassen sich anlegen (FAM-USB,
 > FGW14-USB, MGW-ETH, Symcon LAN, generisch ESP2/ESP3; per USB oder ser2net)
-> und bleiben verbunden, Geräte gibt es noch keine. Nicht produktiv einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese
+> und bleiben verbunden. Empfangene Telegramme stehen in den Diagnosedaten und
+> lassen sich mit der Aktion `enocean_eltako.capture` mitschneiden; Geräte gibt
+> es noch keine. Nicht produktiv einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese
 > hier hat die eigene Domain `enocean_eltako`.
 
 Eine neu geschriebene Integration für Eltako (Baureihe 14 am Bus und Funk) und

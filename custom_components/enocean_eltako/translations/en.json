@@ -75,5 +75,21 @@
     "cannot_connect": {
       "message": "Cannot connect to {connection}: {error}"
     }
+  },
+  "services": {
+    "capture": {
+      "name": "Capture telegrams",
+      "description": "Records all telegrams for a while and writes them as JSONL to /config/enocean_eltako/. The files can be used as test fixtures.",
+      "fields": {
+        "duration": {
+          "name": "Duration",
+          "description": "How long to record."
+        },
+        "config_entry_id": {
+          "name": "Gateway",
+          "description": "Only telegrams of this gateway; empty for all."
+        }
+      }
+    }
   }
 }

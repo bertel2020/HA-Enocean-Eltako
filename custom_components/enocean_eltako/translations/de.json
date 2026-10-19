@@ -75,5 +75,21 @@
     "cannot_connect": {
       "message": "Keine Verbindung zu {connection}: {error}"
     }
+  },
+  "services": {
+    "capture": {
+      "name": "Telegramme mitschneiden",
+      "description": "Zeichnet eine Zeit lang alle Telegramme auf und schreibt sie als JSONL nach /config/enocean_eltako/. Die Dateien taugen direkt als Test-Fixtures.",
+      "fields": {
+        "duration": {
+          "name": "Dauer",
+          "description": "Wie lange aufgezeichnet wird."
+        },
+        "config_entry_id": {
+          "name": "Gateway",
+          "description": "Nur Telegramme dieses Gateways; leer für alle."
+        }
+      }
+    }
   }
 }
