@@ -16,7 +16,6 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_PARTS_PER_MILLION,
     LIGHT_LUX,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -25,6 +24,7 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
+    UnitOfRatio,
     UnitOfSpeed,
     UnitOfTemperature,
     UnitOfVolume,
@@ -161,7 +161,7 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
         EnOceanSensorDescription(
             key="co2",
             device_class=SensorDeviceClass.CO2,
-            native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+            native_unit_of_measurement=UnitOfRatio.PARTS_PER_MILLION,
             state_class=SensorStateClass.MEASUREMENT,
             value_fn=_field("Conc", 0),
         ),

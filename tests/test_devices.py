@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -198,6 +199,12 @@ async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
     assert float(state("sensor", "05-00-00-12", "energy")) == pytest.approx(409.6)
     rocker = hass.states.get(_entity(hass, "event", f"{BASE}_00-29-89-79_1_button_b0"))
     assert rocker.attributes["event_type"] == "pressed"
+    registry = dr.async_get(hass)
+    sensor = registry.async_get_device_by_identifier(
+        (DOMAIN, f"{BASE}_01-82-0A-11"), entry.entry_id
+    )
+    assert sensor.via_device_id == entry.runtime_data.gateway_device_id
+    assert registry.async_get(sensor.via_device_id).identifiers == {(DOMAIN, entry.entry_id)}
     assert state("binary_sensor", "00-31-00-01", "contact") == "on"
     _push(server, 0x05, b"\x00", 0x00310001, 0x20)  # release = off
     await _settle(hass)

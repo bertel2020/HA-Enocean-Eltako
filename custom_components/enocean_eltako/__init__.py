@@ -10,12 +10,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EVENT_HOMEASSISTANT_STARTED, Platform
-from homeassistant.core import CoreState, HomeAssistant, callback
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from .catalog import (
@@ -83,6 +84,7 @@ class GatewayRuntime:
     disconnected_since: float | None = None  # time.time() of the last disconnect
     health_check: Callable[[], None] | None = None
     connection_listeners: list[Callable[[], None]] = field(default_factory=list)
+    gateway_device_id: str | None = None  # device registry ID, parent of all devices
 
     def add_connection_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self.connection_listeners.append(listener)
@@ -182,13 +184,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
 
     entry.async_on_unload(hub.dispatcher.add_listener(WILDCARD, confirm))
 
-    dr.async_get(hass).async_get_or_create(
-        config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, entry.entry_id)},
-        name=entry.title,
-        manufacturer=model.manufacturer,
-        model=model.model_name,
-        serial_number=entry.data[CONF_BASE_ID],
+    entry.runtime_data.gateway_device_id = (
+        dr.async_get(hass)
+        .async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer=model.manufacturer,
+            model=model.model_name,
+            serial_number=entry.data[CONF_BASE_ID],
+        )
+        .id
     )
     _async_setup_devices(hass, entry)
     if gateway.connected:
@@ -288,10 +294,8 @@ def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) 
                         confirm=False,
                     )
 
-    if hass.state is CoreState.running:
-        request()
-    else:
-        entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, request))
+    # async_at_started: unsubscribing after HA started is safe (async_listen_once is not)
+    entry.async_on_unload(async_at_started(hass, request))
 
 
 async def _async_reload_on_change(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

@@ -84,15 +84,17 @@ class EnOceanDevice:
 
     @property
     def device_info(self) -> DeviceInfo:
-        return DeviceInfo(
+        info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_prefix)},
             name=self.subentry.title,
             manufacturer=self.model.manufacturer,
             model=self.model.examples.split(",")[0] if self.model.examples else self._model_name,
             model_id=str(self.model.receive) if self.model.receive else None,
             serial_number=format_id(self.device_id),
-            via_device=(DOMAIN, self.entry.entry_id),
         )
+        if (gateway := self.entry.runtime_data.gateway_device_id) is not None:
+            info["via_device_id"] = gateway
+        return info
 
     def start(self) -> Callable[[], None]:
         dispatcher = self.entry.runtime_data.hub.dispatcher
