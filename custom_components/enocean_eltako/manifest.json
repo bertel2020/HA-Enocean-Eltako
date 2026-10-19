@@ -1,13 +1,20 @@
 {
   "domain": "enocean_eltako",
   "name": "EnOcean Eltako",
-  "codeowners": ["@bertel2020"],
+  "codeowners": [
+    "@bertel2020"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "usb"
+  ],
   "documentation": "https://github.com/bertel2020/HA-Enocean-Eltako",
   "integration_type": "hub",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/bertel2020/HA-Enocean-Eltako/issues",
-  "loggers": ["custom_components.enocean_eltako"],
-  "requirements": ["pyserial-asyncio-fast==0.16"],
+  "loggers": [
+    "custom_components.enocean_eltako"
+  ],
+  "requirements": [],
   "version": "0.1.0"
 }

@@ -1,4 +1,8 @@
-"""Byte transports: USB serial (pyserial-asyncio-fast) and TCP (asyncio streams, e.g. ser2net)."""
+"""Byte transports: serial ports (serialx) and TCP (asyncio streams, e.g. ser2net).
+
+serialx is the serial library of Home Assistant's usb integration. Besides local devices it
+opens the URLs HA's serial port picker offers, e.g. ESPHome serial proxies.
+"""
 
 from __future__ import annotations
 
@@ -46,9 +50,12 @@ def connection_from_dict(data: dict[str, Any]) -> Connection:
 async def open_connection(
     connection: Connection,
 ) -> tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-    """Open the byte stream; raises OSError (serial errors included) on failure."""
+    """Open the byte stream; raises OSError (serial errors as ConnectionError) on failure."""
     if isinstance(connection, TcpConnection):
         return await asyncio.open_connection(connection.host, connection.port)
-    from serial_asyncio_fast import open_serial_connection
+    from serialx import SerialException, open_serial_connection
 
-    return await open_serial_connection(url=connection.path, baudrate=connection.baudrate)
+    try:
+        return await open_serial_connection(url=connection.path, baudrate=connection.baudrate)
+    except SerialException as err:
+        raise ConnectionError(f"{connection}: {err}") from err

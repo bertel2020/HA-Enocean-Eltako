@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_CONNECTION, CONF_MODEL, DOMAIN
+from .const import CONF_DEVICE, CONF_MODEL, DOMAIN
 from .protocol.gateway import Gateway
 from .protocol.models import MODELS
 from .protocol.telegram import RadioTelegram
@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         _LOGGER.debug("%s: %s", entry.title, telegram)
 
     gateway = Gateway(
-        model.protocol, connection_from_dict(entry.data[CONF_CONNECTION]), on_telegram=on_telegram
+        model.protocol, connection_from_dict(entry.data[CONF_DEVICE]), on_telegram=on_telegram
     )
     try:
         await gateway.connect()

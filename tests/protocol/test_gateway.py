@@ -104,3 +104,10 @@ async def test_esp3_ignores_non_radio_packets() -> None:
     gw = Gateway(Protocol.ESP3, TcpConnection("x", 0), on_telegram=received.append)
     gw._handle(esp3.Esp3Packet(esp3.PacketType.EVENT, b"\x02"))
     assert received == []
+
+
+async def test_missing_serial_port_raises_oserror() -> None:
+    from custom_components.enocean_eltako.protocol.transport import SerialConnection
+
+    with pytest.raises(OSError):
+        await Gateway(Protocol.ESP2, SerialConnection("/dev/does-not-exist", 9600)).connect()

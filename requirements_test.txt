@@ -1,3 +1,4 @@
 pytest-homeassistant-custom-component
-pyserial-asyncio-fast==0.16
+aiousbwatcher==1.1.2
+serialx==1.11.0
 ruff

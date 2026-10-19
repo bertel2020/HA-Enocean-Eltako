@@ -39,8 +39,9 @@ andere EnOcean-Geräte. Ziele:
   parallel, Positionsverfolgung und Kalibrierung an den Endlagen
 - **Anlernen, Discovery, Telegramm-Monitor**, Import aus dem Bus-Speicher des
   FAM14 und ein Übernahme-Assistent für die alte Integration `eltako`
-- **Keine fremden EnOcean-Bibliotheken:** einzige Abhängigkeit ist
-  `pyserial-asyncio-fast`
+- **Keine fremden EnOcean-Bibliotheken:** keine zusätzlichen Pakete; serielle
+  Ports laufen über die Port-Auswahl und die Seriell-Bibliothek von Home
+  Assistant (usb-Integration), damit gehen auch serielle ESPHome-Proxys
 
 ## Installation
 

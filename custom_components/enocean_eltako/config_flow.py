@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any
 
 import voluptuous as vol
@@ -13,10 +12,10 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
-    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    SerialPortSelector,
     TextSelector,
 )
 
@@ -24,7 +23,7 @@ from .const import (
     BAUDRATES,
     CONF_BASE_ID,
     CONF_BAUDRATE,
-    CONF_CONNECTION,
+    CONF_DEVICE,
     CONF_MODEL,
     CONF_PATH,
     DOMAIN,
@@ -35,25 +34,6 @@ from .protocol.models import MODELS, GatewayModel
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 
 _LOGGER = logging.getLogger(__name__)
-
-SERIAL_BY_ID = "/dev/serial/by-id"
-
-
-def list_serial_ports() -> list[SelectOptionDict]:
-    """Serial ports, preferring the stable /dev/serial/by-id path (runs in the executor)."""
-    from serial.tools.list_ports import comports
-
-    by_id: dict[str, str] = {}
-    if os.path.isdir(SERIAL_BY_ID):
-        for name in sorted(os.listdir(SERIAL_BY_ID)):
-            link = os.path.join(SERIAL_BY_ID, name)
-            by_id[os.path.realpath(link)] = link
-    options = []
-    for port in comports():
-        path = by_id.get(os.path.realpath(port.device), port.device)
-        label = path if port.description in (None, "", "n/a") else f"{path} ({port.description})"
-        options.append(SelectOptionDict(value=path, label=label))
-    return options
 
 
 class CannotConnect(Exception):
@@ -119,14 +99,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
             result = await self._async_test_connection(errors)
             if result is not None:
                 return result
-        ports = await self.hass.async_add_executor_job(list_serial_ports)
-        schema: dict[Any, Any] = {
-            vol.Required(CONF_PATH): SelectSelector(
-                SelectSelectorConfig(
-                    options=ports, custom_value=True, mode=SelectSelectorMode.DROPDOWN
-                )
-            )
-        }
+        schema: dict[Any, Any] = {vol.Required(CONF_PATH): SerialPortSelector()}
         if self._model.baudrate is None:
             schema[vol.Required(CONF_BAUDRATE, default="57600")] = SelectSelector(
                 SelectSelectorConfig(options=[str(b) for b in BAUDRATES])
@@ -217,7 +190,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
             title=f"{self._model.name} {format_id(base_id)}",
             data={
                 CONF_MODEL: self._model.key,
-                CONF_CONNECTION: self._connection.as_dict(),
+                CONF_DEVICE: self._connection.as_dict(),
                 CONF_BASE_ID: format_id(base_id),
             },
         )

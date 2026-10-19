@@ -15,7 +15,7 @@ from .fake_gateway import FakeGateway
 
 pytestmark = pytest.mark.usefixtures("socket_enabled")
 
-PORTS = [{"value": "/dev/serial/by-id/usb-EnOcean_FAM-USB", "label": "FAM-USB"}]
+PORT = "/dev/serial/by-id/usb-EnOcean_FAM-USB"
 
 
 @pytest.fixture(autouse=True)
@@ -54,7 +54,7 @@ async def test_fam_usb_via_ser2net_reads_base_id(hass: HomeAssistant, fake_esp2)
     assert result["title"] == "Eltako FAM-USB FF-B7-44-80"
     assert result["data"] == {
         "model": "fam_usb",
-        "connection": {"type": "tcp", "host": "127.0.0.1", "port": fake_esp2.port},
+        "device": {"type": "tcp", "host": "127.0.0.1", "port": fake_esp2.port},
         "base_id": "FF-B7-44-80",
     }
     assert result["result"].unique_id == "FF-B7-44-80"
@@ -62,37 +62,30 @@ async def test_fam_usb_via_ser2net_reads_base_id(hass: HomeAssistant, fake_esp2)
 
 async def test_fam_usb_serial(hass: HomeAssistant, fake_esp2) -> None:
     result = await _start(hass, "fam_usb")
-    with patch(
-        "custom_components.enocean_eltako.config_flow.list_serial_ports", return_value=PORTS
-    ):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "serial"}
-        )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "serial"}
+    )
     assert result["step_id"] == "serial"
     assert "baudrate" not in result["data_schema"].schema  # fixed by the model
+    assert result["data_schema"].schema["path"].selector_type == "serial_port"
     with patch(
         "custom_components.enocean_eltako.config_flow.probe_gateway", return_value=0xFFB74480
     ) as probe:
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"path": PORTS[0]["value"]}
-        )
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"path": PORT})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"]["connection"] == {
+    assert result["data"]["device"] == {
         "type": "serial",
-        "path": PORTS[0]["value"],
+        "path": PORT,
         "baudrate": 9600,
     }
-    assert str(probe.call_args.args[1]) == f"{PORTS[0]['value']} @ 9600"
+    assert str(probe.call_args.args[1]) == f"{PORT} @ 9600"
 
 
 async def test_generic_esp2_asks_for_baudrate(hass: HomeAssistant) -> None:
     result = await _start(hass, "esp2")
-    with patch(
-        "custom_components.enocean_eltako.config_flow.list_serial_ports", return_value=PORTS
-    ):
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"next_step_id": "serial"}
-        )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "serial"}
+    )
     assert "baudrate" in result["data_schema"].schema
 
 
@@ -133,7 +126,7 @@ async def test_base_id_entered_when_gateway_is_silent(hass: HomeAssistant, fake_
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["base_id"] == "FF-AA-80-00"
-    assert result["data"]["connection"]["type"] == "tcp"
+    assert result["data"]["device"]["type"] == "tcp"
 
 
 async def test_network_gateway_esp3_skips_menu(hass: HomeAssistant) -> None:

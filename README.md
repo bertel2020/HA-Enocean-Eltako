@@ -39,8 +39,9 @@ devices, written from scratch. Goals:
   parallel, position tracking and calibration at the end positions
 - **Teach-in, discovery, telegram monitor**, import from the FAM14 bus memory
   and a takeover assistant for the old `eltako` integration
-- **No third-party EnOcean libraries:** the only dependency is
-  `pyserial-asyncio-fast`
+- **No third-party EnOcean libraries:** no extra requirements; serial ports
+  use Home Assistant's own port picker and serial library (usb integration),
+  so ESPHome serial proxies work too
 
 ## Installation
 

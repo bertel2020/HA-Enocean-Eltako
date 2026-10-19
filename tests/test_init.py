@@ -19,7 +19,7 @@ def _entry(port: int) -> MockConfigEntry:
         unique_id="FF-B7-44-80",
         data={
             "model": "fam_usb",
-            "connection": {"type": "tcp", "host": "127.0.0.1", "port": port},
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": port},
             "base_id": "FF-B7-44-80",
         },
     )
@@ -50,3 +50,22 @@ async def test_setup_retries_when_gateway_is_offline(hass: HomeAssistant) -> Non
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_usb_integration_attributes_serial_port(hass: HomeAssistant) -> None:
+    """HA's usb integration shows which entry uses a port; it looks at ("device", "path")."""
+    from homeassistant.components.usb.consumers import _async_get_config_entry_consumers
+
+    path = "/dev/serial/by-id/usb-EnOcean_FAM-USB"
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Eltako FAM-USB FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "serial", "path": path, "baudrate": 9600},
+            "base_id": "FF-B7-44-80",
+        },
+    )
+    entry.add_to_hass(hass)
+    consumers = await _async_get_config_entry_consumers(hass, set())
+    assert [c.config_entry_id for c in consumers[path]] == [entry.entry_id]
