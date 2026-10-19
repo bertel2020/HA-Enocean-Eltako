@@ -20,8 +20,9 @@
 
 <p align="center"><em><a href="README.de.md">Deutsche Version</a></em></p>
 
-> **Status: early development.** The integration installs, but gateway setup is
-> not implemented yet. Do not use it in production. The existing `eltako`
+> **Status: early development.** Gateways can be added (FAM-USB, FGW14-USB,
+> MGW-ETH, Symcon LAN, generic ESP2/ESP3; USB or ser2net) and stay connected,
+> but no devices yet. Do not use it in production. The existing `eltako`
 > integration keeps running in parallel; this one uses its own domain
 > `enocean_eltako`.
 

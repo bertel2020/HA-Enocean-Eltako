@@ -1,0 +1,213 @@
+"""Gateway connection: framing, base ID query, receive loop and reconnect."""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import logging
+from collections.abc import Awaitable, Callable
+
+from . import esp2, esp3
+from .models import Protocol
+from .telegram import RadioTelegram
+from .transport import Connection, open_connection
+
+_LOGGER = logging.getLogger(__name__)
+
+RECONNECT_DELAYS = (1, 2, 5, 10, 30, 60)
+
+Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.StreamWriter]]]
+
+
+class _Codec:
+    """Protocol-specific framing behind one interface."""
+
+    def __init__(self, protocol: Protocol) -> None:
+        self.protocol = protocol
+        self.decoder = esp2.Esp2Decoder() if protocol is Protocol.ESP2 else esp3.Esp3Decoder()
+
+    def base_id_request(self) -> bytes:
+        if self.protocol is Protocol.ESP2:
+            return esp2.encode_command(esp2.CMD_RD_IDBASE)
+        return esp3.encode_common_command(esp3.CO_RD_IDBASE)
+
+    def base_id(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> int | None:
+        if isinstance(item, esp2.Esp2Frame):
+            return esp2.parse_base_id(item)
+        return esp3.parse_base_id(item)
+
+    def is_response(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
+        if isinstance(item, esp2.Esp2Frame):
+            return item.hseq == esp2.HSeq.RMT
+        return item.packet_type == esp3.PacketType.RESPONSE
+
+    def answers_base_id(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
+        """ESP3 answers in order; ESP2 also sends unrelated messages (OK, INF_INIT)."""
+        if isinstance(item, esp2.Esp2Frame):
+            return item.org in (esp2.MSG_INF_IDBASE, esp2.MSG_ERR)
+        return True
+
+    def radio(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> RadioTelegram | None:
+        if isinstance(item, esp2.Esp2Frame):
+            return esp2.decode_radio(item)
+        return esp3.decode_radio(item)
+
+    def encode_radio(self, telegram: RadioTelegram) -> bytes:
+        if self.protocol is Protocol.ESP2:
+            return esp2.encode_radio(telegram)
+        return esp3.encode_radio(telegram)
+
+
+class Gateway:
+    """One gateway on a serial or TCP connection.
+
+    connect() opens the stream and starts reading; run() keeps it connected until close().
+    Received radio telegrams go to on_telegram. send() is the low-level write used by the
+    send queue, never called directly by entities.
+    """
+
+    def __init__(
+        self,
+        protocol: Protocol,
+        connection: Connection,
+        *,
+        on_telegram: Callable[[RadioTelegram], None] | None = None,
+        on_connection_change: Callable[[bool], None] | None = None,
+        opener: Opener = open_connection,
+    ) -> None:
+        self.protocol = protocol
+        self.connection = connection
+        self._on_telegram = on_telegram
+        self._on_connection_change = on_connection_change
+        self._opener = opener
+        self._codec = _Codec(protocol)
+        self._writer: asyncio.StreamWriter | None = None
+        self._reader_task: asyncio.Task[None] | None = None
+        self._disconnected = asyncio.Event()
+        self._disconnected.set()
+        self._closing = False
+        self._command_lock = asyncio.Lock()
+        self._response: asyncio.Future[esp2.Esp2Frame | esp3.Esp3Packet] | None = None
+        self._response_match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool] | None = None
+        self.telegrams_received = 0
+
+    @property
+    def connected(self) -> bool:
+        return not self._disconnected.is_set()
+
+    async def connect(self, timeout: float = 10) -> None:
+        """Open the connection; raises OSError or TimeoutError."""
+        self._codec = _Codec(self.protocol)
+        async with asyncio.timeout(timeout):
+            reader, self._writer = await self._opener(self.connection)
+        self._disconnected.clear()
+        self._reader_task = asyncio.create_task(self._read_loop(reader))
+        _LOGGER.debug("Connected to %s", self.connection)
+        if self._on_connection_change:
+            self._on_connection_change(True)
+
+    async def run(self) -> None:
+        """Stay connected until close(), reconnecting with backoff."""
+        attempt = 0
+        while not self._closing:
+            if not self.connected:
+                try:
+                    await self.connect()
+                except (OSError, TimeoutError) as err:
+                    delay = RECONNECT_DELAYS[min(attempt, len(RECONNECT_DELAYS) - 1)]
+                    attempt += 1
+                    _LOGGER.warning(
+                        "Cannot connect to %s (%s), retrying in %s s", self.connection, err, delay
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                attempt = 0
+            await self._disconnected.wait()
+
+    async def read_base_id(self, timeout: float = 3) -> int | None:
+        """Ask the gateway for its base ID; None if it does not answer."""
+        response = await self._command(
+            self._codec.base_id_request(), timeout, self._codec.answers_base_id
+        )
+        return self._codec.base_id(response) if response is not None else None
+
+    async def send(self, telegram: RadioTelegram) -> None:
+        """Write one radio telegram; raises ConnectionError when not connected."""
+        await self._write(self._codec.encode_radio(telegram))
+
+    async def close(self) -> None:
+        self._closing = True
+        await self._disconnect()
+
+    async def _command(
+        self,
+        frame: bytes,
+        timeout: float,
+        match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool],
+    ) -> esp2.Esp2Frame | esp3.Esp3Packet | None:
+        async with self._command_lock:
+            self._response = asyncio.get_running_loop().create_future()
+            self._response_match = match
+            try:
+                await self._write(frame)
+                async with asyncio.timeout(timeout):
+                    return await self._response
+            except TimeoutError:
+                return None
+            finally:
+                self._response = None
+                self._response_match = None
+
+    async def _write(self, data: bytes) -> None:
+        if self._writer is None or not self.connected:
+            raise ConnectionError(f"{self.connection} is not connected")
+        self._writer.write(data)
+        await self._writer.drain()
+
+    async def _read_loop(self, reader: asyncio.StreamReader) -> None:
+        try:
+            while chunk := await reader.read(1024):
+                for item in self._codec.decoder.feed(chunk):
+                    self._handle(item)
+        except OSError as err:
+            _LOGGER.warning("Connection to %s lost: %s", self.connection, err)
+        if not self._disconnected.is_set():
+            # stream ended by the other side (EOF or error), not by _disconnect()
+            _LOGGER.warning("Connection to %s closed", self.connection)
+            await self._disconnect()
+
+    def _handle(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> None:
+        if self._codec.is_response(item):
+            if (
+                self._response is not None
+                and not self._response.done()
+                and self._response_match is not None
+                and self._response_match(item)
+            ):
+                self._response.set_result(item)
+            return
+        telegram = self._codec.radio(item)
+        if telegram is None:
+            return
+        self.telegrams_received += 1
+        if self._on_telegram:
+            try:
+                self._on_telegram(telegram)
+            except Exception:
+                _LOGGER.exception("Error handling telegram %s", telegram)
+
+    async def _disconnect(self) -> None:
+        was_connected = self.connected
+        self._disconnected.set()
+        task, self._reader_task = self._reader_task, None
+        if task is not None and task is not asyncio.current_task():
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        writer, self._writer = self._writer, None
+        if writer is not None:
+            writer.close()
+            with contextlib.suppress(OSError):
+                await writer.wait_closed()
+        if was_connected and self._on_connection_change:
+            self._on_connection_change(False)

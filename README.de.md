@@ -20,9 +20,9 @@
 
 <p align="center"><em><a href="README.md">English version</a></em></p>
 
-> **Status: frühe Entwicklung.** Die Integration lässt sich installieren, die
-> Einrichtung von Gateways ist aber noch nicht umgesetzt. Nicht produktiv
-> einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese
+> **Status: frühe Entwicklung.** Gateways lassen sich anlegen (FAM-USB,
+> FGW14-USB, MGW-ETH, Symcon LAN, generisch ESP2/ESP3; per USB oder ser2net)
+> und bleiben verbunden, Geräte gibt es noch keine. Nicht produktiv einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese
 > hier hat die eigene Domain `enocean_eltako`.
 
 Eine neu geschriebene Integration für Eltako (Baureihe 14 am Bus und Funk) und

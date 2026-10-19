@@ -1,15 +1,163 @@
-"""Config flow tests."""
+"""Gateway config flow."""
 
+from unittest.mock import patch
+
+import pytest
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.const import DOMAIN
+from custom_components.enocean_eltako.protocol.models import Protocol
+
+from .fake_gateway import FakeGateway
+
+pytestmark = pytest.mark.usefixtures("socket_enabled")
+
+PORTS = [{"value": "/dev/serial/by-id/usb-EnOcean_FAM-USB", "label": "FAM-USB"}]
 
 
-async def test_user_flow_aborts_until_gateways_are_implemented(hass: HomeAssistant) -> None:
+@pytest.fixture(autouse=True)
+def no_setup():
+    with patch("custom_components.enocean_eltako.async_setup_entry", return_value=True) as m:
+        yield m
+
+
+@pytest.fixture
+async def fake_esp2():
+    server = await FakeGateway(Protocol.ESP2).start()
+    yield server
+    await server.stop()
+
+
+async def _start(hass: HomeAssistant, model: str):
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
+    assert result["type"] is FlowResultType.FORM
+    return await hass.config_entries.flow.async_configure(result["flow_id"], {"model": model})
+
+
+async def test_fam_usb_via_ser2net_reads_base_id(hass: HomeAssistant, fake_esp2) -> None:
+    result = await _start(hass, "fam_usb")
+    assert result["type"] is FlowResultType.MENU
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    assert result["step_id"] == "tcp"
+    assert result["description_placeholders"]["baudrate"] == "9600"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Eltako FAM-USB FF-B7-44-80"
+    assert result["data"] == {
+        "model": "fam_usb",
+        "connection": {"type": "tcp", "host": "127.0.0.1", "port": fake_esp2.port},
+        "base_id": "FF-B7-44-80",
+    }
+    assert result["result"].unique_id == "FF-B7-44-80"
+
+
+async def test_fam_usb_serial(hass: HomeAssistant, fake_esp2) -> None:
+    result = await _start(hass, "fam_usb")
+    with patch(
+        "custom_components.enocean_eltako.config_flow.list_serial_ports", return_value=PORTS
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "serial"}
+        )
+    assert result["step_id"] == "serial"
+    assert "baudrate" not in result["data_schema"].schema  # fixed by the model
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway", return_value=0xFFB74480
+    ) as probe:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"path": PORTS[0]["value"]}
+        )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["connection"] == {
+        "type": "serial",
+        "path": PORTS[0]["value"],
+        "baudrate": 9600,
+    }
+    assert str(probe.call_args.args[1]) == f"{PORTS[0]['value']} @ 9600"
+
+
+async def test_generic_esp2_asks_for_baudrate(hass: HomeAssistant) -> None:
+    result = await _start(hass, "esp2")
+    with patch(
+        "custom_components.enocean_eltako.config_flow.list_serial_ports", return_value=PORTS
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "serial"}
+        )
+    assert "baudrate" in result["data_schema"].schema
+
+
+async def test_cannot_connect_shows_error(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP2).start()
+    port = server.port
+    await server.stop()
+    result = await _start(hass, "fam_usb")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": port}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_base_id_entered_when_gateway_is_silent(hass: HomeAssistant, fake_esp2) -> None:
+    fake_esp2.base_id = None
+    result = await _start(hass, "fgw14_usb")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    with patch(
+        "custom_components.enocean_eltako.protocol.gateway.Gateway.read_base_id", return_value=None
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+        )
+    assert result["step_id"] == "base_id"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"base_id": "FF-AA-80-01"}
+    )
+    assert result["errors"] == {"base_id": "invalid_base_id"}
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"base_id": "ff:aa:80:00"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["base_id"] == "FF-AA-80-00"
+    assert result["data"]["connection"]["type"] == "tcp"
+
+
+async def test_network_gateway_esp3_skips_menu(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
+    try:
+        result = await _start(hass, "mgw_eth")
+        assert result["step_id"] == "network"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "127.0.0.1", "port": server.port}
+        )
+    finally:
+        await server.stop()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "PioTek MGW-ETH FF-8A-1B-00"
+
+
+async def test_duplicate_base_id_aborts(hass: HomeAssistant, fake_esp2) -> None:
+    MockConfigEntry(domain=DOMAIN, unique_id="FF-B7-44-80").add_to_hass(hass)
+    result = await _start(hass, "fam_usb")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
     assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "not_implemented"
+    assert result["reason"] == "already_configured"

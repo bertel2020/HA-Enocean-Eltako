@@ -3,11 +3,77 @@
     "step": {
       "user": {
         "title": "Add gateway",
-        "description": "Set up an EnOcean gateway."
+        "description": "Which gateway do you want to add?",
+        "data": {
+          "model": "Gateway"
+        }
+      },
+      "connection": {
+        "title": "Connection",
+        "description": "How is the gateway connected?",
+        "menu_options": {
+          "serial": "USB (direct)",
+          "tcp": "Network (ser2net)"
+        }
+      },
+      "serial": {
+        "title": "USB connection",
+        "description": "Choose the serial port of the {model}.",
+        "data": {
+          "path": "Serial port",
+          "baudrate": "Baud rate"
+        },
+        "data_description": {
+          "path": "Prefer the /dev/serial/by-id path, it survives reboots and re-plugging."
+        }
+      },
+      "tcp": {
+        "title": "Network connection (ser2net)",
+        "description": "Host and port of the ser2net server the {model} is connected to. The baud rate is set in ser2net, not here: {baudrate} baud for this gateway.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "network": {
+        "title": "Network connection",
+        "description": "Host and port of the {model}.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "base_id": {
+        "title": "Base ID",
+        "description": "The {model} did not report its base ID. Enter it (for example FF-AA-80-00); it is printed on the device or shown by the PCT14 tool.",
+        "data": {
+          "base_id": "Base ID"
+        }
       }
     },
+    "error": {
+      "cannot_connect": "Cannot open the connection. Check the port, host and baud rate.",
+      "invalid_base_id": "Not a valid base ID. It lies between FF-80-00-00 and FF-FF-FF-80 and ends in 00 or 80."
+    },
     "abort": {
-      "not_implemented": "Gateway setup is not implemented yet. This integration is in early development."
+      "already_configured": "A gateway with this base ID is already set up."
+    }
+  },
+  "selector": {
+    "model": {
+      "options": {
+        "fam_usb": "Eltako FAM-USB",
+        "fgw14_usb": "Eltako FGW14-USB",
+        "mgw_eth": "PioTek MGW-ETH",
+        "symcon_lan": "Symcon EnOcean LAN Gateway",
+        "esp3": "Generic ESP3 (USB 300, TCM 310 …)",
+        "esp2": "Generic ESP2"
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Cannot connect to {connection}: {error}"
     }
   }
 }

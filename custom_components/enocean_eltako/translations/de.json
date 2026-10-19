@@ -3,11 +3,77 @@
     "step": {
       "user": {
         "title": "Gateway hinzufügen",
-        "description": "Ein EnOcean-Gateway einrichten."
+        "description": "Welches Gateway möchtest du hinzufügen?",
+        "data": {
+          "model": "Gateway"
+        }
+      },
+      "connection": {
+        "title": "Verbindung",
+        "description": "Wie ist das Gateway angeschlossen?",
+        "menu_options": {
+          "serial": "USB (direkt)",
+          "tcp": "Netzwerk (ser2net)"
+        }
+      },
+      "serial": {
+        "title": "USB-Verbindung",
+        "description": "Wähle die serielle Schnittstelle des {model}.",
+        "data": {
+          "path": "Serielle Schnittstelle",
+          "baudrate": "Baudrate"
+        },
+        "data_description": {
+          "path": "Am besten den Pfad unter /dev/serial/by-id wählen, er bleibt nach Neustart und Umstecken gleich."
+        }
+      },
+      "tcp": {
+        "title": "Netzwerkverbindung (ser2net)",
+        "description": "Host und Port des ser2net-Servers, an dem der {model} hängt. Die Baudrate stellst du in ser2net ein, nicht hier: {baudrate} Baud für dieses Gateway.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "network": {
+        "title": "Netzwerkverbindung",
+        "description": "Host und Port des {model}.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "base_id": {
+        "title": "Base-ID",
+        "description": "Der {model} hat seine Base-ID nicht gemeldet. Gib sie ein (zum Beispiel FF-AA-80-00); sie steht auf dem Gerät oder im PCT14.",
+        "data": {
+          "base_id": "Base-ID"
+        }
       }
     },
+    "error": {
+      "cannot_connect": "Die Verbindung lässt sich nicht öffnen. Prüfe Schnittstelle, Host und Baudrate.",
+      "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80."
+    },
     "abort": {
-      "not_implemented": "Die Einrichtung von Gateways ist noch nicht umgesetzt. Die Integration befindet sich in einer frühen Entwicklungsphase."
+      "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet."
+    }
+  },
+  "selector": {
+    "model": {
+      "options": {
+        "fam_usb": "Eltako FAM-USB",
+        "fgw14_usb": "Eltako FGW14-USB",
+        "mgw_eth": "PioTek MGW-ETH",
+        "symcon_lan": "Symcon EnOcean LAN Gateway",
+        "esp3": "Generisch ESP3 (USB 300, TCM 310 …)",
+        "esp2": "Generisch ESP2"
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Keine Verbindung zu {connection}: {error}"
     }
   }
 }
