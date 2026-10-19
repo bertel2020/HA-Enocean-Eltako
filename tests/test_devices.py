@@ -626,3 +626,65 @@ def test_heating_controller_telegram() -> None:
         "setpoint": 19.9,
         "temperature": 19.9,
     }
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine", unavailable_when_silent=True)]],
+    indirect=True,
+)
+async def test_last_seen_and_silence_repair(hass: HomeAssistant, gateway, monkeypatch) -> None:
+    import time as time_module
+
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.enocean_eltako import health
+
+    entry, server = gateway
+    prefix = f"{BASE}_05-00-00-12_1"
+    _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)
+    await _settle(hass)
+    last_seen = hass.states.get(_entity(hass, "sensor", f"{prefix}_last_seen"))
+    assert last_seen.state not in ("unknown", "unavailable")
+    assert last_seen.attributes["telegrams"] == 1
+    power = _entity(hass, "sensor", f"{prefix}_power")
+
+    later = time_module.time() + 3 * 600 + 60
+    monkeypatch.setattr(health.time, "time", lambda: later)
+    entry.runtime_data.health_check()
+    await hass.async_block_till_done()
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, f"device_silent_{BASE}_05-00-00-12")
+    assert issue is not None and issue.translation_key == "device_silent"
+    assert hass.states.get(power).state == "unavailable"
+
+    _push(server, 0x07, bytes.fromhex("0003E70C"), 0x05000012)  # heard again: 999 W
+    await _settle(hass)
+    assert hass.states.get(power).state == "999"
+    monkeypatch.undo()
+    entry.runtime_data.health_check()
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, f"device_silent_{BASE}_05-00-00-12") is None
+
+
+@pytest.mark.parametrize(
+    "esp3_gateway",
+    [[_subentry("temp_humidity", "01-82-0A-11", "FAFT")]],
+    indirect=True,
+)
+async def test_rssi_from_esp3(hass: HomeAssistant, esp3_gateway) -> None:
+    from custom_components.enocean_eltako.protocol import esp3
+
+    _entry, server = esp3_gateway
+    data = bytes.fromhex("A5007D7D08") + (0x01820A11).to_bytes(4, "big") + b"\x01"
+    for dbm in (0x2D, 0x40):
+        optional = bytes.fromhex("01FFFFFFFF") + bytes([dbm]) + b"\x00"
+        server.push(esp3.Esp3Packet(esp3.PacketType.RADIO_ERP1, data, optional).encode())
+        await asyncio.sleep(0.25)  # beyond the dispatcher's duplicate window
+    await _settle(hass)
+    unique = "FF-8A-1B-00_01-82-0A-11_1_rssi"
+    entity_id = _entity(hass, "sensor", unique)
+    er.async_get(hass).async_update_entity(entity_id, disabled_by=None)
+    device = next(iter(_entry.runtime_data.devices.values()))
+    assert device.stats.rssi == -64
+    assert (device.stats.rssi_min, device.stats.rssi_max) == (-64, -45)
+    assert device.stats.repeat_count == 1

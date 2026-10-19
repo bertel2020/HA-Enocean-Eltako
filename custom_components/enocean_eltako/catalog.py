@@ -27,6 +27,7 @@ OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
 OPT_OFF_BUTTON = "off_button"  # button that switches off, or "released"
 OPT_TEMPERATURE_SENSOR = "temperature_sensor"  # heating: entity with the room temperature
 OPT_SEND_INTERVAL = "send_interval"  # heating: seconds between controller telegrams
+OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -79,6 +80,8 @@ class DeviceModel:
     platforms: tuple[Platform, ...]  # first is the default; a choice when more than one
     senders: tuple[SenderProfile, ...] = ()  # first is the primary (required) profile
     receive_extra: tuple[EEPRef, ...] = ()  # further profiles sent under the same ID
+    interval: int | None = None  # expected seconds between telegrams; None = only on change
+    manufacturer: str = "Eltako"
     options: tuple[str, ...] = ()
     examples: str = ""  # Eltako models, shown in the flow
 
@@ -132,6 +135,8 @@ CATALOG: dict[str, DeviceModel] = {
             # D2-01-09 needs an ESP3 gateway; behind an ESP2 gateway (FAM-USB) the state
             # comes only from RPS 0x70/0x50 telegrams as today in the old integration
             receive_extra=(_ref("A5-12-01:std"), _ref("M5-38-08:eltako")),
+            interval=600,  # power repeated every 10 min
+            manufacturer="Permundo",
             examples="Permundo PSC132, PSC234",
         ),
         DeviceModel(
@@ -158,18 +163,29 @@ CATALOG: dict[str, DeviceModel] = {
             examples="FTS14EM, FSM61, garage door controllers",
         ),
         DeviceModel(
-            "meter", _ref("A5-12-01:eltako"), (Platform.SENSOR,), examples="FWZ12, FSDG14, DSZ14"
+            "meter",
+            _ref("A5-12-01:eltako"),
+            (Platform.SENSOR,),
+            interval=600,
+            examples="FWZ12, FSDG14, DSZ14",
         ),
         DeviceModel(
-            "temp_humidity", _ref("A5-04-02:std"), (Platform.SENSOR,), examples="FAFT60, FFT65B"
+            "temp_humidity",
+            _ref("A5-04-02:std"),
+            (Platform.SENSOR,),
+            interval=1800,
+            examples="FAFT60, FFT65B",
         ),
         DeviceModel(
             "fbh",
             _ref("A5-08-01:eltako"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
+            interval=1800,
             examples="FBH65, FBH65S, FABH65S",
         ),
-        DeviceModel("co2", _ref("A5-09-04:std"), (Platform.SENSOR,), examples="FCO2TF65"),
+        DeviceModel(
+            "co2", _ref("A5-09-04:std"), (Platform.SENSOR,), interval=1800, examples="FCO2TF65"
+        ),
         DeviceModel(
             "heating_actuator",
             _ref("M5-10-06:eltako"),
@@ -182,12 +198,14 @@ CATALOG: dict[str, DeviceModel] = {
             "room_controller",
             _ref("A5-10-06:eltako"),
             (Platform.CLIMATE, Platform.SENSOR),
+            interval=1800,
             examples="FUTH, FTR65HS, FTAF55D",
         ),
         DeviceModel(
             "weather",
             _ref("A5-13-01:eltako"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
+            interval=600,
             examples="FWS61, FWG14",
         ),
     )

@@ -33,6 +33,7 @@ from .catalog import (
     OPT_TEMPERATURE_SENSOR,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
+    OPT_UNAVAILABLE_WHEN_SILENT,
     DeviceModel,
 )
 from .const import (
@@ -82,6 +83,7 @@ OPTION_KEYS = (
     OPT_OFF_BUTTON,
     OPT_TEMPERATURE_SENSOR,
     OPT_SEND_INTERVAL,
+    OPT_UNAVAILABLE_WHEN_SILENT,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -317,6 +319,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             )
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
+        if model.interval:
+            schema[vol.Required(OPT_UNAVAILABLE_WHEN_SILENT, default=False)] = BooleanSelector()
         return schema
 
     async def _async_save(

@@ -222,7 +222,8 @@
             "on_button": "On with",
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
-            "send_interval": "Send interval"
+            "send_interval": "Send interval",
+            "unavailable_when_silent": "Unavailable when silent"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
@@ -230,7 +231,8 @@
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
-            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h."
+            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
+            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval."
           }
         },
         "reconfigure": {
@@ -251,14 +253,16 @@
             "on_button": "On with",
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
-            "send_interval": "Send interval"
+            "send_interval": "Send interval",
+            "unavailable_when_silent": "Unavailable when silent"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
-            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h."
+            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
+            "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval."
           }
         },
         "address": {
@@ -335,6 +339,15 @@
           "setback": "Setback (−2 K)",
           "off": "Off"
         }
+      },
+      "last_seen": {
+        "name": "Last seen"
+      },
+      "rssi": {
+        "name": "Signal strength"
+      },
+      "command_success": {
+        "name": "Commands confirmed"
       }
     },
     "binary_sensor": {
@@ -377,6 +390,14 @@
     "climate_silent": {
       "title": "{name} has not been controlled for 45 minutes",
       "description": "Home Assistant could not send setpoint and temperature to {name} for 45 minutes (gateway offline?). After 1 hour without a telegram the heating actuator switches to its fault mode with a fixed heating cycle."
+    },
+    "device_silent": {
+      "title": "{name} not heard for {hours} h",
+      "description": "{name} usually reports regularly but has not been heard for {hours} hours. Last received by: {gateway}. Check its battery or power supply and the radio range."
+    },
+    "gateway_disconnected": {
+      "title": "{name} is disconnected",
+      "description": "The connection to {name} ({connection}) has been down for more than 5 minutes; Home Assistant keeps retrying. Check the USB cable or the ser2net service and the network."
     }
   }
 }

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
@@ -28,6 +30,7 @@ from .const import (
     MODE_ON_DEMAND,
 )
 from .device import EnOceanDevice
+from .health import async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
@@ -57,6 +60,8 @@ class GatewayRuntime:
     on_demand: bool = False
     bus: BusGroupRuntime | None = None
     devices: dict[str, EnOceanDevice] = field(default_factory=dict)  # by subentry ID
+    disconnected_since: float | None = None  # time.time() of the last disconnect
+    health_check: Callable[[], None] | None = None
 
 
 type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
@@ -98,8 +103,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     def on_telegram(telegram: RadioTelegram) -> None:
         hub.dispatcher.dispatch(entry.entry_id, telegram)
 
+    @callback
+    def on_connection_change(connected: bool) -> None:
+        if hasattr(entry, "runtime_data"):
+            entry.runtime_data.disconnected_since = None if connected else time.time()
+
     gateway = Gateway(
-        model.protocol, connection_from_dict(entry.data[CONF_DEVICE]), on_telegram=on_telegram
+        model.protocol,
+        connection_from_dict(entry.data[CONF_DEVICE]),
+        on_telegram=on_telegram,
+        on_connection_change=on_connection_change,
     )
     if not on_demand:
         try:
@@ -149,6 +162,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         serial_number=entry.data[CONF_BASE_ID],
     )
     _async_setup_devices(hass, entry)
+    entry.runtime_data.health_check = async_setup_health(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_change))
     if not on_demand:

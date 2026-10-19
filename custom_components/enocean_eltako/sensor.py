@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
     RestoreSensor,
     SensorDeviceClass,
+    SensorEntity,
     SensorEntityDescription,
     SensorStateClass,
 )
@@ -16,6 +18,7 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     LIGHT_LUX,
     PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     Platform,
     UnitOfElectricPotential,
@@ -24,8 +27,10 @@ from homeassistant.const import (
     UnitOfSpeed,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
 from .device import EnOceanDevice
@@ -200,6 +205,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
+        # E5/I7 diagnostics for every device
+        diagnostics: list[SensorEntity] = [LastSeenSensor(device), RssiSensor(device)]
+        if device.senders:
+            diagnostics.append(CommandSuccessSensor(device))
+        async_add_entities(diagnostics, config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
         async_add_entities(
@@ -226,3 +236,88 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
             return False
         self._attr_native_value = value
         return True
+
+
+class _StatsSensor(EnOceanEntity, SensorEntity):
+    """Diagnostic sensor fed from the device's radio statistics, not from decoded values."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @callback
+    def _availability_changed(self) -> None:
+        self.async_write_ha_state()  # every statistics change is a new state
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class LastSeenSensor(_StatsSensor, RestoreEntity):
+    _attr_translation_key = "last_seen"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "last_seen")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        last = await self.async_get_last_state()
+        if last is not None and self._device.stats.last_seen is None:
+            restored = dt_util.parse_datetime(last.state)
+            if restored is not None:
+                self._device.stats.last_seen = restored.timestamp()
+
+    @property
+    def native_value(self) -> datetime | None:
+        seen = self._device.stats.last_seen
+        return dt_util.utc_from_timestamp(seen) if seen is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        gateway = self.hass.config_entries.async_get_entry(self._device.stats.gateway or "")
+        return {
+            "gateway": gateway.title if gateway else None,
+            "telegrams": self._device.stats.telegrams,
+            "silent": self._device.silent,
+        }
+
+
+class RssiSensor(_StatsSensor):
+    _attr_translation_key = "rssi"
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "rssi")
+
+    @property
+    def native_value(self) -> int | None:
+        return self._device.stats.rssi
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        stats = self._device.stats
+        return {"min": stats.rssi_min, "max": stats.rssi_max, "repeat_count": stats.repeat_count}
+
+
+class CommandSuccessSensor(_StatsSensor):
+    _attr_translation_key = "command_success"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "command_success")
+
+    @property
+    def native_value(self) -> float | None:
+        return self._device.stats.success_rate
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        stats = self._device.stats
+        return {"commands": stats.commands, "confirmed": stats.confirmed}

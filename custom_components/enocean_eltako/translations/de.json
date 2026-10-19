@@ -222,7 +222,8 @@
             "on_button": "Ein mit",
             "off_button": "Aus mit",
             "temperature_sensor": "Raumtemperatur",
-            "send_interval": "Sendeintervall"
+            "send_interval": "Sendeintervall",
+            "unavailable_when_silent": "Nicht verfügbar, wenn stumm"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -230,7 +231,8 @@
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
-            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb."
+            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
+            "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde."
           }
         },
         "reconfigure": {
@@ -251,14 +253,16 @@
             "on_button": "Ein mit",
             "off_button": "Aus mit",
             "temperature_sensor": "Raumtemperatur",
-            "send_interval": "Sendeintervall"
+            "send_interval": "Sendeintervall",
+            "unavailable_when_silent": "Nicht verfügbar, wenn stumm"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
-            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb."
+            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
+            "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde."
           }
         },
         "address": {
@@ -335,6 +339,15 @@
           "setback": "Absenkung (−2 K)",
           "off": "Aus"
         }
+      },
+      "last_seen": {
+        "name": "Zuletzt gehört"
+      },
+      "rssi": {
+        "name": "Signalstärke"
+      },
+      "command_success": {
+        "name": "Befehle bestätigt"
       }
     },
     "binary_sensor": {
@@ -377,6 +390,14 @@
     "climate_silent": {
       "title": "{name} wird seit 45 Minuten nicht mehr geregelt",
       "description": "Home Assistant konnte {name} seit 45 Minuten keine Soll- und Isttemperatur senden (Gateway offline?). Nach 1 Stunde ohne Telegramm schaltet der Heizungsaktor in den Störbetrieb mit festem Heiztakt."
+    },
+    "device_silent": {
+      "title": "{name} seit {hours} h nicht gehört",
+      "description": "{name} meldet sich normalerweise regelmäßig, wurde aber seit {hours} Stunden nicht gehört. Zuletzt empfangen von: {gateway}. Batterie bzw. Stromversorgung und Funkreichweite prüfen."
+    },
+    "gateway_disconnected": {
+      "title": "{name} ist getrennt",
+      "description": "Die Verbindung zu {name} ({connection}) ist seit mehr als 5 Minuten unterbrochen; Home Assistant versucht es weiter. USB-Kabel bzw. den ser2net-Dienst und das Netzwerk prüfen."
     }
   }
 }
