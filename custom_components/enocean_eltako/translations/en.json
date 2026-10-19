@@ -1,5 +1,11 @@
 {
   "config": {
+    "step": {
+      "user": {
+        "title": "Add gateway",
+        "description": "Set up an EnOcean gateway."
+      }
+    },
     "abort": {
       "not_implemented": "Gateway setup is not implemented yet. This integration is in early development."
     }
