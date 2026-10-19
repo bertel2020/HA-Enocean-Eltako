@@ -26,9 +26,8 @@
 > failover; the FAM14 can stay disconnected until it is needed. Received
 > telegrams show up in the diagnostics and can be recorded with the action
 > `enocean_eltako.capture`; there are no devices yet. Do not use it in
-> production. The existing `eltako`
-> integration keeps running in parallel; this one uses its own domain
-> `enocean_eltako`.
+> production. The existing `eltako` integration keeps running in parallel;
+> this one uses its own domain `enocean_eltako`.
 
 A new integration for Eltako (series 14 bus and wireless) and other EnOcean
 devices, written from scratch. Goals:

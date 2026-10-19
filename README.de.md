@@ -26,8 +26,9 @@
 > am selben Bus bilden eine Bus-Gruppe mit Failover; der FAM14 kann getrennt
 > bleiben, bis er gebraucht wird. Empfangene Telegramme stehen in den
 > Diagnosedaten und lassen sich mit der Aktion `enocean_eltako.capture`
-> mitschneiden; Geräte gibt es noch keine. Nicht produktiv einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese
-> hier hat die eigene Domain `enocean_eltako`.
+> mitschneiden; Geräte gibt es noch keine. Nicht produktiv einsetzen. Die
+> bestehende Integration `eltako` läuft parallel weiter; diese hier hat die
+> eigene Domain `enocean_eltako`.
 
 Eine neu geschriebene Integration für Eltako (Baureihe 14 am Bus und Funk) und
 andere EnOcean-Geräte. Ziele:
