@@ -35,6 +35,9 @@ class SenderStore:
         if (data := await self._store.async_load()) is not None:
             self.pool.load(data)
 
+    async def async_save(self) -> None:
+        await self._store.async_save(self.pool.as_dict())
+
     def async_schedule_save(self) -> None:
         self._store.async_delay_save(self.pool.as_dict, SAVE_DELAY)
 

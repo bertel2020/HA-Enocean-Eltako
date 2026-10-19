@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
+from .catalog import PLATFORMS
 from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
@@ -22,6 +24,7 @@ from .const import (
     MODE_ALWAYS,
     MODE_ON_DEMAND,
 )
+from .device import EnOceanDevice
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
@@ -29,10 +32,12 @@ from .protocol.gateway import Gateway
 from .protocol.ids import parse_id
 from .protocol.models import MODELS
 from .protocol.send_queue import SendQueue
+from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
 from .senders import SenderStore, async_remove_store, bus_key, radio_key
 from .services import async_setup_services
+from .subentry_flow import sender_owner
 from .websocket import async_setup_websocket
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -48,6 +53,7 @@ class GatewayRuntime:
     senders: SenderStore  # radio sender IDs: base ID + 0...127
     on_demand: bool = False
     bus: BusGroupRuntime | None = None
+    devices: dict[str, EnOceanDevice] = field(default_factory=dict)  # by subentry ID
 
 
 type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
@@ -111,14 +117,56 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         queue.on_telegram(received.telegram)
 
     entry.async_on_unload(hub.dispatcher.add_listener(WILDCARD, confirm))
+
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        name=entry.title,
+        manufacturer="EnOcean",
+        model=model.name,
+        serial_number=entry.data[CONF_BASE_ID],
+    )
+    _async_setup_devices(hass, entry)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(_async_reload_on_change))
     if not on_demand:
         entry.async_create_background_task(hass, gateway.run(), f"{DOMAIN} {entry.title}")
     entry.async_create_background_task(hass, queue.run(), f"{DOMAIN} {entry.title} queue")
     return True
 
 
+def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """One runtime object per device subentry; release sender IDs of removed devices."""
+    runtime = entry.runtime_data
+    owners = set()
+    for subentry_id, subentry in entry.subentries.items():
+        device = EnOceanDevice(entry, subentry)
+        runtime.devices[subentry_id] = device
+        entry.async_on_unload(device.start())
+        owners.add(sender_owner(device.device_id))
+    pool = runtime.senders.pool
+    released = False
+    for sender, allocation in pool.allocations():
+        if (
+            allocation.state is SenderState.ASSIGNED
+            and allocation.owner.startswith("device:")
+            and allocation.owner not in owners
+        ):
+            pool.release(sender)  # blocked until the teach-out is confirmed
+            released = True
+    if released:
+        runtime.senders.async_schedule_save()
+
+
+async def _async_reload_on_change(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """Subentries added or removed: rebuild devices and entities."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> bool:
-    """Stop the send queue and close the gateway connection."""
+    """Unload platforms, stop the send queue and close the gateway connection."""
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
     await entry.runtime_data.queue.stop()
     await entry.runtime_data.gateway.close()
     entry.runtime_data.hub.monitor.clear(entry.entry_id)

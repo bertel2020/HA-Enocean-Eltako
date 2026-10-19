@@ -93,11 +93,47 @@
         "always": "Always connected",
         "on_demand": "On demand"
       }
+    },
+    "platform": {
+      "options": {
+        "light": "Light",
+        "switch": "Switch"
+      }
+    },
+    "device_class": {
+      "options": {
+        "door": "Door",
+        "window": "Window",
+        "garage_door": "Garage door",
+        "opening": "Opening"
+      }
+    },
+    "device_model": {
+      "options": {
+        "switch": "Switching actuator (FSR61, FSR14, FL62 …)",
+        "dimmer": "Dimmer (FUD14, FUD61, FD62 …)",
+        "cover": "Shutter / blind (FSB14, FSB61, FSB71 …)",
+        "window_handle": "Window handle (FTKE, FFG7B, Hoppe …)",
+        "contact": "Door / window contact (FTK, FTKB …)",
+        "rocker": "Rocker switch (F4T55E, FT55, NodOn …)",
+        "meter": "Energy meter (FWZ12, FSDG14, DSZ14 …)",
+        "temp_humidity": "Temperature and humidity (FAFT60, FFT65B …)",
+        "fbh": "Motion and brightness sensor (FBH65 …)",
+        "co2": "CO2 sensor (FCO2TF65)",
+        "room_controller": "Room controller (FUTH, FTR65HS …)",
+        "weather": "Weather station (FWS61, FWG14)"
+      }
     }
   },
   "exceptions": {
     "cannot_connect": {
       "message": "Cannot connect to {connection}: {error}"
+    },
+    "cover_position_unknown": {
+      "message": "The position is unknown; open or close the cover fully first."
+    },
+    "gateway_not_connected": {
+      "message": "{gateway} is not connected."
     }
   },
   "services": {
@@ -128,6 +164,114 @@
           "message_delay": "Minimum time between two telegrams sent by this gateway.",
           "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between."
         }
+      }
+    }
+  },
+  "config_subentries": {
+    "device": {
+      "entry_type": "Device",
+      "initiate_flow": {
+        "user": "Add device"
+      },
+      "step": {
+        "user": {
+          "title": "Add device",
+          "description": "What kind of device?",
+          "data": {
+            "model": "Device"
+          }
+        },
+        "device": {
+          "title": "Device",
+          "description": "Examples: {examples}. Receives {receive}, sends {send}.",
+          "data": {
+            "name": "Name",
+            "device_id": "Device ID",
+            "sender_id": "Sender ID",
+            "platform": "Type",
+            "time_opens": "Travel time up",
+            "time_closes": "Travel time down",
+            "device_class": "Kind",
+            "invert": "Invert"
+          },
+          "data_description": {
+            "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
+            "sender_id": "ID Home Assistant sends from; suggested is the next free one of this gateway. Teach it in on the actuator with the teach-in button.",
+            "time_opens": "Full travel time from closed to open.",
+            "time_closes": "Full travel time from open to closed."
+          }
+        }
+      },
+      "error": {
+        "invalid_id": "Not a valid ID (for example 05-10-A2-B3).",
+        "already_configured": "This device ID is already set up on this gateway.",
+        "sender_invalid_id": "Not a valid ID.",
+        "sender_out_of_range": "Outside this gateway's range (base ID + 0…127).",
+        "sender_in_use": "Already used by another device.",
+        "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
+        "sender_pool_exhausted": "No free sender ID left."
+      },
+      "abort": {
+        "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "handle": {
+        "name": "Handle",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
+          "tilted": "Tilted"
+        }
+      },
+      "energy_tariff": {
+        "name": "Energy tariff {tariff}"
+      },
+      "setpoint": {
+        "name": "Setpoint"
+      },
+      "night_setback": {
+        "name": "Night setback"
+      },
+      "dawn": {
+        "name": "Dawn"
+      },
+      "sun_west": {
+        "name": "Sun west"
+      },
+      "sun_south": {
+        "name": "Sun south"
+      },
+      "sun_east": {
+        "name": "Sun east"
+      }
+    },
+    "binary_sensor": {
+      "rain": {
+        "name": "Rain"
+      }
+    },
+    "event": {
+      "rocker": {
+        "name": "Rocker",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "a1_pressed": "A1 pressed",
+              "a0_pressed": "A0 pressed",
+              "b1_pressed": "B1 pressed",
+              "b0_pressed": "B0 pressed",
+              "released": "Released"
+            }
+          }
+        }
+      }
+    },
+    "button": {
+      "teach_in": {
+        "name": "Teach-in"
       }
     }
   }

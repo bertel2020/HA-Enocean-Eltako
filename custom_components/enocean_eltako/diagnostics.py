@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from . import EnOceanEltakoConfigEntry
+from .protocol.ids import format_id
 
 TELEGRAMS = 100
 
@@ -29,5 +30,17 @@ async def async_get_config_entry_diagnostics(
         "dispatcher": runtime.hub.dispatcher.stats.as_dict(),
         "send_queue": {"length": len(runtime.queue), **runtime.queue.stats.as_dict()},
         "sender_pool": runtime.senders.pool.as_dict(),
+        "devices": [
+            {
+                "title": d.subentry.title,
+                "model": d.model.id,
+                "device_id": format_id(d.device_id),
+                "sender_id": format_id(d.sender_id) if d.sender_id is not None else None,
+                "receive_eep": str(d.model.receive) if d.model.receive else None,
+                "send_eep": str(d.model.send) if d.model.send else None,
+                "last_telegram": d.last_received.timestamp if d.last_received else None,
+            }
+            for d in runtime.devices.values()
+        ],
         "telegrams": [e.as_dict() for e in runtime.hub.monitor.history(entry.entry_id, TELEGRAMS)],
     }

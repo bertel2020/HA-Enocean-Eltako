@@ -60,6 +60,9 @@ class SenderPool:
     def get(self, sender: int) -> Allocation | None:
         return self._allocations.get(sender)
 
+    def allocations(self) -> list[tuple[int, Allocation]]:
+        return sorted(self._allocations.items())
+
     def owner_ids(self, owner: str) -> list[int]:
         return sorted(s for s, a in self._allocations.items() if a.owner == owner)
 
@@ -91,7 +94,8 @@ class SenderPool:
 
     def release(self, sender: int) -> None:
         """Owner removed: block the ID until the teach-out is confirmed."""
-        if (current := self._allocations.get(sender)) is not None:
+        current = self._allocations.get(sender)
+        if current is not None and current.state is SenderState.ASSIGNED:
             self._allocations[sender] = Allocation(current.owner, SenderState.BLOCKED)
 
     def confirm_teach_out(self, sender: int) -> None:

@@ -93,11 +93,47 @@
         "always": "Immer verbunden",
         "on_demand": "Bei Bedarf"
       }
+    },
+    "platform": {
+      "options": {
+        "light": "Licht",
+        "switch": "Schalter"
+      }
+    },
+    "device_class": {
+      "options": {
+        "door": "Tür",
+        "window": "Fenster",
+        "garage_door": "Garagentor",
+        "opening": "Öffnung"
+      }
+    },
+    "device_model": {
+      "options": {
+        "switch": "Schaltaktor (FSR61, FSR14, FL62 …)",
+        "dimmer": "Dimmaktor (FUD14, FUD61, FD62 …)",
+        "cover": "Rollladen / Jalousie (FSB14, FSB61, FSB71 …)",
+        "window_handle": "Fenstergriff (FTKE, FFG7B, Hoppe …)",
+        "contact": "Tür-/Fensterkontakt (FTK, FTKB …)",
+        "rocker": "Wippentaster (F4T55E, FT55, NodOn …)",
+        "meter": "Energiezähler (FWZ12, FSDG14, DSZ14 …)",
+        "temp_humidity": "Temperatur und Feuchte (FAFT60, FFT65B …)",
+        "fbh": "Bewegungs- und Helligkeitssensor (FBH65 …)",
+        "co2": "CO2-Sensor (FCO2TF65)",
+        "room_controller": "Raumregler (FUTH, FTR65HS …)",
+        "weather": "Wetterstation (FWS61, FWG14)"
+      }
     }
   },
   "exceptions": {
     "cannot_connect": {
       "message": "Keine Verbindung zu {connection}: {error}"
+    },
+    "cover_position_unknown": {
+      "message": "Die Position ist unbekannt; den Rollladen zuerst ganz öffnen oder schließen."
+    },
+    "gateway_not_connected": {
+      "message": "{gateway} ist nicht verbunden."
     }
   },
   "services": {
@@ -128,6 +164,114 @@
           "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
           "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen."
         }
+      }
+    }
+  },
+  "config_subentries": {
+    "device": {
+      "entry_type": "Gerät",
+      "initiate_flow": {
+        "user": "Gerät hinzufügen"
+      },
+      "step": {
+        "user": {
+          "title": "Gerät hinzufügen",
+          "description": "Welche Art von Gerät?",
+          "data": {
+            "model": "Gerät"
+          }
+        },
+        "device": {
+          "title": "Gerät",
+          "description": "Beispiele: {examples}. Empfängt {receive}, sendet {send}.",
+          "data": {
+            "name": "Name",
+            "device_id": "Geräte-ID",
+            "sender_id": "Sender-ID",
+            "platform": "Art",
+            "time_opens": "Laufzeit auf",
+            "time_closes": "Laufzeit ab",
+            "device_class": "Art",
+            "invert": "Umkehren"
+          },
+          "data_description": {
+            "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
+            "sender_id": "ID, mit der Home Assistant sendet; vorgeschlagen ist die nächste freie dieses Gateways. Mit dem Einlern-Button im Aktor einlernen.",
+            "time_opens": "Volle Laufzeit von zu nach auf.",
+            "time_closes": "Volle Laufzeit von auf nach zu."
+          }
+        }
+      },
+      "error": {
+        "invalid_id": "Keine gültige ID (zum Beispiel 05-10-A2-B3).",
+        "already_configured": "Diese Geräte-ID ist an diesem Gateway schon eingerichtet.",
+        "sender_invalid_id": "Keine gültige ID.",
+        "sender_out_of_range": "Außerhalb des Bereichs dieses Gateways (Base-ID + 0…127).",
+        "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
+        "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
+        "sender_pool_exhausted": "Keine freie Sender-ID mehr."
+      },
+      "abort": {
+        "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "handle": {
+        "name": "Griff",
+        "state": {
+          "closed": "Geschlossen",
+          "open": "Offen",
+          "tilted": "Gekippt"
+        }
+      },
+      "energy_tariff": {
+        "name": "Energie Tarif {tariff}"
+      },
+      "setpoint": {
+        "name": "Sollwert"
+      },
+      "night_setback": {
+        "name": "Nachtabsenkung"
+      },
+      "dawn": {
+        "name": "Dämmerung"
+      },
+      "sun_west": {
+        "name": "Sonne West"
+      },
+      "sun_south": {
+        "name": "Sonne Süd"
+      },
+      "sun_east": {
+        "name": "Sonne Ost"
+      }
+    },
+    "binary_sensor": {
+      "rain": {
+        "name": "Regen"
+      }
+    },
+    "event": {
+      "rocker": {
+        "name": "Wippe",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "a1_pressed": "A1 gedrückt",
+              "a0_pressed": "A0 gedrückt",
+              "b1_pressed": "B1 gedrückt",
+              "b0_pressed": "B0 gedrückt",
+              "released": "Losgelassen"
+            }
+          }
+        }
+      }
+    },
+    "button": {
+      "teach_in": {
+        "name": "Einlernen"
       }
     }
   }

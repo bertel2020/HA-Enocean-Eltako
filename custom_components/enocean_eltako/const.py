@@ -20,3 +20,9 @@ CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
 MODE_ALWAYS: Final = "always"
 MODE_ON_DEMAND: Final = "on_demand"  # bus gateway connected only for failover / import
 DEFAULT_MESSAGE_DELAY: Final = 10
+
+SUBENTRY_DEVICE: Final = "device"
+CONF_DEVICE_ID: Final = "device_id"
+CONF_SENDER_ID: Final = "sender_id"
+CONF_NAME: Final = "name"
+SUBENTRY_SCHEMA: Final = 1  # version of the device subentry data (subentries have none)

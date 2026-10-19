@@ -12,6 +12,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
+    ConfigSubentryFlow,
     OptionsFlowWithReload,
 )
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -48,6 +49,7 @@ from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel
 from .protocol.transport import Connection, SerialConnection, TcpConnection
+from .subentry_flow import SUBENTRY_FLOWS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -312,6 +314,13 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> EnOceanEltakoOptionsFlow:
         return EnOceanEltakoOptionsFlow()
+
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(
+        cls, config_entry: ConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        return dict(SUBENTRY_FLOWS)
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
