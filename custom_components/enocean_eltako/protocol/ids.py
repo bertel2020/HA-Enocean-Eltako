@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import re
 
-_ID_RE = re.compile(r"^[0-9A-Fa-f]{2}([-:]?[0-9A-Fa-f]{2}){3}$")
+# four hex bytes with one separator used throughout ("-", ":" or " "), or none ("0x" allowed)
+_ID_RE = re.compile(
+    r"^(?:0[xX])?[0-9A-Fa-f]{8}$|^[0-9A-Fa-f]{2}([-: ])[0-9A-Fa-f]{2}(?:\1[0-9A-Fa-f]{2}){2}$"
+)
 
 BASE_ID_MIN = 0xFF800000
 BASE_ID_MAX = 0xFFFFFF80
@@ -12,11 +15,14 @@ BROADCAST = 0xFFFFFFFF
 
 
 def parse_id(text: str) -> int:
-    """Parse "FF-AA-80-00", "FF:AA:80:00" or "FFAA8000"; raise ValueError otherwise."""
+    """Parse "FF-AA-80-00", "FF:AA:80:00", "FF AA 80 00", "FFAA8000" or "0xFFAA8000".
+
+    Mixed separators are refused so that typing errors show; raises ValueError.
+    """
     text = text.strip()
     if not _ID_RE.match(text):
         raise ValueError(f"invalid EnOcean ID: {text!r}")
-    return int(re.sub(r"[-:]", "", text), 16)
+    return int(re.sub(r"[-: ]|^0[xX]", "", text), 16)
 
 
 def format_id(value: int) -> str:

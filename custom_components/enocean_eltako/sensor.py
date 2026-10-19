@@ -40,6 +40,7 @@ from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
 from .protocol.eep.std.profiles import PROFILES
+from .protocol.ids import format_id
 from .protocol.models import MODELS
 
 _LOGGER = logging.getLogger(__name__)
@@ -253,7 +254,11 @@ async def async_setup_entry(
     async_add_entities([GatewaySensor(entry, d) for d in GATEWAY_SENSORS if bus or not d.bus_only])
     for subentry_id, device in entry.runtime_data.devices.items():
         # E5/I7 diagnostics for every device
-        diagnostics: list[SensorEntity] = [LastSeenSensor(device), RssiSensor(device)]
+        diagnostics: list[SensorEntity] = [
+            LastSeenSensor(device),
+            RssiSensor(device),
+            EnOceanIdSensor(device),
+        ]
         if device.senders:
             diagnostics.append(CommandSuccessSensor(device))
         if device.model.kind == "cover":
@@ -353,6 +358,25 @@ class _StatsSensor(EnOceanEntity, SensorEntity):
     @callback
     def _availability_changed(self) -> None:
         self.async_write_ha_state()  # every statistics change is a new state
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class EnOceanIdSensor(EnOceanEntity, SensorEntity):
+    """The device's EnOcean ID as a value for templates and automations."""
+
+    _attr_translation_key = "enocean_id"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "enocean_id")
+        self._attr_native_value = format_id(device.device_id)
 
     @property
     def available(self) -> bool:

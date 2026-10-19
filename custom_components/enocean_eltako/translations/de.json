@@ -380,7 +380,7 @@
             "calibration": "Kalibrierung"
           },
           "data_description": {
-            "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
+            "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
             "time_opens": "Volle Laufzeit von zu nach auf.",
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
@@ -478,9 +478,9 @@
         }
       },
       "error": {
-        "invalid_id": "Keine gültige ID (zum Beispiel 05-10-A2-B3).",
+        "invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3.",
         "already_configured": "Diese Geräte-ID ist an diesem Gateway schon eingerichtet.",
-        "sender_invalid_id": "Keine gültige ID.",
+        "sender_invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel FF-B7-44-81 oder FFB74481.",
         "sender_out_of_range": "Außerhalb des Bereichs dieses Gateways (Base-ID + 0…127).",
         "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
         "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
@@ -579,6 +579,9 @@
       },
       "gateway_polls_dropped": {
         "name": "Verworfene Bus-Polls"
+      },
+      "enocean_id": {
+        "name": "EnOcean-ID"
       }
     },
     "binary_sensor": {

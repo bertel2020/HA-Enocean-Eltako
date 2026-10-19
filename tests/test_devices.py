@@ -1104,3 +1104,17 @@ async def test_psc_state_over_fam_usb(hass: HomeAssistant, gateway) -> None:
     _push(server, 0xD2, bytes.fromhex("04608000"), 0xFF85EF81)
     await _settle(hass)
     assert hass.states.get(switch).state == "off"
+
+
+@pytest.mark.parametrize(
+    "gateway", [[_subentry("contact", "01-00-00-07", "Fenster")]], indirect=True
+)
+async def test_enocean_id_sensor(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    registry = er.async_get(hass)
+    entity_id = _entity(hass, "sensor", f"{BASE}_01-00-00-07_1_enocean_id")
+    assert registry.async_get(entity_id).disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    registry.async_update_entity(entity_id, disabled_by=None)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "01-00-00-07"

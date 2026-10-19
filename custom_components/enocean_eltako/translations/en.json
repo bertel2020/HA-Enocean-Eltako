@@ -380,7 +380,7 @@
             "calibration": "Calibration"
           },
           "data_description": {
-            "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
+            "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
             "time_opens": "Full travel time from closed to open.",
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
@@ -478,9 +478,9 @@
         }
       },
       "error": {
-        "invalid_id": "Not a valid ID (for example 05-10-A2-B3).",
+        "invalid_id": "Not a valid ID. Four hex bytes, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3.",
         "already_configured": "This device ID is already set up on this gateway.",
-        "sender_invalid_id": "Not a valid ID.",
+        "sender_invalid_id": "Not a valid ID. Four hex bytes, for example FF-B7-44-81 or FFB74481.",
         "sender_out_of_range": "Outside this gateway's range (base ID + 0…127).",
         "sender_in_use": "Already used by another device.",
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
@@ -579,6 +579,9 @@
       },
       "gateway_polls_dropped": {
         "name": "Bus polls dropped"
+      },
+      "enocean_id": {
+        "name": "EnOcean ID"
       }
     },
     "binary_sensor": {
