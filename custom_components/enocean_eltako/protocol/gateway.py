@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
 from collections.abc import Awaitable, Callable
 
 from . import esp2, esp3
@@ -90,6 +91,7 @@ class Gateway:
         self._response_match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool] | None = None
         self.telegrams_received = 0
         self.polls_dropped = 0
+        self.last_telegram: float | None = None  # time.time() of the last radio telegram
 
     @property
     def connected(self) -> bool:
@@ -197,6 +199,7 @@ class Gateway:
         if telegram is None:
             return
         self.telegrams_received += 1
+        self.last_telegram = time.time()
         if self._on_telegram:
             try:
                 self._on_telegram(telegram)

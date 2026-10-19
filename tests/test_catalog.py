@@ -1,15 +1,25 @@
 """Every catalog profile has test telegrams (E12) and the device docs match the catalog."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from custom_components.enocean_eltako.catalog import CATALOG
+from custom_components.enocean_eltako.catalog import (
+    CATALOG,
+    CATEGORIES,
+    EEP_OPTIONS,
+    EEP_TO_MODEL,
+    GROUPS,
+    categories_of,
+)
 from custom_components.enocean_eltako.protocol.eep import EEPRef
 from custom_components.enocean_eltako.protocol.eep.codecs import decode_telegram
+from custom_components.enocean_eltako.protocol.eep.teach_in import MANUFACTURER_ELTAKO, TeachIn4BS
 from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+from custom_components.enocean_eltako.subentry_flow import candidates
 
 ID = 0x05000001
 
@@ -62,3 +72,35 @@ def test_device_docs_up_to_date() -> None:
         text=True,
     )
     assert result.returncode == 0, result.stdout
+
+
+COMPONENT = Path(__file__).resolve().parents[1] / "custom_components/enocean_eltako"
+
+
+@pytest.mark.parametrize("name", ["strings.json", "translations/en.json", "translations/de.json"])
+def test_flow_texts_cover_the_catalog(name: str) -> None:
+    """Every kind, category menu entry and EEP choice has a label in every language."""
+    data = json.loads((COMPONENT / name).read_text(encoding="utf-8"))
+    assert set(data["selector"]["device_model"]["options"]) == set(CATALOG)
+    assert set(data["selector"]["eep"]["options"]) == set(EEP_OPTIONS)
+    steps = data["config_subentries"]["device"]["step"]
+    for group in GROUPS:
+        expected = {f"{group}_{c}" for c in categories_of(group)}
+        assert set(steps[group]["menu_options"]) == expected
+        assert set(steps[group]["menu_option_descriptions"]) == expected
+
+
+def test_catalog_entries_have_a_place_in_the_menus() -> None:
+    for model in CATALOG.values():
+        assert model.group in GROUPS and model.category in CATEGORIES, model.id
+        assert model.base is None or model.base in CATALOG, model.id
+    assert all(m in CATALOG for m in EEP_TO_MODEL.values())
+
+
+def test_candidates_from_a_heard_telegram() -> None:
+    assert candidates(Rorg.BS1, None) == ["contact", "enocean_contact"]
+    # Eltako teach-in: Eltako entries first; other manufacturers: theirs first
+    eltako = TeachIn4BS(0x12, 0x01, MANUFACTURER_ELTAKO)
+    assert candidates(Rorg.BS4, eltako) == ["meter", "psc"]
+    assert candidates(Rorg.BS4, TeachIn4BS(0x12, 0x01, 0x046)) == ["psc", "meter"]
+    assert candidates(Rorg.BS4, TeachIn4BS(0x38, 0x08, MANUFACTURER_ELTAKO)) == ["dimmer"]

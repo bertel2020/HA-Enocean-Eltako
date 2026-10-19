@@ -34,8 +34,13 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
+from .catalog import GENERIC_EEP
+from .const import CONF_MODEL
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
+from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
+from .protocol.eep.std.profiles import PROFILES
+from .protocol.models import MODELS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -216,25 +221,51 @@ SENSORS["psc"] = tuple(
 )
 
 
+# fields that carry no reading of a generic device
+_NOT_A_READING = {"LRN", "LRNB"}
+_NO_UNIT = {"N/A", "1"}
+
+
+def generic_descriptions(eep: str) -> tuple[EnOceanSensorDescription, ...]:
+    """One sensor per field of a standard profile, named and unitized as in the EEP."""
+    seen: dict[str, EnOceanSensorDescription] = {}
+    for case in PROFILES[eep].cases:
+        for f in case.fields:
+            if f.shortcut in _NOT_A_READING or f.shortcut in seen:
+                continue
+            scaled = f.scale is not None or f.scale_ref is not None
+            seen[f.shortcut] = EnOceanSensorDescription(
+                key=f"eep_{f.shortcut.lower()}",
+                name=f.name,
+                native_unit_of_measurement=None if f.unit in _NO_UNIT else f.unit,
+                state_class=SensorStateClass.MEASUREMENT if scaled else None,
+                value_fn=_field(f.shortcut, 2 if scaled else None),
+            )
+    return tuple(seen.values())
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EnOceanEltakoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    bus = MODELS[entry.data[CONF_MODEL]].bus
+    async_add_entities([GatewaySensor(entry, d) for d in GATEWAY_SENSORS if bus or not d.bus_only])
     for subentry_id, device in entry.runtime_data.devices.items():
         # E5/I7 diagnostics for every device
         diagnostics: list[SensorEntity] = [LastSeenSensor(device), RssiSensor(device)]
         if device.senders:
             diagnostics.append(CommandSuccessSensor(device))
-        if device.model.id == "cover":
+        if device.model.kind == "cover":
             diagnostics.append(PositionAccuracySensor(device))
         async_add_entities(diagnostics, config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
-        entities: list[SensorEntity] = [
-            EnOceanSensor(device, d) for d in SENSORS.get(device.model.id, ())
-        ]
-        if device.model.id == "meter":
+        descriptions = SENSORS.get(device.model.kind, ())
+        if device.model.kind == GENERIC_EEP and device.model.receive is not None:
+            descriptions = generic_descriptions(device.model.receive.eep)
+        entities: list[SensorEntity] = [EnOceanSensor(device, d) for d in descriptions]
+        if device.model.kind == "meter":
             entities.append(MeterTotalSensor(device))
         async_add_entities(entities, config_subentry_id=subentry_id)
 

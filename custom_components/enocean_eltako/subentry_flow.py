@@ -25,6 +25,13 @@ from homeassistant.helpers.selector import (
 from .catalog import (
     CATALOG,
     CONTROLLER,
+    EEP_OPTIONS,
+    EEP_TO_MODEL,
+    GENERIC_EEP,
+    GENERIC_EEPS,
+    GROUP_ELTAKO,
+    GROUP_ENOCEAN,
+    GROUPS,
     OPT_CALIBRATION,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
@@ -41,9 +48,14 @@ from .catalog import (
     OPT_TIME_OPENS,
     OPT_UNAVAILABLE_WHEN_SILENT,
     DeviceModel,
+    categories_of,
+    generic_model,
+    model_for,
+    models_in,
 )
 from .const import (
     CONF_DEVICE_ID,
+    CONF_EEP,
     CONF_MODEL,
     CONF_NAME,
     CONF_PROFILE,
@@ -53,9 +65,12 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .protocol.dispatcher import ReceivedTelegram
+from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
+from .protocol.eep.teach_in import MANUFACTURER_ELTAKO, TeachIn4BS, decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
 from .protocol.sender_pool import SenderIdError, SenderPool
+from .protocol.telegram import Rorg
 
 DEVICE_CLASSES = ["door", "window", "garage_door", "opening"]
 LEARN_TIMEOUT = 60.0
@@ -80,6 +95,22 @@ def expected_rorgs(model: DeviceModel) -> set[int]:
     for extra in model.receive_extra:
         rorgs |= _RORG_BY_PREFIX.get(extra.eep[:2], set())
     return rorgs
+
+
+def _receives(model: DeviceModel, eep: str) -> bool:
+    return any(r.eep == eep for r in (model.receive, *model.receive_extra) if r is not None)
+
+
+def candidates(rorg: int, teach_in: TeachIn4BS | None) -> list[str]:
+    """Catalog kinds a heard telegram may come from; a 4BS teach-in names its EEP and
+    manufacturer, so Eltako entries come first for Eltako devices."""
+    if teach_in is not None:
+        kinds = [m for m in CATALOG.values() if _receives(m, teach_in.eep)]
+        if kinds:
+            eltako = teach_in.manufacturer == MANUFACTURER_ELTAKO
+            kinds.sort(key=lambda m: (m.group == GROUP_ELTAKO) != eltako)
+            return [m.id for m in kinds]
+    return [m.id for m in CATALOG.values() if rorg in expected_rorgs(m)]
 
 
 OPTION_KEYS = (
@@ -120,26 +151,84 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         self._run_started = 0.0
         self._learn_task: asyncio.Task[ReceivedTelegram | None] | None = None
         self._learned: ReceivedTelegram | None = None
+        self._kinds: list[str] = []
 
     def _loaded(self) -> bool:
         entry = self._get_entry()
         return getattr(entry, "runtime_data", None) is not None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        """How to add the device: listen for it, pick it from the catalog, or by EEP."""
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
+        return self.async_show_menu(step_id="user", menu_options=["learn", *GROUPS, "eep"])
+
+    async def async_step_eltako(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return self._category_menu(GROUP_ELTAKO)
+
+    async def async_step_enocean(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return self._category_menu(GROUP_ENOCEAN)
+
+    def _category_menu(self, group: str) -> SubentryFlowResult:
+        return self.async_show_menu(
+            step_id=group, menu_options=[f"{group}_{c}" for c in categories_of(group)]
+        )
+
+    async def _async_category(self, group: str, category: str) -> SubentryFlowResult:
+        """One kind in the category: take it; several: ask which."""
+        self._kinds = [m.id for m in models_in(group, category)]
+        if len(self._kinds) == 1:
+            self._model = CATALOG[self._kinds[0]]
+            return await self.async_step_address()
+        return await self.async_step_kind()
+
+    async def async_step_kind(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             self._model = CATALOG[user_input[CONF_MODEL]]
             return await self.async_step_address()
+        return self._model_form("kind", self._kinds)
+
+    def _model_form(
+        self, step_id: str, kinds: list[str], placeholders: dict[str, str] | None = None
+    ) -> SubentryFlowResult:
         return self.async_show_form(
-            step_id="user",
+            step_id=step_id,
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_MODEL): SelectSelector(
                         SelectSelectorConfig(
-                            options=list(CATALOG),
+                            options=kinds,
                             translation_key="device_model",
                             mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+            description_placeholders=placeholders,
+        )
+
+    async def async_step_eep(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
+        """By EEP: standard sensor profiles as a generic device, the rest via the catalog."""
+        if user_input is not None:
+            option = user_input[CONF_EEP]
+            if option in EEP_TO_MODEL:
+                self._model = CATALOG[EEP_TO_MODEL[option]]
+            else:
+                self._model = generic_model(EEP_OPTIONS[option])
+            return await self.async_step_address()
+        return self.async_show_form(
+            step_id="eep",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_EEP): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(EEP_OPTIONS),
+                            translation_key=CONF_EEP,
+                            mode=SelectSelectorMode.DROPDOWN,
                         )
                     )
                 }
@@ -169,16 +258,49 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         self._learn_task = None
         if self._learned is None:
             return self.async_show_progress_done(next_step_id="learn_timeout")
+        if self._model is None:
+            return self.async_show_progress_done(next_step_id="learned")
         return self.async_show_progress_done(next_step_id="device")
+
+    async def async_step_learned(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Heard a new sender before the kind was chosen: offer the kinds that fit."""
+        assert self._learned is not None
+        if user_input is not None:
+            self._model = CATALOG[user_input[CONF_MODEL]]
+            return await self.async_step_device()
+        telegram = self._learned.telegram
+        teach_in = decode_teach_in_4bs(telegram.data) if telegram.rorg == Rorg.BS4 else None
+        if teach_in is not None and teach_in.eep in GENERIC_EEPS:
+            fitting = [m for m in CATALOG.values() if _receives(m, teach_in.eep)]
+            if not fitting:  # no catalog entry decodes it: generic device
+                self._model = generic_model(EEPRef(teach_in.eep, "std"))
+                return await self.async_step_device()
+        kinds = candidates(telegram.rorg, teach_in)
+        if len(kinds) == 1:
+            self._model = CATALOG[kinds[0]]
+            return await self.async_step_device()
+        return self._model_form(
+            "learned",
+            kinds,
+            {
+                "device_id": format_id(self._learned.sender),
+                "eep": teach_in.eep if teach_in else f"{telegram.rorg:02X}",
+            },
+        )
 
     async def async_step_learn_timeout(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
+        if self._model is None:  # kind not chosen yet: listen again or pick it
+            return self.async_show_menu(
+                step_id="learn_timeout", menu_options=["learn", *GROUPS, "eep"]
+            )
         return self.async_show_menu(step_id="learn_timeout", menu_options=["learn", "device"])
 
     async def _async_wait_for_telegram(self) -> ReceivedTelegram | None:
-        assert self._model is not None
-        rorgs = expected_rorgs(self._model)
+        rorgs = expected_rorgs(self._model) if self._model is not None else set()
         dispatcher = self._get_entry().runtime_data.hub.dispatcher
         future: asyncio.Future[ReceivedTelegram] = self.hass.loop.create_future()
 
@@ -232,11 +354,11 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             return self.async_abort(reason="gateway_not_loaded")
         subentry = self._get_reconfigure_subentry()
         data = dict(subentry.data)
-        self._model = model = CATALOG[data[CONF_MODEL]]
+        self._model = model = model_for(data)
         device_id = parse_id(data[CONF_DEVICE_ID])
         current = {s[CONF_PROFILE]: s[CONF_SENDER_ID] for s in data.get(CONF_SENDERS, ())}
         errors: dict[str, str] = {}
-        if user_input is None and model.id == "cover" and not self._settings_chosen:
+        if user_input is None and model.kind == "cover" and not self._settings_chosen:
             return self.async_show_menu(step_id="cover_menu", menu_options=["settings", "measure"])
         if user_input is not None:
             result = await self._async_save(user_input, device_id, current, errors)
@@ -404,7 +526,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             data_schema=self.add_suggested_values_to_schema(vol.Schema(schema), values),
             errors=errors,
             description_placeholders={
-                "examples": model.examples,
+                "examples": model.examples or "-",
                 "receive": str(model.receive) if model.receive else "-",
                 "send": ", ".join(f"{p.id} ({p.eep})" for p in model.senders) or "-",
             },
@@ -426,8 +548,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             else:
                 key = vol.Optional(field)
             schema[key] = TextSelector()
-        if model.id in ("switch", "psc"):
-            default = Platform.LIGHT.value if model.id == "switch" else Platform.SWITCH.value
+        if model.kind in ("switch", "psc"):
+            default = Platform.LIGHT.value if model.kind == "switch" else Platform.SWITCH.value
             schema[vol.Required(OPT_PLATFORM, default=default)] = SelectSelector(
                 SelectSelectorConfig(
                     options=[Platform.LIGHT.value, Platform.SWITCH.value],
@@ -555,6 +677,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             CONF_MODEL: model.id,
             CONF_DEVICE_ID: format_id(device_id),
         }
+        if model.id == GENERIC_EEP and model.receive is not None:
+            data[CONF_EEP] = str(model.receive)
         if wanted:
             data[CONF_SENDERS] = [
                 {CONF_PROFILE: p, CONF_SENDER_ID: format_id(s)} for p, s in wanted.items()
@@ -566,5 +690,23 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             data[OPT_DEVICE_CLASS] = user_input[OPT_DEVICE_CLASS]
         return data
 
+
+def _category_step(group: str, category: str) -> Any:
+    async def step(
+        self: DeviceSubentryFlow, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_category(group, category)
+
+    return step
+
+
+# menu options of the manufacturer menus are steps: async_step_eltako_lighting, ...
+for _group in GROUPS:
+    for _category in categories_of(_group):
+        setattr(
+            DeviceSubentryFlow,
+            f"async_step_{_group}_{_category}",
+            _category_step(_group, _category),
+        )
 
 SUBENTRY_FLOWS = {SUBENTRY_DEVICE: DeviceSubentryFlow}

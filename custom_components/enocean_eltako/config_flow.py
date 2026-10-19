@@ -98,7 +98,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
                         SelectSelectorConfig(
                             options=list(MODELS),
                             translation_key=CONF_MODEL,
-                            mode=SelectSelectorMode.LIST,
+                            mode=SelectSelectorMode.DROPDOWN,
                         )
                     )
                 }

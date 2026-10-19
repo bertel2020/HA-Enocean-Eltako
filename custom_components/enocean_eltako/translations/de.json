@@ -113,9 +113,9 @@
         "switch": "Schaltaktor (FSR61, FSR14, FL62 …)",
         "dimmer": "Dimmaktor (FUD14, FUD61, FD62 …)",
         "cover": "Rollladen / Jalousie (FSB14, FSB61, FSB71 …)",
-        "window_handle": "Fenstergriff (FTKE, FFG7B, Hoppe …)",
+        "window_handle": "Fenstergriff (FTKE, FFG7B …)",
         "contact": "Tür-/Fensterkontakt (FTK, FTKB …)",
-        "rocker": "Wippentaster (F4T55E, FT55, NodOn …)",
+        "rocker": "Wippentaster (F4T55E, FT55, FT4F …)",
         "meter": "Energiezähler (FWZ12, FSDG14, DSZ14 …)",
         "temp_humidity": "Temperatur und Feuchte (FAFT60, FFT65B …)",
         "fbh": "Bewegungs- und Helligkeitssensor (FBH65 …)",
@@ -124,7 +124,10 @@
         "weather": "Wetterstation (FWS61, FWG14)",
         "psc": "Permundo PSC132 / PSC234 Zwischenstecker",
         "rocker_contact": "Kontakt über Tastertelegramme (FTS14EM, Garagentor …)",
-        "heating_actuator": "Heizungsaktor, Home Assistant regelt (FHK14, FAE14 …)"
+        "heating_actuator": "Heizungsaktor, Home Assistant regelt (FHK14, FAE14 …)",
+        "enocean_rocker": "Wippentaster (NodOn, PEHA, Jung …)",
+        "enocean_window_handle": "Fenstergriff (Hoppe SecuSignal …)",
+        "enocean_contact": "Tür-/Fensterkontakt (NodOn …)"
       }
     },
     "routing": {
@@ -147,6 +150,29 @@
       "options": {
         "passive": "Nur wenn ohnehin ganz auf oder zu gefahren wird",
         "before_move": "Vor einer unsicheren Positionsfahrt"
+      }
+    },
+    "eep": {
+      "options": {
+        "std_a5_04_02": "Standard · A5-04-02 Temperatur und Feuchte",
+        "std_a5_08_01": "Standard · A5-08-01 Helligkeit, Temperatur, Bewegung",
+        "std_a5_09_04": "Standard · A5-09-04 CO2, Feuchte, Temperatur",
+        "std_a5_10_06": "Standard · A5-10-06 Raumbediengerät",
+        "std_a5_12_01": "Standard · A5-12-01 Stromzähler",
+        "std_a5_13_01": "Standard · A5-13-01 Wetterstation",
+        "std_a5_13_02": "Standard · A5-13-02 Sonnenintensität",
+        "std_d2_01_09": "Standard · D2-01-09 Schaltaktor mit Messung",
+        "std_d5_00_01": "Standard · D5-00-01 Kontakt",
+        "std_f6_02_01": "Standard · F6-02-01 Wippentaster",
+        "std_f6_10_00": "Standard · F6-10-00 Fenstergriff",
+        "eltako_m5_38_08": "Eltako · M5-38-08 Schaltaktor",
+        "eltako_a5_38_08": "Eltako · A5-38-08 Dimmaktor",
+        "eltako_g5_3f_7f": "Eltako · G5-3F-7F Rollladen",
+        "eltako_a5_08_01": "Eltako · A5-08-01 Bewegung und Helligkeit (FBH)",
+        "eltako_m5_10_06": "Eltako · M5-10-06 Heizungsaktor",
+        "eltako_a5_10_06": "Eltako · A5-10-06 Raumregler",
+        "eltako_a5_12_01": "Eltako · A5-12-01 Zähler",
+        "eltako_a5_13_01": "Eltako · A5-13-01 Wetterstation"
       }
     }
   },
@@ -208,9 +234,71 @@
       "step": {
         "user": {
           "title": "Gerät hinzufügen",
+          "description": "Wie möchtest du das Gerät hinzufügen?",
+          "menu_options": {
+            "learn": "Gerät anlernen (empfohlen)",
+            "eltako": "Eltako-Gerät",
+            "enocean": "EnOcean-Gerät anderer Hersteller",
+            "eep": "Per EEP (Experte)"
+          },
+          "menu_option_descriptions": {
+            "learn": "Lerntaste oder eine Taste am Gerät drücken bzw. den Aktor vor Ort schalten. Die Geräteart wird aus dem Telegramm vorgeschlagen.",
+            "eltako": "Aus dem Eltako-Katalog wählen.",
+            "enocean": "NodOn, Permundo, Hoppe und andere Hersteller.",
+            "eep": "Beliebiges unterstütztes Profil, für Geräte, die nicht im Katalog stehen."
+          }
+        },
+        "eltako": {
+          "title": "Eltako-Gerät",
+          "description": "Welche Kategorie?",
+          "menu_options": {
+            "eltako_lighting": "Licht und Schalten",
+            "eltako_covers": "Rollläden und Jalousien",
+            "eltako_climate": "Heizung und Klima",
+            "eltako_buttons": "Taster und Kontakte",
+            "eltako_sensors": "Sensoren",
+            "eltako_meters": "Zähler"
+          },
+          "menu_option_descriptions": {
+            "eltako_lighting": "Schaltaktoren, Dimmaktoren",
+            "eltako_covers": "FSB14, FSB61, FSB71, FJ62",
+            "eltako_climate": "FUTH, FAE14, FHK14",
+            "eltako_buttons": "FT55, FTS14EM, FTK, FFG7B",
+            "eltako_sensors": "FBH65, FAFT60, FCO2TF65, FWS61",
+            "eltako_meters": "FWZ12, FSDG14, DSZ14"
+          }
+        },
+        "enocean": {
+          "title": "EnOcean-Gerät",
+          "description": "Welche Kategorie?",
+          "menu_options": {
+            "enocean_lighting": "Licht und Schalten",
+            "enocean_buttons": "Taster und Kontakte"
+          },
+          "menu_option_descriptions": {
+            "enocean_lighting": "Permundo PSC132 / PSC234",
+            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe"
+          }
+        },
+        "kind": {
+          "title": "Geräteart",
           "description": "Welche Art von Gerät?",
           "data": {
             "model": "Gerät"
+          }
+        },
+        "learned": {
+          "title": "Telegramm empfangen",
+          "description": "Telegramm von {device_id} empfangen (Profil {eep}). Welche Art von Gerät ist es?",
+          "data": {
+            "model": "Gerät"
+          }
+        },
+        "eep": {
+          "title": "Per EEP",
+          "description": "Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert. Die übrigen Profile öffnen den passenden Katalogeintrag.",
+          "data": {
+            "eep": "Profil"
           }
         },
         "device": {
@@ -300,7 +388,10 @@
           "description": "Es kam kein Telegramm von einem neuen Sender. Nochmal versuchen oder die ID eingeben.",
           "menu_options": {
             "learn": "Nochmal warten",
-            "device": "ID eingeben"
+            "device": "ID eingeben",
+            "eltako": "Eltako-Gerät wählen",
+            "enocean": "EnOcean-Gerät wählen",
+            "eep": "Per EEP"
           }
         },
         "cover_menu": {
@@ -405,11 +496,38 @@
       },
       "position_accuracy": {
         "name": "Positionsgenauigkeit"
+      },
+      "gateway_telegrams": {
+        "name": "Telegramme empfangen"
+      },
+      "gateway_last_telegram": {
+        "name": "Letztes Telegramm"
+      },
+      "gateway_queue": {
+        "name": "Sendewarteschlange"
+      },
+      "gateway_retries": {
+        "name": "Sendewiederholungen"
+      },
+      "gateway_failed": {
+        "name": "Unbestätigt gesendet"
+      },
+      "gateway_base_id": {
+        "name": "Base-ID"
+      },
+      "gateway_free_senders": {
+        "name": "Freie Sender-IDs"
+      },
+      "gateway_polls_dropped": {
+        "name": "Verworfene Bus-Polls"
       }
     },
     "binary_sensor": {
       "rain": {
         "name": "Regen"
+      },
+      "gateway_connection": {
+        "name": "Verbindung"
       }
     },
     "event": {
@@ -444,6 +562,9 @@
       },
       "calibrate": {
         "name": "Kalibrieren"
+      },
+      "gateway_reconnect": {
+        "name": "Neu verbinden"
       }
     }
   },

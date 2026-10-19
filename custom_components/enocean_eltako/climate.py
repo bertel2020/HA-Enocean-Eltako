@@ -53,9 +53,9 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        if device.model.id == "room_controller":
+        if device.model.kind == "room_controller":
             async_add_entities([RoomControllerClimate(device)], config_subentry_id=subentry_id)
-        elif device.model.id == "heating_actuator":
+        elif device.model.kind == "heating_actuator":
             async_add_entities([HeatingClimate(device)], config_subentry_id=subentry_id)
 
 

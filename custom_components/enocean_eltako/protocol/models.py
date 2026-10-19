@@ -21,19 +21,48 @@ class GatewayModel:
     default_port: int | None = None  # TCP port of network gateways
     reads_base_id: bool = True
     bus: bool = False  # on the Eltako RS485 bus, member of a bus group
+    manufacturer: str = "EnOcean"  # generic models: any manufacturer
+
+    @property
+    def model_name(self) -> str:
+        """Name without the manufacturer: "FAM-USB"."""
+        return self.name.removeprefix(f"{self.manufacturer} ")
 
 
 MODELS: dict[str, GatewayModel] = {
     m.key: m
     for m in (
-        GatewayModel("fam_usb", "Eltako FAM-USB", Protocol.ESP2, 9600, usb=True),
-        GatewayModel("fgw14_usb", "Eltako FGW14-USB", Protocol.ESP2, 57600, usb=True, bus=True),
-        # FAM14: base ID lives in its memory (read with the bus import), entered by hand for now
         GatewayModel(
-            "fam14", "Eltako FAM14", Protocol.ESP2, 57600, usb=True, reads_base_id=False, bus=True
+            "fam_usb", "Eltako FAM-USB", Protocol.ESP2, 9600, usb=True, manufacturer="Eltako"
         ),
         GatewayModel(
-            "mgw_eth", "PioTek MGW-ETH", Protocol.ESP3, None, usb=False, default_port=5100
+            "fgw14_usb",
+            "Eltako FGW14-USB",
+            Protocol.ESP2,
+            57600,
+            usb=True,
+            bus=True,
+            manufacturer="Eltako",
+        ),
+        # FAM14: base ID lives in its memory (read with the bus import), entered by hand for now
+        GatewayModel(
+            "fam14",
+            "Eltako FAM14",
+            Protocol.ESP2,
+            57600,
+            usb=True,
+            reads_base_id=False,
+            bus=True,
+            manufacturer="Eltako",
+        ),
+        GatewayModel(
+            "mgw_eth",
+            "PioTek MGW-ETH",
+            Protocol.ESP3,
+            None,
+            usb=False,
+            default_port=5100,
+            manufacturer="PioTek",
         ),
         GatewayModel(
             "symcon_lan",
@@ -42,6 +71,7 @@ MODELS: dict[str, GatewayModel] = {
             None,
             usb=False,
             default_port=5000,
+            manufacturer="Symcon",
         ),
         GatewayModel("esp3", "Generic ESP3", Protocol.ESP3, 57600, usb=True),
         GatewayModel("esp2", "Generic ESP2", Protocol.ESP2, None, usb=True),

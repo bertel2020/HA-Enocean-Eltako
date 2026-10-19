@@ -7,11 +7,13 @@ Phase 2 covers the device kinds of the reference system; names are translated
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from homeassistant.const import Platform
 
+from .const import CONF_EEP, CONF_MODEL
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import heating, shutter, switching
 from .protocol.eep.model import encode
@@ -79,17 +81,32 @@ DIRECTION_ROCKER = SenderProfile(
 )
 
 
+GROUP_ELTAKO = "eltako"
+GROUP_ENOCEAN = "enocean"  # other manufacturers
+GROUPS = (GROUP_ELTAKO, GROUP_ENOCEAN)
+CATEGORIES = ("lighting", "covers", "climate", "buttons", "sensors", "meters")
+GENERIC_EEP = "eep"  # model id of a device added by EEP alone (receive-only sensors)
+
+
 @dataclass(frozen=True, slots=True)
 class DeviceModel:
     id: str
     receive: EEPRef | None
     platforms: tuple[Platform, ...]  # first is the default; a choice when more than one
+    category: str = ""  # flow menu, one of CATEGORIES
+    group: str = GROUP_ELTAKO
+    base: str | None = None  # catalog entry whose behaviour this one shares
     senders: tuple[SenderProfile, ...] = ()  # first is the primary (required) profile
     receive_extra: tuple[EEPRef, ...] = ()  # further profiles sent under the same ID
     interval: int | None = None  # expected seconds between telegrams; None = only on change
     manufacturer: str = "Eltako"
     options: tuple[str, ...] = ()
-    examples: str = ""  # Eltako models, shown in the flow
+    examples: str = ""  # models shown in the flow
+
+    @property
+    def kind(self) -> str:
+        """Behaviour key of the platforms: entries of other manufacturers share it."""
+        return self.base or self.id
 
     @property
     def actuator(self) -> bool:
@@ -115,6 +132,7 @@ CATALOG: dict[str, DeviceModel] = {
             "switch",
             _ref("M5-38-08:eltako"),
             (Platform.LIGHT, Platform.SWITCH),
+            category="lighting",
             senders=(CENTRAL, ROCKER),
             options=(OPT_STATUS_REQUEST,),
             examples="FSR61, FSR14, FL62, FSR71",
@@ -123,6 +141,7 @@ CATALOG: dict[str, DeviceModel] = {
             "dimmer",
             _ref("A5-38-08:eltako"),
             (Platform.LIGHT,),
+            category="lighting",
             senders=(CENTRAL, ROCKER),
             options=(OPT_STATUS_REQUEST,),
             examples="FUD14, FUD61, FD62",
@@ -131,6 +150,7 @@ CATALOG: dict[str, DeviceModel] = {
             "cover",
             _ref("G5-3F-7F:eltako"),
             (Platform.COVER,),
+            category="covers",
             senders=(CONTROLLER, DIRECTION_ROCKER),
             options=(OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_ROUTING, OPT_CALIBRATION),
             examples="FSB14, FSB61, FSB71, FJ62",
@@ -139,6 +159,8 @@ CATALOG: dict[str, DeviceModel] = {
             "psc",
             _ref("D2-01-09:std"),
             (Platform.SWITCH, Platform.LIGHT, Platform.SENSOR),
+            category="lighting",
+            group=GROUP_ENOCEAN,
             senders=(PSC_CONTROLLER,),
             # D2-01-09 needs an ESP3 gateway; behind an ESP2 gateway (FAM-USB) the state
             # comes only from RPS 0x70/0x50 telegrams as today in the old integration
@@ -151,26 +173,30 @@ CATALOG: dict[str, DeviceModel] = {
             "window_handle",
             _ref("F6-10-00:std"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
-            examples="FTKE, FFG7B, Hoppe",
+            category="buttons",
+            examples="FTKE, FFG7B",
         ),
         DeviceModel(
             "contact",
             _ref("D5-00-01:std"),
             (Platform.BINARY_SENSOR,),
+            category="buttons",
             options=(OPT_DEVICE_CLASS, OPT_INVERT),
-            examples="FTK, FTKB, FTS14EM",
+            examples="FTK, FTKB",
         ),
         DeviceModel(
             "rocker",
             _ref("F6-02-01:std"),
             (Platform.EVENT,),
+            category="buttons",
             options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
-            examples="F4T55E, FT55, NodOn",
+            examples="F4T55E, FT55, FT4F",
         ),
         DeviceModel(
             "rocker_contact",
             _ref("F6-02-01:std"),
             (Platform.BINARY_SENSOR,),
+            category="buttons",
             options=(OPT_ON_BUTTON, OPT_OFF_BUTTON, OPT_DEVICE_CLASS, OPT_INVERT),
             examples="FTS14EM, FSM61, garage door controllers",
         ),
@@ -178,6 +204,7 @@ CATALOG: dict[str, DeviceModel] = {
             "meter",
             _ref("A5-12-01:eltako"),
             (Platform.SENSOR,),
+            category="meters",
             interval=600,
             examples="FWZ12, FSDG14, DSZ14",
         ),
@@ -185,6 +212,7 @@ CATALOG: dict[str, DeviceModel] = {
             "temp_humidity",
             _ref("A5-04-02:std"),
             (Platform.SENSOR,),
+            category="sensors",
             interval=1800,
             examples="FAFT60, FFT65B",
         ),
@@ -192,16 +220,23 @@ CATALOG: dict[str, DeviceModel] = {
             "fbh",
             _ref("A5-08-01:eltako"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
+            category="sensors",
             interval=1800,
             examples="FBH65, FBH65S, FABH65S",
         ),
         DeviceModel(
-            "co2", _ref("A5-09-04:std"), (Platform.SENSOR,), interval=1800, examples="FCO2TF65"
+            "co2",
+            _ref("A5-09-04:std"),
+            (Platform.SENSOR,),
+            category="sensors",
+            interval=1800,
+            examples="FCO2TF65",
         ),
         DeviceModel(
             "heating_actuator",
             _ref("M5-10-06:eltako"),
             (Platform.CLIMATE, Platform.SENSOR),
+            category="climate",
             senders=(HEATING_CONTROLLER,),
             options=(OPT_TEMPERATURE_SENSOR, OPT_SEND_INTERVAL),
             examples="FHK14, FAE14, F4HK14, FHK61",
@@ -210,6 +245,7 @@ CATALOG: dict[str, DeviceModel] = {
             "room_controller",
             _ref("A5-10-06:eltako"),
             (Platform.CLIMATE, Platform.SENSOR),
+            category="climate",
             interval=1800,
             examples="FUTH, FTR65HS, FTAF55D",
         ),
@@ -217,11 +253,110 @@ CATALOG: dict[str, DeviceModel] = {
             "weather",
             _ref("A5-13-01:eltako"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
+            category="sensors",
             interval=600,
             examples="FWS61, FWG14",
         ),
+        # other manufacturers: same behaviour as the Eltako entry named in base
+        DeviceModel(
+            "enocean_rocker",
+            _ref("F6-02-01:std"),
+            (Platform.EVENT,),
+            category="buttons",
+            group=GROUP_ENOCEAN,
+            base="rocker",
+            options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
+            manufacturer="EnOcean",
+            examples="NodOn, PEHA, Jung",
+        ),
+        DeviceModel(
+            "enocean_window_handle",
+            _ref("F6-10-00:std"),
+            (Platform.SENSOR, Platform.BINARY_SENSOR),
+            category="buttons",
+            group=GROUP_ENOCEAN,
+            base="window_handle",
+            manufacturer="EnOcean",
+            examples="Hoppe SecuSignal",
+        ),
+        DeviceModel(
+            "enocean_contact",
+            _ref("D5-00-01:std"),
+            (Platform.BINARY_SENSOR,),
+            category="buttons",
+            group=GROUP_ENOCEAN,
+            base="contact",
+            options=(OPT_DEVICE_CLASS, OPT_INVERT),
+            manufacturer="EnOcean",
+            examples="NodOn SDO",
+        ),
     )
 }
+
+# Flow "by EEP": standard sensor profiles become a generic receive-only device; the other
+# choices open the catalog entry that decodes that profile. Option value -> EEP reference.
+GENERIC_EEPS = (
+    "A5-04-02",
+    "A5-08-01",
+    "A5-09-04",
+    "A5-10-06",
+    "A5-12-01",
+    "A5-13-01",
+    "A5-13-02",
+)
+EEP_TO_MODEL: dict[str, str] = {
+    "std_d2_01_09": "psc",
+    "std_d5_00_01": "enocean_contact",
+    "std_f6_02_01": "enocean_rocker",
+    "std_f6_10_00": "enocean_window_handle",
+    "eltako_m5_38_08": "switch",
+    "eltako_a5_38_08": "dimmer",
+    "eltako_g5_3f_7f": "cover",
+    "eltako_a5_08_01": "fbh",
+    "eltako_m5_10_06": "heating_actuator",
+    "eltako_a5_10_06": "room_controller",
+    "eltako_a5_12_01": "meter",
+    "eltako_a5_13_01": "weather",
+}
+
+
+def eep_option(ref: EEPRef) -> str:
+    """Selector value of an EEP reference: A5-04-02:std -> std_a5_04_02."""
+    return f"{ref.variant}_{ref.eep.lower().replace('-', '_')}"
+
+
+def _option_ref(option: str) -> EEPRef:
+    variant, _, eep = option.partition("_")
+    return EEPRef.parse(f"{eep.replace('_', '-')}:{variant}")
+
+
+EEP_OPTIONS: dict[str, EEPRef] = {
+    **{eep_option(EEPRef(eep, "std")): EEPRef(eep, "std") for eep in GENERIC_EEPS},
+    **{option: _option_ref(option) for option in EEP_TO_MODEL},
+}
+
+
+def generic_model(ref: EEPRef) -> DeviceModel:
+    """Receive-only device with one sensor per field of a standard profile."""
+    return DeviceModel(
+        GENERIC_EEP, ref, (Platform.SENSOR,), group=GROUP_ENOCEAN, manufacturer="EnOcean"
+    )
+
+
+def model_for(data: Mapping[str, Any]) -> DeviceModel:
+    """Catalog entry of a device subentry, or its generic model when added by EEP."""
+    if data[CONF_MODEL] == GENERIC_EEP:
+        return generic_model(EEPRef.parse(data[CONF_EEP]))
+    return CATALOG[data[CONF_MODEL]]
+
+
+def models_in(group: str, category: str) -> list[DeviceModel]:
+    return [m for m in CATALOG.values() if m.group == group and m.category == category]
+
+
+def categories_of(group: str) -> list[str]:
+    return [c for c in CATEGORIES if models_in(group, c)]
+
 
 # Platforms an entry may need; actuators additionally get a teach-in button.
 PLATFORMS: tuple[Platform, ...] = (

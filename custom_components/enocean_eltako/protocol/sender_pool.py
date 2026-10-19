@@ -72,6 +72,9 @@ class SenderPool:
                 return sender
         return None
 
+    def free_count(self) -> int:
+        return sum(self._is_free(s) for s in range(self.start, self.start + self.size))
+
     def allocate(self, owner: str) -> int:
         """Assign the next free ID; raises SenderIdError('pool_exhausted')."""
         if (sender := self.next_free()) is None:

@@ -32,7 +32,7 @@ def _is_rocker(hass: HomeAssistant, device_id: str) -> bool:
     identifiers = {i for d, i in device.identifiers if d == DOMAIN}
     for entry in hass.config_entries.async_loaded_entries(DOMAIN):
         for rocker in entry.runtime_data.devices.values():
-            if rocker.model.id == "rocker" and rocker.unique_prefix in identifiers:
+            if rocker.model.kind == "rocker" and rocker.unique_prefix in identifiers:
                 return True
     return False
 

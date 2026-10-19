@@ -113,9 +113,9 @@
         "switch": "Switching actuator (FSR61, FSR14, FL62 …)",
         "dimmer": "Dimmer (FUD14, FUD61, FD62 …)",
         "cover": "Shutter / blind (FSB14, FSB61, FSB71 …)",
-        "window_handle": "Window handle (FTKE, FFG7B, Hoppe …)",
+        "window_handle": "Window handle (FTKE, FFG7B …)",
         "contact": "Door / window contact (FTK, FTKB …)",
-        "rocker": "Rocker switch (F4T55E, FT55, NodOn …)",
+        "rocker": "Rocker switch (F4T55E, FT55, FT4F …)",
         "meter": "Energy meter (FWZ12, FSDG14, DSZ14 …)",
         "temp_humidity": "Temperature and humidity (FAFT60, FFT65B …)",
         "fbh": "Motion and brightness sensor (FBH65 …)",
@@ -124,7 +124,10 @@
         "weather": "Weather station (FWS61, FWG14)",
         "psc": "Permundo PSC132 / PSC234 plug",
         "rocker_contact": "Contact via rocker telegrams (FTS14EM, garage door …)",
-        "heating_actuator": "Heating actuator, Home Assistant controls (FHK14, FAE14 …)"
+        "heating_actuator": "Heating actuator, Home Assistant controls (FHK14, FAE14 …)",
+        "enocean_rocker": "Rocker switch (NodOn, PEHA, Jung …)",
+        "enocean_window_handle": "Window handle (Hoppe SecuSignal …)",
+        "enocean_contact": "Door / window contact (NodOn …)"
       }
     },
     "routing": {
@@ -147,6 +150,29 @@
       "options": {
         "passive": "Only when fully opened or closed anyway",
         "before_move": "Before an uncertain position move"
+      }
+    },
+    "eep": {
+      "options": {
+        "std_a5_04_02": "Standard · A5-04-02 Temperature and humidity",
+        "std_a5_08_01": "Standard · A5-08-01 Light, temperature and occupancy",
+        "std_a5_09_04": "Standard · A5-09-04 CO2, humidity and temperature",
+        "std_a5_10_06": "Standard · A5-10-06 Room operating panel",
+        "std_a5_12_01": "Standard · A5-12-01 Electricity meter",
+        "std_a5_13_01": "Standard · A5-13-01 Weather station",
+        "std_a5_13_02": "Standard · A5-13-02 Sun intensity",
+        "std_d2_01_09": "Standard · D2-01-09 Switching actuator with metering",
+        "std_d5_00_01": "Standard · D5-00-01 Contact",
+        "std_f6_02_01": "Standard · F6-02-01 Rocker switch",
+        "std_f6_10_00": "Standard · F6-10-00 Window handle",
+        "eltako_m5_38_08": "Eltako · M5-38-08 Switching actuator",
+        "eltako_a5_38_08": "Eltako · A5-38-08 Dimmer",
+        "eltako_g5_3f_7f": "Eltako · G5-3F-7F Shutter",
+        "eltako_a5_08_01": "Eltako · A5-08-01 Motion and brightness (FBH)",
+        "eltako_m5_10_06": "Eltako · M5-10-06 Heating actuator",
+        "eltako_a5_10_06": "Eltako · A5-10-06 Room controller",
+        "eltako_a5_12_01": "Eltako · A5-12-01 Meter",
+        "eltako_a5_13_01": "Eltako · A5-13-01 Weather station"
       }
     }
   },
@@ -208,9 +234,71 @@
       "step": {
         "user": {
           "title": "Add device",
+          "description": "How do you want to add the device?",
+          "menu_options": {
+            "learn": "Listen for the device (recommended)",
+            "eltako": "Eltako device",
+            "enocean": "EnOcean device of another manufacturer",
+            "eep": "By EEP (expert)"
+          },
+          "menu_option_descriptions": {
+            "learn": "Press the learn button or a button on the device, or switch the actuator locally. The kind is suggested from its telegram.",
+            "eltako": "Pick it from the Eltako catalog.",
+            "enocean": "NodOn, Permundo, Hoppe and other manufacturers.",
+            "eep": "Any supported profile, for devices not in the catalog."
+          }
+        },
+        "eltako": {
+          "title": "Eltako device",
+          "description": "Which category?",
+          "menu_options": {
+            "eltako_lighting": "Lighting and switching",
+            "eltako_covers": "Shutters and blinds",
+            "eltako_climate": "Heating and climate",
+            "eltako_buttons": "Buttons and contacts",
+            "eltako_sensors": "Sensors",
+            "eltako_meters": "Meters"
+          },
+          "menu_option_descriptions": {
+            "eltako_lighting": "Switching actuators, dimmers",
+            "eltako_covers": "FSB14, FSB61, FSB71, FJ62",
+            "eltako_climate": "FUTH, FAE14, FHK14",
+            "eltako_buttons": "FT55, FTS14EM, FTK, FFG7B",
+            "eltako_sensors": "FBH65, FAFT60, FCO2TF65, FWS61",
+            "eltako_meters": "FWZ12, FSDG14, DSZ14"
+          }
+        },
+        "enocean": {
+          "title": "EnOcean device",
+          "description": "Which category?",
+          "menu_options": {
+            "enocean_lighting": "Lighting and switching",
+            "enocean_buttons": "Buttons and contacts"
+          },
+          "menu_option_descriptions": {
+            "enocean_lighting": "Permundo PSC132 / PSC234",
+            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe"
+          }
+        },
+        "kind": {
+          "title": "Kind of device",
           "description": "What kind of device?",
           "data": {
             "model": "Device"
+          }
+        },
+        "learned": {
+          "title": "Telegram received",
+          "description": "Received a telegram from {device_id} (profile {eep}). What kind of device is it?",
+          "data": {
+            "model": "Device"
+          }
+        },
+        "eep": {
+          "title": "By EEP",
+          "description": "Standard sensor profiles become a device with one sensor per value. The other profiles open the matching catalog entry.",
+          "data": {
+            "eep": "Profile"
           }
         },
         "device": {
@@ -300,7 +388,10 @@
           "description": "No telegram from a new sender arrived. Try again or enter the ID.",
           "menu_options": {
             "learn": "Listen again",
-            "device": "Enter the ID"
+            "device": "Enter the ID",
+            "eltako": "Pick an Eltako device",
+            "enocean": "Pick an EnOcean device",
+            "eep": "By EEP"
           }
         },
         "cover_menu": {
@@ -405,11 +496,38 @@
       },
       "position_accuracy": {
         "name": "Position accuracy"
+      },
+      "gateway_telegrams": {
+        "name": "Telegrams received"
+      },
+      "gateway_last_telegram": {
+        "name": "Last telegram"
+      },
+      "gateway_queue": {
+        "name": "Send queue"
+      },
+      "gateway_retries": {
+        "name": "Send retries"
+      },
+      "gateway_failed": {
+        "name": "Unconfirmed sends"
+      },
+      "gateway_base_id": {
+        "name": "Base ID"
+      },
+      "gateway_free_senders": {
+        "name": "Free sender IDs"
+      },
+      "gateway_polls_dropped": {
+        "name": "Bus polls dropped"
       }
     },
     "binary_sensor": {
       "rain": {
         "name": "Rain"
+      },
+      "gateway_connection": {
+        "name": "Connection"
       }
     },
     "event": {
@@ -444,6 +562,9 @@
       },
       "calibrate": {
         "name": "Calibrate"
+      },
+      "gateway_reconnect": {
+        "name": "Reconnect"
       }
     }
   },

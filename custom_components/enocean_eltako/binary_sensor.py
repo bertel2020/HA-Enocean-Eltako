@@ -20,6 +20,7 @@ from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_DEVICE_CLASS, OPT_INVERT, OPT_OFF_BUTTON, OPT_ON_BUTTON
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
+from .gateway_entity import GatewayConnectionSensor
 from .sensor import HANDLE_POSITIONS
 
 PARALLEL_UPDATES = 0
@@ -93,11 +94,12 @@ async def async_setup_entry(
     entry: EnOceanEltakoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    async_add_entities([GatewayConnectionSensor(entry)])
     for subentry_id, device in entry.runtime_data.devices.items():
         if Platform.BINARY_SENSOR not in device.model.platforms:
             continue
-        descriptions = BINARY_SENSORS.get(device.model.id, ())
-        if device.model.id == "rocker_contact":
+        descriptions = BINARY_SENSORS.get(device.model.kind, ())
+        if device.model.kind == "rocker_contact":
             descriptions = (
                 EnOceanBinarySensorDescription(
                     key="contact",

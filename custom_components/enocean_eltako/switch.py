@@ -26,8 +26,8 @@ async def async_setup_entry(
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
         platform = device.options.get(OPT_PLATFORM)
-        if (device.model.id == "switch" and platform == Platform.SWITCH) or (
-            device.model.id == "psc" and platform in (None, Platform.SWITCH)
+        if (device.model.kind == "switch" and platform == Platform.SWITCH) or (
+            device.model.kind == "psc" and platform in (None, Platform.SWITCH)
         ):
             async_add_entities([EnOceanSwitch(device)], config_subentry_id=subentry_id)
 

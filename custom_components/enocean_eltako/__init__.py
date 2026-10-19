@@ -65,6 +65,11 @@ class GatewayRuntime:
     devices: dict[str, EnOceanDevice] = field(default_factory=dict)  # by subentry ID
     disconnected_since: float | None = None  # time.time() of the last disconnect
     health_check: Callable[[], None] | None = None
+    connection_listeners: list[Callable[[], None]] = field(default_factory=list)
+
+    def add_connection_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        self.connection_listeners.append(listener)
+        return lambda: self.connection_listeners.remove(listener)
 
 
 type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
@@ -110,6 +115,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     def on_connection_change(connected: bool) -> None:
         if hasattr(entry, "runtime_data"):
             entry.runtime_data.disconnected_since = None if connected else time.time()
+            for listener in list(entry.runtime_data.connection_listeners):
+                listener()
 
     gateway = Gateway(
         model.protocol,
@@ -160,8 +167,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
         name=entry.title,
-        manufacturer="EnOcean",
-        model=model.name,
+        manufacturer=model.manufacturer,
+        model=model.model_name,
         serial_number=entry.data[CONF_BASE_ID],
     )
     _async_setup_devices(hass, entry)

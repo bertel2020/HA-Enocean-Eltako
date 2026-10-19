@@ -13,8 +13,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .catalog import CATALOG, ROCKER_STATUS_PRESSED, ROCKER_STATUS_RELEASED, DeviceModel
-from .const import CONF_DEVICE_ID, CONF_MODEL, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
+from .catalog import ROCKER_STATUS_PRESSED, ROCKER_STATUS_RELEASED, DeviceModel, model_for
+from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep.codecs import decode_telegram
 from .protocol.ids import format_id, parse_id
@@ -55,7 +55,7 @@ class EnOceanDevice:
         self.hass = hass
         self.entry = entry
         self.subentry = subentry
-        self.model: DeviceModel = CATALOG[subentry.data[CONF_MODEL]]
+        self.model: DeviceModel = model_for(subentry.data)
         self.device_id = parse_id(subentry.data[CONF_DEVICE_ID])
         # profile -> sender ID, in catalog order (first configured = preferred)
         configured = {
@@ -79,12 +79,16 @@ class EnOceanDevice:
         return f"{self.entry.unique_id}_{format_id(self.device_id)}"
 
     @property
+    def _model_name(self) -> str:
+        return self.model.receive.eep if self.model.receive else self.model.id
+
+    @property
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self.unique_prefix)},
             name=self.subentry.title,
             manufacturer=self.model.manufacturer,
-            model=self.model.examples.split(",")[0] if self.model.examples else self.model.id,
+            model=self.model.examples.split(",")[0] if self.model.examples else self._model_name,
             model_id=str(self.model.receive) if self.model.receive else None,
             serial_number=format_id(self.device_id),
             via_device=(DOMAIN, self.entry.entry_id),

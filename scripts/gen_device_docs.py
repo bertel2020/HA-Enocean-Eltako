@@ -14,34 +14,47 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from custom_components.enocean_eltako.catalog import CATALOG  # noqa: E402
+from custom_components.enocean_eltako.catalog import (  # noqa: E402
+    CATALOG,
+    CATEGORIES,
+    GROUPS,
+)
 
 COMPONENT = ROOT / "custom_components/enocean_eltako"
 DOC = ROOT / "docs/devices.md"
 START, END = "<!-- devices:start -->", "<!-- devices:end -->"
 HEADERS = {
-    "en": ("Device", "Manufacturer", "Receives", "Sends (sender profiles)", "Entities"),
-    "de": ("Gerät", "Hersteller", "Empfängt", "Sendet (Sender-Profile)", "Entitäten"),
+    "en": ("Category", "Device", "Manufacturer", "Receives", "Sends (sender profiles)", "Entities"),
+    "de": ("Kategorie", "Gerät", "Hersteller", "Empfängt", "Sendet (Sender-Profile)", "Entitäten"),
 }
 
 
-def _names(lang: str) -> dict[str, str]:
-    data = json.loads((COMPONENT / f"translations/{lang}.json").read_text(encoding="utf-8"))
-    return data["selector"]["device_model"]["options"]
+def _translations(lang: str) -> dict:
+    return json.loads((COMPONENT / f"translations/{lang}.json").read_text(encoding="utf-8"))
+
+
+def _category(data: dict, group: str, category: str) -> str:
+    return data["config_subentries"]["device"]["step"][group]["menu_options"][f"{group}_{category}"]
 
 
 def table(lang: str) -> str:
-    names = _names(lang)
+    data = _translations(lang)
+    names = data["selector"]["device_model"]["options"]
+    models = sorted(
+        CATALOG.values(),
+        key=lambda m: (GROUPS.index(m.group), CATEGORIES.index(m.category)),
+    )
     lines = [
         "| " + " | ".join(HEADERS[lang]) + " |",
         "| " + " | ".join("---" for _ in HEADERS[lang]) + " |",
     ]
-    for model in CATALOG.values():
+    for model in models:
         receive = [str(model.receive)] if model.receive else []
         receive += [str(r) for r in model.receive_extra]
         senders = [f"{p.id}: {p.eep}" for p in model.senders]
         platforms = ", ".join(p.value for p in model.platforms)
         cells = (
+            _category(data, model.group, model.category),
             names.get(model.id, model.id),
             model.manufacturer,
             "<br>".join(f"`{r}`" for r in receive) or "-",

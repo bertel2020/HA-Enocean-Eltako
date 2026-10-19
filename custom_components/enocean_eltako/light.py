@@ -44,12 +44,12 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        if device.model.id == "dimmer":
+        if device.model.kind == "dimmer":
             async_add_entities([EnOceanDimmer(device)], config_subentry_id=subentry_id)
         elif (
-            device.model.id == "switch"
+            device.model.kind == "switch"
             and device.options.get(OPT_PLATFORM, Platform.LIGHT) == Platform.LIGHT
-        ) or (device.model.id == "psc" and device.options.get(OPT_PLATFORM) == Platform.LIGHT):
+        ) or (device.model.kind == "psc" and device.options.get(OPT_PLATFORM) == Platform.LIGHT):
             async_add_entities([EnOceanSwitchLight(device)], config_subentry_id=subentry_id)
 
 

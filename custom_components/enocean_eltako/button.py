@@ -1,4 +1,4 @@
-"""Teach-in buttons: one per sender profile of an actuator."""
+"""Teach-in buttons (one per sender profile of an actuator), calibration, gateway reconnect."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import EnOceanEltakoConfigEntry
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
+from .gateway_entity import GatewayReconnectButton
 
 PARALLEL_UPDATES = 0
 
@@ -21,9 +22,11 @@ async def async_setup_entry(
     entry: EnOceanEltakoConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
+    if not entry.runtime_data.on_demand:  # on demand: the bus group connects it
+        async_add_entities([GatewayReconnectButton(entry)])
     for subentry_id, device in entry.runtime_data.devices.items():
         buttons: list[ButtonEntity] = [TeachInButton(device, p) for p in device.senders]
-        if device.model.id == "cover":
+        if device.model.kind == "cover":
             buttons.append(CalibrateButton(device))
         async_add_entities(buttons, config_subentry_id=subentry_id)
 
