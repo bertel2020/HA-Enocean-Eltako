@@ -398,7 +398,8 @@
             "long_press": "Lang ab",
             "double_press": "Doppelt innerhalb",
             "calibration": "Kalibrierung",
-            "fields": "Angezeigte Werte"
+            "fields": "Angezeigte Werte",
+            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -410,7 +411,8 @@
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
-            "fields": "Werte des Profils, die als Sensor erscheinen."
+            "fields": "Werte des Profils, die als Sensor erscheinen.",
+            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist."
           }
         },
         "reconfigure": {
@@ -437,7 +439,8 @@
             "long_press": "Lang ab",
             "double_press": "Doppelt innerhalb",
             "calibration": "Kalibrierung",
-            "fields": "Angezeigte Werte"
+            "fields": "Angezeigte Werte",
+            "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -448,7 +451,8 @@
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
-            "fields": "Werte des Profils, die als Sensor erscheinen."
+            "fields": "Werte des Profils, die als Sensor erscheinen.",
+            "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist."
           }
         },
         "address": {
@@ -618,6 +622,9 @@
       },
       "sender_id_direction_rocker": {
         "name": "Sender-ID Richtungstaster"
+      },
+      "sender_id_cooling": {
+        "name": "Sender-ID Kühlschalter"
       }
     },
     "binary_sensor": {
@@ -663,6 +670,9 @@
       },
       "gateway_reconnect": {
         "name": "Neu verbinden"
+      },
+      "teach_in_cooling": {
+        "name": "Einlernen Kühlschalter"
       }
     }
   },

@@ -1214,3 +1214,39 @@ async def test_generic_device_shows_chosen_fields(hass: HomeAssistant, gateway) 
     prefix = f"{BASE}_05-11-22-34_1"
     assert _entity(hass, "sensor", f"{prefix}_eep_tmp") is not None
     assert _entity(hass, "sensor", f"{prefix}_eep_hum") is None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "heating_actuator",
+                "05-00-00-52",
+                "Heizung Wohnen",
+                senders=[
+                    {"profile": "controller", "sender_id": "FF-B7-44-A1"},
+                    {"profile": "cooling", "sender_id": "FF-B7-44-A2"},
+                ],
+                temperature_sensor="sensor.bad_temperatur",
+                send_interval=60,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_heating_actuator_cooling(hass: HomeAssistant, room_sensor, gateway) -> None:
+    _entry, server = gateway
+    entity_id = _entity(hass, "climate", f"{BASE}_05-00-00-52_1_climate")
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["hvac_modes"] == ["heat", "cool", "off"]
+    press = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x50", 0xFFB744A2, 0x30))
+    assert press not in bytes(server.received)
+    await hass.services.async_call(
+        "climate", "set_hvac_mode", {"entity_id": entity_id, "hvac_mode": "cool"}
+    )
+    await _settle(hass)
+    assert press in bytes(server.received)
+    _push(server, 0x05, b"\x70", 0x05000052, 0x30)  # actuator: normal operation
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["hvac_action"] == "cooling"

@@ -77,6 +77,10 @@ CONTROLLER = SenderProfile("controller", EEPRef("H5-3F-7F", "eltako"), Rorg.BS4,
 HEATING_CONTROLLER = SenderProfile(
     "controller", EEPRef("A5-10-06", "eltako"), Rorg.BS4, heating.TEACH_IN
 )
+# E8 cooling: a rocker press 0x50 (as a heating/cooling switch would send it, e.g. an FTS14EM
+# input) puts Eltako heating actuators into cooling mode; it has to be repeated while cooling
+COOLING_PRESS = bytes([0x50])
+COOLING_SWITCH = SenderProfile("cooling", EEPRef("F6-02-01", "std"), Rorg.RPS, COOLING_PRESS)
 DIRECTION_ROCKER = SenderProfile(
     "direction_rocker", EEPRef("F6-02-01", "std"), Rorg.RPS, ROCKER_PRESS_UP
 )
@@ -253,7 +257,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("M5-10-06:eltako"),
             (Platform.CLIMATE, Platform.SENSOR),
             category="climate",
-            senders=(HEATING_CONTROLLER,),
+            senders=(HEATING_CONTROLLER, COOLING_SWITCH),
             options=(OPT_TEMPERATURE_SENSOR, OPT_SEND_INTERVAL),
             examples="FHK14, FAE14, F4HK14, FHK61",
         ),

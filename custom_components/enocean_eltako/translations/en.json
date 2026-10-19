@@ -398,7 +398,8 @@
             "long_press": "Long press from",
             "double_press": "Double press within",
             "calibration": "Calibration",
-            "fields": "Shown values"
+            "fields": "Shown values",
+            "sender_cooling": "Sender ID: cooling switch (F6-02-01)"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -410,7 +411,8 @@
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
-            "fields": "Values of the profile that become sensors."
+            "fields": "Values of the profile that become sensors.",
+            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool."
           }
         },
         "reconfigure": {
@@ -437,7 +439,8 @@
             "long_press": "Long press from",
             "double_press": "Double press within",
             "calibration": "Calibration",
-            "fields": "Shown values"
+            "fields": "Shown values",
+            "sender_cooling": "Sender ID: cooling switch (F6-02-01)"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -448,7 +451,8 @@
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
-            "fields": "Values of the profile that become sensors."
+            "fields": "Values of the profile that become sensors.",
+            "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool."
           }
         },
         "address": {
@@ -618,6 +622,9 @@
       },
       "sender_id_direction_rocker": {
         "name": "Sender ID direction rocker"
+      },
+      "sender_id_cooling": {
+        "name": "Sender ID cooling switch"
       }
     },
     "binary_sensor": {
@@ -663,6 +670,9 @@
       },
       "gateway_reconnect": {
         "name": "Reconnect"
+      },
+      "teach_in_cooling": {
+        "name": "Teach in cooling switch"
       }
     }
   },

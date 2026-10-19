@@ -32,7 +32,7 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import OPT_SEND_INTERVAL, OPT_TEMPERATURE_SENSOR
+from .catalog import COOLING_PRESS, COOLING_SWITCH, OPT_SEND_INTERVAL, OPT_TEMPERATURE_SENSOR
 from .const import DOMAIN
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
@@ -44,6 +44,7 @@ PARALLEL_UPDATES = 0
 DEFAULT_SEND_INTERVAL = 60
 MAX_SEND_INTERVAL = 600  # the actuators need a telegram at least every 10 min
 SILENCE_REPAIR = 45 * 60  # seconds without a successful send before the repair issue
+COOLING_REPEAT = 600  # s between cooling switch presses; switch inputs repeat every 15 min
 DEFAULT_SETPOINT = 21.0
 
 
@@ -112,6 +113,10 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "climate")
+        self._cooling = device.has_sender(COOLING_SWITCH.id)
+        if self._cooling:
+            self._attr_hvac_modes = [HVACMode.HEAT, HVACMode.COOL, HVACMode.OFF]
+        self._last_cooling_press: float | None = None
         self._sensor: str | None = device.options.get(OPT_TEMPERATURE_SENSOR)
         interval = int(device.options.get(OPT_SEND_INTERVAL) or DEFAULT_SEND_INTERVAL)
         self._interval = max(10, min(MAX_SEND_INTERVAL, interval))
@@ -123,7 +128,7 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         if (last := await self.async_get_last_state()) is not None:
-            if last.state in (HVACMode.HEAT, HVACMode.OFF):
+            if last.state in self._attr_hvac_modes:
                 self._attr_hvac_mode = HVACMode(last.state)
             if (target := last.attributes.get(ATTR_TEMPERATURE)) is not None:
                 self._attr_target_temperature = float(target)
@@ -143,6 +148,7 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         self._attr_hvac_mode = hvac_mode
+        self._last_cooling_press = None  # entering cooling: press the switch at once
         self._send()
         self.async_write_ha_state()
 
@@ -179,6 +185,20 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
             return
         self._last_ok = time.monotonic()
         ir.async_delete_issue(self.hass, DOMAIN, self._issue_id)
+        self._keep_cooling()
+
+    def _keep_cooling(self) -> None:
+        """Cooling: repeat the cooling switch press, as a real switch input would."""
+        if not self._cooling or self._attr_hvac_mode != HVACMode.COOL:
+            return
+        now = time.monotonic()
+        if self._last_cooling_press is not None and now - self._last_cooling_press < COOLING_REPEAT:
+            return
+        try:
+            self._device.press(COOLING_SWITCH.id, COOLING_PRESS, confirm=False)
+        except HomeAssistantError:
+            return
+        self._last_cooling_press = now
 
     def _check_silence(self) -> None:
         if time.monotonic() - self._last_ok >= SILENCE_REPAIR:
@@ -195,7 +215,12 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
     def _apply(self, values: dict[str, Any]) -> bool:
         if "mode" not in values:
             return False
-        action = HVACAction.OFF if values["mode"] == "off" else HVACAction.HEATING
+        if values["mode"] == "off":
+            action = HVACAction.OFF
+        elif self._attr_hvac_mode == HVACMode.COOL:
+            action = HVACAction.COOLING
+        else:
+            action = HVACAction.HEATING
         if action == self._attr_hvac_action:
             return False
         self._attr_hvac_action = action
