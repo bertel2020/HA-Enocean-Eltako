@@ -1170,3 +1170,27 @@ async def test_removed_sender_profile_drops_its_entities(hass: HomeAssistant, ga
     assert registry.async_get_entity_id("sensor", DOMAIN, f"{prefix}_sender_id_rocker") is None
     assert registry.async_get_entity_id("button", DOMAIN, f"{prefix}_teach_in_rocker") is None
     assert _entity(hass, "sensor", f"{prefix}_sender_id_central") is not None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry("water_meter", "05-00-00-13", "Wasser"),
+            _subentry("gas_meter", "05-00-00-14", "Gas"),
+        ]
+    ],
+    indirect=True,
+)
+async def test_gas_and_water_meters(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    _push(server, 0x07, bytes.fromhex("00303909"), 0x05000013)  # 1234.5 m3
+    _push(server, 0x07, bytes.fromhex("00000F0D"), 0x05000013)  # 1.5 l/s
+    _push(server, 0x07, bytes.fromhex("0000648F"), 0x05000014)  # serial number telegram: dropped
+    await _settle(hass)
+    water = f"{BASE}_05-00-00-13_1"
+    assert float(hass.states.get(_entity(hass, "sensor", f"{water}_volume")).state) == 1234.5
+    assert float(hass.states.get(_entity(hass, "sensor", f"{water}_flow")).state) == 1.5
+    gas = hass.states.get(_entity(hass, "sensor", f"{BASE}_05-00-00-14_1_volume"))
+    assert gas.state == "unknown"
+    assert gas.attributes["device_class"] == "gas"

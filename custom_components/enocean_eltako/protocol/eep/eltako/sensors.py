@@ -9,9 +9,9 @@ A5-10-06:eltako (FUTH, FTR65HS, FTAF55D): DB3 = night setback 0...5 K
     (official: raw value without unit), DB1 = temperature 40...0 degC (inverted, as official),
     DB0.0 = slide switch / day-night.
 
-A5-12-01:eltako (FWZ12, FSDG14, DSZ14DRS, F3Z14D): data telegrams as official; the meters
-    also send their serial number in two telegrams with DB0 = 0x8F, which a standard decoder
-    would read as a power value. Those are dropped.
+A5-12-01/02/03:eltako (FWZ12, FSDG14, DSZ14DRS, F3Z14D for electricity, gas and water): data
+    telegrams as official; the meters also send their serial number in two telegrams with
+    DB0 = 0x8F, which a standard decoder would read as a current value. Those are dropped.
 
 A5-13-01:eltako (FWS61, FWG14): weather station sending two telegrams under one ID, told
     apart by the identifier in DB0.7...4 (1 = official A5-13-01 layout, 2 = A5-13-02).
@@ -43,10 +43,10 @@ def decode_room_controller(data: bytes) -> dict[str, Any] | None:
     }
 
 
-def decode_meter(data: bytes) -> dict[str, Any] | None:
+def decode_meter(data: bytes, eep: str = "A5-12-01") -> dict[str, Any] | None:
     if len(data) != 4 or not data[3] & 0x08 or data[3] == 0x8F:
         return None
-    values = decode(PROFILES["A5-12-01"], data)
+    values = decode(PROFILES[eep], data)
     values.pop("LRNB", None)
     return values
 

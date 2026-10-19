@@ -139,7 +139,9 @@
         "heating_actuator": "Heizungsaktor, Home Assistant regelt (FHK14, FAE14 …)",
         "enocean_rocker": "Wippentaster (NodOn, PEHA, Jung …)",
         "enocean_window_handle": "Fenstergriff (Hoppe SecuSignal …)",
-        "enocean_contact": "Tür-/Fensterkontakt (NodOn …)"
+        "enocean_contact": "Tür-/Fensterkontakt (NodOn …)",
+        "gas_meter": "Gaszähler (F3Z14D …)",
+        "water_meter": "Wasserzähler (F3Z14D …)"
       }
     },
     "routing": {
@@ -184,7 +186,11 @@
         "eltako_m5_10_06": "Eltako · M5-10-06 Heizungsaktor",
         "eltako_a5_10_06": "Eltako · A5-10-06 Raumregler",
         "eltako_a5_12_01": "Eltako · A5-12-01 Zähler",
-        "eltako_a5_13_01": "Eltako · A5-13-01 Wetterstation"
+        "eltako_a5_13_01": "Eltako · A5-13-01 Wetterstation",
+        "std_a5_12_02": "Standard · A5-12-02 Gaszähler",
+        "std_a5_12_03": "Standard · A5-12-03 Wasserzähler",
+        "eltako_a5_12_02": "Eltako · A5-12-02 Gaszähler",
+        "eltako_a5_12_03": "Eltako · A5-12-03 Wasserzähler"
       }
     }
   },
@@ -278,7 +284,7 @@
             "eltako_climate": "FUTH, FAE14, FHK14",
             "eltako_buttons": "FT55, FTS14EM, FTK, FFG7B",
             "eltako_sensors": "FBH65, FAFT60, FCO2TF65, FWS61",
-            "eltako_meters": "FWZ12, FSDG14, DSZ14"
+            "eltako_meters": "FWZ12, FSDG14, DSZ14, F3Z14D"
           }
         },
         "enocean": {
@@ -317,7 +323,9 @@
             "model_enocean_window_handle": "Fenstergriff",
             "model_enocean_contact": "Tür-/Fensterkontakt",
             "eltako": "Zurück",
-            "enocean": "Zurück"
+            "enocean": "Zurück",
+            "model_gas_meter": "Gaszähler",
+            "model_water_meter": "Wasserzähler"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -336,7 +344,9 @@
             "model_heating_actuator": "FHK14, FAE14",
             "model_enocean_rocker": "NodOn, PEHA, Jung",
             "model_enocean_window_handle": "Hoppe SecuSignal",
-            "model_enocean_contact": "NodOn"
+            "model_enocean_contact": "NodOn",
+            "model_gas_meter": "F3Z14D",
+            "model_water_meter": "F3Z14D"
           }
         },
         "learned": {

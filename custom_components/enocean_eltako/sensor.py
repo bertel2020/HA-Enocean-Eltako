@@ -27,6 +27,8 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfSpeed,
     UnitOfTemperature,
+    UnitOfVolume,
+    UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -217,6 +219,32 @@ SENSORS["heating_actuator"] = (
         value_fn=lambda v: v.get("mode"),
     ),
 )
+
+
+def _volume_sensors(device_class: SensorDeviceClass) -> tuple[EnOceanSensorDescription, ...]:
+    """A5-12-02 gas / A5-12-03 water: counter in m3 (DT 0), flow in l/s (DT 1)."""
+    return (
+        EnOceanSensorDescription(
+            key="volume",
+            device_class=device_class,
+            native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            monotonic=True,
+            value_fn=_meter(0, 0),
+        ),
+        EnOceanSensorDescription(
+            key="flow",
+            device_class=SensorDeviceClass.VOLUME_FLOW_RATE,
+            native_unit_of_measurement=UnitOfVolumeFlowRate.LITERS_PER_SECOND,
+            state_class=SensorStateClass.MEASUREMENT,
+            value_fn=lambda v: round(v["MR"], 3) if v.get("DT") == 1 else None,
+        ),
+    )
+
+
+SENSORS["gas_meter"] = _volume_sensors(SensorDeviceClass.GAS)
+SENSORS["water_meter"] = _volume_sensors(SensorDeviceClass.WATER)
+
 SENSORS["psc"] = tuple(
     d for d in SENSORS["meter"] if d.key not in ("energy_tariff_1", "active_tariff")
 )

@@ -208,6 +208,22 @@ CATALOG: dict[str, DeviceModel] = {
             examples="FWZ12, FSDG14, DSZ14",
         ),
         DeviceModel(
+            "gas_meter",
+            _ref("A5-12-02:eltako"),
+            (Platform.SENSOR,),
+            category="meters",
+            interval=600,
+            examples="F3Z14D",
+        ),
+        DeviceModel(
+            "water_meter",
+            _ref("A5-12-03:eltako"),
+            (Platform.SENSOR,),
+            category="meters",
+            interval=600,
+            examples="F3Z14D",
+        ),
+        DeviceModel(
             "temp_humidity",
             _ref("A5-04-02:std"),
             (Platform.SENSOR,),
@@ -300,6 +316,8 @@ GENERIC_EEPS = (
     "A5-09-04",
     "A5-10-06",
     "A5-12-01",
+    "A5-12-02",
+    "A5-12-03",
     "A5-13-01",
     "A5-13-02",
 )
@@ -315,6 +333,8 @@ EEP_TO_MODEL: dict[str, str] = {
     "eltako_m5_10_06": "heating_actuator",
     "eltako_a5_10_06": "room_controller",
     "eltako_a5_12_01": "meter",
+    "eltako_a5_12_02": "gas_meter",
+    "eltako_a5_12_03": "water_meter",
     "eltako_a5_13_01": "weather",
 }
 

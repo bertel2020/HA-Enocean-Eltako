@@ -31,6 +31,8 @@ SAMPLES: dict[str, tuple[int, str, int]] = {
     "D2-01-09:std": (0xD2, "0460E4", 0),
     "A5-12-01:std": (Rorg.BS4, "00100009", 0),
     "A5-12-01:eltako": (Rorg.BS4, "00100009", 0),
+    "A5-12-02:eltako": (Rorg.BS4, "00303909", 0),
+    "A5-12-03:eltako": (Rorg.BS4, "00000F0D", 0),
     "F6-10-00:std": (Rorg.RPS, "F0", 0x20),
     "D5-00-01:std": (Rorg.BS1, "09", 0),
     "F6-02-01:std": (Rorg.RPS, "70", 0x30),

@@ -109,6 +109,90 @@ PROFILES: dict[str, Profile] = {
             ),
         ),
     ),
+    "A5-12-02": Profile(
+        "A5-12-02",
+        0xA5,
+        (
+            Case(
+                fields=(
+                    Field("LRNB", "LRN Bit", 28, 1, enum=(0, 1)),
+                    Field(
+                        "MR",
+                        "meter reading",
+                        0,
+                        24,
+                        unit_ref="DT",
+                        raw=(0, 16777215),
+                        scale_ref="DIV",
+                    ),
+                    Field("TI", "Tariff info", 24, 4, unit="1", raw=(0, 15), scale=(0.0, 15.0)),
+                    Field(
+                        "DT",
+                        "data type (unit)",
+                        29,
+                        1,
+                        enum=(0, 1),
+                        enum_unit={0: "m³", 1: "liter/s"},
+                    ),
+                    Field(
+                        "DIV",
+                        "divisor (scale)",
+                        30,
+                        2,
+                        enum=(0, 1, 2, 3),
+                        enum_scale={
+                            0: (0.0, 16777215.0),
+                            1: (0.0, 1677721.5),
+                            2: (0.0, 167772.15),
+                            3: (0.0, 16777.215),
+                        },
+                    ),
+                ),
+            ),
+        ),
+    ),
+    "A5-12-03": Profile(
+        "A5-12-03",
+        0xA5,
+        (
+            Case(
+                fields=(
+                    Field("LRNB", "LRN Bit", 28, 1, enum=(0, 1)),
+                    Field(
+                        "MR",
+                        "Meter reading",
+                        0,
+                        24,
+                        unit_ref="DT",
+                        raw=(0, 16777215),
+                        scale_ref="DIV",
+                    ),
+                    Field("TI", "Tariff info", 24, 4, unit="1", raw=(0, 15), scale=(0.0, 15.0)),
+                    Field(
+                        "DT",
+                        "Data type (unit)",
+                        29,
+                        1,
+                        enum=(0, 1),
+                        enum_unit={0: "m³", 1: "Liter/s"},
+                    ),
+                    Field(
+                        "DIV",
+                        "Divisor (scale)",
+                        30,
+                        2,
+                        enum=(0, 1, 2, 3),
+                        enum_scale={
+                            0: (0.0, 16777215.0),
+                            1: (0.0, 1677721.5),
+                            2: (0.0, 167772.15),
+                            3: (0.0, 16777.215),
+                        },
+                    ),
+                ),
+            ),
+        ),
+    ),
     "A5-13-01": Profile(
         "A5-13-01",
         0xA5,

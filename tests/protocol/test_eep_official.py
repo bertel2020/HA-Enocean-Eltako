@@ -24,8 +24,10 @@ KNOWN_CONTAINER_ERRORS = {
     ("A5-08-01", "SVC"),
     # expects the raw value 1...65535 although the profile scales TIM to 0.1...6553.5 s
     ("A5-38-08", "TIM"),
-    # expects 8388607.5 for raw 0x7FFFFF with divisor x/1
+    # expects 8388607.5 for raw 0x7FFFFF with divisor x/1 (same container for gas and water)
     ("A5-12-01", "MR"),
+    ("A5-12-02", "MR"),
+    ("A5-12-03", "MR"),
 }
 
 

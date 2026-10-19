@@ -54,6 +54,8 @@ DECODERS: dict[EEPRef, Decoder] = {
     ),
     EEPRef("A5-10-06", "eltako"): _eltako(Rorg.BS4, sensors.decode_room_controller),
     EEPRef("A5-12-01", "eltako"): _eltako(Rorg.BS4, sensors.decode_meter),
+    EEPRef("A5-12-02", "eltako"): _eltako(Rorg.BS4, lambda d: sensors.decode_meter(d, "A5-12-02")),
+    EEPRef("A5-12-03", "eltako"): _eltako(Rorg.BS4, lambda d: sensors.decode_meter(d, "A5-12-03")),
     EEPRef("A5-13-01", "eltako"): _eltako(Rorg.BS4, sensors.decode_weather),
 }
 
