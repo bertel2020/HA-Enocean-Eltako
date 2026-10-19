@@ -1,0 +1,147 @@
+"""Central dispatcher: every gateway feeds it, devices subscribe by sender ID.
+
+The same telegram often arrives twice: over two gateways, as a repeated radio telegram, or
+from a bus actor once on the bus and once as its radio alias. Within DEDUP_WINDOW the
+dispatcher passes it on only once.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from collections import OrderedDict
+from collections.abc import Callable
+from dataclasses import dataclass, field
+
+from .telegram import RadioTelegram
+
+_LOGGER = logging.getLogger(__name__)
+
+DEDUP_WINDOW = 0.2  # seconds
+WILDCARD = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReceivedTelegram:
+    """A telegram plus where and when it arrived."""
+
+    telegram: RadioTelegram
+    gateway: str  # config entry ID of the receiving gateway
+    timestamp: float  # time.time()
+    sender: int  # canonical sender ID (alias resolved)
+    duplicate: bool = False
+
+
+Listener = Callable[[ReceivedTelegram], None]
+
+
+@dataclass
+class DispatcherStats:
+    received: int = 0
+    duplicates: int = 0
+    unknown: int = 0
+    per_gateway: dict[str, int] = field(default_factory=dict)
+    dispatch_time: float = 0.0  # seconds spent in listeners, summed
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "received": self.received,
+            "duplicates": self.duplicates,
+            "unknown": self.unknown,
+            "per_gateway": dict(self.per_gateway),
+            "avg_dispatch_ms": round(
+                1000 * self.dispatch_time / max(self.received - self.duplicates, 1), 3
+            ),
+        }
+
+
+class Dispatcher:
+    """Routes telegrams to listeners by sender ID in constant time."""
+
+    def __init__(
+        self, *, window: float = DEDUP_WINDOW, clock: Callable[[], float] = time.monotonic
+    ) -> None:
+        self._window = window
+        self._clock = clock
+        self._listeners: dict[int | None, list[Listener]] = {}
+        self._monitors: list[Listener] = []
+        self._unknown: list[Listener] = []
+        self._aliases: dict[int, int] = {}
+        self._seen: OrderedDict[tuple[int, int, bytes, int], float] = OrderedDict()
+        self.stats = DispatcherStats()
+
+    def add_listener(self, sender: int | None, listener: Listener) -> Callable[[], None]:
+        """Listen to one sender, or to every telegram with sender=WILDCARD."""
+        self._listeners.setdefault(sender, []).append(listener)
+
+        def remove() -> None:
+            listeners = self._listeners.get(sender, [])
+            if listener in listeners:
+                listeners.remove(listener)
+            if not listeners:
+                self._listeners.pop(sender, None)
+
+        return remove
+
+    def add_monitor(self, listener: Listener) -> Callable[[], None]:
+        """Every telegram including duplicates (telegram monitor)."""
+        self._monitors.append(listener)
+        return lambda: self._monitors.remove(listener)
+
+    def add_unknown_listener(self, listener: Listener) -> Callable[[], None]:
+        """Telegrams no device listens to (discovery)."""
+        self._unknown.append(listener)
+        return lambda: self._unknown.remove(listener)
+
+    def add_alias(self, alias: int, sender: int) -> Callable[[], None]:
+        """Treat telegrams from alias as coming from sender (bus actor radio alias)."""
+        self._aliases[alias] = sender
+        return lambda: self._aliases.pop(alias, None)
+
+    def is_known(self, sender: int) -> bool:
+        return self._aliases.get(sender, sender) in self._listeners
+
+    def dispatch(self, gateway: str, telegram: RadioTelegram) -> ReceivedTelegram:
+        """Feed one received telegram; returns it with the duplicate flag set."""
+        now = self._clock()
+        sender = self._aliases.get(telegram.sender, telegram.sender)
+        # status low nibble = repeater count, differs between original and repetition
+        key = (sender, telegram.rorg, telegram.data, telegram.status & 0xF0)
+        self._prune(now)
+        duplicate = key in self._seen
+        if not duplicate:
+            self._seen[key] = now
+        received = ReceivedTelegram(telegram, gateway, time.time(), sender, duplicate)
+
+        self.stats.received += 1
+        self.stats.per_gateway[gateway] = self.stats.per_gateway.get(gateway, 0) + 1
+        self._call(self._monitors, received)
+        if duplicate:
+            self.stats.duplicates += 1
+            return received
+
+        start = self._clock()
+        targets = self._listeners.get(sender)
+        if targets:
+            self._call(targets, received)
+        else:
+            self.stats.unknown += 1
+            self._call(self._unknown, received)
+        self._call(self._listeners.get(WILDCARD, ()), received)
+        self.stats.dispatch_time += self._clock() - start
+        return received
+
+    def _prune(self, now: float) -> None:
+        while self._seen:
+            key, seen = next(iter(self._seen.items()))
+            if now - seen < self._window:
+                break
+            del self._seen[key]
+
+    @staticmethod
+    def _call(listeners, received: ReceivedTelegram) -> None:
+        for listener in list(listeners):
+            try:
+                listener(received)
+            except Exception:
+                _LOGGER.exception("Error in listener for %s", received.telegram)
