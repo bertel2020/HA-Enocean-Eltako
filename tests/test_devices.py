@@ -833,7 +833,8 @@ async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gatew
     await asyncio.sleep(0.1)  # not block_till_done: the move waits for the anchor
     full_up = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00160108"), 0xFFB74493))
     assert full_up in bytes(server.received)
-    _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # FSB: drove 22 s up; await task
+    _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # FSB: drove 22 s up
+    await asyncio.wait_for(task, 5)
     await _settle(hass)
     down_5s = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00050208"), 0xFFB74493))
     assert down_5s in bytes(server.received)
