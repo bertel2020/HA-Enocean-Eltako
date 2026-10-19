@@ -86,8 +86,10 @@ def test_flow_texts_cover_the_catalog(name: str) -> None:
     steps = data["config_subentries"]["device"]["step"]
     for group in GROUPS:
         expected = {f"{group}_{c}" for c in categories_of(group)}
-        assert set(steps[group]["menu_options"]) == expected
+        assert set(steps[group]["menu_options"]) == expected | {"user"}  # + back
         assert set(steps[group]["menu_option_descriptions"]) == expected
+    kinds = {f"model_{m}" for m in CATALOG}
+    assert set(steps["kind"]["menu_options"]) == kinds | set(GROUPS)  # + back
 
 
 def test_catalog_entries_have_a_place_in_the_menus() -> None:

@@ -333,3 +333,66 @@ async def test_gateway_gets_the_entered_name(hass: HomeAssistant, fake_esp2) -> 
     result = await _name(hass, result, "  Funk Erdgeschoss ")
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Funk Erdgeschoss"
+
+
+def _configured(port: int, base_id: str = "FF-B7-44-80", model: str = "fam_usb") -> MockConfigEntry:
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title="Funk",
+        unique_id=base_id,
+        version=1,
+        minor_version=2,
+        data={
+            "model": model,
+            "device": {"type": "tcp", "host": "10.0.0.9", "port": port},
+            "base_id": base_id,
+        },
+    )
+
+
+async def test_reconfigure_changes_the_connection(hass: HomeAssistant, fake_esp2) -> None:
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.MENU
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    host = next(k for k in result["data_schema"].schema if k == "host")
+    assert host.description["suggested_value"] == "10.0.0.9"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["device"] == {"type": "tcp", "host": "127.0.0.1", "port": fake_esp2.port}
+    assert entry.title == "Funk"
+
+
+async def test_reconfigure_refuses_another_gateway(hass: HomeAssistant, fake_esp2) -> None:
+    entry = _configured(4000, base_id="FF-80-00-00")
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_gateway"
+    assert entry.data["device"]["port"] == 4000
+
+
+async def test_reconfigure_fam14_keeps_its_base_id(hass: HomeAssistant, fake_esp2) -> None:
+    entry = _configured(4000, base_id="FF-AA-00-00", model="fam14")
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["base_id"] == "FF-AA-00-00"

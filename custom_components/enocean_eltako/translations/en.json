@@ -78,7 +78,9 @@
       "invalid_base_id": "Not a valid base ID. It lies between FF-80-00-00 and FF-FF-FF-80 and ends in 00 or 80."
     },
     "abort": {
-      "already_configured": "A gateway with this base ID is already set up."
+      "already_configured": "A gateway with this base ID is already set up.",
+      "reconfigure_successful": "The connection was changed.",
+      "wrong_gateway": "This is a different gateway (other base ID). Add it as a new gateway instead."
     }
   },
   "selector": {
@@ -267,7 +269,8 @@
             "eltako_climate": "Heating and climate",
             "eltako_buttons": "Buttons and contacts",
             "eltako_sensors": "Sensors",
-            "eltako_meters": "Meters"
+            "eltako_meters": "Meters",
+            "user": "Back"
           },
           "menu_option_descriptions": {
             "eltako_lighting": "Switching actuators, dimmers",
@@ -283,7 +286,8 @@
           "description": "Which category?",
           "menu_options": {
             "enocean_lighting": "Lighting and switching",
-            "enocean_buttons": "Buttons and contacts"
+            "enocean_buttons": "Buttons and contacts",
+            "user": "Back"
           },
           "menu_option_descriptions": {
             "enocean_lighting": "Permundo PSC132 / PSC234",
@@ -293,8 +297,46 @@
         "kind": {
           "title": "Kind of device",
           "description": "What kind of device?",
-          "data": {
-            "model": "Device"
+          "menu_options": {
+            "model_switch": "Switching actuator",
+            "model_dimmer": "Dimmer",
+            "model_cover": "Shutter / blind",
+            "model_window_handle": "Window handle",
+            "model_contact": "Door / window contact",
+            "model_rocker": "Rocker switch",
+            "model_meter": "Energy meter",
+            "model_temp_humidity": "Temperature and humidity",
+            "model_fbh": "Motion and brightness sensor",
+            "model_co2": "CO2 sensor",
+            "model_room_controller": "Room controller",
+            "model_weather": "Weather station",
+            "model_psc": "Permundo PSC132 / PSC234 plug",
+            "model_rocker_contact": "Contact via rocker telegrams",
+            "model_heating_actuator": "Heating actuator, Home Assistant controls",
+            "model_enocean_rocker": "Rocker switch",
+            "model_enocean_window_handle": "Window handle",
+            "model_enocean_contact": "Door / window contact",
+            "eltako": "Back",
+            "enocean": "Back"
+          },
+          "menu_option_descriptions": {
+            "model_switch": "FSR61, FSR14, FL62",
+            "model_dimmer": "FUD14, FUD61, FD62",
+            "model_cover": "FSB14, FSB61, FSB71",
+            "model_window_handle": "FTKE, FFG7B",
+            "model_contact": "FTK, FTKB",
+            "model_rocker": "F4T55E, FT55, FT4F",
+            "model_meter": "FWZ12, FSDG14, DSZ14",
+            "model_temp_humidity": "FAFT60, FFT65B",
+            "model_fbh": "FBH65",
+            "model_co2": "FCO2TF65",
+            "model_room_controller": "FUTH, FTR65HS",
+            "model_weather": "FWS61, FWG14",
+            "model_rocker_contact": "FTS14EM, garage door",
+            "model_heating_actuator": "FHK14, FAE14",
+            "model_enocean_rocker": "NodOn, PEHA, Jung",
+            "model_enocean_window_handle": "Hoppe SecuSignal",
+            "model_enocean_contact": "NodOn"
           }
         },
         "learned": {
@@ -390,7 +432,12 @@
           "description": "Listen for a telegram (press a button on the device, or switch the actuator locally) or enter the ID.",
           "menu_options": {
             "learn": "Listen for a telegram",
-            "device": "Enter the ID"
+            "device": "Enter the ID",
+            "user": "Back",
+            "eltako": "Back",
+            "enocean": "Back",
+            "eep": "Back",
+            "kind": "Back"
           }
         },
         "learn_timeout": {
@@ -401,7 +448,9 @@
             "device": "Enter the ID",
             "eltako": "Pick an Eltako device",
             "enocean": "Pick an EnOcean device",
-            "eep": "By EEP"
+            "eep": "By EEP",
+            "user": "Back",
+            "kind": "Back"
           }
         },
         "cover_menu": {

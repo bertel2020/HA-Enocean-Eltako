@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import voluptuous as vol
 from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
     SOURCE_ZEROCONF,
     ConfigEntry,
     ConfigFlow,
@@ -86,6 +87,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
         self._base_id = 0
         self._data: dict[str, Any] = {}
         self._options: dict[str, Any] = {}
+        self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -107,6 +109,21 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             ),
         )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change how the gateway is reached (port, ser2net host); it must stay the same gateway."""
+        entry = self._get_reconfigure_entry()
+        self._model = MODELS[entry.data[CONF_MODEL]]
+        device = entry.data[CONF_DEVICE]
+        if device.get("type") == "serial":
+            self._suggested = {CONF_PATH: device["path"], CONF_BAUDRATE: str(device["baudrate"])}
+        else:
+            self._suggested = {CONF_HOST: device["host"], CONF_PORT: device["port"]}
+        if self._model.usb:
+            return await self.async_step_connection()
+        return await self.async_step_tcp()
 
     async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
         """A PioTek MGW-ETH announced itself (_bsc-sc-socket._tcp)."""
@@ -165,7 +182,9 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         return self.async_show_form(
             step_id="serial",
-            data_schema=self.add_suggested_values_to_schema(vol.Schema(schema), user_input),
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(schema), user_input or self._suggested
+            ),
             errors=errors,
             description_placeholders={"model": self._model.name},
         )
@@ -194,7 +213,7 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
         baudrate = self._model.baudrate or 57600
         return self.async_show_form(
             step_id="tcp" if self._model.usb else "network",
-            data_schema=self.add_suggested_values_to_schema(schema, user_input),
+            data_schema=self.add_suggested_values_to_schema(schema, user_input or self._suggested),
             errors=errors,
             description_placeholders={"model": self._model.name, "baudrate": str(baudrate)},
         )
@@ -237,6 +256,8 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
             return None
         if base_id is not None and is_valid_base_id(base_id):
             return await self._async_create(base_id)
+        if self.source == SOURCE_RECONFIGURE:  # FAM14 or silent: keep the stored base ID
+            return self._async_update_connection()
         if base_id is not None:
             _LOGGER.warning("%s reported an invalid base ID %s", self._model.name, hex(base_id))
         return await self.async_step_base_id()
@@ -244,6 +265,9 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_create(self, base_id: int) -> ConfigFlowResult:
         assert self._model is not None
         await self.async_set_unique_id(format_id(base_id), raise_on_progress=False)
+        if self.source == SOURCE_RECONFIGURE:
+            self._abort_if_unique_id_mismatch(reason="wrong_gateway")
+            return self._async_update_connection()
         # a rediscovered gateway with a new address updates its entry
         updates = (
             {CONF_DEVICE: self._connection.as_dict()}
@@ -255,6 +279,13 @@ class EnOceanEltakoConfigFlow(ConfigFlow, domain=DOMAIN):
         if self._model.bus:
             return await self.async_step_bus_group()
         return self._async_create_entry()
+
+    @callback
+    def _async_update_connection(self) -> ConfigFlowResult:
+        assert self._connection is not None
+        return self.async_update_reload_and_abort(
+            self._get_reconfigure_entry(), data_updates={CONF_DEVICE: self._connection.as_dict()}
+        )
 
     async def async_step_bus_group(
         self, user_input: dict[str, Any] | None = None

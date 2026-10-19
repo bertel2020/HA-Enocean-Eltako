@@ -152,6 +152,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         self._learn_task: asyncio.Task[ReceivedTelegram | None] | None = None
         self._learned: ReceivedTelegram | None = None
         self._kinds: list[str] = []
+        self._group = GROUP_ELTAKO
+        self._back = "user"  # step the "back" entry of the next menu returns to
 
     def _loaded(self) -> bool:
         entry = self._get_entry()
@@ -161,6 +163,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         """How to add the device: listen for it, pick it from the catalog, or by EEP."""
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
+        self._model = None  # also when coming back: learning then suggests the kind
         return self.async_show_menu(step_id="user", menu_options=["learn", *GROUPS, "eep"])
 
     async def async_step_eltako(
@@ -174,23 +177,28 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         return self._category_menu(GROUP_ENOCEAN)
 
     def _category_menu(self, group: str) -> SubentryFlowResult:
+        self._group = group
         return self.async_show_menu(
-            step_id=group, menu_options=[f"{group}_{c}" for c in categories_of(group)]
+            step_id=group, menu_options=[*(f"{group}_{c}" for c in categories_of(group)), "user"]
         )
 
     async def _async_category(self, group: str, category: str) -> SubentryFlowResult:
         """One kind in the category: take it; several: ask which."""
         self._kinds = [m.id for m in models_in(group, category)]
         if len(self._kinds) == 1:
-            self._model = CATALOG[self._kinds[0]]
-            return await self.async_step_address()
+            return await self._async_chosen(CATALOG[self._kinds[0]], back=group)
         return await self.async_step_kind()
 
     async def async_step_kind(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
-        if user_input is not None:
-            self._model = CATALOG[user_input[CONF_MODEL]]
-            return await self.async_step_address()
-        return self._model_form("kind", self._kinds)
+        """Kinds of the chosen category, examples as descriptions; back to the categories."""
+        return self.async_show_menu(
+            step_id="kind", menu_options=[*(f"model_{k}" for k in self._kinds), self._group]
+        )
+
+    async def _async_chosen(self, model: DeviceModel, back: str) -> SubentryFlowResult:
+        self._model = model
+        self._back = back
+        return await self.async_step_address()
 
     def _model_form(
         self, step_id: str, kinds: list[str], placeholders: dict[str, str] | None = None
@@ -216,10 +224,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             option = user_input[CONF_EEP]
             if option in EEP_TO_MODEL:
-                self._model = CATALOG[EEP_TO_MODEL[option]]
-            else:
-                self._model = generic_model(EEP_OPTIONS[option])
-            return await self.async_step_address()
+                return await self._async_chosen(CATALOG[EEP_TO_MODEL[option]], back="eep")
+            return await self._async_chosen(generic_model(EEP_OPTIONS[option]), back="eep")
         return self.async_show_form(
             step_id="eep",
             data_schema=vol.Schema(
@@ -239,7 +245,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """Listen for a telegram or type the ID."""
-        return self.async_show_menu(step_id="address", menu_options=["learn", "device"])
+        return self.async_show_menu(step_id="address", menu_options=["learn", "device", self._back])
 
     async def async_step_learn(
         self, user_input: dict[str, Any] | None = None
@@ -297,7 +303,9 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             return self.async_show_menu(
                 step_id="learn_timeout", menu_options=["learn", *GROUPS, "eep"]
             )
-        return self.async_show_menu(step_id="learn_timeout", menu_options=["learn", "device"])
+        return self.async_show_menu(
+            step_id="learn_timeout", menu_options=["learn", "device", self._back]
+        )
 
     async def _async_wait_for_telegram(self) -> ReceivedTelegram | None:
         rorgs = expected_rorgs(self._model) if self._model is not None else set()
@@ -700,7 +708,18 @@ def _category_step(group: str, category: str) -> Any:
     return step
 
 
-# menu options of the manufacturer menus are steps: async_step_eltako_lighting, ...
+def _model_step(model_id: str) -> Any:
+    async def step(
+        self: DeviceSubentryFlow, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_chosen(CATALOG[model_id], back="kind")
+
+    return step
+
+
+# menu options are steps: async_step_eltako_lighting, ..., async_step_model_switch, ...
+for _model_id in CATALOG:
+    setattr(DeviceSubentryFlow, f"async_step_model_{_model_id}", _model_step(_model_id))
 for _group in GROUPS:
     for _category in categories_of(_group):
         setattr(

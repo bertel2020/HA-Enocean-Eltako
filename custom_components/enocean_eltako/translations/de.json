@@ -78,7 +78,9 @@
       "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80."
     },
     "abort": {
-      "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet."
+      "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet.",
+      "reconfigure_successful": "Die Verbindung wurde geändert.",
+      "wrong_gateway": "Das ist ein anderes Gateway (andere Base-ID). Lege es stattdessen als neues Gateway an."
     }
   },
   "selector": {
@@ -267,7 +269,8 @@
             "eltako_climate": "Heizung und Klima",
             "eltako_buttons": "Taster und Kontakte",
             "eltako_sensors": "Sensoren",
-            "eltako_meters": "Zähler"
+            "eltako_meters": "Zähler",
+            "user": "Zurück"
           },
           "menu_option_descriptions": {
             "eltako_lighting": "Schaltaktoren, Dimmaktoren",
@@ -283,7 +286,8 @@
           "description": "Welche Kategorie?",
           "menu_options": {
             "enocean_lighting": "Licht und Schalten",
-            "enocean_buttons": "Taster und Kontakte"
+            "enocean_buttons": "Taster und Kontakte",
+            "user": "Zurück"
           },
           "menu_option_descriptions": {
             "enocean_lighting": "Permundo PSC132 / PSC234",
@@ -293,8 +297,46 @@
         "kind": {
           "title": "Geräteart",
           "description": "Welche Art von Gerät?",
-          "data": {
-            "model": "Gerät"
+          "menu_options": {
+            "model_switch": "Schaltaktor",
+            "model_dimmer": "Dimmaktor",
+            "model_cover": "Rollladen / Jalousie",
+            "model_window_handle": "Fenstergriff",
+            "model_contact": "Tür-/Fensterkontakt",
+            "model_rocker": "Wippentaster",
+            "model_meter": "Energiezähler",
+            "model_temp_humidity": "Temperatur und Feuchte",
+            "model_fbh": "Bewegungs- und Helligkeitssensor",
+            "model_co2": "CO2-Sensor",
+            "model_room_controller": "Raumregler",
+            "model_weather": "Wetterstation",
+            "model_psc": "Permundo PSC132 / PSC234 Zwischenstecker",
+            "model_rocker_contact": "Kontakt über Tastertelegramme",
+            "model_heating_actuator": "Heizungsaktor, Home Assistant regelt",
+            "model_enocean_rocker": "Wippentaster",
+            "model_enocean_window_handle": "Fenstergriff",
+            "model_enocean_contact": "Tür-/Fensterkontakt",
+            "eltako": "Zurück",
+            "enocean": "Zurück"
+          },
+          "menu_option_descriptions": {
+            "model_switch": "FSR61, FSR14, FL62",
+            "model_dimmer": "FUD14, FUD61, FD62",
+            "model_cover": "FSB14, FSB61, FSB71",
+            "model_window_handle": "FTKE, FFG7B",
+            "model_contact": "FTK, FTKB",
+            "model_rocker": "F4T55E, FT55, FT4F",
+            "model_meter": "FWZ12, FSDG14, DSZ14",
+            "model_temp_humidity": "FAFT60, FFT65B",
+            "model_fbh": "FBH65",
+            "model_co2": "FCO2TF65",
+            "model_room_controller": "FUTH, FTR65HS",
+            "model_weather": "FWS61, FWG14",
+            "model_rocker_contact": "FTS14EM, Garagentor",
+            "model_heating_actuator": "FHK14, FAE14",
+            "model_enocean_rocker": "NodOn, PEHA, Jung",
+            "model_enocean_window_handle": "Hoppe SecuSignal",
+            "model_enocean_contact": "NodOn"
           }
         },
         "learned": {
@@ -390,7 +432,12 @@
           "description": "Auf ein Telegramm warten (am Gerät eine Taste drücken bzw. den Aktor vor Ort schalten) oder die ID eingeben.",
           "menu_options": {
             "learn": "Auf Telegramm warten",
-            "device": "ID eingeben"
+            "device": "ID eingeben",
+            "user": "Zurück",
+            "eltako": "Zurück",
+            "enocean": "Zurück",
+            "eep": "Zurück",
+            "kind": "Zurück"
           }
         },
         "learn_timeout": {
@@ -401,7 +448,9 @@
             "device": "ID eingeben",
             "eltako": "Eltako-Gerät wählen",
             "enocean": "EnOcean-Gerät wählen",
-            "eep": "Per EEP"
+            "eep": "Per EEP",
+            "user": "Zurück",
+            "kind": "Zurück"
           }
         },
         "cover_menu": {

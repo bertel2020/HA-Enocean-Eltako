@@ -39,8 +39,8 @@ async def _choose_model(hass: HomeAssistant, flow_id: str, model: str):
     configure = hass.config_entries.subentries.async_configure
     result = await configure(flow_id, {"next_step_id": entry.group})
     result = await configure(flow_id, {"next_step_id": f"{entry.group}_{entry.category}"})
-    if result["type"] is FlowResultType.FORM and result["step_id"] == "kind":
-        result = await configure(flow_id, {"model": model})
+    if result["step_id"] == "kind":
+        result = await configure(flow_id, {"next_step_id": f"model_{model}"})
     assert result["step_id"] == "address"
     return result
 
@@ -485,7 +485,7 @@ async def test_learn_timeout_offers_retry(hass: HomeAssistant, gateway, monkeypa
     await _settle(hass)
     result = await hass.config_entries.subentries.async_configure(result["flow_id"])
     assert result["step_id"] == "learn_timeout"
-    assert result["menu_options"] == ["learn", "device"]
+    assert result["menu_options"] == ["learn", "device", "kind"]
 
 
 @pytest.fixture
@@ -938,16 +938,22 @@ async def test_add_device_menus(hass: HomeAssistant, gateway) -> None:
         "eltako_buttons",
         "eltako_sensors",
         "eltako_meters",
+        "user",
     ]
     result = await configure(eltako["flow_id"], {"next_step_id": "eltako_buttons"})
     assert result["step_id"] == "kind"
-    options = result["data_schema"].schema["model"].config["options"]
-    assert options == ["window_handle", "contact", "rocker", "rocker_contact"]
+    assert result["menu_options"] == [
+        "model_window_handle",
+        "model_contact",
+        "model_rocker",
+        "model_rocker_contact",
+        "eltako",
+    ]
 
     # only one kind in the category: straight to the address
     result = await _init_flow(hass, entry)
     result = await configure(result["flow_id"], {"next_step_id": "enocean"})
-    assert result["menu_options"] == ["enocean_lighting", "enocean_buttons"]
+    assert result["menu_options"] == ["enocean_lighting", "enocean_buttons", "user"]
     result = await configure(result["flow_id"], {"next_step_id": "enocean_lighting"})
     assert result["step_id"] == "address"
 
@@ -1036,3 +1042,31 @@ async def test_learn_first_timeout_offers_the_catalog(
     result = await hass.config_entries.subentries.async_configure(result["flow_id"])
     assert result["step_id"] == "learn_timeout"
     assert result["menu_options"] == ["learn", "eltako", "enocean", "eep"]
+
+
+async def test_back_entries_return_to_the_previous_menu(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    flow_id = result["flow_id"]
+    result = await configure(flow_id, {"next_step_id": "eltako"})
+    result = await configure(flow_id, {"next_step_id": "eltako_buttons"})
+    result = await configure(flow_id, {"next_step_id": "model_rocker"})
+    assert result["menu_options"] == ["learn", "device", "kind"]
+    result = await configure(flow_id, {"next_step_id": "kind"})  # back to the kinds
+    assert result["step_id"] == "kind"
+    result = await configure(flow_id, {"next_step_id": "eltako"})  # back to the categories
+    assert result["step_id"] == "eltako"
+    result = await configure(flow_id, {"next_step_id": "user"})  # back to the start
+    assert result["menu_options"] == ["learn", "eltako", "enocean", "eep"]
+    # a single kind goes straight to the address; back leads to the categories
+    result = await configure(flow_id, {"next_step_id": "enocean"})
+    result = await configure(flow_id, {"next_step_id": "enocean_lighting"})
+    assert result["menu_options"] == ["learn", "device", "enocean"]
+    # by EEP: back to the profile choice
+    result = await configure(flow_id, {"next_step_id": "enocean"})
+    result = await configure(flow_id, {"next_step_id": "user"})
+    result = await configure(flow_id, {"next_step_id": "eep"})
+    result = await configure(flow_id, {"eep": "std_a5_04_02"})
+    result = await configure(flow_id, {"next_step_id": "eep"})
+    assert result["step_id"] == "eep"
