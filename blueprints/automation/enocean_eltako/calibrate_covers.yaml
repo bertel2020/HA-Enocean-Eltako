@@ -1,0 +1,73 @@
+blueprint:
+  name: EnOcean Eltako - calibrate covers on a schedule
+  description: >-
+    Drives the chosen covers to the nearer end position and back at a fixed time on
+    the chosen weekdays, so their estimated position is exact again. Optionally only
+    when an entity allows it (for example "windows closed" or "nobody asleep").
+    The covers run one after another through the send queue.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml
+  input:
+    covers:
+      name: Covers
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: enocean_eltako
+              domain: cover
+    at:
+      name: Time
+      default: "11:00:00"
+      selector:
+        time: {}
+    weekdays:
+      name: Weekdays
+      default: [sun]
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Monday
+              value: mon
+            - label: Tuesday
+              value: tue
+            - label: Wednesday
+              value: wed
+            - label: Thursday
+              value: thu
+            - label: Friday
+              value: fri
+            - label: Saturday
+              value: sat
+            - label: Sunday
+              value: sun
+    allowed_by:
+      name: Only when this entity is on (optional)
+      default: ""
+      selector:
+        entity:
+          domain:
+            - binary_sensor
+            - input_boolean
+            - switch
+
+mode: single
+
+variables:
+  allowed_by: !input allowed_by
+
+triggers:
+  - trigger: time
+    at: !input at
+
+conditions:
+  - condition: time
+    weekday: !input weekdays
+  - condition: template
+    value_template: "{{ allowed_by == '' or is_state(allowed_by, 'on') }}"
+
+actions:
+  - action: enocean_eltako.calibrate_cover
+    target:
+      entity_id: !input covers
