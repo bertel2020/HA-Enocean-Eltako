@@ -352,6 +352,10 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     await hass.async_block_till_done()
     subentry_id = next(iter(entry.subentries))
     result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    assert result["step_id"] == "cover_menu"
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert result["step_id"] == "reconfigure"
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -379,6 +383,9 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
 
     # dropping the rocker blocks its ID until the teach-out is confirmed
     result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         {
@@ -777,6 +784,7 @@ async def test_meter_tariffs_total_and_backward_jump(hass: HomeAssistant, gatewa
     registry = er.async_get(hass)
     for key in ("energy_tariff_1", "energy_total"):
         registry.async_update_entity(_entity(hass, "sensor", f"{prefix}_{key}"), disabled_by=None)
+    server.connected.clear()  # wait for the connection of the reloaded entry
     await hass.config_entries.async_reload(_entry.entry_id)
     await hass.async_block_till_done()
     await server.connected.wait()
@@ -849,3 +857,59 @@ async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gatew
     await asyncio.sleep(0.3)  # beyond the duplicate window of the last identical report
     _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # nearer end: up again
     await asyncio.wait_for(calibrate, 5)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-25",
+                "Rollladen Gast",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-94"}],
+                time_opens=30,
+                time_closes=30,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_travel_time_assistant(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    actuator = 0x05000025
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "measure"}
+    )
+    assert result["step_id"] == "measure"
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    await asyncio.sleep(0.05)
+    _push(server, 0x05, b"\x70", actuator, 0x30)  # upper end reached
+    await asyncio.sleep(0.05)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"])
+    assert result["step_id"] == "measure_down"
+    await asyncio.sleep(0.05)
+    down = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00780208"), 0xFFB74494))
+    assert down in bytes(server.received)  # down for up to 120 s
+
+    async def click_and_report(report: str):
+        flow = hass.async_create_task(
+            hass.config_entries.subentries.async_configure(result["flow_id"], {})
+        )
+        await asyncio.sleep(0.05)
+        _push(server, 0x07, bytes.fromhex(report), actuator)
+        return await flow
+
+    result = await click_and_report("00E6020A")  # drove 23.0 s down
+    assert result["step_id"] == "measure_up"
+    result = await click_and_report("00FA010A")  # drove 25.0 s up
+    assert result["step_id"] == "measure_result"
+    assert result["description_placeholders"] == {"time_opens": "25.0", "time_closes": "23.0"}
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    data = entry.subentries[subentry_id].data
+    assert (data["time_opens"], data["time_closes"]) == (25.0, 23.0)

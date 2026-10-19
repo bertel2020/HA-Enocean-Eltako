@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any
 
 import voluptuous as vol
@@ -23,6 +24,7 @@ from homeassistant.helpers.selector import (
 
 from .catalog import (
     CATALOG,
+    CONTROLLER,
     OPT_CALIBRATION,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
@@ -51,11 +53,14 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .protocol.dispatcher import ReceivedTelegram
+from .protocol.eep.eltako import shutter
 from .protocol.ids import format_id, parse_id
 from .protocol.sender_pool import SenderIdError, SenderPool
 
 DEVICE_CLASSES = ["door", "window", "garage_door", "opening"]
 LEARN_TIMEOUT = 60.0
+MEASURE_MAX_RUN = 120  # seconds a measuring run may last (the click stops it earlier)
+DRIVEN_TIME_WAIT = 3.0  # seconds to wait for the actuator's driven-time report
 
 # RORG of telegrams a device kind sends, from the first letters of its receive profile
 _RORG_BY_PREFIX = {
@@ -109,6 +114,10 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
 
     def __init__(self) -> None:
         self._model: DeviceModel | None = None
+        self._settings_chosen = False
+        self._measure_task: asyncio.Task[bool] | None = None
+        self._measured: dict[str, float] = {}
+        self._run_started = 0.0
         self._learn_task: asyncio.Task[ReceivedTelegram | None] | None = None
         self._learned: ReceivedTelegram | None = None
 
@@ -227,6 +236,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         device_id = parse_id(data[CONF_DEVICE_ID])
         current = {s[CONF_PROFILE]: s[CONF_SENDER_ID] for s in data.get(CONF_SENDERS, ())}
         errors: dict[str, str] = {}
+        if user_input is None and model.id == "cover" and not self._settings_chosen:
+            return self.async_show_menu(step_id="cover_menu", menu_options=["settings", "measure"])
         if user_input is not None:
             result = await self._async_save(user_input, device_id, current, errors)
             if result is not None:
@@ -240,6 +251,144 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
         }
         schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
         return self._form("reconfigure", schema, user_input or suggested, errors)
+
+    async def async_step_cover_menu(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return self.async_show_menu(step_id="cover_menu", menu_options=["settings", "measure"])
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        self._settings_chosen = True
+        return await self.async_step_reconfigure()
+
+    # I5: travel time assistant -------------------------------------------------------------
+
+    def _cover_device(self) -> Any:
+        subentry = self._get_reconfigure_subentry()
+        return self._get_entry().runtime_data.devices.get(subentry.subentry_id)
+
+    async def async_step_measure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Explain, then open fully and wait for the anchor."""
+        device = self._cover_device()
+        if device is None or not device.has_sender(CONTROLLER.id):
+            return self.async_abort(reason="measure_needs_controller")
+        if user_input is None:
+            return self.async_show_form(step_id="measure", data_schema=vol.Schema({}))
+        self._measured = {}
+        return await self.async_step_measure_open()
+
+    async def async_step_measure_open(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        device = self._cover_device()
+        if self._measure_task is None:
+            self._measure_task = self.hass.async_create_task(self._async_open_fully(device))
+        if not self._measure_task.done():
+            return self.async_show_progress(
+                step_id="measure_open",
+                progress_action="measure_open",
+                progress_task=self._measure_task,
+            )
+        ok = self._measure_task.result()
+        self._measure_task = None
+        if not ok:
+            return self.async_show_progress_done(next_step_id="measure_failed")
+        return self.async_show_progress_done(next_step_id="measure_down")
+
+    async def async_step_measure_failed(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return self.async_abort(reason="measure_failed")
+
+    async def async_step_measure_down(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_measure_run("measure_down", down=True, user_input=user_input)
+
+    async def async_step_measure_up(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_measure_run("measure_up", down=False, user_input=user_input)
+
+    async def _async_measure_run(
+        self, step_id: str, down: bool, user_input: dict[str, Any] | None
+    ) -> SubentryFlowResult:
+        """Start the run when the form shows; the click stops it and takes the driven time."""
+        device = self._cover_device()
+        if user_input is None:
+            self._run_started = time.monotonic()
+            device.send(
+                shutter.encode_command(shutter.DOWN if down else shutter.UP, MEASURE_MAX_RUN),
+                profile=CONTROLLER.id,
+                key="move",
+                confirm=False,
+            )
+            return self.async_show_form(step_id=step_id, data_schema=vol.Schema({}))
+        wall = time.monotonic() - self._run_started
+        waiter = self._wait_for(device, lambda v: "driven_time" in v)
+        device.send(shutter.encode_command(shutter.STOP), profile=CONTROLLER.id, confirm=False)
+        try:
+            async with asyncio.timeout(DRIVEN_TIME_WAIT):
+                driven = (await waiter)["driven_time"]
+        except TimeoutError:
+            driven = round(wall, 1)  # no report: the click time is still within ~0.3 s
+        self._measured["time_closes" if down else "time_opens"] = driven
+        if down:
+            return await self.async_step_measure_up()
+        return await self.async_step_measure_result()
+
+    async def async_step_measure_result(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        if user_input is not None:
+            subentry = self._get_reconfigure_subentry()
+            return self.async_update_and_abort(
+                self._get_entry(), subentry, data={**subentry.data, **self._measured}
+            )
+        return self.async_show_form(
+            step_id="measure_result",
+            data_schema=vol.Schema({}),
+            description_placeholders={
+                "time_opens": f"{self._measured.get('time_opens', 0):.1f}",
+                "time_closes": f"{self._measured.get('time_closes', 0):.1f}",
+            },
+        )
+
+    async def _async_open_fully(self, device: Any) -> bool:
+        waiter = self._wait_for(
+            device,
+            lambda v: (
+                v.get("state") == "open" or (v.get("direction") == "up" and "driven_time" in v)
+            ),
+        )
+        device.send(
+            shutter.encode_command(shutter.UP, MEASURE_MAX_RUN),
+            profile=CONTROLLER.id,
+            key="move",
+            confirm=False,
+        )
+        try:
+            async with asyncio.timeout(MEASURE_MAX_RUN + 10):
+                await waiter
+        except TimeoutError:
+            return False
+        return True
+
+    def _wait_for(self, device: Any, predicate: Any) -> asyncio.Future[dict[str, Any]]:
+        future: asyncio.Future[dict[str, Any]] = self.hass.loop.create_future()
+        remove = None
+
+        def listener(values: dict[str, Any]) -> None:
+            if not future.done() and predicate(values):
+                future.set_result(values)
+
+        remove = device.add_listener(listener)
+        future.add_done_callback(lambda _f: remove())
+        return future
 
     def _form(
         self,

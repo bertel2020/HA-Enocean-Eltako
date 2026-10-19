@@ -302,6 +302,29 @@
             "learn": "Nochmal warten",
             "device": "ID eingeben"
           }
+        },
+        "cover_menu": {
+          "title": "Rollladen",
+          "menu_options": {
+            "settings": "Einstellungen",
+            "measure": "Laufzeiten messen"
+          }
+        },
+        "measure": {
+          "title": "Laufzeiten messen",
+          "description": "Home Assistant öffnet den Rollladen zuerst ganz. Dann fährt er ab: Absenden klicken, sobald er ganz geschlossen ist (Schlitze zu). Dann fährt er auf: Absenden klicken, sobald er ganz offen ist. Der Aktor meldet die gefahrene Zeit auf 0,1 s genau. Danach die Rückfallverzögerung (RV) am Aktor mindestens auf die gemessene Zeit plus Zuschlag stellen, sonst sind seine Endlagenmeldungen keine echten Endlagen."
+        },
+        "measure_down": {
+          "title": "Fährt ab",
+          "description": "Absenden klicken, sobald der Rollladen ganz geschlossen ist."
+        },
+        "measure_up": {
+          "title": "Fährt auf",
+          "description": "Absenden klicken, sobald der Rollladen ganz offen ist."
+        },
+        "measure_result": {
+          "title": "Gemessen",
+          "description": "Auf: {time_opens} s, ab: {time_closes} s. Absenden speichert diese Laufzeiten."
         }
       },
       "error": {
@@ -315,10 +338,13 @@
       },
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
-        "reconfigure_successful": "Gerät aktualisiert."
+        "reconfigure_successful": "Gerät aktualisiert.",
+        "measure_needs_controller": "Zum Messen braucht der Rollladen den Controller-Sender (H5-3F-7F).",
+        "measure_failed": "Der Rollladen hat die obere Endlage nicht gemeldet."
       },
       "progress": {
-        "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten."
+        "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten.",
+        "measure_open": "Rollladen wird ganz geöffnet …"
       }
     }
   },

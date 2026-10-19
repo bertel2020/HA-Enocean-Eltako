@@ -302,6 +302,29 @@
             "learn": "Listen again",
             "device": "Enter the ID"
           }
+        },
+        "cover_menu": {
+          "title": "Cover",
+          "menu_options": {
+            "settings": "Settings",
+            "measure": "Measure travel times"
+          }
+        },
+        "measure": {
+          "title": "Measure travel times",
+          "description": "Home Assistant first opens the cover fully. Then it drives down: click Submit the moment the cover is fully closed (slats shut). Then it drives up: click Submit the moment it is fully open. The actuator reports the driven time to 0.1 s. Afterwards set the actuator's delay time (RV) at least to the measured time plus a margin, otherwise its end-position reports are not real end positions."
+        },
+        "measure_down": {
+          "title": "Driving down",
+          "description": "Click Submit the moment the cover is fully closed."
+        },
+        "measure_up": {
+          "title": "Driving up",
+          "description": "Click Submit the moment the cover is fully open."
+        },
+        "measure_result": {
+          "title": "Measured",
+          "description": "Up: {time_opens} s, down: {time_closes} s. Submit to save these travel times."
         }
       },
       "error": {
@@ -315,10 +338,13 @@
       },
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
-        "reconfigure_successful": "Device updated."
+        "reconfigure_successful": "Device updated.",
+        "measure_needs_controller": "Measuring needs the controller sender (H5-3F-7F).",
+        "measure_failed": "The cover did not report the open end position."
       },
       "progress": {
-        "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now."
+        "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now.",
+        "measure_open": "Opening the cover fully …"
       }
     }
   },
