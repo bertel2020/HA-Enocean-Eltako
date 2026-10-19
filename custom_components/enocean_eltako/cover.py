@@ -6,13 +6,17 @@ again stops). The routing option picks which one moves the cover (controller,
 direction_rocker or both); positions use the controller when present, otherwise the rocker
 with a timed stop.
 
-Position is tracked from the driven time. It is anchored at the end positions (status 0x70
-and 0x50), whenever the driven time reaches the full travel time and on every command to
-0 % or 100 %, which is always sent as a full run. No self-learning travel times.
+Position and inaccuracy follow cover_position.CoverPosition (I6). Commands to 0 % or 100 % are
+always full runs with margin, which renews the anchor. Calibration strategy per cover:
+passive (anchor only when fully opened or closed anyway) or before an uncertain move (drive to
+the nearer end first when the inaccuracy exceeds the threshold). The calibrate button and the
+action enocean_eltako.calibrate_cover drive to the nearer end and back.
 """
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from collections.abc import Callable
 from typing import Any
 
@@ -25,14 +29,17 @@ from homeassistant.components.cover import (
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
 from .catalog import (
     CONTROLLER,
     DIRECTION_ROCKER,
+    OPT_CALIBRATION,
     OPT_ROUTING,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
@@ -40,14 +47,18 @@ from .catalog import (
     ROCKER_PRESS_UP,
 )
 from .const import DOMAIN
+from .cover_position import CoverPosition
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .protocol.eep.eltako import shutter
 
 PARALLEL_UPDATES = 0
 
-FULL_RUN_MARGIN = 2.0  # seconds added to a full run so the end position is surely reached
+SERVICE_CALIBRATE = "calibrate_cover"
+
 DEFAULT_TRAVEL_TIME = 30.0
+DEFAULT_THRESHOLD = 10.0  # inaccuracy points before an uncertain move triggers calibration
+ANCHOR_WAIT_EXTRA = 10.0  # seconds to wait for the anchor beyond the full run time
 
 
 async def async_setup_entry(
@@ -58,6 +69,9 @@ async def async_setup_entry(
     for subentry_id, device in entry.runtime_data.devices.items():
         if Platform.COVER in device.model.platforms:
             async_add_entities([EnOceanCover(device)], config_subentry_id=subentry_id)
+    entity_platform.async_get_current_platform().async_register_entity_service(
+        SERVICE_CALIBRATE, None, "async_calibrate"
+    )
 
 
 class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
@@ -73,8 +87,11 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "cover")
-        self._time_opens = float(device.options.get(OPT_TIME_OPENS) or DEFAULT_TRAVEL_TIME)
-        self._time_closes = float(device.options.get(OPT_TIME_CLOSES) or DEFAULT_TRAVEL_TIME)
+        self.position = CoverPosition(
+            float(device.options.get(OPT_TIME_OPENS) or DEFAULT_TRAVEL_TIME),
+            float(device.options.get(OPT_TIME_CLOSES) or DEFAULT_TRAVEL_TIME),
+        )
+        self._before_move = device.options.get(OPT_CALIBRATION) == "before_move"
         self._attr_is_opening = False
         self._attr_is_closing = False
         routing = device.options.get(OPT_ROUTING, CONTROLLER.id)
@@ -85,23 +102,42 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         ] or list(device.senders)
         self._cancel_stop: Callable[[], None] | None = None
         self._rocker_direction: bytes | None = None
+        self._anchored = asyncio.Event()
+        self._last_calibrated: str | None = None
+        device.cover_entity = self
+
+    @property
+    def current_cover_position(self) -> int | None:
+        return self.position.position
 
     @property
     def is_closed(self) -> bool | None:
-        if self._attr_current_cover_position is None:
-            return None
-        return self._attr_current_cover_position == 0
+        return None if self.position.position is None else self.position.position == 0
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "inaccuracy": round(self.position.inaccuracy, 1),
+            "last_calibrated": self._last_calibrated,
+        }
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         if (last := await self.async_get_last_state()) is not None:
-            self._attr_current_cover_position = last.attributes.get("current_position")
+            self.position.position = last.attributes.get("current_position")
+            if (inaccuracy := last.attributes.get("inaccuracy")) is not None:
+                self.position.inaccuracy = float(inaccuracy)
+            self._last_calibrated = last.attributes.get("last_calibrated")
+        self.position.restarted()  # the restored position is uncertain
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._cancel_timed_stop()
 
     async def async_open_cover(self, **kwargs: Any) -> None:
-        await self._run(shutter.UP, self._time_opens + FULL_RUN_MARGIN)
+        self._full_run(up=True)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
-        await self._run(shutter.DOWN, self._time_closes + FULL_RUN_MARGIN)
+        self._full_run(up=False)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         self._cancel_timed_stop()
@@ -115,25 +151,46 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         target = kwargs[ATTR_POSITION]
-        if target >= 100:
-            await self.async_open_cover()
+        if target >= 100 or target <= 0:
+            self._full_run(up=target >= 100)
             return
-        if target <= 0:
-            await self.async_close_cover()
-            return
-        current = self._attr_current_cover_position
-        if current is None:
+        if self.position.position is None:
             raise HomeAssistantError(
                 translation_domain=DOMAIN, translation_key="cover_position_unknown"
             )
-        if target == current:
-            return
-        if target > current:
-            await self._run(shutter.UP, (target - current) / 100 * self._time_opens, full=False)
-        else:
-            await self._run(shutter.DOWN, (current - target) / 100 * self._time_closes, full=False)
+        if self._before_move and self.position.inaccuracy > DEFAULT_THRESHOLD:
+            await self._drive_to_anchor(self.position.nearer_end())
+        self._partial_run(target)
 
-    async def _run(self, command: int, seconds: float, full: bool = True) -> None:
+    async def async_calibrate(self) -> None:
+        """Drive to the nearer end (anchor) and back to the previous position."""
+        previous = self.position.position
+        end = self.position.nearer_end()
+        if await self._drive_to_anchor(end) and previous not in (None, 0, 100, end):
+            self._partial_run(previous)
+
+    async def _drive_to_anchor(self, end: int) -> bool:
+        self._anchored.clear()
+        self._full_run(up=end == 100)
+        timeout = self.position.full_run_time(up=end == 100) + ANCHOR_WAIT_EXTRA
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(timeout):
+                await self._anchored.wait()
+                return True
+        self.position.no_answer()
+        self._changed()
+        return False
+
+    def _full_run(self, up: bool) -> None:
+        self._run(shutter.UP if up else shutter.DOWN, self.position.full_run_time(up), full=True)
+
+    def _partial_run(self, target: int) -> None:
+        run = self.position.partial_run(target)
+        if run is not None:
+            up, seconds = run
+            self._run(shutter.UP if up else shutter.DOWN, seconds, full=False)
+
+    def _run(self, command: int, seconds: float, full: bool) -> None:
         self._cancel_timed_stop()
         controller = self._device.has_sender(CONTROLLER.id)
         # positions: controller when present; open/close: the configured routing
@@ -165,12 +222,17 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
             self._cancel_stop()
             self._cancel_stop = None
 
-    async def async_will_remove_from_hass(self) -> None:
-        self._cancel_timed_stop()
+    def _changed(self) -> None:
+        self._device._notify_stats()  # accuracy sensor follows
+
+    def _mark_anchor(self) -> None:
+        self._last_calibrated = dt_util.utcnow().isoformat()
+        self._anchored.set()
 
     def _apply(self, values: dict[str, Any]) -> bool:
         before = (
-            self._attr_current_cover_position,
+            self.position.position,
+            round(self.position.inaccuracy, 1),
             self._attr_is_opening,
             self._attr_is_closing,
         )
@@ -179,22 +241,19 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
             self._attr_is_closing = state == "closing"
             if state in ("open", "closed"):
                 self._rocker_direction = None  # stopped at the end position by itself
-            if state == "open":
-                self._attr_current_cover_position = 100
-            elif state == "closed":
-                self._attr_current_cover_position = 0
+                self.position.anchor(100 if state == "open" else 0)
+                self._mark_anchor()
         elif "driven_time" in values:
             self._attr_is_opening = self._attr_is_closing = False
-            up = values["direction"] == "up"
-            full = self._time_opens if up else self._time_closes
-            if values["driven_time"] >= full:
-                self._attr_current_cover_position = 100 if up else 0
-            elif self._attr_current_cover_position is not None:
-                delta = values["driven_time"] / full * 100
-                position = self._attr_current_cover_position + (delta if up else -delta)
-                self._attr_current_cover_position = round(max(0, min(100, position)))
-        return before != (
-            self._attr_current_cover_position,
+            self.position.driven(values["driven_time"], up=values["direction"] == "up")
+            if self.position.inaccuracy == 0:
+                self._mark_anchor()
+        after = (
+            self.position.position,
+            round(self.position.inaccuracy, 1),
             self._attr_is_opening,
             self._attr_is_closing,
         )
+        if before != after:
+            self._changed()
+        return before != after

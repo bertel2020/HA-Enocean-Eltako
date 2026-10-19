@@ -31,6 +31,7 @@ OPT_LONG_PRESS = "long_press"  # E6: seconds held for a long press
 OPT_DOUBLE_PRESS = "double_press"  # E6: max seconds between the presses of a double press
 OPT_STATUS_REQUEST = "status_request"  # E2: actuator answers "send confirmation" (FL62, FD62)
 OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
+OPT_CALIBRATION = "calibration"  # I6 cover: passive | before_move
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -131,7 +132,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("G5-3F-7F:eltako"),
             (Platform.COVER,),
             senders=(CONTROLLER, DIRECTION_ROCKER),
-            options=(OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_ROUTING),
+            options=(OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_ROUTING, OPT_CALIBRATION),
             examples="FSB14, FSB61, FSB71, FJ62",
         ),
         DeviceModel(

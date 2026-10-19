@@ -72,6 +72,7 @@ class EnOceanDevice:
         self.silent = False  # E5: no telegram for 3x the expected interval
         self._listeners: list[Listener] = []
         self._stat_listeners: list[Callable[[], None]] = []
+        self.cover_entity: Any = None  # set by the cover entity (calibrate button, accuracy)
 
     @property
     def unique_prefix(self) -> str:

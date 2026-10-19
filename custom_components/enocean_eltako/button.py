@@ -22,10 +22,10 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        async_add_entities(
-            [TeachInButton(device, profile) for profile in device.senders],
-            config_subentry_id=subentry_id,
-        )
+        buttons: list[ButtonEntity] = [TeachInButton(device, p) for p in device.senders]
+        if device.model.id == "cover":
+            buttons.append(CalibrateButton(device))
+        async_add_entities(buttons, config_subentry_id=subentry_id)
 
 
 class TeachInButton(EnOceanEntity, ButtonEntity):
@@ -40,6 +40,23 @@ class TeachInButton(EnOceanEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         self._device.teach_in(self._profile)
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class CalibrateButton(EnOceanEntity, ButtonEntity):
+    """I6: drive the cover to the nearer end position and back."""
+
+    _attr_translation_key = "calibrate"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "calibrate")
+
+    async def async_press(self) -> None:
+        if self._device.cover_entity is not None:
+            self.hass.async_create_task(self._device.cover_entity.async_calibrate())
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False

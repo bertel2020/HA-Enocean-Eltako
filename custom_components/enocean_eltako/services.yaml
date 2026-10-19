@@ -11,3 +11,9 @@ capture:
       selector:
         config_entry:
           integration: enocean_eltako
+
+calibrate_cover:
+  target:
+    entity:
+      integration: enocean_eltako
+      domain: cover

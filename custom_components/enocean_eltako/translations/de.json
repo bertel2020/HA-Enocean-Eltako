@@ -142,6 +142,12 @@
         "a1": "A1 (0x10)",
         "released": "Loslassen"
       }
+    },
+    "calibration": {
+      "options": {
+        "passive": "Nur wenn ohnehin ganz auf oder zu gefahren wird",
+        "before_move": "Vor einer unsicheren Positionsfahrt"
+      }
     }
   },
   "exceptions": {
@@ -172,6 +178,10 @@
           "description": "Nur Telegramme dieses Gateways; leer für alle."
         }
       }
+    },
+    "calibrate_cover": {
+      "name": "Rollladen kalibrieren",
+      "description": "Fährt den Rollladen in die nähere Endlage, um die berechnete Position zurückzusetzen, und wieder zurück."
     }
   },
   "options": {
@@ -226,7 +236,8 @@
             "unavailable_when_silent": "Nicht verfügbar, wenn stumm",
             "status_request": "Zustand beim Start abfragen",
             "long_press": "Lang ab",
-            "double_press": "Doppelt innerhalb"
+            "double_press": "Doppelt innerhalb",
+            "calibration": "Kalibrierung"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -236,7 +247,8 @@
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
             "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
-            "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden."
+            "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
+            "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann."
           }
         },
         "reconfigure": {
@@ -261,7 +273,8 @@
             "unavailable_when_silent": "Nicht verfügbar, wenn stumm",
             "status_request": "Zustand beim Start abfragen",
             "long_press": "Lang ab",
-            "double_press": "Doppelt innerhalb"
+            "double_press": "Doppelt innerhalb",
+            "calibration": "Kalibrierung"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -270,7 +283,8 @@
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
             "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
-            "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden."
+            "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
+            "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann."
           }
         },
         "address": {
@@ -362,6 +376,9 @@
       },
       "active_tariff": {
         "name": "Aktiver Tarif"
+      },
+      "position_accuracy": {
+        "name": "Positionsgenauigkeit"
       }
     },
     "binary_sensor": {
@@ -398,6 +415,9 @@
       },
       "teach_in_direction_rocker": {
         "name": "Einlernen Richtungstaster"
+      },
+      "calibrate": {
+        "name": "Kalibrieren"
       }
     }
   },

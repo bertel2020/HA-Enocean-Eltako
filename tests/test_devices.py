@@ -796,3 +796,55 @@ async def test_meter_tariffs_total_and_backward_jump(hass: HomeAssistant, gatewa
     assert value("energy") == pytest.approx(409.6)
     assert value("energy_tariff_1") == pytest.approx(25.6)
     assert value("energy_total") == pytest.approx(435.2)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-24",
+                "Rollladen Bad",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-93"}],
+                time_opens=20,
+                time_closes=20,
+                calibration="before_move",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    entity_id = _entity(hass, "cover", f"{BASE}_05-00-00-24_1_cover")
+    accuracy = _entity(hass, "sensor", f"{BASE}_05-00-00-24_1_position_accuracy")
+    _push(server, 0x07, bytes.fromhex("0064020A"), 0x05000024)  # 10 s down, position unknown
+    await _settle(hass)
+    cover = _entry.runtime_data.devices[next(iter(_entry.runtime_data.devices))].cover_entity
+    cover.position.position = 50  # pretend a vague position
+    assert cover.position.inaccuracy > 10
+
+    task = hass.async_create_task(
+        hass.services.async_call(
+            "cover", "set_cover_position", {"entity_id": entity_id, "position": 75}, blocking=True
+        )
+    )
+    await asyncio.sleep(0.1)  # not block_till_done: the move waits for the anchor
+    full_up = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00160108"), 0xFFB74493))
+    assert full_up in bytes(server.received)
+    _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # FSB: drove 22 s up; await task
+    await _settle(hass)
+    down_5s = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00050208"), 0xFFB74493))
+    assert down_5s in bytes(server.received)
+    assert float(hass.states.get(accuracy).state) == 0
+    assert hass.states.get(entity_id).attributes["last_calibrated"] is not None
+
+    calibrate = hass.async_create_task(
+        hass.services.async_call(
+            "enocean_eltako", "calibrate_cover", {"entity_id": entity_id}, blocking=True
+        )
+    )
+    await asyncio.sleep(0.3)  # beyond the duplicate window of the last identical report
+    _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # nearer end: up again
+    await asyncio.wait_for(calibrate, 5)

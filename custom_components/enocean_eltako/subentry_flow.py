@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
 
 from .catalog import (
     CATALOG,
+    OPT_CALIBRATION,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
     OPT_INVERT,
@@ -90,6 +91,7 @@ OPTION_KEYS = (
     OPT_STATUS_REQUEST,
     OPT_LONG_PRESS,
     OPT_DOUBLE_PRESS,
+    OPT_CALIBRATION,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -317,6 +319,12 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             schema[vol.Required(OPT_OFF_BUTTON, default="b1")] = SelectSelector(
                 SelectSelectorConfig(
                     options=[*BUTTONS, "released"], translation_key="rocker_button"
+                )
+            )
+        if OPT_CALIBRATION in model.options:
+            schema[vol.Required(OPT_CALIBRATION, default="passive")] = SelectSelector(
+                SelectSelectorConfig(
+                    options=["passive", "before_move"], translation_key=OPT_CALIBRATION
                 )
             )
         if OPT_DEVICE_CLASS in model.options:

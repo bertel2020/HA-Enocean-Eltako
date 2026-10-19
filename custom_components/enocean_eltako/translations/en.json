@@ -142,6 +142,12 @@
         "a1": "A1 (0x10)",
         "released": "Release"
       }
+    },
+    "calibration": {
+      "options": {
+        "passive": "Only when fully opened or closed anyway",
+        "before_move": "Before an uncertain position move"
+      }
     }
   },
   "exceptions": {
@@ -172,6 +178,10 @@
           "description": "Only telegrams of this gateway; empty for all."
         }
       }
+    },
+    "calibrate_cover": {
+      "name": "Calibrate cover",
+      "description": "Drives the cover to the nearer end position to reset its tracked position, then back."
     }
   },
   "options": {
@@ -226,7 +236,8 @@
             "unavailable_when_silent": "Unavailable when silent",
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
-            "double_press": "Double press within"
+            "double_press": "Double press within",
+            "calibration": "Calibration"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
@@ -236,7 +247,8 @@
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
-            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report."
+            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
+            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points."
           }
         },
         "reconfigure": {
@@ -261,7 +273,8 @@
             "unavailable_when_silent": "Unavailable when silent",
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
-            "double_press": "Double press within"
+            "double_press": "Double press within",
+            "calibration": "Calibration"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -270,7 +283,8 @@
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
             "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
-            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report."
+            "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
+            "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points."
           }
         },
         "address": {
@@ -362,6 +376,9 @@
       },
       "active_tariff": {
         "name": "Active tariff"
+      },
+      "position_accuracy": {
+        "name": "Position accuracy"
       }
     },
     "binary_sensor": {
@@ -398,6 +415,9 @@
       },
       "teach_in_direction_rocker": {
         "name": "Teach-in direction rocker"
+      },
+      "calibrate": {
+        "name": "Calibrate"
       }
     }
   },

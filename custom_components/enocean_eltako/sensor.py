@@ -226,6 +226,8 @@ async def async_setup_entry(
         diagnostics: list[SensorEntity] = [LastSeenSensor(device), RssiSensor(device)]
         if device.senders:
             diagnostics.append(CommandSuccessSensor(device))
+        if device.model.id == "cover":
+            diagnostics.append(PositionAccuracySensor(device))
         async_add_entities(diagnostics, config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
@@ -395,3 +397,18 @@ class CommandSuccessSensor(_StatsSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         stats = self._device.stats
         return {"commands": stats.commands, "confirmed": stats.confirmed}
+
+
+class PositionAccuracySensor(_StatsSensor):
+    """I6: inaccuracy of the tracked cover position in percentage points."""
+
+    _attr_translation_key = "position_accuracy"
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "position_accuracy")
+
+    @property
+    def native_value(self) -> float | None:
+        cover = self._device.cover_entity
+        return round(cover.position.inaccuracy, 1) if cover is not None else None
