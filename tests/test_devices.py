@@ -765,3 +765,34 @@ async def test_rocker_gestures_and_device_triggers(hass: HomeAssistant, gateway)
         t for t in triggers if t["type"] == "long_press" and t["subtype"] == "a0"
     ).items()
     assert len(triggers) == 4 * 6
+
+
+@pytest.mark.parametrize(
+    "gateway", [[_subentry("meter", "05-00-00-13", "Proxon TWWP")]], indirect=True
+)
+async def test_meter_tariffs_total_and_backward_jump(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    meter = 0x05000013
+    prefix = f"{BASE}_05-00-00-13_1"
+    registry = er.async_get(hass)
+    for key in ("energy_tariff_1", "energy_total"):
+        registry.async_update_entity(_entity(hass, "sensor", f"{prefix}_{key}"), disabled_by=None)
+    await hass.config_entries.async_reload(_entry.entry_id)
+    await hass.async_block_till_done()
+    await server.connected.wait()
+
+    async def send(data: str) -> None:
+        _push(server, 0x07, bytes.fromhex(data), meter)
+        await asyncio.sleep(0.25)
+
+    await send("00100009")  # day tariff 409.6 kWh
+    await send("00010019")  # night tariff 25.6 kWh
+    await send("000FFF09")  # backwards: dropped
+    await _settle(hass)
+
+    def value(key: str) -> float:
+        return float(hass.states.get(_entity(hass, "sensor", f"{prefix}_{key}")).state)
+
+    assert value("energy") == pytest.approx(409.6)
+    assert value("energy_tariff_1") == pytest.approx(25.6)
+    assert value("energy_total") == pytest.approx(435.2)

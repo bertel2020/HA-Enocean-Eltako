@@ -318,9 +318,6 @@
           "tilted": "Tilted"
         }
       },
-      "energy_tariff": {
-        "name": "Energy tariff {tariff}"
-      },
       "setpoint": {
         "name": "Setpoint"
       },
@@ -356,6 +353,15 @@
       },
       "command_success": {
         "name": "Commands confirmed"
+      },
+      "energy_night": {
+        "name": "Energy night tariff"
+      },
+      "energy_total": {
+        "name": "Energy both tariffs"
+      },
+      "active_tariff": {
+        "name": "Active tariff"
       }
     },
     "binary_sensor": {

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -36,6 +37,8 @@ from . import EnOceanEltakoConfigEntry
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 
+_LOGGER = logging.getLogger(__name__)
+
 PARALLEL_UPDATES = 0
 
 HANDLE_POSITIONS = {0xF0: "closed", 0xC0: "open", 0xE0: "open", 0xD0: "tilted"}
@@ -44,6 +47,7 @@ HANDLE_POSITIONS = {0xF0: "closed", 0xC0: "open", 0xE0: "open", 0xD0: "tilted"}
 @dataclass(frozen=True, kw_only=True)
 class EnOceanSensorDescription(SensorEntityDescription):
     value_fn: Callable[[dict[str, Any]], Any]
+    monotonic: bool = False  # meter readings: a step backwards is dropped, not a reset
 
 
 def _field(name: str, ndigits: int | None = 1) -> Callable[[dict[str, Any]], Any]:
@@ -63,6 +67,10 @@ def _meter(data_type: int, tariff: int) -> Callable[[dict[str, Any]], Any]:
         return round(values["MR"], 3)
 
     return get
+
+
+def _any_tariff_power(values: dict[str, Any]) -> Any:
+    return round(values["MR"], 1) if values.get("DT") == 1 else None
 
 
 def _handle(values: dict[str, Any]) -> Any:
@@ -101,16 +109,17 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
             device_class=SensorDeviceClass.ENERGY,
             native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             state_class=SensorStateClass.TOTAL_INCREASING,
+            monotonic=True,
             value_fn=_meter(0, 0),
         ),
         EnOceanSensorDescription(
             key="energy_tariff_1",
-            translation_key="energy_tariff",
-            translation_placeholders={"tariff": "1"},
+            translation_key="energy_night",
             device_class=SensorDeviceClass.ENERGY,
             native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
             state_class=SensorStateClass.TOTAL_INCREASING,
             entity_registry_enabled_default=False,
+            monotonic=True,
             value_fn=_meter(0, 1),
         ),
         EnOceanSensorDescription(
@@ -118,7 +127,13 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
             device_class=SensorDeviceClass.POWER,
             native_unit_of_measurement=UnitOfPower.WATT,
             state_class=SensorStateClass.MEASUREMENT,
-            value_fn=_meter(1, 0),
+            value_fn=_any_tariff_power,
+        ),
+        EnOceanSensorDescription(
+            key="active_tariff",
+            translation_key="active_tariff",
+            entity_registry_enabled_default=False,
+            value_fn=lambda v: v.get("TI") if v.get("DT") == 1 else None,
         ),
     ),
     "temp_humidity": (
@@ -196,7 +211,9 @@ SENSORS["heating_actuator"] = (
         value_fn=lambda v: v.get("mode"),
     ),
 )
-SENSORS["psc"] = tuple(d for d in SENSORS["meter"] if d.key != "energy_tariff_1")
+SENSORS["psc"] = tuple(
+    d for d in SENSORS["meter"] if d.key not in ("energy_tariff_1", "active_tariff")
+)
 
 
 async def async_setup_entry(
@@ -212,10 +229,12 @@ async def async_setup_entry(
         async_add_entities(diagnostics, config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
-        async_add_entities(
-            [EnOceanSensor(device, d) for d in SENSORS.get(device.model.id, ())],
-            config_subentry_id=subentry_id,
-        )
+        entities: list[SensorEntity] = [
+            EnOceanSensor(device, d) for d in SENSORS.get(device.model.id, ())
+        ]
+        if device.model.id == "meter":
+            entities.append(MeterTotalSensor(device))
+        async_add_entities(entities, config_subentry_id=subentry_id)
 
 
 class EnOceanSensor(EnOceanEntity, RestoreSensor):
@@ -234,7 +253,62 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
         value = self.entity_description.value_fn(values)
         if value is None or value == self._attr_native_value:
             return False
+        if self.entity_description.monotonic and _decreases(self._attr_native_value, value):
+            _LOGGER.warning(
+                "%s: meter reading %s below %s dropped",
+                self.entity_id,
+                value,
+                self._attr_native_value,
+            )
+            return False
         self._attr_native_value = value
+        return True
+
+
+def _decreases(current: Any, new: Any) -> bool:
+    try:
+        return current is not None and float(new) < float(current)
+    except (TypeError, ValueError):
+        return False
+
+
+class MeterTotalSensor(EnOceanEntity, RestoreSensor):
+    """E7: sum of both tariffs, for meters with a day and a night tariff."""
+
+    _attr_translation_key = "energy_total"
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "energy_total")
+        self._tariffs: dict[int, float] = {}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            self._tariffs = {
+                int(k): float(v) for k, v in last.attributes.get("tariffs", {}).items()
+            }
+            if self._tariffs:
+                self._attr_native_value = round(sum(self._tariffs.values()), 3)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"tariffs": {str(k): v for k, v in self._tariffs.items()}}
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        if values.get("DT") != 0 or values.get("TI") not in (0, 1):
+            return False
+        tariff, reading = values["TI"], round(values["MR"], 3)
+        if reading < self._tariffs.get(tariff, 0):
+            return False
+        self._tariffs[tariff] = reading
+        total = round(sum(self._tariffs.values()), 3)
+        if total == self._attr_native_value:
+            return False
+        self._attr_native_value = total
         return True
 
 

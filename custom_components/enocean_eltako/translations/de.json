@@ -318,9 +318,6 @@
           "tilted": "Gekippt"
         }
       },
-      "energy_tariff": {
-        "name": "Energie Tarif {tariff}"
-      },
       "setpoint": {
         "name": "Sollwert"
       },
@@ -356,6 +353,15 @@
       },
       "command_success": {
         "name": "Befehle bestätigt"
+      },
+      "energy_night": {
+        "name": "Energie Nachttarif"
+      },
+      "energy_total": {
+        "name": "Energie beide Tarife"
+      },
+      "active_tariff": {
+        "name": "Aktiver Tarif"
       }
     },
     "binary_sensor": {
