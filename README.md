@@ -23,11 +23,13 @@
 > **Status: early development.** Gateways can be added (FAM-USB, FGW14-USB,
 > FAM14, MGW-ETH with discovery, Symcon LAN, generic ESP2/ESP3; USB or ser2net)
 > and stay connected. FGW14-USB and FAM14 on the same bus form a bus group with
-> failover; the FAM14 can stay disconnected until it is needed. Received
-> telegrams show up in the diagnostics and can be recorded with the action
-> `enocean_eltako.capture`; there are no devices yet. Do not use it in
-> production. The existing `eltako` integration keeps running in parallel;
-> this one uses its own domain `enocean_eltako`.
+> failover; the FAM14 can stay disconnected until it is needed. Devices are
+> added per gateway (switching actuators, dimmers, shutters, window handles,
+> contacts, rockers, meters and sensors from the catalog). Telegrams show up in
+> the diagnostics and can be recorded with the action `enocean_eltako.capture`.
+> Not tested on real hardware yet; do not use it in production. The existing
+> `eltako` integration keeps running in parallel; this one uses its own domain
+> `enocean_eltako`.
 
 A new integration for Eltako (series 14 bus and wireless) and other EnOcean
 devices, written from scratch. Goals:
@@ -75,6 +77,8 @@ python scripts/check_protocol_imports.py
 python -m pytest
 ```
 
+`python scripts/fetch_eep.py --generated` followed by
+`python scripts/generate_eep.py` regenerates the standard profiles.
 `python scripts/fetch_eep.py` downloads the official EEP definitions into
 `.eep_cache/`. These files belong to the EnOcean Alliance and are never
 committed (see [NOTICE](NOTICE)).
