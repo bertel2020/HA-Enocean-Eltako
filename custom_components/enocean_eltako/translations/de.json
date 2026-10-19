@@ -224,7 +224,9 @@
             "temperature_sensor": "Raumtemperatur",
             "send_interval": "Sendeintervall",
             "unavailable_when_silent": "Nicht verfügbar, wenn stumm",
-            "status_request": "Zustand beim Start abfragen"
+            "status_request": "Zustand beim Start abfragen",
+            "long_press": "Lang ab",
+            "double_press": "Doppelt innerhalb"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -257,7 +259,9 @@
             "temperature_sensor": "Raumtemperatur",
             "send_interval": "Sendeintervall",
             "unavailable_when_silent": "Nicht verfügbar, wenn stumm",
-            "status_request": "Zustand beim Start abfragen"
+            "status_request": "Zustand beim Start abfragen",
+            "long_press": "Lang ab",
+            "double_press": "Doppelt innerhalb"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -360,16 +364,17 @@
       }
     },
     "event": {
-      "rocker": {
-        "name": "Wippe",
+      "button": {
+        "name": "Taste {button}",
         "state_attributes": {
           "event_type": {
             "state": {
-              "a1_pressed": "A1 gedrückt",
-              "a0_pressed": "A0 gedrückt",
-              "b1_pressed": "B1 gedrückt",
-              "b0_pressed": "B0 gedrückt",
-              "released": "Losgelassen"
+              "pressed": "Gedrückt",
+              "released": "Losgelassen",
+              "short_press": "Kurz gedrückt",
+              "long_press": "Lang gedrückt",
+              "double_press": "Doppelt gedrückt",
+              "combined_press": "Zusammen mit einer anderen taste gedrückt"
             }
           }
         }
@@ -402,6 +407,22 @@
     "gateway_disconnected": {
       "title": "{name} ist getrennt",
       "description": "Die Verbindung zu {name} ({connection}) ist seit mehr als 5 Minuten unterbrochen; Home Assistant versucht es weiter. USB-Kabel bzw. den ser2net-Dienst und das Netzwerk prüfen."
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "pressed": "{subtype} gedrückt",
+      "released": "{subtype} losgelassen",
+      "short_press": "{subtype} kurz gedrückt",
+      "long_press": "{subtype} lang gedrückt",
+      "double_press": "{subtype} doppelt gedrückt",
+      "combined_press": "{subtype} zusammen mit einer anderen Taste gedrückt"
+    },
+    "trigger_subtype": {
+      "a0": "A0",
+      "a1": "A1",
+      "b0": "B0",
+      "b1": "B1"
     }
   }
 }

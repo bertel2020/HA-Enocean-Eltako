@@ -24,7 +24,9 @@ from homeassistant.helpers.selector import (
 from .catalog import (
     CATALOG,
     OPT_DEVICE_CLASS,
+    OPT_DOUBLE_PRESS,
     OPT_INVERT,
+    OPT_LONG_PRESS,
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
     OPT_PLATFORM,
@@ -86,6 +88,8 @@ OPTION_KEYS = (
     OPT_SEND_INTERVAL,
     OPT_UNAVAILABLE_WHEN_SILENT,
     OPT_STATUS_REQUEST,
+    OPT_LONG_PRESS,
+    OPT_DOUBLE_PRESS,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -321,6 +325,17 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             )
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
+        if OPT_LONG_PRESS in model.options:
+            for opt, default in ((OPT_LONG_PRESS, 0.6), (OPT_DOUBLE_PRESS, 0.4)):
+                schema[vol.Required(opt, default=default)] = NumberSelector(
+                    NumberSelectorConfig(
+                        min=0.1,
+                        max=3,
+                        step=0.1,
+                        unit_of_measurement="s",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                )
         if OPT_STATUS_REQUEST in model.options:
             schema[vol.Required(OPT_STATUS_REQUEST, default=False)] = BooleanSelector()
         if model.interval:

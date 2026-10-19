@@ -224,7 +224,9 @@
             "temperature_sensor": "Room temperature",
             "send_interval": "Send interval",
             "unavailable_when_silent": "Unavailable when silent",
-            "status_request": "Ask for the state at startup"
+            "status_request": "Ask for the state at startup",
+            "long_press": "Long press from",
+            "double_press": "Double press within"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3 (actuators: the ID of their status telegrams).",
@@ -257,7 +259,9 @@
             "temperature_sensor": "Room temperature",
             "send_interval": "Send interval",
             "unavailable_when_silent": "Unavailable when silent",
-            "status_request": "Ask for the state at startup"
+            "status_request": "Ask for the state at startup",
+            "long_press": "Long press from",
+            "double_press": "Double press within"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -360,16 +364,17 @@
       }
     },
     "event": {
-      "rocker": {
-        "name": "Rocker",
+      "button": {
+        "name": "Button {button}",
         "state_attributes": {
           "event_type": {
             "state": {
-              "a1_pressed": "A1 pressed",
-              "a0_pressed": "A0 pressed",
-              "b1_pressed": "B1 pressed",
-              "b0_pressed": "B0 pressed",
-              "released": "Released"
+              "pressed": "Pressed",
+              "released": "Released",
+              "short_press": "Short press",
+              "long_press": "Long press",
+              "double_press": "Double press",
+              "combined_press": "Pressed together with another button"
             }
           }
         }
@@ -402,6 +407,22 @@
     "gateway_disconnected": {
       "title": "{name} is disconnected",
       "description": "The connection to {name} ({connection}) has been down for more than 5 minutes; Home Assistant keeps retrying. Check the USB cable or the ser2net service and the network."
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "pressed": "{subtype} pressed",
+      "released": "{subtype} released",
+      "short_press": "{subtype} short press",
+      "long_press": "{subtype} long press",
+      "double_press": "{subtype} double press",
+      "combined_press": "{subtype} pressed together with another button"
+    },
+    "trigger_subtype": {
+      "a0": "A0",
+      "a1": "A1",
+      "b0": "B0",
+      "b1": "B1"
     }
   }
 }

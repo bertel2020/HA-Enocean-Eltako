@@ -1,0 +1,35 @@
+blueprint:
+  name: EnOcean Eltako - double press activates a scene
+  description: A double press on the button activates the scene.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/double_press_scene.yaml
+  input:
+    button:
+      name: Button
+      selector:
+        entity:
+          filter:
+            - integration: enocean_eltako
+              domain: event
+    scene:
+      name: Scene
+      selector:
+        entity:
+          filter:
+            - domain: scene
+
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input button
+
+conditions:
+  - condition: template
+    value_template: "{{ trigger.to_state.attributes.event_type == 'double_press' }}"
+
+actions:
+  - action: scene.turn_on
+    target:
+      entity_id: !input scene

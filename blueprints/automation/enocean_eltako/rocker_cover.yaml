@@ -1,0 +1,61 @@
+blueprint:
+  name: EnOcean Eltako - rocker controls a cover
+  description: >-
+    Short press up opens, short press down closes, a long press on either button
+    stops the cover.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/rocker_cover.yaml
+  input:
+    up_button:
+      name: Button up
+      selector:
+        entity:
+          filter:
+            - integration: enocean_eltako
+              domain: event
+    down_button:
+      name: Button down
+      selector:
+        entity:
+          filter:
+            - integration: enocean_eltako
+              domain: event
+    cover_target:
+      name: Cover
+      selector:
+        target:
+          entity:
+            domain: cover
+
+mode: queued
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input up_button
+    id: up
+  - trigger: state
+    entity_id: !input down_button
+    id: down
+
+variables:
+  gesture: "{{ trigger.to_state.attributes.event_type | default('') }}"
+
+conditions:
+  - condition: template
+    value_template: "{{ gesture in ['short_press', 'long_press'] }}"
+
+actions:
+  - choose:
+      - conditions: "{{ gesture == 'long_press' }}"
+        sequence:
+          - action: cover.stop_cover
+            target: !input cover_target
+      - conditions: "{{ trigger.id == 'up' }}"
+        sequence:
+          - action: cover.open_cover
+            target: !input cover_target
+      - conditions: "{{ trigger.id == 'down' }}"
+        sequence:
+          - action: cover.close_cover
+            target: !input cover_target

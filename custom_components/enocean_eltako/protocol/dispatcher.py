@@ -1,15 +1,15 @@
 """Central dispatcher: every gateway feeds it, devices subscribe by sender ID.
 
 The same telegram often arrives twice: over two gateways, as a repeated radio telegram, or
-from a bus actor once on the bus and once as its radio alias. Within DEDUP_WINDOW the
-dispatcher passes it on only once.
+from a bus actor once on the bus and once as its radio alias. A telegram identical to the
+previous one from the same sender within DEDUP_WINDOW is dropped. Only the previous one
+counts, so press - release - press of a rocker (a fast double press) all get through.
 """
 
 from __future__ import annotations
 
 import logging
 import time
-from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -67,7 +67,7 @@ class Dispatcher:
         self._monitors: list[Listener] = []
         self._unknown: list[Listener] = []
         self._aliases: dict[int, int] = {}
-        self._seen: OrderedDict[tuple[int, int, bytes, int], float] = OrderedDict()
+        self._last: dict[int, tuple[tuple[int, bytes, int], float]] = {}
         self.stats = DispatcherStats()
 
     def add_listener(self, sender: int | None, listener: Listener) -> Callable[[], None]:
@@ -106,11 +106,11 @@ class Dispatcher:
         now = self._clock()
         sender = self._aliases.get(telegram.sender, telegram.sender)
         # status low nibble = repeater count, differs between original and repetition
-        key = (sender, telegram.rorg, telegram.data, telegram.status & 0xF0)
-        self._prune(now)
-        duplicate = key in self._seen
+        key = (telegram.rorg, telegram.data, telegram.status & 0xF0)
+        last = self._last.get(sender)
+        duplicate = last is not None and last[0] == key and now - last[1] < self._window
         if not duplicate:
-            self._seen[key] = now
+            self._last[sender] = (key, now)
         received = ReceivedTelegram(telegram, gateway, time.time(), sender, duplicate)
 
         self.stats.received += 1
@@ -130,13 +130,6 @@ class Dispatcher:
         self._call(self._listeners.get(WILDCARD, ()), received)
         self.stats.dispatch_time += self._clock() - start
         return received
-
-    def _prune(self, now: float) -> None:
-        while self._seen:
-            key, seen = next(iter(self._seen.items()))
-            if now - seen < self._window:
-                break
-            del self._seen[key]
 
     @staticmethod
     def _call(listeners, received: ReceivedTelegram) -> None:

@@ -85,3 +85,15 @@ def test_remove_listener_and_failing_listener() -> None:
     assert len(got) == 1
     remove()
     assert d.is_known(SWITCH.sender)  # boom still listens
+
+
+def test_press_release_press_is_not_a_duplicate() -> None:
+    clock = Clock()
+    d = Dispatcher(clock=clock)
+    got = []
+    d.add_listener(SWITCH.sender, got.append)
+    release = RadioTelegram(Rorg.RPS, b"\x00", SWITCH.sender, 0x20)
+    for telegram in (SWITCH, release, SWITCH, release):
+        d.dispatch("gw1", telegram)
+        clock.now += 0.03
+    assert len(got) == 4

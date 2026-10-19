@@ -186,8 +186,8 @@ async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
     assert state("binary_sensor", "01-00-00-07", "contact") == "on"  # open
     assert float(state("sensor", "05-00-00-12", "power")) == 1000
     assert float(state("sensor", "05-00-00-12", "energy")) == pytest.approx(409.6)
-    rocker = hass.states.get(_entity(hass, "event", f"{BASE}_00-29-89-79_1_rocker"))
-    assert rocker.attributes["event_type"] == "b0_pressed"
+    rocker = hass.states.get(_entity(hass, "event", f"{BASE}_00-29-89-79_1_button_b0"))
+    assert rocker.attributes["event_type"] == "pressed"
     assert state("binary_sensor", "00-31-00-01", "contact") == "on"
     _push(server, 0x05, b"\x00", 0x00310001, 0x20)  # release = off
     await _settle(hass)
@@ -718,3 +718,50 @@ async def test_state_request_and_assumed_state(hass: HomeAssistant, gateway) -> 
     state = hass.states.get(entity_id)
     assert state.state == "off"
     assert "assumed_state" not in state.attributes
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("rocker", "00-29-89-80", "NodOn", long_press=0.2, double_press=0.1)]],
+    indirect=True,
+)
+async def test_rocker_gestures_and_device_triggers(hass: HomeAssistant, gateway) -> None:
+    from homeassistant.helpers import device_registry as dr
+
+    from custom_components.enocean_eltako.device_trigger import async_get_triggers
+
+    entry, server = gateway
+    events: list[tuple[str, str]] = []
+    hass.bus.async_listen(
+        "enocean_eltako_button", lambda e: events.append((e.data["button"], e.data["type"]))
+    )
+    rocker = 0x00298980
+
+    async def tap(data: bytes, hold: float = 0.0) -> None:
+        _push(server, 0x05, data, rocker, 0x30)
+        await asyncio.sleep(hold or 0.02)
+        _push(server, 0x05, b"\x00", rocker, 0x20)
+        await asyncio.sleep(0.02)
+
+    await tap(b"\x70")  # B0 short
+    await asyncio.sleep(0.2)
+    await tap(b"\x30", hold=0.3)  # A0 long
+    await tap(b"\x50")  # B1 double
+    await tap(b"\x50")
+    await asyncio.sleep(0.2)
+    await hass.async_block_till_done()
+    assert ("b0", "short_press") in events
+    assert ("a0", "long_press") in events
+    assert ("b1", "double_press") in events
+    assert ("b1", "short_press") not in events
+    state = hass.states.get(_entity(hass, "event", f"{BASE}_00-29-89-80_1_button_b1"))
+    assert state.attributes["event_type"] == "double_press"
+
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{BASE}_00-29-89-80"), entry.entry_id
+    )
+    triggers = await async_get_triggers(hass, device.id)
+    assert {"type": "long_press", "subtype": "a0"}.items() <= next(
+        t for t in triggers if t["type"] == "long_press" and t["subtype"] == "a0"
+    ).items()
+    assert len(triggers) == 4 * 6

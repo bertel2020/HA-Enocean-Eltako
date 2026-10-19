@@ -27,6 +27,8 @@ OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
 OPT_OFF_BUTTON = "off_button"  # button that switches off, or "released"
 OPT_TEMPERATURE_SENSOR = "temperature_sensor"  # heating: entity with the room temperature
 OPT_SEND_INTERVAL = "send_interval"  # heating: seconds between controller telegrams
+OPT_LONG_PRESS = "long_press"  # E6: seconds held for a long press
+OPT_DOUBLE_PRESS = "double_press"  # E6: max seconds between the presses of a double press
 OPT_STATUS_REQUEST = "status_request"  # E2: actuator answers "send confirmation" (FL62, FD62)
 OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
@@ -158,7 +160,11 @@ CATALOG: dict[str, DeviceModel] = {
             examples="FTK, FTKB, FTS14EM",
         ),
         DeviceModel(
-            "rocker", _ref("F6-02-01:std"), (Platform.EVENT,), examples="F4T55E, FT55, NodOn"
+            "rocker",
+            _ref("F6-02-01:std"),
+            (Platform.EVENT,),
+            options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
+            examples="F4T55E, FT55, NodOn",
         ),
         DeviceModel(
             "rocker_contact",
