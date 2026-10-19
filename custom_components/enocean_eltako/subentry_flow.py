@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import voluptuous as vol
@@ -38,10 +39,33 @@ from .const import (
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
+from .protocol.dispatcher import ReceivedTelegram
 from .protocol.ids import format_id, parse_id
 from .protocol.sender_pool import SenderIdError, SenderPool
 
 DEVICE_CLASSES = ["door", "window", "garage_door", "opening"]
+LEARN_TIMEOUT = 60.0
+
+# RORG of telegrams a device kind sends, from the first letters of its receive profile
+_RORG_BY_PREFIX = {
+    "F6": {0xF6},
+    "M5": {0xF6},
+    "G5": {0xF6, 0xA5},
+    "A5": {0xA5},
+    "D5": {0xD5},
+    "D2": {0xD2},
+}
+
+
+def expected_rorgs(model: DeviceModel) -> set[int]:
+    if model.receive is None:
+        return set()
+    rorgs = set(_RORG_BY_PREFIX.get(model.receive.eep[:2], ()))
+    for extra in getattr(model, "receive_extra", ()):
+        rorgs |= _RORG_BY_PREFIX.get(extra.eep[:2], set())
+    return rorgs
+
+
 OPTION_KEYS = (OPT_PLATFORM, OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_INVERT, OPT_ROUTING)
 
 
@@ -58,6 +82,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
 
     def __init__(self) -> None:
         self._model: DeviceModel | None = None
+        self._learn_task: asyncio.Task[ReceivedTelegram | None] | None = None
+        self._learned: ReceivedTelegram | None = None
 
     def _loaded(self) -> bool:
         entry = self._get_entry()
@@ -68,7 +94,7 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             return self.async_abort(reason="gateway_not_loaded")
         if user_input is not None:
             self._model = CATALOG[user_input[CONF_MODEL]]
-            return await self.async_step_device()
+            return await self.async_step_address()
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -83,6 +109,55 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 }
             ),
         )
+
+    async def async_step_address(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Listen for a telegram or type the ID."""
+        return self.async_show_menu(step_id="address", menu_options=["learn", "device"])
+
+    async def async_step_learn(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Wait up to LEARN_TIMEOUT for a telegram from a sender not set up yet."""
+        if self._learn_task is None:
+            self._learn_task = self.hass.async_create_task(self._async_wait_for_telegram())
+        if not self._learn_task.done():
+            return self.async_show_progress(
+                step_id="learn",
+                progress_action="learn",
+                progress_task=self._learn_task,
+                description_placeholders={"seconds": str(int(LEARN_TIMEOUT))},
+            )
+        self._learned = self._learn_task.result()
+        self._learn_task = None
+        if self._learned is None:
+            return self.async_show_progress_done(next_step_id="learn_timeout")
+        return self.async_show_progress_done(next_step_id="device")
+
+    async def async_step_learn_timeout(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return self.async_show_menu(step_id="learn_timeout", menu_options=["learn", "device"])
+
+    async def _async_wait_for_telegram(self) -> ReceivedTelegram | None:
+        assert self._model is not None
+        rorgs = expected_rorgs(self._model)
+        dispatcher = self._get_entry().runtime_data.hub.dispatcher
+        future: asyncio.Future[ReceivedTelegram] = self.hass.loop.create_future()
+
+        def heard(received: ReceivedTelegram) -> None:
+            if not future.done() and (not rorgs or received.telegram.rorg in rorgs):
+                future.set_result(received)
+
+        remove = dispatcher.add_unknown_listener(heard)
+        try:
+            async with asyncio.timeout(LEARN_TIMEOUT):
+                return await future
+        except TimeoutError:
+            return None
+        finally:
+            remove()
 
     async def async_step_device(
         self, user_input: dict[str, Any] | None = None
@@ -110,6 +185,8 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
             vol.Required(CONF_DEVICE_ID): TextSelector(),
             **self._fields(self._model, {}),
         }
+        if user_input is None and self._learned is not None:
+            user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
         return self._form("device", schema, user_input, errors)
 
     async def async_step_reconfigure(

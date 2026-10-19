@@ -76,6 +76,9 @@ async def test_add_switch_actuator_via_flow(hass: HomeAssistant, gateway) -> Non
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], {"model": "switch"}
     )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
+    )
     assert result["step_id"] == "device"
     schema = result["data_schema"].schema
     sender_key = next(k for k in schema if k == "sender_central")
@@ -114,6 +117,9 @@ async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
     )
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], {"model": "switch"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
     )
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -251,6 +257,9 @@ async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) ->
         result["flow_id"], {"model": "switch"}
     )
     result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         {
             "name": "Licht",
@@ -311,6 +320,9 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     )
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"], {"model": "cover"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
     )
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -407,3 +419,45 @@ async def test_migrate_subentries_to_sender_list(hass: HomeAssistant) -> None:
     assert by_title["Licht"]["senders"] == [{"profile": "central", "sender_id": "FF-B7-44-81"}]
     assert "sender_id" not in by_title["Licht"]
     assert by_title["Kontakt"]["schema"] == 2 and "senders" not in by_title["Kontakt"]
+
+
+async def _start_device_flow(hass: HomeAssistant, entry, model: str):
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"model": model}
+    )
+    assert result["type"] is FlowResultType.MENU
+    return result
+
+
+async def test_learn_device_id_from_telegram(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    result = await _start_device_flow(hass, entry, "contact")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "learn"}
+    )
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    _push(server, 0x05, b"\x70", 0x00298979, 0x30)  # RPS: wrong kind, ignored
+    _push(server, 0x06, b"\x09", 0x01000099)  # 1BS contact
+    await _settle(hass)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"])
+    assert result["step_id"] == "device"
+    device_id = next(k for k in result["data_schema"].schema if k == "device_id")
+    assert device_id.description["suggested_value"] == "01-00-00-99"
+
+
+async def test_learn_timeout_offers_retry(hass: HomeAssistant, gateway, monkeypatch) -> None:
+    from custom_components.enocean_eltako import subentry_flow
+
+    monkeypatch.setattr(subentry_flow, "LEARN_TIMEOUT", 0.05)
+    entry, _server = gateway
+    result = await _start_device_flow(hass, entry, "contact")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "learn"}
+    )
+    await _settle(hass)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"])
+    assert result["step_id"] == "learn_timeout"
+    assert result["menu_options"] == ["learn", "device"]

@@ -233,6 +233,22 @@
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set."
           }
+        },
+        "address": {
+          "title": "Device ID",
+          "description": "Listen for a telegram (press a button on the device, or switch the actuator locally) or enter the ID.",
+          "menu_options": {
+            "learn": "Listen for a telegram",
+            "device": "Enter the ID"
+          }
+        },
+        "learn_timeout": {
+          "title": "Nothing received",
+          "description": "No telegram from a new sender arrived. Try again or enter the ID.",
+          "menu_options": {
+            "learn": "Listen again",
+            "device": "Enter the ID"
+          }
         }
       },
       "error": {
@@ -247,6 +263,9 @@
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
         "reconfigure_successful": "Device updated."
+      },
+      "progress": {
+        "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now."
       }
     }
   },

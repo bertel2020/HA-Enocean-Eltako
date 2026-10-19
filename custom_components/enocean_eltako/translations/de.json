@@ -233,6 +233,22 @@
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist."
           }
+        },
+        "address": {
+          "title": "Geräte-ID",
+          "description": "Auf ein Telegramm warten (am Gerät eine Taste drücken bzw. den Aktor vor Ort schalten) oder die ID eingeben.",
+          "menu_options": {
+            "learn": "Auf Telegramm warten",
+            "device": "ID eingeben"
+          }
+        },
+        "learn_timeout": {
+          "title": "Nichts empfangen",
+          "description": "Es kam kein Telegramm von einem neuen Sender. Nochmal versuchen oder die ID eingeben.",
+          "menu_options": {
+            "learn": "Nochmal warten",
+            "device": "ID eingeben"
+          }
         }
       },
       "error": {
@@ -247,6 +263,9 @@
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
         "reconfigure_successful": "Gerät aktualisiert."
+      },
+      "progress": {
+        "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten."
       }
     }
   },
