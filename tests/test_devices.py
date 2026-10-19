@@ -152,6 +152,14 @@ async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
             _subentry("contact", "01-00-00-07", "Haustuer", device_class="door", invert=False),
             _subentry("meter", "05-00-00-12", "Waschmaschine"),
             _subentry("rocker", "00-29-89-79", "Taster"),
+            _subentry(
+                "rocker_contact",
+                "00-31-00-01",
+                "Garagentor",
+                on_button="b0",
+                off_button="released",
+                device_class="garage_door",
+            ),
         ]
     ],
     indirect=True,
@@ -164,6 +172,7 @@ async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
     _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)  # 1000 W
     _push(server, 0x07, bytes.fromhex("00100009"), 0x05000012)  # 409.6 kWh
     _push(server, 0x05, b"\x70", 0x00298979, 0x30)  # B0 pressed
+    _push(server, 0x05, b"\x70", 0x00310001, 0x30)  # garage door contact: B0 = on
     await _settle(hass)
 
     def state(domain: str, device: str, key: str) -> str:
@@ -178,6 +187,10 @@ async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
     assert float(state("sensor", "05-00-00-12", "energy")) == pytest.approx(409.6)
     rocker = hass.states.get(_entity(hass, "event", f"{BASE}_00-29-89-79_1_rocker"))
     assert rocker.attributes["event_type"] == "b0_pressed"
+    assert state("binary_sensor", "00-31-00-01", "contact") == "on"
+    _push(server, 0x05, b"\x00", 0x00310001, 0x20)  # release = off
+    await _settle(hass)
+    assert state("binary_sensor", "00-31-00-01", "contact") == "off"
 
 
 @pytest.mark.parametrize(

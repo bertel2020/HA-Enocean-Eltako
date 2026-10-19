@@ -23,6 +23,8 @@ OPT_TIME_OPENS = "time_opens"
 OPT_TIME_CLOSES = "time_closes"
 OPT_INVERT = "invert"
 OPT_DEVICE_CLASS = "device_class"
+OPT_ON_BUTTON = "on_button"  # rocker as contact: button that switches on
+OPT_OFF_BUTTON = "off_button"  # button that switches off, or "released"
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -142,6 +144,13 @@ CATALOG: dict[str, DeviceModel] = {
         ),
         DeviceModel(
             "rocker", _ref("F6-02-01:std"), (Platform.EVENT,), examples="F4T55E, FT55, NodOn"
+        ),
+        DeviceModel(
+            "rocker_contact",
+            _ref("F6-02-01:std"),
+            (Platform.BINARY_SENSOR,),
+            options=(OPT_ON_BUTTON, OPT_OFF_BUTTON, OPT_DEVICE_CLASS, OPT_INVERT),
+            examples="FTS14EM, FSM61, garage door controllers",
         ),
         DeviceModel(
             "meter", _ref("A5-12-01:eltako"), (Platform.SENSOR,), examples="FWZ12, FSDG14, DSZ14"

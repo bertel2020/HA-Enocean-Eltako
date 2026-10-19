@@ -23,6 +23,8 @@ from .catalog import (
     CATALOG,
     OPT_DEVICE_CLASS,
     OPT_INVERT,
+    OPT_OFF_BUTTON,
+    OPT_ON_BUTTON,
     OPT_PLATFORM,
     OPT_ROUTING,
     OPT_TIME_CLOSES,
@@ -66,7 +68,16 @@ def expected_rorgs(model: DeviceModel) -> set[int]:
     return rorgs
 
 
-OPTION_KEYS = (OPT_PLATFORM, OPT_TIME_OPENS, OPT_TIME_CLOSES, OPT_INVERT, OPT_ROUTING)
+OPTION_KEYS = (
+    OPT_PLATFORM,
+    OPT_TIME_OPENS,
+    OPT_TIME_CLOSES,
+    OPT_INVERT,
+    OPT_ROUTING,
+    OPT_ON_BUTTON,
+    OPT_OFF_BUTTON,
+)
+BUTTONS = ["b0", "b1", "a0", "a1"]
 
 
 def sender_owner(device_id: int, profile: str) -> str:
@@ -274,6 +285,15 @@ class DeviceSubentryFlow(ConfigSubentryFlow):
                 SelectSelectorConfig(
                     options=[*(p.id for p in model.senders), "both"],
                     translation_key=OPT_ROUTING,
+                )
+            )
+        if OPT_ON_BUTTON in model.options:
+            schema[vol.Required(OPT_ON_BUTTON, default="b0")] = SelectSelector(
+                SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
+            )
+            schema[vol.Required(OPT_OFF_BUTTON, default="b1")] = SelectSelector(
+                SelectSelectorConfig(
+                    options=[*BUTTONS, "released"], translation_key="rocker_button"
                 )
             )
         if OPT_DEVICE_CLASS in model.options:

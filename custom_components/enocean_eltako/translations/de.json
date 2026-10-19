@@ -122,7 +122,8 @@
         "co2": "CO2-Sensor (FCO2TF65)",
         "room_controller": "Raumregler (FUTH, FTR65HS …)",
         "weather": "Wetterstation (FWS61, FWG14)",
-        "psc": "Permundo PSC132 / PSC234 Zwischenstecker"
+        "psc": "Permundo PSC132 / PSC234 Zwischenstecker",
+        "rocker_contact": "Kontakt über Tastertelegramme (FTS14EM, Garagentor …)"
       }
     },
     "routing": {
@@ -130,6 +131,15 @@
         "controller": "Controller",
         "direction_rocker": "Richtungstaster",
         "both": "Beide"
+      }
+    },
+    "rocker_button": {
+      "options": {
+        "b0": "B0 (0x70)",
+        "b1": "B1 (0x50)",
+        "a0": "A0 (0x30)",
+        "a1": "A1 (0x10)",
+        "released": "Loslassen"
       }
     }
   },
@@ -204,7 +214,9 @@
             "sender_rocker": "Sender-ID: Taster (F6-02-01)",
             "sender_controller": "Sender-ID: Controller (H5-3F-7F)",
             "sender_direction_rocker": "Sender-ID: Richtungstaster (F6-02-01)",
-            "routing": "Fahren über"
+            "routing": "Fahren über",
+            "on_button": "Ein mit",
+            "off_button": "Aus mit"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -227,7 +239,9 @@
             "sender_rocker": "Sender-ID: Taster (F6-02-01)",
             "sender_controller": "Sender-ID: Controller (H5-3F-7F)",
             "sender_direction_rocker": "Sender-ID: Richtungstaster (F6-02-01)",
-            "routing": "Fahren über"
+            "routing": "Fahren über",
+            "on_button": "Ein mit",
+            "off_button": "Aus mit"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",

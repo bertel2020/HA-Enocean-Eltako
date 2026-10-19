@@ -17,7 +17,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import OPT_DEVICE_CLASS, OPT_INVERT
+from .catalog import OPT_DEVICE_CLASS, OPT_INVERT, OPT_OFF_BUTTON, OPT_ON_BUTTON
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .sensor import HANDLE_POSITIONS
@@ -67,6 +67,27 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
 }
 
 
+BUTTONS = ("a1", "a0", "b1", "b0")  # F6-02-01 R1 values 0...3
+
+
+def _rocker_contact(on_button: str, off_button: str) -> Callable[[dict[str, Any]], bool | None]:
+    """On when on_button is pressed, off when off_button is pressed (or on any release)."""
+
+    def value(values: dict[str, Any]) -> bool | None:
+        if values.get("EB") == 0:
+            return False if off_button == "released" else None
+        if values.get("EB") != 1:
+            return None
+        button = BUTTONS[values["R1"]]
+        if button == on_button:
+            return True
+        if button == off_button:
+            return False
+        return None
+
+    return value
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EnOceanEltakoConfigEntry,
@@ -75,8 +96,20 @@ async def async_setup_entry(
     for subentry_id, device in entry.runtime_data.devices.items():
         if Platform.BINARY_SENSOR not in device.model.platforms:
             continue
+        descriptions = BINARY_SENSORS.get(device.model.id, ())
+        if device.model.id == "rocker_contact":
+            descriptions = (
+                EnOceanBinarySensorDescription(
+                    key="contact",
+                    name=None,
+                    value_fn=_rocker_contact(
+                        device.options.get(OPT_ON_BUTTON, "b0"),
+                        device.options.get(OPT_OFF_BUTTON, "b1"),
+                    ),
+                ),
+            )
         async_add_entities(
-            [EnOceanBinarySensor(device, d) for d in BINARY_SENSORS.get(device.model.id, ())],
+            [EnOceanBinarySensor(device, d) for d in descriptions],
             config_subentry_id=subentry_id,
         )
 
