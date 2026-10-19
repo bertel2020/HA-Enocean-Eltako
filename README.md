@@ -24,8 +24,10 @@
 > FAM14, MGW-ETH with discovery, Symcon LAN, generic ESP2/ESP3; USB or ser2net)
 > and stay connected. FGW14-USB and FAM14 on the same bus form a bus group with
 > failover; the FAM14 can stay disconnected until it is needed. Devices are
-> added per gateway (switching actuators, dimmers, shutters, window handles,
-> contacts, rockers, meters and sensors from the catalog). Telegrams show up in
+> added per gateway, by ID or by listening for a telegram: switching actuators,
+> dimmers, shutters (controller and direction rocker in parallel), window
+> handles, contacts, rockers, meters, sensors, Permundo PSC132/PSC234, room
+> controllers and heating actuators controlled by Home Assistant. Telegrams show up in
 > the diagnostics and can be recorded with the action `enocean_eltako.capture`.
 > Not tested on real hardware yet; do not use it in production. The existing
 > `eltako` integration keeps running in parallel; this one uses its own domain

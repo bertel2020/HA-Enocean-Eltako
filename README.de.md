@@ -24,9 +24,11 @@
 > FGW14-USB, FAM14, MGW-ETH mit automatischer Erkennung, Symcon LAN, generisch
 > ESP2/ESP3; per USB oder ser2net) und bleiben verbunden. FGW14-USB und FAM14
 > am selben Bus bilden eine Bus-Gruppe mit Failover; der FAM14 kann getrennt
-> bleiben, bis er gebraucht wird. Geräte werden pro Gateway angelegt
-> (Schaltaktoren, Dimmer, Rollläden, Fenstergriffe, Kontakte, Taster, Zähler
-> und Sensoren aus dem Katalog). Telegramme stehen in den Diagnosedaten und
+> bleiben, bis er gebraucht wird. Geräte werden pro Gateway angelegt, per ID
+> oder durch Warten auf ein Telegramm: Schaltaktoren, Dimmer, Rollläden
+> (Controller und Richtungstaster parallel), Fenstergriffe, Kontakte, Taster,
+> Zähler, Sensoren, Permundo PSC132/PSC234, Raumregler und Heizungsaktoren,
+> die Home Assistant regelt. Telegramme stehen in den Diagnosedaten und
 > lassen sich mit der Aktion `enocean_eltako.capture` mitschneiden. Noch nicht
 > mit echter Hardware getestet. Nicht produktiv einsetzen. Die bestehende
 > Integration `eltako` läuft parallel weiter; diese hier hat die eigene
