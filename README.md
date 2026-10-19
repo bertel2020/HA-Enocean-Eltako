@@ -61,6 +61,11 @@ Add a device under the gateway with **Add device** in one of four ways:
   from the catalog.
 - **By EEP** (expert): standard sensor profiles become a device with one sensor per value.
 
+Coming from the old Eltako integration (`eltako:` in YAML)? Choose **Import from the old
+Eltako integration** in the gateway's menu: its devices are created with their IDs, sender IDs
+(so taught-in actuators keep working) and names, after a preview. The old integration keeps
+running until you remove it.
+
 Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 
 <!-- devices:start -->
