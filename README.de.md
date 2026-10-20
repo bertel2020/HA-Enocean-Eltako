@@ -165,22 +165,21 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 
 ## Panel EnOcean
 
-Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine Karte je
-Gateway: verbunden, getrennt (und seit wann) oder bei Bedarf, Telegramme pro Minute, letztes
-Telegramm, Geräte, freie Sender-IDs, Sendewarteschlange und unbestätigte Befehle. Ein Klick
-auf eine Karte zeigt nur die Telegramme dieses Gateways; auf dem Handy lassen sich die Karten
-seitlich wischen. Ein Gateway über die App EnOcean Proxy zeigt zusätzlich deren Version, die
-weiteren verbundenen Programme, die Funkbelegung gegenüber dem 1-%-Limit und eine
-Sendesperre während eines Mitschnitts.
+Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine kompakte
+Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
+und freie Sender-IDs. **Telegramme** filtert auf das jeweilige Gateway. **Details** zeigt
+Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über EnOcean Proxy
+stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
+und eine Sendesperre während eines Mitschnitts.
 
 Darunter erscheint jedes empfangene und gesendete Telegramm live, das neueste oben:
-Gerätename (oder „Unbekannter Sender“ mit dem Knopf **Anlegen**, der seine Entdeckt-Karte
-öffnet), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie
+Gerätename (oder „Unbekannter Sender“), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie
 bei den Entitäten („Leistung 15 W“) und die Signalstärke. Telegramme pro Minute zählen die
 empfangenen Telegramme der letzten Minute.
 Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
 Senders steht die EEP dabei. Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und
-Signal in dBm oder filtert auf diesen Sender.
+Signal in dBm oder filtert auf diesen Sender. Bei unbekannten Sendern öffnet dort
+**Gerät hinzufügen** die zugehörige Entdeckt-Karte.
 
 Suchen nach Gerät, ID (mit oder ohne Bindestriche) oder Daten (Taste `/`), nur Empfangenes
 oder Gesendetes, nur unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt

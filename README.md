@@ -161,20 +161,20 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 
 ## EnOcean panel
 
-The **EnOcean** sidebar panel (admins only) starts with a card per gateway: connected,
-disconnected (and for how long) or on demand, telegrams per minute, last telegram, devices,
-free sender IDs, send queue and unconfirmed commands. Click a card to show only that
-gateway's telegrams; on a phone the cards scroll sideways. A gateway reached through the
-EnOcean Proxy app also shows the app's version, the other programs connected, the air time
-against the 1 % limit and a send lock while a capture runs.
+The **EnOcean** sidebar panel (admins only) starts with a compact summary per gateway:
+connection status, telegrams per minute, last telegram, devices and free sender IDs.
+Use **Telegrams** to filter by gateway. **Details** expands the connection, send queue
+and unconfirmed commands. For an EnOcean Proxy gateway it also shows the proxy version,
+connected programs, air time against the 1 % limit and any capture send lock.
 
 Below, every received and sent telegram appears live, newest first: device name (or
-"unknown sender" with an **Add** button that opens its discovered card), sender ID, gateway,
+"unknown sender"), sender ID, gateway,
 telegram type, the decoded values with name and unit as the entities show them ("Power
 15 W") and the signal strength. Telegrams per minute count the received telegrams of the
 last minute. Sent telegrams name the device and
 sender profile; a teach-in of an unknown sender shows its EEP. Click a telegram for its raw
-data, status, destination and signal in dBm, or to show only that sender.
+data, status, destination and signal in dBm, or to show only that sender. Unknown senders
+also offer **Add device** in these details to open their discovered card.
 
 Search by device, ID (with or without dashes) or data (key `/`), choose received or sent,
 show unknown senders only or include repetitions; **Reset filters** clears them. Pause keeps

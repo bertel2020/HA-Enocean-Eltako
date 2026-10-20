@@ -32,12 +32,13 @@ const TEXT = {
   en: {
     title: "EnOcean",
     gateways: "Gateways",
+    sender: "Sender", content: "Content", unavailable: "Not available",
     telegrams: "Telegrams",
     live: "Live",
     paused: (n) => (n ? `Paused · ${n} new` : "Paused"),
     pause: "Pause",
     resume: "Resume",
-    clear: "Clear list",
+    clear: "Clear display",
     export: "Export visible telegrams (JSON lines)",
     search: "Search device, ID or data",
     searchKey: "Press / to search",
@@ -50,7 +51,7 @@ const TEXT = {
     allGateways: "All gateways",
     count: (shown, total) => (shown === total ? `${total} telegrams` : `${shown} of ${total} telegrams`),
     unknownDevice: "Unknown sender",
-    add: "Add",
+    add: "Add device",
     addHint: "Add this sender as a device",
     duplicate: "repetition",
     teachIn: "Teach-in",
@@ -80,13 +81,13 @@ const TEXT = {
     disconnected: "Disconnected",
     onDemand: "On demand",
     notLoaded: "Not loaded",
-    perMinute: "per min",
+    perMinute: "telegrams/min",
     lastHeard: "last",
     never: "nothing heard yet",
     queue: "Queue",
     unconfirmed: "Unconfirmed",
     devices: "Devices",
-    freeSenders: "Free IDs",
+    freeSenders: "Free sender IDs",
     ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
     since: (s) => (s < 3600 ? `for ${Math.round(s / 60)} min` : `for ${Math.round(s / 3600)} h`),
     cardHint: "Show only this gateway's telegrams",
@@ -108,12 +109,13 @@ const TEXT = {
   de: {
     title: "EnOcean",
     gateways: "Gateways",
+    sender: "Sender", content: "Inhalt", unavailable: "Nicht verfügbar",
     telegrams: "Telegramme",
     live: "Live",
     paused: (n) => (n ? `Pausiert · ${n} neu` : "Pausiert"),
     pause: "Anhalten",
     resume: "Fortsetzen",
-    clear: "Liste leeren",
+    clear: "Anzeige leeren",
     export: "Sichtbare Telegramme exportieren (JSON-Zeilen)",
     search: "Gerät, ID oder Daten suchen",
     searchKey: "Taste / zum Suchen",
@@ -126,7 +128,7 @@ const TEXT = {
     allGateways: "Alle Gateways",
     count: (shown, total) => (shown === total ? `${total} Telegramme` : `${shown} von ${total} Telegrammen`),
     unknownDevice: "Unbekannter Sender",
-    add: "Anlegen",
+    add: "Gerät hinzufügen",
     addHint: "Diesen Sender als Gerät anlegen",
     duplicate: "Wiederholung",
     teachIn: "Lerntelegramm",
@@ -156,13 +158,13 @@ const TEXT = {
     disconnected: "Getrennt",
     onDemand: "Bei Bedarf",
     notLoaded: "Nicht geladen",
-    perMinute: "pro Min.",
+    perMinute: "Telegramme/min",
     lastHeard: "zuletzt",
     never: "noch nichts gehört",
     queue: "Warteschlange",
     unconfirmed: "Unbestätigt",
     devices: "Geräte",
-    freeSenders: "Freie IDs",
+    freeSenders: "Freie Sender-IDs",
     ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
     since: (s) => (s < 3600 ? `seit ${Math.round(s / 60)} min` : `seit ${Math.round(s / 3600)} h`),
     cardHint: "Nur die Telegramme dieses Gateways zeigen",
@@ -359,6 +361,60 @@ const STYLE = `
       overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
     .card { scroll-snap-align: start; }
   }
+  /* Focus layout: gateway summary first, technical information on demand. */
+  main { gap: 16px; padding: 20px 24px; }
+  h2 { text-transform: none; letter-spacing: normal; font-size: 16px; color: var(--primary-text-color); }
+  .cards { display: flex; flex-direction: column; }
+  .card { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 18px; }
+  .card:hover { border-color: var(--line); }
+  .gateway-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .gateway-title { flex: 1 1 170px; min-width: 0; }
+  .gateway-status { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin-top: 3px; }
+  .gateway-status .pill { margin: 0; padding: 0; background: none; color: var(--primary-text-color); }
+  .gateway-status .pill.ok i { background: var(--ok); }
+  .gateway-status .pill.bad i { background: var(--bad); }
+  .gateway-status .pill.idle i { background: var(--warn); }
+  .card .sub { margin: 0; white-space: normal; overflow-wrap: anywhere; }
+  .rate, .gateway-count { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding-left: 18px; border-left: 1px solid var(--line); }
+  .rate b { font-size: 16px; font-weight: 500; }
+  .rate .last { margin: 0; font-size: 12px; }
+  .gateway-count { font-size: 12px; color: var(--muted); }
+  .gateway-count b { font-size: 14px; font-weight: 500; color: var(--primary-text-color); }
+  .gateway-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .gateway-details { flex-basis: 100%; border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 12px; }
+  .connection { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .live { color: var(--primary-text-color); background: var(--soft); }
+  .live i { background: var(--ok); animation: none; }
+  .live.paused i { background: var(--warn); }
+  .search, .segmented, .segmented button, .chip { border-radius: 8px; }
+  .search { border: 1px solid var(--line); background: var(--surface); }
+  .segmented button[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); box-shadow: none; }
+  .column-head, .row { grid-template-columns: 92px 28px minmax(160px, 1fr) minmax(0, 1fr) 56px; }
+  .column-head { display: grid; gap: 12px; padding: 8px 12px 8px 16px; background: var(--soft); color: var(--muted); font-size: 12px; }
+  .row { padding-top: 12px; padding-bottom: 12px; }
+  .who .name.unknown { font-style: normal; }
+  .value { padding: 0; border-radius: 0; background: none; }
+  .details { margin-left: 0; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 20px; padding: 16px; }
+  .details .add { height: 34px; color: var(--accent); background: none; border: 1px solid var(--line); padding: 0 12px; font-weight: 400; }
+  @media (max-width: 760px) {
+    main { padding: 12px 8px; }
+    .cards { overflow: visible; padding: 0; }
+    .card { gap: 12px; }
+    .gateway-title { flex-basis: calc(100% - 60px); }
+    .rate { border: 0; padding: 0; flex: 1; }
+    .gateway-count { flex: 1; }
+    .gateway-actions { flex-basis: 100%; }
+    .column-head { display: none; }
+    .row { grid-template-columns: 28px minmax(0, 1fr) auto; }
+    .row .end { display: flex; grid-column: 3; grid-row: 2; }
+    .row .values { grid-column: 2; }
+    .filters .search { flex-basis: 100%; }
+    .filters .segmented { order: 0; }
+    .time small { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
 `;
 
 function esc(value) {
@@ -395,6 +451,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
     this._gateways = [];
     this._expanded = new Set();
+    this._gatewayDetails = new Set();
     this._fresh = new Set();
     this._unsub = null;
     this._frame = null;
@@ -441,8 +498,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <style>${STYLE}</style>
       <div class="header"><ha-menu-button></ha-menu-button><h1>${esc(t.title)}</h1></div>
       <main>
-        <section>
-          <h2>${esc(t.gateways)}</h2>
+        <section aria-label="${esc(t.gateways)}">
           <div class="cards" id="cards"></div>
         </section>
         <section class="panel" aria-label="${esc(t.telegrams)}">
@@ -471,6 +527,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           </div>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
           <div class="meta"><span id="count"></span></div>
+          <div class="column-head" aria-hidden="true"><span>${esc(t.time)}</span><span></span><span>${esc(t.sender)}</span><span>${esc(t.content)}</span><span></span></div>
           <div class="list" id="list"></div>
         </section>
       </main>`;
@@ -504,8 +561,14 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("export").addEventListener("click", () => this._export());
     $("closeNotice").addEventListener("click", () => this._notice(""));
     $("cards").addEventListener("click", (e) => {
-      const card = e.target.closest(".card");
-      if (card) this._set("gateway", this._filter.gateway === card.dataset.entry ? "" : card.dataset.entry);
+      const button = e.target.closest("[data-gateway-action]");
+      if (!button) return;
+      const entry = button.closest(".card").dataset.entry;
+      if (button.dataset.gatewayAction === "details") {
+        if (this._gatewayDetails.has(entry)) this._gatewayDetails.delete(entry);
+        else this._gatewayDetails.add(entry);
+        this._renderCards();
+      } else this._set("gateway", this._filter.gateway === entry ? "" : entry);
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
     this._renderBar();
@@ -729,18 +792,16 @@ class EnOceanEltakoPanel extends HTMLElement {
         const perMinute = this._perMinute(gw.entry_id);
         const rate = perMinute < 10 ? perMinute.toFixed(1).replace(/\.0$/, "") : String(Math.round(perMinute));
         const stat = (label, value, warn) => `<span>${esc(label)} <b class="${warn ? "warn" : ""}">${esc(value)}</b></span>`;
-        const body = gw.loaded
-          ? `<div class="rate"><b>${esc(rate)}</b><span>${esc(t.perMinute)}</span><span class="last">${esc(last)}</span></div>
-             <div class="stats">${stat(t.devices, gw.devices ?? "–")}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}</div>`
-          : "";
         const selected = this._filter.gateway === gw.entry_id;
-        const proxy = gw.via_proxy ? this._proxyLine(gw) : "";
-        const sub = [gw.model !== gw.title ? gw.model : "", gw.base_id, gw.connection].filter(Boolean).join(" · ");
-        return `<button class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}" title="${esc(t.cardHint)}" aria-pressed="${selected}">
-          <div class="top"><span class="name">${esc(gw.title)}</span><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span></div>
-          <div class="sub" title="${esc(sub)}">${esc(sub)}</div>
-          ${body}${proxy}
-        </button>`;
+        const expanded = this._gatewayDetails.has(gw.entry_id);
+        const sub = [gw.model !== gw.title ? gw.model : "", gw.base_id].filter(Boolean).join(" · ");
+        return `<article class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}">
+          <div class="gateway-icon">${svg(ICON.tower)}</div>
+          <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
+          ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(gw.devices ?? "–")} ${esc(t.devices)}</b><span>${esc(gw.free_senders ?? "–")} ${esc(t.freeSenders)}</span></div>` : ""}
+          <div class="gateway-actions"><button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button><button class="chip" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
+        </article>`;
       })
       .join("");
   }
@@ -797,7 +858,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
     const tags = r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "";
     const extra =
-      (unknown ? `<button class="add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : "") +
       (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
     const line2 = [
@@ -824,9 +884,9 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.raw)}</dt><dd class="mono">${esc(r.data)}</dd></div>
           <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           <div><dt>${esc(t.destination)}</dt><dd class="mono">${esc(r.destination)}</dd></div>
-          <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : "–"}</dd></div>
+          <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-only="${esc(r.sender)}">${svg(ICON.filter)}${esc(t.filterSender)}</button></div>
+          <div class="actions"><button class="chip" data-only="${esc(r.sender)}">${svg(ICON.filter)}${esc(t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
