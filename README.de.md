@@ -72,7 +72,8 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
   (einstellbar); ist die Entität nicht verfügbar, kann ein Kontakt den sicheren Wert „offen“
   senden. Eingelernt wird über den Button auf der Geräteseite, dort steht auch der zuletzt
   gesendete Wert.
-- **Per EEP** (Experte): Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert.
+- **Per EEP** (Experte): Jedes der 318 Standardprofile der EnOcean Alliance wird zu einem Gerät
+  mit einem Sensor je Wert; ein Code wie `A5-04-02` findet es direkt.
 
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
 erscheint als **entdeckt**-Karte auf der Integrationsseite. **Hinzufügen** schlägt die
@@ -101,6 +102,8 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Zähler | Gaszähler (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor |
 | Zähler | Wasserzähler (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor |
 | Licht und Schalten | Permundo PSC132 / PSC234 Zwischenstecker | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std` | switch, light, sensor |
+| Licht und Schalten | Schalt- oder Dimmaktor (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch |
+| Rollläden und Jalousien | Rollladenaktor (VLD D2-05) | EnOcean | `D2-05-00:std` | `vld: D2-05-00:std` | cover |
 | Taster und Kontakte | Wippentaster (NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event |
 | Taster und Kontakte | Fenstergriff (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor |
 | Taster und Kontakte | Tür-/Fensterkontakt (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor |
@@ -158,6 +161,43 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 - [Doppelklick ruft Szene](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/double_press_scene.yaml) [![Importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fdouble_press_scene.yaml)
 - [Rollläden zeitgesteuert kalibrieren](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml) [![Importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fcalibrate_covers.yaml)
 
+## Aktionen
+
+- `enocean_eltako.capture`: schneidet die Telegramme aller Gateways oder eines Gateways für
+  eine Anzahl Sekunden (Vorgabe 60) nach `enocean_eltako/capture-<Zeit>.jsonl` im
+  Konfigurationsverzeichnis mit, für Fehlerberichte.
+- `enocean_eltako.calibrate_cover`: fährt Eltako-Rollläden an die nähere Endlage und zurück,
+  danach stimmt die Position wieder genau (I6).
+
+## Bekannte Einschränkungen
+
+- **Bus-Speicher:** Lesen und Schreiben des FAM14-Bus-Speichers (Import, Verknüpfungsansicht,
+  Aktor-Konfiguration) ist noch nicht gebaut; dafür fehlen Mitschnitte zwischen PCT14 und FAM14.
+- **Ein Programm pro Port:** Ein serielles Gateway kann nur von einer Integration genutzt
+  werden. Vorher aus der alten Integration `eltako` entfernen.
+- **VLD-Anlernen:** D2-01- und D2-05-Aktoren lernen per UTE, dafür ist ein ESP3-Gateway nötig
+  (USB300, MGW-ETH, generisch ESP3); ESP2-Gateways wie der FAM-USB können nicht antworten.
+- **Generische Profile:** Geräte per EEP entschlüsseln jedes Standardprofil, aber Profile
+  außerhalb des Katalogs sind nicht mit Hardware geprüft; einige offizielle Testcontainer
+  weichen ab (siehe [docs/quality_scale.md](docs/quality_scale.md)).
+- **Rollladenpositionen** von Eltako-Aktoren werden aus Laufzeiten berechnet, der Aktor meldet
+  nie, wo er angehalten hat.
+
+## Fehlersuche
+
+1. Panel **EnOcean** öffnen: Ist das Gateway verbunden, und kommen Telegramme an, wenn eine
+   Taste gedrückt wird? Unbekannte Sender erscheinen dort mit **Anlegen**.
+2. Unter **Einstellungen → Reparaturen** nachsehen: getrennte Gateways, stumme Geräte,
+   geänderte Base-ID, langsame Bus-Bestätigungen.
+3. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme
+   mit dem Export im Panel oder der Aktion `enocean_eltako.capture` mitschneiden.
+   Debug-Protokoll:
+   ```yaml
+   logger:
+     logs:
+       custom_components.enocean_eltako: debug
+   ```
+
 ## Installation
 
 ### Über HACS (empfohlen)
@@ -180,6 +220,13 @@ als Kategorie **Integration** eintragen.
 Das Verzeichnis `custom_components/enocean_eltako` nach
 `/config/custom_components/enocean_eltako` kopieren und Home Assistant neu
 starten.
+
+### Entfernen
+
+Unter **Einstellungen → Geräte & Dienste → EnOcean Eltako** jeden Gateway-Eintrag löschen
+(seine Geräte gehen mit, Sender-IDs werden frei). Danach die Integration in HACS entfernen oder
+`/config/custom_components/enocean_eltako` löschen und Home Assistant neu starten. Aktoren
+behalten die gelernten Sender-IDs; am Aktor ablernen, wenn ein neuer Regler sie nutzen soll.
 
 ## Entwicklung
 

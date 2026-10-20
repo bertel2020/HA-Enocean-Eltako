@@ -106,7 +106,9 @@
           "fields": "Angezeigte Werte",
           "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
           "vent_time": "Lüftungsschlitz-Zeit",
-          "tilt_time": "Wendezeit Lamellen"
+          "tilt_time": "Wendezeit Lamellen",
+          "channel": "Kanal",
+          "sender_vld": "Sender-ID: VLD-Befehle"
         },
         "data_description": {
           "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -120,7 +122,9 @@
           "fields": "Werte des Profils, die als Sensor erscheinen.",
           "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
           "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
-          "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
+          "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
+          "channel": "Ausgang des Aktors (0 = erster Kanal).",
+          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
         }
       }
     },
@@ -200,7 +204,9 @@
         "virtual_contact": "Virtueller Fensterkontakt",
         "virtual_temperature": "Virtueller Temperaturfühler",
         "virtual_motion": "Virtueller Bewegungsmelder",
-        "virtual_rocker": "Virtueller Taster"
+        "virtual_rocker": "Virtueller Taster",
+        "vld_switch": "Schalt- oder Dimmaktor (VLD D2-01)",
+        "vld_cover": "Rollladenaktor (VLD D2-05)"
       }
     },
     "routing": {
@@ -270,7 +276,9 @@
         "virtual_temperature": "Anlernen: Aktor in den Lernmodus für einen Temperaturfühler bringen, dann „Einlernen Temperatur“ drücken.",
         "virtual_motion": "Anlernen: Aktor in den Lernmodus für einen Bewegungsmelder bringen, dann „Einlernen Bewegung“ drücken.",
         "virtual_rocker": "Anlernen: Aktor in den Lernmodus bringen, dann auf dieser Geräteseite die Taste drücken, die er lernen soll.",
-        "bus": "Am Eltako-Bus: Damit der Aktor eine Bestätigung sendet, muss der obere Drehschalter des FAM14 beim Anlernen auf Position 2 stehen."
+        "bus": "Am Eltako-Bus: Damit der Aktor eine Bestätigung sendet, muss der obere Drehschalter des FAM14 beim Anlernen auf Position 2 stehen.",
+        "vld_switch": "Anlernen: Auf dieser Geräteseite „Einlernen (UTE)“ drücken, dann innerhalb von 60 s den Aktor in den Lernmodus bringen (z. B. Taste am Aktor). Er sendet eine Anfrage, die Home Assistant beantwortet. Dafür ist ein ESP3-Gateway nötig (USB300, MGW-ETH, generisch ESP3); ESP2-Gateways wie der FAM-USB können die Antwort nicht senden.",
+        "vld_cover": "Anlernen: Auf dieser Geräteseite „Einlernen (UTE)“ drücken, dann innerhalb von 60 s den Aktor in den Lernmodus bringen. Er sendet eine Anfrage, die Home Assistant beantwortet. Dafür ist ein ESP3-Gateway nötig (USB300, MGW-ETH, generisch ESP3)."
       }
     },
     "when_unavailable": {
@@ -417,11 +425,13 @@
           "menu_options": {
             "enocean_lighting": "Licht und Schalten",
             "enocean_buttons": "Taster und Kontakte",
+            "enocean_covers": "Rollläden und Jalousien",
             "user": "Zurück"
           },
           "menu_option_descriptions": {
-            "enocean_lighting": "Permundo PSC132 / PSC234",
-            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe"
+            "enocean_lighting": "Permundo PSC132 / PSC234, D2-01-Aktoren",
+            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe",
+            "enocean_covers": "D2-05-Aktoren, z. B. NodOn"
           }
         },
         "kind": {
@@ -454,7 +464,9 @@
             "model_virtual_temperature": "Virtueller Temperaturfühler",
             "model_virtual_motion": "Virtueller Bewegungsmelder",
             "model_virtual_rocker": "Virtueller Taster",
-            "user": "Zurück"
+            "user": "Zurück",
+            "model_vld_switch": "Schalt- oder Dimmaktor (VLD D2-01)",
+            "model_vld_cover": "Rollladenaktor (VLD D2-05)"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -479,7 +491,9 @@
             "model_virtual_contact": "Folgt einem Binärsensor; sendet wie ein FTK (D5-00-01)",
             "model_virtual_temperature": "Folgt einem Temperatursensor; sendet wie ein Raumfühler (A5-02-05)",
             "model_virtual_motion": "Folgt einem Binärsensor; sendet A5-07-01",
-            "model_virtual_rocker": "Vier Tasten in HA, die wie ein FT55 senden (F6-02-01)"
+            "model_virtual_rocker": "Vier Tasten in HA, die wie ein FT55 senden (F6-02-01)",
+            "model_vld_switch": "NodOn SIN-2-1-01 und andere D2-01-Aktoren",
+            "model_vld_cover": "NodOn SIN-2-RS-01 und andere D2-05-Aktoren"
           }
         },
         "learned": {
@@ -491,7 +505,7 @@
         },
         "eep": {
           "title": "Per EEP",
-          "description": "Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert. Die übrigen Profile öffnen den passenden Katalogeintrag.",
+          "description": "Oben die benannten Profile, darunter alle übrigen Standardprofile der EnOcean Alliance mit ihrem Code. Tippen filtert die Liste; ein Code wie A5-04-02 geht auch direkt. Standardprofile werden zu einem Gerät mit einem Sensor je Wert, die übrigen Einträge öffnen den passenden Katalogeintrag.",
           "data": {
             "eep": "Profil"
           }
@@ -529,7 +543,9 @@
             "when_unavailable": "Quelle nicht verfügbar",
             "sender_contact": "Sender-ID: Fensterkontakt (D5-00-01)",
             "sender_temperature": "Sender-ID: Temperatur (A5-02-05)",
-            "sender_motion": "Sender-ID: Bewegung (A5-07-01)"
+            "sender_motion": "Sender-ID: Bewegung (A5-07-01)",
+            "channel": "Kanal",
+            "sender_vld": "Sender-ID: VLD-Befehle"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -549,7 +565,9 @@
             "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift.",
             "sender_contact": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
             "sender_temperature": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
-            "sender_motion": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest."
+            "sender_motion": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
+            "channel": "Ausgang des Aktors (0 = erster Kanal).",
+            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
           }
         },
         "reconfigure": {
@@ -581,7 +599,9 @@
             "vent_time": "Lüftungsschlitz-Zeit",
             "tilt_time": "Wendezeit Lamellen",
             "source": "Quelle",
-            "when_unavailable": "Quelle nicht verfügbar"
+            "when_unavailable": "Quelle nicht verfügbar",
+            "channel": "Kanal",
+            "sender_vld": "Sender-ID: VLD-Befehle"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -597,7 +617,9 @@
             "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
             "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
             "source": "Entität, deren Zustand gesendet wird. Kontakt: an = offen.",
-            "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift."
+            "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift.",
+            "channel": "Ausgang des Aktors (0 = erster Kanal).",
+            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
           }
         },
         "address": {
@@ -658,7 +680,8 @@
         "sender_out_of_range": "Außerhalb des Bereichs dieses Gateways (Base-ID + 0…127).",
         "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
         "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
-        "sender_pool_exhausted": "Keine freie Sender-ID mehr."
+        "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
+        "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben."
       },
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
@@ -803,6 +826,9 @@
       },
       "sender_id_motion": {
         "name": "Sender-ID Bewegung"
+      },
+      "sender_id_vld": {
+        "name": "Sender-ID VLD"
       }
     },
     "binary_sensor": {
@@ -875,6 +901,9 @@
       },
       "teach_in_motion": {
         "name": "Einlernen Bewegung"
+      },
+      "teach_in_vld": {
+        "name": "Einlernen (UTE)"
       }
     }
   },

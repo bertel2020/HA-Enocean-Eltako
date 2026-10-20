@@ -10,8 +10,8 @@ import pytest
 from custom_components.enocean_eltako.catalog import (
     CATALOG,
     CATEGORIES,
-    EEP_OPTIONS,
     EEP_TO_MODEL,
+    FEATURED_OPTIONS,
     GROUP_VIRTUAL,
     GROUPS,
     categories_of,
@@ -30,6 +30,8 @@ SAMPLES: dict[str, tuple[int, str, int]] = {
     "A5-38-08:eltako": (Rorg.BS4, "02320009", 0),
     "G5-3F-7F:eltako": (Rorg.RPS, "70", 0x30),
     "D2-01-09:std": (0xD2, "0460E4", 0),
+    "D2-01-00:std": (0xD2, "040164", 0),  # status: channel 1 at 100 %
+    "D2-05-00:std": (0xD2, "1E7F0004", 0),  # position reply: 30 % closed
     "A5-12-01:std": (Rorg.BS4, "00100009", 0),
     "A5-12-01:eltako": (Rorg.BS4, "00100009", 0),
     "A5-12-02:eltako": (Rorg.BS4, "00303909", 0),
@@ -85,7 +87,7 @@ def test_flow_texts_cover_the_catalog(name: str) -> None:
     """Every kind, category menu entry and EEP choice has a label in every language."""
     data = json.loads((COMPONENT / name).read_text(encoding="utf-8"))
     assert set(data["selector"]["device_model"]["options"]) == set(CATALOG)
-    assert set(data["selector"]["eep"]["options"]) == set(EEP_OPTIONS)
+    assert set(data["selector"]["eep"]["options"]) == set(FEATURED_OPTIONS)
     steps = data["config_subentries"]["device"]["step"]
     for group in GROUPS:
         expected = {f"{group}_{c}" for c in categories_of(group)}

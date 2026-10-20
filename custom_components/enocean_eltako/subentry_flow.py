@@ -36,6 +36,7 @@ from .catalog import (
     GROUP_VIRTUAL,
     GROUPS,
     OPT_CALIBRATION,
+    OPT_CHANNEL,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
     OPT_FIELDS,
@@ -57,6 +58,7 @@ from .catalog import (
     OPT_WHEN_UNAVAILABLE,
     DeviceModel,
     categories_of,
+    eep_choice,
     generic_fields,
     generic_model,
     model_for,
@@ -78,6 +80,7 @@ from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
 from .protocol.eep.teach_in import MANUFACTURER_ELTAKO, TeachIn4BS, decode_teach_in_4bs
+from .protocol.eep.ute import decode_ute_request
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 from .protocol.sender_pool import SenderIdError, SenderPool
@@ -105,7 +108,7 @@ _RORG_BY_PREFIX = {
     "G5": {0xF6, 0xA5},
     "A5": {0xA5},
     "D5": {0xD5},
-    "D2": {0xD2},
+    "D2": {0xD2, 0xD4},  # VLD actuators teach in by UTE
 }
 
 
@@ -122,9 +125,13 @@ def receives(model: DeviceModel, eep: str) -> bool:
     return any(r.eep == eep for r in (model.receive, *model.receive_extra) if r is not None)
 
 
-def candidates(rorg: int, teach_in: TeachIn4BS | None) -> list[str]:
+def candidates(rorg: int, teach_in: TeachIn4BS | None, data: bytes = b"") -> list[str]:
     """Catalog kinds a heard telegram may come from; a 4BS teach-in names its EEP and
-    manufacturer, so Eltako entries come first for Eltako devices."""
+    manufacturer, so Eltako entries come first for Eltako devices; a UTE query (VLD
+    actuators) names its EEP, matched by RORG and FUNC (D2-01-12 -> D2-01-00)."""
+    if rorg == Rorg.UTE and (request := decode_ute_request(data)) is not None:
+        family = request.eep[:5]
+        return [m.id for m in CATALOG.values() if m.receive and m.receive.eep[:5] == family]
     if teach_in is not None:
         kinds = [m for m in CATALOG.values() if receives(m, teach_in.eep)]
         if kinds:
@@ -154,6 +161,7 @@ OPTION_KEYS = (
     OPT_CALIBRATION,
     OPT_SOURCE,
     OPT_WHEN_UNAVAILABLE,
+    OPT_CHANNEL,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -230,8 +238,8 @@ class DeviceForm:
             else:
                 key = vol.Optional(field)
             schema[key] = TextSelector()
-        if model.kind in ("switch", "psc"):
-            default = Platform.LIGHT.value if model.kind == "switch" else Platform.SWITCH.value
+        if model.kind in ("switch", "psc", "vld_switch"):
+            default = Platform.SWITCH.value if model.kind == "psc" else Platform.LIGHT.value
             schema[vol.Required(OPT_PLATFORM, default=default)] = SelectSelector(
                 SelectSelectorConfig(
                     options=[Platform.LIGHT.value, Platform.SWITCH.value],
@@ -269,6 +277,10 @@ class DeviceForm:
                         mode=NumberSelectorMode.BOX,
                     )
                 )
+        if OPT_CHANNEL in model.options:
+            schema[vol.Required(OPT_CHANNEL, default=0)] = NumberSelector(
+                NumberSelectorConfig(min=0, max=29, step=1, mode=NumberSelectorMode.BOX)
+            )
         if OPT_SOURCE in model.options:
             schema[vol.Required(OPT_SOURCE)] = EntitySelector(SOURCE_SELECTORS[model.kind])
             schema[vol.Required(OPT_SEND_INTERVAL, default=DEFAULT_VIRTUAL_INTERVAL)] = (
@@ -502,25 +514,38 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         )
 
     async def async_step_eep(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
-        """By EEP: standard sensor profiles as a generic device, the rest via the catalog."""
+        """By EEP: standard profiles as a generic device, the rest via the catalog.
+
+        The list starts with the named choices, then every standard profile by its code; the
+        field filters as you type, and a typed code ("A5-04-02") is accepted too.
+        """
+        errors: dict[str, str] = {}
         if user_input is not None:
-            option = user_input[CONF_EEP]
-            if option in EEP_TO_MODEL:
+            option = eep_choice(user_input[CONF_EEP])
+            if option is None:
+                errors[CONF_EEP] = "unknown_eep"
+            elif option in EEP_TO_MODEL:
                 return await self._async_chosen(CATALOG[EEP_TO_MODEL[option]], back="eep")
-            return await self._async_chosen(generic_model(EEP_OPTIONS[option]), back="eep")
+            else:
+                return await self._async_chosen(generic_model(EEP_OPTIONS[option]), back="eep")
         return self.async_show_form(
             step_id="eep",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_EEP): SelectSelector(
                         SelectSelectorConfig(
-                            options=list(EEP_OPTIONS),
+                            options=[
+                                SelectOptionDict(value=option, label=str(ref.eep))
+                                for option, ref in EEP_OPTIONS.items()
+                            ],
                             translation_key=CONF_EEP,
                             mode=SelectSelectorMode.DROPDOWN,
+                            custom_value=True,
                         )
                     )
                 }
             ),
+            errors=errors,
         )
 
     async def async_step_address(
@@ -565,7 +590,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             if not fitting:  # no catalog entry decodes it: generic device
                 self._device_model = generic_model(EEPRef(teach_in.eep, "std"))
                 return await self.async_step_device()
-        kinds = candidates(telegram.rorg, teach_in)
+        kinds = candidates(telegram.rorg, teach_in, telegram.data)
         if len(kinds) == 1:
             self._device_model = CATALOG[kinds[0]]
             return await self.async_step_device()

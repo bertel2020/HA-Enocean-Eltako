@@ -222,7 +222,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             if not any(receives(m, teach_in.eep) for m in CATALOG.values()):
                 self._device_model = generic_model(EEPRef(teach_in.eep, "std"))
                 return await self.async_step_discovered_device()
-        kinds = candidates(rorg, teach_in)
+        kinds = candidates(rorg, teach_in, data)
         if not kinds:
             return self.async_abort(reason="no_matching_kind")
         entry = self._get_entry()

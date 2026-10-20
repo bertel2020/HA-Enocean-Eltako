@@ -106,7 +106,9 @@
           "fields": "Shown values",
           "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
           "vent_time": "Vent slot time",
-          "tilt_time": "Slat turning time"
+          "tilt_time": "Slat turning time",
+          "channel": "Channel",
+          "sender_vld": "Sender ID: VLD commands"
         },
         "data_description": {
           "time_opens": "Full travel time from closed to open.",
@@ -120,7 +122,9 @@
           "fields": "Values of the profile that become sensors.",
           "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
           "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
-          "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
+          "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
+          "channel": "Output of the actuator (0 = first channel).",
+          "sender_vld": "Reported to the actuator during the UTE teach-in."
         }
       }
     },
@@ -200,7 +204,9 @@
         "virtual_contact": "Virtual window contact",
         "virtual_temperature": "Virtual temperature sensor",
         "virtual_motion": "Virtual motion sensor",
-        "virtual_rocker": "Virtual rocker"
+        "virtual_rocker": "Virtual rocker",
+        "vld_switch": "Switch or dimmer actuator (VLD D2-01)",
+        "vld_cover": "Shutter actuator (VLD D2-05)"
       }
     },
     "routing": {
@@ -270,7 +276,9 @@
         "virtual_temperature": "Teach-in: put the actuator into learn mode for a temperature sensor, then press “Teach in temperature”.",
         "virtual_motion": "Teach-in: put the actuator into learn mode for a motion sensor, then press “Teach in motion”.",
         "virtual_rocker": "Teach-in: put the actuator into learn mode, then press the button on this device page that it should learn.",
-        "bus": "On the Eltako bus: for the actuator to send a confirmation, the FAM14's upper rotary switch must be at position 2 while teaching in."
+        "bus": "On the Eltako bus: for the actuator to send a confirmation, the FAM14's upper rotary switch must be at position 2 while teaching in.",
+        "vld_switch": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s (e.g. the button on the actuator). It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot send the answer.",
+        "vld_cover": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s. It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3)."
       }
     },
     "when_unavailable": {
@@ -417,11 +425,13 @@
           "menu_options": {
             "enocean_lighting": "Lighting and switching",
             "enocean_buttons": "Buttons and contacts",
+            "enocean_covers": "Shutters and blinds",
             "user": "Back"
           },
           "menu_option_descriptions": {
-            "enocean_lighting": "Permundo PSC132 / PSC234",
-            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe"
+            "enocean_lighting": "Permundo PSC132 / PSC234, D2-01 actuators",
+            "enocean_buttons": "NodOn, PEHA, Jung, Hoppe",
+            "enocean_covers": "D2-05 actuators, e.g. NodOn"
           }
         },
         "kind": {
@@ -454,7 +464,9 @@
             "model_virtual_temperature": "Virtual temperature sensor",
             "model_virtual_motion": "Virtual motion sensor",
             "model_virtual_rocker": "Virtual rocker",
-            "user": "Back"
+            "user": "Back",
+            "model_vld_switch": "Switch or dimmer actuator (VLD D2-01)",
+            "model_vld_cover": "Shutter actuator (VLD D2-05)"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -479,7 +491,9 @@
             "model_virtual_contact": "Follows a binary sensor; sends like an FTK (D5-00-01)",
             "model_virtual_temperature": "Follows a temperature sensor; sends like a room sensor (A5-02-05)",
             "model_virtual_motion": "Follows a binary sensor; sends A5-07-01",
-            "model_virtual_rocker": "Four buttons in HA that send like an FT55 (F6-02-01)"
+            "model_virtual_rocker": "Four buttons in HA that send like an FT55 (F6-02-01)",
+            "model_vld_switch": "NodOn SIN-2-1-01 and other D2-01 actuators",
+            "model_vld_cover": "NodOn SIN-2-RS-01 and other D2-05 actuators"
           }
         },
         "learned": {
@@ -491,7 +505,7 @@
         },
         "eep": {
           "title": "By EEP",
-          "description": "Standard sensor profiles become a device with one sensor per value. The other profiles open the matching catalog entry.",
+          "description": "Named profiles first, then every other standard profile of the EnOcean Alliance by its code. Typing filters the list; a code such as A5-04-02 works directly too. Standard profiles become a device with one sensor per value, the other entries open the matching catalog entry.",
           "data": {
             "eep": "Profile"
           }
@@ -529,7 +543,9 @@
             "when_unavailable": "Source unavailable",
             "sender_contact": "Sender ID: window contact (D5-00-01)",
             "sender_temperature": "Sender ID: temperature (A5-02-05)",
-            "sender_motion": "Sender ID: motion (A5-07-01)"
+            "sender_motion": "Sender ID: motion (A5-07-01)",
+            "channel": "Channel",
+            "sender_vld": "Sender ID: VLD commands"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -549,7 +565,9 @@
             "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example.",
             "sender_contact": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
             "sender_temperature": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
-            "sender_motion": "The sender ID is also the ID of this virtual device; it stays fixed afterwards."
+            "sender_motion": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
+            "channel": "Output of the actuator (0 = first channel).",
+            "sender_vld": "Reported to the actuator during the UTE teach-in."
           }
         },
         "reconfigure": {
@@ -581,7 +599,9 @@
             "vent_time": "Vent slot time",
             "tilt_time": "Slat turning time",
             "source": "Source",
-            "when_unavailable": "Source unavailable"
+            "when_unavailable": "Source unavailable",
+            "channel": "Channel",
+            "sender_vld": "Sender ID: VLD commands"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -597,7 +617,9 @@
             "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
             "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
             "source": "Entity whose state is sent. Contact: on = open.",
-            "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example."
+            "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example.",
+            "channel": "Output of the actuator (0 = first channel).",
+            "sender_vld": "Reported to the actuator during the UTE teach-in."
           }
         },
         "address": {
@@ -658,7 +680,8 @@
         "sender_out_of_range": "Outside this gateway's range (base ID + 0…127).",
         "sender_in_use": "Already used by another device.",
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
-        "sender_pool_exhausted": "No free sender ID left."
+        "sender_pool_exhausted": "No free sender ID left.",
+        "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02."
       },
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
@@ -803,6 +826,9 @@
       },
       "sender_id_motion": {
         "name": "Sender ID motion"
+      },
+      "sender_id_vld": {
+        "name": "Sender ID VLD"
       }
     },
     "binary_sensor": {
@@ -875,6 +901,9 @@
       },
       "teach_in_motion": {
         "name": "Teach in motion"
+      },
+      "teach_in_vld": {
+        "name": "Teach in (UTE)"
       }
     }
   },

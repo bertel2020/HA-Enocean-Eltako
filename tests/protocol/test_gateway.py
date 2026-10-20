@@ -76,7 +76,7 @@ async def test_connect_refused_raises() -> None:
         await Gateway(Protocol.ESP3, TcpConnection("127.0.0.1", port)).connect()
 
 
-async def test_run_reconnects_after_server_restart(monkeypatch) -> None:
+async def test_run_reconnects_after_server_restart(monkeypatch, caplog) -> None:
     monkeypatch.setattr(gateway, "RECONNECT_DELAYS", (0.05,))
     server = await FakeGateway(Protocol.ESP3).start()
     port = server.port
@@ -87,7 +87,7 @@ async def test_run_reconnects_after_server_restart(monkeypatch) -> None:
     task = asyncio.create_task(gw.run())
     await asyncio.wait_for(server.connected.wait(), 2)
     await server.stop()  # like a ser2net restart
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(0.2)  # several reconnect attempts fail meanwhile
     assert not gw.connected
     server = await FakeGateway(Protocol.ESP3).start(port)
     await asyncio.wait_for(server.connected.wait(), 2)
@@ -97,6 +97,10 @@ async def test_run_reconnects_after_server_restart(monkeypatch) -> None:
     await asyncio.wait_for(task, 1)
     await server.stop()
     assert changes == [True, False, True, False]
+    # one warning for the outage, attempts at debug level, one info when it is back
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warnings) == 1
+    assert any("restored" in r.getMessage() for r in caplog.records if r.levelname == "INFO")
 
 
 async def test_esp3_ignores_non_radio_packets() -> None:

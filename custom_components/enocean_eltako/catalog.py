@@ -14,7 +14,7 @@ from typing import Any
 from homeassistant.const import Platform
 
 from .const import CONF_EEP, CONF_MODEL
-from .protocol.eep import EEPRef, virtual
+from .protocol.eep import EEPRef, virtual, vld
 from .protocol.eep.eltako import heating, shutter, switching
 from .protocol.eep.model import Field, encode
 from .protocol.eep.std.profiles import PROFILES
@@ -39,6 +39,7 @@ OPT_CALIBRATION = "calibration"  # I6 cover: passive | before_move
 OPT_FIELDS = "fields"  # device added by EEP: the profile values shown as sensors
 OPT_SOURCE = "source"  # I9 virtual sensor: the HA entity whose state is sent
 OPT_WHEN_UNAVAILABLE = "when_unavailable"  # I9: source unavailable -> skip | safe value
+OPT_CHANNEL = "channel"  # VLD actuators: output channel (D2-01 I/O, D2-05 CHN)
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -88,6 +89,17 @@ COOLING_SWITCH = SenderProfile("cooling", EEPRef("F6-02-01", "std"), Rorg.RPS, C
 DIRECTION_ROCKER = SenderProfile(
     "direction_rocker", EEPRef("F6-02-01", "std"), Rorg.RPS, ROCKER_PRESS_UP
 )
+# VLD actuators of other manufacturers learn by UTE: no teach-in telegram of our own, the
+# teach-in button arms the answer to the actuator's UTE query (teach_in is empty)
+UTE_TEACH_IN = b""
+VLD_SWITCH = SenderProfile(
+    "vld",
+    EEPRef("D2-01-00", "std"),
+    Rorg.VLD,
+    UTE_TEACH_IN,
+    lambda on: vld.encode_set_output(0, 100 if on else 0),
+)
+VLD_BLIND = SenderProfile("vld", EEPRef("D2-05-00", "std"), Rorg.VLD, UTE_TEACH_IN)
 # I9 virtual sensors: HA sends as the sensor; the sender ID is also the device's ID
 VIRTUAL_CONTACT = SenderProfile(
     "contact", EEPRef("D5-00-01", "std"), Rorg.BS1, virtual.CONTACT_TEACH_IN
@@ -333,6 +345,28 @@ CATALOG: dict[str, DeviceModel] = {
             examples="NodOn SDO",
         ),
         DeviceModel(
+            "vld_switch",
+            _ref("D2-01-00:std"),
+            (Platform.LIGHT, Platform.SWITCH),
+            category="lighting",
+            group=GROUP_ENOCEAN,
+            senders=(VLD_SWITCH,),
+            options=(OPT_CHANNEL, OPT_STATUS_REQUEST),
+            manufacturer="EnOcean",
+            examples="NodOn SIN-2-1-01",
+        ),
+        DeviceModel(
+            "vld_cover",
+            _ref("D2-05-00:std"),
+            (Platform.COVER,),
+            category="covers",
+            group=GROUP_ENOCEAN,
+            senders=(VLD_BLIND,),
+            options=(OPT_CHANNEL, OPT_STATUS_REQUEST),
+            manufacturer="EnOcean",
+            examples="NodOn SIN-2-RS-01",
+        ),
+        DeviceModel(
             "virtual_contact",
             None,
             (Platform.BUTTON, Platform.SENSOR),
@@ -378,9 +412,11 @@ CATALOG: dict[str, DeviceModel] = {
     )
 }
 
-# Flow "by EEP": standard sensor profiles become a generic receive-only device; the other
-# choices open the catalog entry that decodes that profile. Option value -> EEP reference.
-GENERIC_EEPS = (
+# Flow "by EEP": standard profiles become a generic receive-only device; the other choices
+# open the catalog entry that decodes that profile. Option value -> EEP reference.
+# FEATURED_EEPS have a translated name and come first; phase 5 adds every other standard
+# profile (labelled with its code) after them.
+FEATURED_EEPS = (
     "A5-04-02",
     "A5-08-01",
     "A5-09-04",
@@ -419,13 +455,52 @@ def _option_ref(option: str) -> EEPRef:
     return EEPRef.parse(f"{eep.replace('_', '-')}:{variant}")
 
 
+GENERIC_SKIPPED_FIELDS = {"LRN", "LRNB"}  # teach-in bits are no reading
+
+
+def _readable(eep: str) -> bool:
+    return any(
+        f.shortcut not in GENERIC_SKIPPED_FIELDS
+        for case in PROFILES[eep].cases
+        for f in case.fields
+    )
+
+
+_BY_CATALOG = {_option_ref(o).eep for o in EEP_TO_MODEL if o.startswith("std_")}
+GENERIC_EEPS: tuple[str, ...] = (
+    *FEATURED_EEPS,
+    *sorted(
+        e for e in PROFILES if e not in FEATURED_EEPS and e not in _BY_CATALOG and _readable(e)
+    ),
+)
+# translated choices first (flow texts), then every other standard profile by its code
+FEATURED_OPTIONS: tuple[str, ...] = (
+    *(eep_option(EEPRef(eep, "std")) for eep in FEATURED_EEPS),
+    *EEP_TO_MODEL,
+)
 EEP_OPTIONS: dict[str, EEPRef] = {
-    **{eep_option(EEPRef(eep, "std")): EEPRef(eep, "std") for eep in GENERIC_EEPS},
+    **{
+        eep_option(EEPRef(eep, "std")): EEPRef(eep, "std")
+        for eep in GENERIC_EEPS[: len(FEATURED_EEPS)]
+    },
     **{option: _option_ref(option) for option in EEP_TO_MODEL},
+    **{
+        eep_option(EEPRef(eep, "std")): EEPRef(eep, "std")
+        for eep in GENERIC_EEPS[len(FEATURED_EEPS) :]
+    },
 }
 
 
-GENERIC_SKIPPED_FIELDS = {"LRN", "LRNB"}  # teach-in bits are no reading
+def eep_choice(text: str) -> str | None:
+    """Option value of a selection or of a typed code ("A5-04-02", "a50402"); None if unknown."""
+    if text in EEP_OPTIONS:
+        return text
+    digits = "".join(c for c in text.upper() if c.isalnum())
+    if len(digits) == 6:
+        option = eep_option(EEPRef(f"{digits[:2]}-{digits[2:4]}-{digits[4:]}", "std"))
+        if option in EEP_OPTIONS:
+            return option
+    return None
 
 
 def generic_fields(eep: str) -> list[tuple[str, Field]]:
@@ -435,7 +510,12 @@ def generic_fields(eep: str) -> list[tuple[str, Field]]:
         for f in case.fields:
             if f.shortcut not in GENERIC_SKIPPED_FIELDS:
                 seen.setdefault(f.shortcut, f)
-    return [(f"eep_{shortcut.lower()}", f) for shortcut, f in seen.items()]
+    return [(f"eep_{_key(shortcut)}", f) for shortcut, f in seen.items()]
+
+
+def _key(shortcut: str) -> str:
+    """Entity key part: "TMP" -> "tmp", "Acceleration Status" -> "acceleration_status"."""
+    return "_".join("".join(c if c.isalnum() else " " for c in shortcut.lower()).split())
 
 
 def generic_model(ref: EEPRef) -> DeviceModel:

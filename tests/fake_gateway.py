@@ -44,21 +44,28 @@ class FakeGateway:
     async def _client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._writers.append(writer)
         self.connected.set()
-        while data := await reader.read(1024):
-            self.received += data
-            if self.base_id is None:
-                continue
-            if data == esp2.encode_command(esp2.CMD_RD_IDBASE):
-                writer.write(
-                    esp2.Esp2Frame(
-                        esp2.HSeq.RMT, esp2.MSG_INF_IDBASE, self.base_id.to_bytes(4, "big")
-                    ).encode()
-                )
-            elif data[:7] == esp3.encode_repeater(0)[:7]:  # CO_WR_REPEATER header
-                writer.write(esp3.Esp3Packet(esp3.PacketType.RESPONSE, b"\x00").encode())
-            elif data == esp3.encode_common_command(esp3.CO_RD_IDBASE):
-                writer.write(
-                    esp3.Esp3Packet(
-                        esp3.PacketType.RESPONSE, b"\x00" + self.base_id.to_bytes(4, "big")
-                    ).encode()
-                )
+        try:
+            while data := await reader.read(1024):
+                self.received += data
+                if self.base_id is not None:
+                    self._answer(data, writer)
+        except ConnectionError:
+            pass  # the integration closed the connection (test teardown)
+
+    def _answer(self, data: bytes, writer: asyncio.StreamWriter) -> None:
+        """Answer every command in the chunk (two may arrive in one read)."""
+        assert self.base_id is not None
+        if esp2.encode_command(esp2.CMD_RD_IDBASE) in data:
+            writer.write(
+                esp2.Esp2Frame(
+                    esp2.HSeq.RMT, esp2.MSG_INF_IDBASE, self.base_id.to_bytes(4, "big")
+                ).encode()
+            )
+        if esp3.encode_repeater(0)[:7] in data:  # CO_WR_REPEATER header
+            writer.write(esp3.Esp3Packet(esp3.PacketType.RESPONSE, b"\x00").encode())
+        if esp3.encode_common_command(esp3.CO_RD_IDBASE) in data:
+            writer.write(
+                esp3.Esp3Packet(
+                    esp3.PacketType.RESPONSE, b"\x00" + self.base_id.to_bytes(4, "big")
+                ).encode()
+            )

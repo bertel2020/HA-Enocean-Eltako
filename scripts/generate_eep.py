@@ -3,8 +3,11 @@
 Only technical facts are written (field positions, sizes, ranges, scales, units, enum
 values, conditions); no description text from the EnOcean Alliance files (see NOTICE).
 
+All profiles of the EEP Viewer index are generated (phase 5); profiles that only point to a
+shared definition become aliases.
+
 Usage:
-    python scripts/fetch_eep.py --generated     # download the profiles listed below
+    python scripts/fetch_eep.py                 # download all definitions
     python scripts/generate_eep.py              # write the module
     python scripts/generate_eep.py --check      # CI: fail if the module is out of date
 """
@@ -20,29 +23,40 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".eep_cache"
 TARGET = ROOT / "custom_components/enocean_eltako/protocol/eep/std/profiles.py"
 
-# Profiles that only point to a shared definition (EEP Viewer <ref>), e.g. D2-01-09 -> D2-01-00
-REFERENCES = {"D2-01-09": "D2-01-00"}
+INDEX = CACHE / "eep-viewer-desc.json"
 
-# Profiles generated today (phase 2: the EEPs of the reference system); extend deliberately.
-PROFILES = (
-    "A5-02-05",
-    "A5-04-02",
-    "A5-07-01",
-    "A5-08-01",
-    "A5-09-04",
-    "A5-10-06",
-    "A5-12-01",
-    "A5-12-02",
-    "A5-12-03",
-    "A5-13-01",
-    "A5-13-02",
-    "A5-38-08",
-    "D2-01-00",
-    "D5-00-01",
-    "F6-02-01",
-    "F6-02-02",
-    "F6-10-00",
-)
+
+def _as_list(value):
+    return value if isinstance(value, list) else [value]
+
+
+def all_profiles() -> list[str]:
+    """Every profile in the EEP Viewer index (fetch_eep.py stores it in .eep_cache)."""
+    import json
+
+    index = json.loads(INDEX.read_text(encoding="utf-8-sig"))
+    return sorted(
+        f"{rorg}-{func['value'][2:].upper()}-{typ['value'][2:].upper()}"
+        for rorg, entry in index.items()
+        for func in _as_list(entry["function"])
+        for typ in _as_list(func["type"])
+    )
+
+
+def reference_of(eep: str) -> str | None:
+    """Profiles that only point to a shared definition (<ref>), e.g. D2-01-09 -> D2-01-00."""
+    path = CACHE / f"{eep}.xml"
+    if not path.exists():
+        return None
+    ref = ET.parse(path).getroot().find(".//type/ref")
+    if ref is None or ref.find("rorg") is None:
+        return None
+    return "-".join(ref.findtext(tag).strip() for tag in ("rorg", "func", "type")).upper()
+
+
+def _has_cases(eep: str) -> bool:
+    path = CACHE / f"{eep}.xml"
+    return path.exists() and ET.parse(path).getroot().find(".//case") is not None
 
 
 def _int(text: str | None) -> int:
@@ -81,10 +95,34 @@ def _range(el: ET.Element | None) -> tuple | None:
 
 
 def _field(df: ET.Element) -> str | None:
-    if df.find("reserved") is not None or df.findtext("shortcut") is None:
+    """A data field; a field whose ranges are prose ("20 .. 80", "2000 (or 5000)") keeps its
+    position and size only, a field without position is left out."""
+    try:
+        return _full_field(df)
+    except (AttributeError, ValueError, TypeError):
+        pass
+    if df.findtext("bitoffs") is None or df.findtext("bitsize") is None:
+        return None
+    try:
+        offs, size = _int(df.findtext("bitoffs")), _int(df.findtext("bitsize"))
+    except ValueError:
+        return None
+    shortcut, name = _shortcut(df), _clean(df.findtext("data")) or ""
+    if df.find("reserved") is not None or shortcut is None:
+        return None
+    return f"Field({shortcut!r}, {name!r}, {offs}, {size})"
+
+
+def _shortcut(df: ET.Element) -> str | None:
+    """The field's shortcut; some profiles (D2-14-41) only name the field."""
+    return _clean(df.findtext("shortcut")) or _clean(df.findtext("data"))
+
+
+def _full_field(df: ET.Element) -> str | None:
+    if df.find("reserved") is not None or _shortcut(df) is None:
         return None
     args = [
-        repr(_clean(df.findtext("shortcut"))),
+        repr(_shortcut(df)),
         repr(_clean(df.findtext("data")) or ""),
         str(_int(df.findtext("bitoffs"))),
         str(_int(df.findtext("bitsize"))),
@@ -129,6 +167,8 @@ def _conditions(case: ET.Element) -> list[str]:
         return _command_condition(case)
     out = []
     for c in cond:
+        if c.findtext("bitoffs") is None:
+            continue  # <direction>: device to controller (1) or back (2), cases stay in order
         status = c.tag == "statusfield"
         out.append(
             f"Condition({_int(c.findtext('bitoffs'))}, {_int(c.findtext('bitsize'))}, "
@@ -182,7 +222,21 @@ def generate_profile(eep: str) -> str:
 
 
 def render() -> str:
-    body = "".join(generate_profile(p) for p in PROFILES)
+    profiles, references = [], {}
+    for eep in all_profiles():
+        if (target := reference_of(eep)) is not None and target != eep:
+            references[eep] = target
+        elif _has_cases(eep):
+            profiles.append(eep)
+    parts = []
+    for eep in list(profiles):
+        try:
+            parts.append(generate_profile(eep))
+        except (AttributeError, ValueError, TypeError) as err:  # incomplete definition
+            print(f"skipped {eep}: {err!r}", file=sys.stderr)
+            profiles.remove(eep)
+    references = {a: t for a, t in references.items() if t in profiles}
+    body = "".join(parts)
     return (
         '"""Standard EEP profiles: technical facts from the EnOcean Alliance EEP Viewer.\n\n'
         f"Generated by scripts/generate_eep.py on {date.today().isoformat()}. Do not edit.\n"
@@ -193,7 +247,7 @@ def render() -> str:
         + body
         + "}\n"
         + "".join(
-            f'PROFILES["{alias}"] = PROFILES["{target}"]\n' for alias, target in REFERENCES.items()
+            f'PROFILES["{alias}"] = PROFILES["{target}"]\n' for alias, target in references.items()
         )
     )
 
@@ -209,9 +263,8 @@ def _format(path: Path) -> None:
 
 
 def main(argv: list[str]) -> int:
-    missing = [p for p in PROFILES if not (CACHE / f"{p}.xml").exists()]
-    if missing:
-        print(f"missing in .eep_cache (run fetch_eep.py): {' '.join(missing)}", file=sys.stderr)
+    if not INDEX.exists():
+        print("missing .eep_cache (run fetch_eep.py)", file=sys.stderr)
         return 1
     if "--check" in argv:
         fresh = CACHE / "profiles_check.py"
@@ -226,7 +279,7 @@ def main(argv: list[str]) -> int:
         return 0
     TARGET.write_text(render(), encoding="utf-8")
     _format(TARGET)
-    print(f"wrote {len(PROFILES)} profiles to {TARGET.relative_to(ROOT)}")
+    print(f"wrote {TARGET.relative_to(ROOT)}")
     return 0
 
 

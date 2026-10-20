@@ -11,9 +11,17 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import CENTRAL, OPT_PLATFORM, ROCKER, ROCKER_PRESS_DOWN, ROCKER_PRESS_UP
+from .catalog import (
+    CENTRAL,
+    OPT_CHANNEL,
+    OPT_PLATFORM,
+    ROCKER,
+    ROCKER_PRESS_DOWN,
+    ROCKER_PRESS_UP,
+)
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
+from .protocol.eep import vld
 from .protocol.eep.eltako import switching
 
 PARALLEL_UPDATES = 0
@@ -46,6 +54,10 @@ async def async_setup_entry(
     for subentry_id, device in entry.runtime_data.devices.items():
         if device.model.kind == "dimmer":
             async_add_entities([EnOceanDimmer(device)], config_subentry_id=subentry_id)
+        elif device.model.kind == "vld_switch" and (
+            device.options.get(OPT_PLATFORM, Platform.LIGHT) == Platform.LIGHT
+        ):
+            async_add_entities([VldLight(device)], config_subentry_id=subentry_id)
         elif (
             device.model.kind == "switch"
             and device.options.get(OPT_PLATFORM, Platform.LIGHT) == Platform.LIGHT
@@ -112,3 +124,38 @@ class EnOceanDimmer(EnOceanSwitchLight):
                 self._attr_brightness = brightness
                 changed = True
         return changed
+
+
+class VldLight(EnOceanSwitchLight):
+    """D2-01 switch or dimmer channel: output 0...100 %, status by command 4."""
+
+    _attr_color_mode = ColorMode.BRIGHTNESS
+    _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device)
+        self._channel = int(device.options.get(OPT_CHANNEL, 0))
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            self._attr_brightness = last.attributes.get(ATTR_BRIGHTNESS)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        brightness = kwargs.get(ATTR_BRIGHTNESS, self._attr_brightness or 255)
+        percent = max(1, round(brightness * 100 / 255))
+        self._device.send(vld.encode_set_output(self._channel, percent), key="switch")
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self._device.send(vld.encode_set_output(self._channel, 0), key="switch")
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        output = vld.switch_status(values, self._channel)
+        if output is None:
+            return False
+        on = output > 0
+        brightness = round(output * 255 / 100) if on else self._attr_brightness
+        if (on, brightness) == (self._attr_is_on, self._attr_brightness):
+            return False
+        self._attr_is_on, self._attr_brightness = on, brightness
+        return True

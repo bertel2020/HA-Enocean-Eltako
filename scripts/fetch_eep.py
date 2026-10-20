@@ -7,7 +7,7 @@ by the generator and tests during development and CI.
 Usage:
     python scripts/fetch_eep.py                 # all profiles
     python scripts/fetch_eep.py A5-38-08 D2-01  # profiles or prefixes
-    python scripts/fetch_eep.py --generated     # the profiles generate_eep.py needs
+    python scripts/fetch_eep.py --generated     # what generate_eep.py needs (all)
 """
 
 from __future__ import annotations
@@ -43,6 +43,21 @@ def _get(url: str) -> bytes | None:
         raise
 
 
+def _fix_declaration(data: bytes) -> bytes:
+    """Repair what the viewer serves: text before the XML declaration, files that declare
+    UTF-16 but are UTF-8 (A5-09-0D), Latin-1 characters in UTF-8 (D2-14-52, a degree sign)."""
+    if (start := data.find(b"<?xml")) > 0:  # BOM or blank lines before the declaration
+        data = data[start:]
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        data = data.decode("latin-1").encode("utf-8")
+    head = data[:100]
+    if head.startswith(b"<?xml") and b'encoding="UTF-16"' in head:
+        return data.replace(b'encoding="UTF-16"', b'encoding="utf-8"', 1)
+    return data
+
+
 def _as_list(value):
     return value if isinstance(value, list) else [value]
 
@@ -69,10 +84,7 @@ def _referenced_profile(path: Path) -> str | None:
 
 def main(argv: list[str]) -> int:
     if argv == ["--generated"]:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        from generate_eep import PROFILES
-
-        argv = list(PROFILES)
+        argv = []  # generate_eep.py writes every profile of the index
     CACHE.mkdir(exist_ok=True)
     raw = _get(INDEX_URL)
     if raw is None:
@@ -95,7 +107,7 @@ def main(argv: list[str]) -> int:
             if data is None:
                 missing += suffix == ".xml"
                 continue
-            target.write_bytes(data)
+            target.write_bytes(_fix_declaration(data))
         ref = _referenced_profile(CACHE / f"{profile}.xml")
         if ref and ref not in wanted:
             wanted.append(ref)

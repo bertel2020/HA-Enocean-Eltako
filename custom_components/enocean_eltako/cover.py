@@ -13,6 +13,9 @@ always full runs with margin, which renews the anchor. Calibration strategy per 
 passive (anchor only when fully opened or closed anyway) or before an uncertain move (drive to
 the nearer end first when the inaccuracy exceeds the threshold). The calibrate button and the
 action enocean_eltako.calibrate_cover drive to the nearer end and back.
+
+VLD blinds (D2-05) report their position themselves; VldCover only sends position, stop and
+query commands and shows the reply (D2-05 counts closed percent, HA open percent).
 """
 
 from __future__ import annotations
@@ -43,6 +46,7 @@ from .catalog import (
     CONTROLLER,
     DIRECTION_ROCKER,
     OPT_CALIBRATION,
+    OPT_CHANNEL,
     OPT_ROUTING,
     OPT_TILT_TIME,
     OPT_TIME_CLOSES,
@@ -55,6 +59,7 @@ from .const import DOMAIN
 from .cover_position import CoverPosition
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
+from .protocol.eep import vld
 from .protocol.eep.eltako import shutter
 
 PARALLEL_UPDATES = 0
@@ -72,7 +77,9 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
-        if Platform.COVER in device.model.platforms:
+        if device.model.kind == "vld_cover":
+            async_add_entities([VldCover(device)], config_subentry_id=subentry_id)
+        elif Platform.COVER in device.model.platforms:
             async_add_entities([EnOceanCover(device)], config_subentry_id=subentry_id)
     entity_platform.async_get_current_platform().async_register_entity_service(
         SERVICE_CALIBRATE, None, "async_calibrate"
@@ -299,3 +306,58 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         if before != after:
             self._changed()
         return before != after
+
+
+class VldCover(EnOceanEntity, CoverEntity, RestoreEntity):
+    """D2-05 blind or shutter: drives to a position itself and reports it."""
+
+    _attr_name = None
+    _assume_until_heard = True
+    _attr_device_class = CoverDeviceClass.SHUTTER
+    _attr_supported_features = (
+        CoverEntityFeature.OPEN
+        | CoverEntityFeature.CLOSE
+        | CoverEntityFeature.STOP
+        | CoverEntityFeature.SET_POSITION
+    )
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "cover")
+        self._channel = int(device.options.get(OPT_CHANNEL, 0))
+        self._attr_current_cover_position: int | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            position = last.attributes.get("current_position")
+            self._attr_current_cover_position = position if isinstance(position, int) else None
+
+    @property
+    def is_closed(self) -> bool | None:
+        position = self._attr_current_cover_position
+        return None if position is None else position == 0
+
+    def _drive(self, open_percent: int) -> None:
+        self._device.send(vld.encode_blind_position(self._channel, 100 - open_percent), key="move")
+
+    async def async_open_cover(self, **kwargs: Any) -> None:
+        self._drive(100)
+
+    async def async_close_cover(self, **kwargs: Any) -> None:
+        self._drive(0)
+
+    async def async_set_cover_position(self, **kwargs: Any) -> None:
+        self._drive(int(kwargs[ATTR_POSITION]))
+
+    async def async_stop_cover(self, **kwargs: Any) -> None:
+        self._device.send(vld.encode_blind_stop(self._channel), key="move")
+
+    async def async_calibrate(self) -> None:
+        """The blind measures its position itself; nothing to calibrate."""
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        closed = vld.blind_status(values, self._channel)
+        if closed is None or 100 - closed == self._attr_current_cover_position:
+            return False
+        self._attr_current_cover_position = 100 - closed
+        return True

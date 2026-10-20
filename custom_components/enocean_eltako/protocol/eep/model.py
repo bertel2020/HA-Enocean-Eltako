@@ -139,7 +139,13 @@ def unit_of(profile: Profile, data: bytes, shortcut: str, status: int = 0) -> st
 def encode(profile: Profile, values: dict[str, Any], case_index: int = 0) -> bytes:
     """Build data bytes from field values (scaled values are converted back to raw)."""
     case = profile.cases[case_index]
-    data = bytearray(profile.data_length)
+    length = profile.data_length
+    if profile.rorg == 0xD2:  # VLD: each command has its own length
+        bits = [f.offset + f.size for f in case.fields] + [
+            c.offset + c.size for c in case.conditions if not c.status
+        ]
+        length = max((b + 7) // 8 for b in bits) if bits else 1
+    data = bytearray(length)
     for cond in case.conditions:
         if not cond.status:
             set_bits(data, cond.offset, cond.size, cond.value)

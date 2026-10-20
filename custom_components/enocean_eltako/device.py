@@ -24,7 +24,8 @@ from .catalog import (
 from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep.codecs import decode_telegram
-from .protocol.ids import format_id, parse_id
+from .protocol.eep.ute import decode_ute_request, encode_ute_response
+from .protocol.ids import BROADCAST, format_id, parse_id
 from .protocol.send_queue import Priority, SendResult
 from .protocol.telegram import RadioTelegram, Rorg
 
@@ -35,6 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 
 Listener = Callable[[dict[str, Any]], None]
 LATENCY_SAMPLES = 10  # E11: confirmation times kept per device
+UTE_WINDOW = 60.0  # seconds a teach-in button waits for the actuator's UTE query
 
 
 @dataclass
@@ -84,6 +86,8 @@ class EnOceanDevice:
         self._stat_listeners: list[Callable[[], None]] = []
         self.cover_entity: Any = None  # set by the cover entity (calibrate button, accuracy)
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
+        self._ute_profile: str | None = None  # VLD: profile whose teach-in is armed ...
+        self._ute_until = 0.0  # ... until this time.monotonic()
 
     @property
     def unique_prefix(self) -> str:
@@ -160,6 +164,9 @@ class EnOceanDevice:
     @callback
     def _on_received(self, received: ReceivedTelegram) -> None:
         self._record(received)
+        if received.telegram.rorg == Rorg.UTE:
+            self._answer_ute(received.telegram)
+            return
         values = None
         for ref in (self.model.receive, *self.model.receive_extra):
             if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
@@ -183,6 +190,8 @@ class EnOceanDevice:
         key: str | None = None,
         confirm: bool = True,
         status: int = 0,
+        destination: int = BROADCAST,
+        rorg: int | None = None,
     ) -> None:
         """Queue a telegram from the sender ID of a profile without waiting for the actuator.
 
@@ -194,8 +203,8 @@ class EnOceanDevice:
             raise RuntimeError(f"{self.subentry.title} has no sender")
         profile = profile or next(iter(self.senders))
         sender_id = self.senders[profile]
-        rorg = self.model.sender_profile(profile).rorg
-        telegram = RadioTelegram(rorg, data, sender_id, status)
+        rorg = rorg or self.model.sender_profile(profile).rorg
+        telegram = RadioTelegram(rorg, data, sender_id, status, destination)
         expect = (lambda t: t.sender == self.device_id) if confirm else None
         runtime = self.entry.runtime_data
         queue_key = (self.unique_prefix, key) if key else None
@@ -238,7 +247,36 @@ class EnOceanDevice:
     @callback
     def teach_in(self, profile: str) -> None:
         sender = self.model.sender_profile(profile)
+        if not sender.teach_in:  # UTE: answer the actuator's query within the window
+            self._ute_profile = profile
+            self._ute_until = time.monotonic() + UTE_WINDOW
+            _LOGGER.info(
+                "%s: waiting %d s for the actuator's teach-in query",
+                self.subentry.title,
+                UTE_WINDOW,
+            )
+            return
         if sender.rorg == Rorg.RPS:
             self.press(profile, sender.teach_in, confirm=False)
         else:
             self.send(sender.teach_in, profile=profile, priority=Priority.BACKGROUND, confirm=False)
+
+    @callback
+    def _answer_ute(self, telegram: RadioTelegram) -> None:
+        """VLD actuator in learn mode: accept its UTE query, addressed to it, while armed."""
+        request = decode_ute_request(telegram.data)
+        if request is None or not request.response_expected:
+            return
+        if self._ute_profile is None or time.monotonic() > self._ute_until:
+            _LOGGER.debug("%s: UTE query ignored (teach-in not armed)", self.subentry.title)
+            return
+        profile, self._ute_profile = self._ute_profile, None
+        self.send(
+            encode_ute_response(request),
+            profile=profile,
+            priority=Priority.SAFETY,
+            confirm=False,
+            destination=telegram.sender,
+            rorg=Rorg.UTE,
+        )
+        _LOGGER.info("%s: UTE %s answered", self.subentry.title, request.eep)

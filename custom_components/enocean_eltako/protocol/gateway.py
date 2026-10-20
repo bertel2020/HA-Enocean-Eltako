@@ -92,6 +92,7 @@ class Gateway:
         self.telegrams_received = 0
         self.polls_dropped = 0
         self.last_telegram: float | None = None  # time.time() of the last radio telegram
+        self._outage_logged = False  # one warning per outage, then debug until it is back
 
     @property
     def connected(self) -> bool:
@@ -104,7 +105,11 @@ class Gateway:
             reader, self._writer = await self._opener(self.connection)
         self._disconnected.clear()
         self._reader_task = asyncio.create_task(self._read_loop(reader))
-        _LOGGER.debug("Connected to %s", self.connection)
+        if self._outage_logged:
+            _LOGGER.info("Connection to %s restored", self.connection)
+            self._outage_logged = False
+        else:
+            _LOGGER.debug("Connected to %s", self.connection)
         if self._on_connection_change:
             self._on_connection_change(True)
 
@@ -118,7 +123,7 @@ class Gateway:
                 except (OSError, TimeoutError) as err:
                     delay = RECONNECT_DELAYS[min(attempt, len(RECONNECT_DELAYS) - 1)]
                     attempt += 1
-                    _LOGGER.warning(
+                    self._log_outage(
                         "Cannot connect to %s (%s), retrying in %s s", self.connection, err, delay
                     )
                     await asyncio.sleep(delay)
@@ -190,11 +195,19 @@ class Gateway:
                 for item in self._codec.decoder.feed(chunk):
                     self._handle(item)
         except OSError as err:
-            _LOGGER.warning("Connection to %s lost: %s", self.connection, err)
+            self._log_outage("Connection to %s lost: %s", self.connection, err)
         if not self._disconnected.is_set():
             # stream ended by the other side (EOF or error), not by _disconnect()
-            _LOGGER.warning("Connection to %s closed", self.connection)
+            self._log_outage("Connection to %s closed", self.connection)
             await self._disconnect()
+
+    def _log_outage(self, message: str, *args: object) -> None:
+        """Warn once per outage; repeats (reconnect attempts, flapping port) only at debug."""
+        if self._outage_logged:
+            _LOGGER.debug(message, *args)
+            return
+        _LOGGER.warning(message, *args)
+        self._outage_logged = True
 
     def _handle(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> None:
         if (

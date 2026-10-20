@@ -68,7 +68,8 @@ Add a device under the gateway with **Add device** in one of five ways:
   sensor. It sends on every change of the chosen entity and repeats every 15 min (adjustable);
   if the entity is unavailable, a contact can send the safe value "open". Teach it in with the
   button on the device page; the device page also shows the value sent last.
-- **By EEP** (expert): standard sensor profiles become a device with one sensor per value.
+- **By EEP** (expert): any of the 318 standard profiles of the EnOcean Alliance becomes a
+  device with one sensor per value; type a code such as `A5-04-02` to find it.
 
 Even simpler: every sender the gateway hears that is not set up yet shows up as a
 **discovered** card on the integration page. **Add** suggests the kind and fills in the ID;
@@ -97,6 +98,8 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Meters | Gas meter (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor |
 | Meters | Water meter (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor |
 | Lighting and switching | Permundo PSC132 / PSC234 plug | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std` | switch, light, sensor |
+| Lighting and switching | Switch or dimmer actuator (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch |
+| Shutters and blinds | Shutter actuator (VLD D2-05) | EnOcean | `D2-05-00:std` | `vld: D2-05-00:std` | cover |
 | Buttons and contacts | Rocker switch (NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event |
 | Buttons and contacts | Window handle (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor |
 | Buttons and contacts | Door / window contact (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor |
@@ -151,6 +154,42 @@ Rockers report short, long and double presses per button. Ready-made automations
 - [Double press activates a scene](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/double_press_scene.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fdouble_press_scene.yaml)
 - [Calibrate covers on a schedule](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fcalibrate_covers.yaml)
 
+## Actions
+
+- `enocean_eltako.capture`: records the telegrams of all gateways, or of one, for a number of
+  seconds (default 60) into `enocean_eltako/capture-<time>.jsonl` in the configuration
+  directory, for bug reports.
+- `enocean_eltako.calibrate_cover`: drives Eltako covers to the nearer end position and
+  back, which makes their position exact again (I6).
+
+## Known limitations
+
+- **Bus memory:** reading or writing the FAM14 bus memory (import, link view, actuator
+  configuration) is not built yet; it needs captures of the PCT14 ↔ FAM14 exchange.
+- **One program per port:** a serial gateway can only be used by one integration at a time.
+  Remove it from the old `eltako` integration before adding it here.
+- **VLD teach-in:** D2-01 and D2-05 actuators learn by UTE, which needs an ESP3 gateway
+  (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot answer.
+- **Generic profiles:** devices added by EEP decode every standard profile, but profiles
+  outside the catalog are not checked against hardware; some official test containers
+  disagree (see [docs/quality_scale.md](docs/quality_scale.md)).
+- **Cover positions** of Eltako actuators are calculated from run times, the actuator
+  never reports where it stopped.
+
+## Troubleshooting
+
+1. Open the **EnOcean** panel: is the gateway connected, and do telegrams arrive when you
+   press a button? Unknown senders show up there with **Add**.
+2. Check **Settings → Repairs** for disconnected gateways, silent devices, a changed base ID
+   or slow bus confirmations.
+3. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
+   the panel's export or the action `enocean_eltako.capture`. Debug logging:
+   ```yaml
+   logger:
+     logs:
+       custom_components.enocean_eltako: debug
+   ```
+
 ## Installation
 
 ### Via HACS (recommended)
@@ -170,6 +209,13 @@ in HACS under **Integrations → Custom repositories** as category **Integration
 
 Copy the `custom_components/enocean_eltako` directory to
 `/config/custom_components/enocean_eltako` and restart Home Assistant.
+
+### Removal
+
+In **Settings → Devices & services → EnOcean Eltako**, delete every gateway entry (its
+devices go with it, sender IDs are released). Then remove the integration in HACS, or delete
+`/config/custom_components/enocean_eltako`, and restart Home Assistant. Actuators keep the
+sender IDs they learned; teach them out on the actuator if a new controller should use them.
 
 ## Development
 

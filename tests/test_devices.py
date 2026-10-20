@@ -961,8 +961,13 @@ async def test_add_device_menus(hass: HomeAssistant, gateway) -> None:
     # only one kind in the category: straight to the address
     result = await _init_flow(hass, entry)
     result = await configure(result["flow_id"], {"next_step_id": "enocean"})
-    assert result["menu_options"] == ["enocean_lighting", "enocean_buttons", "user"]
-    result = await configure(result["flow_id"], {"next_step_id": "enocean_lighting"})
+    assert result["menu_options"] == [
+        "enocean_lighting",
+        "enocean_covers",
+        "enocean_buttons",
+        "user",
+    ]
+    result = await configure(result["flow_id"], {"next_step_id": "enocean_covers"})
     assert result["step_id"] == "address"
 
 
@@ -1024,6 +1029,29 @@ async def test_add_generic_device_by_eep(hass: HomeAssistant, gateway) -> None:
     assert _entity(hass, "sensor", f"{prefix}_eep_lrnb") is None
 
 
+async def test_any_standard_profile_by_typed_code(hass: HomeAssistant, gateway) -> None:
+    """Phase 5: every standard profile can be added; a typed code is accepted."""
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "eep"})
+    options = {o["value"] for o in result["data_schema"].schema["eep"].config["options"]}
+    assert {"std_a5_04_02", "std_a5_02_05", "std_d2_14_41", "eltako_m5_38_08"} <= options
+    result = await configure(result["flow_id"], {"eep": "zz-99"})
+    assert result["errors"] == {"eep": "unknown_eep"}
+    result = await configure(result["flow_id"], {"eep": "a5 02 05"})
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    result = await configure(result["flow_id"], {"name": "Fühler", "device_id": "05-11-22-44"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["eep"] == "A5-02-05:std"
+    await hass.async_block_till_done()
+
+    _push(server, 0x07, bytes.fromhex("00007608"), 0x05112244)
+    await _settle(hass)
+    temperature = hass.states.get(_entity(hass, "sensor", f"{BASE}_05-11-22-44_1_eep_tmp"))
+    assert float(temperature.state) == pytest.approx(21.49, abs=0.01)
+
+
 async def test_eltako_eep_opens_the_catalog_entry(hass: HomeAssistant, gateway) -> None:
     entry, _server = gateway
     configure = hass.config_entries.subentries.async_configure
@@ -1069,7 +1097,7 @@ async def test_back_entries_return_to_the_previous_menu(hass: HomeAssistant, gat
     assert result["menu_options"] == ["learn", "eltako", "enocean", "virtual", "eep"]
     # a single kind goes straight to the address; back leads to the categories
     result = await configure(flow_id, {"next_step_id": "enocean"})
-    result = await configure(flow_id, {"next_step_id": "enocean_lighting"})
+    result = await configure(flow_id, {"next_step_id": "enocean_covers"})
     assert result["menu_options"] == ["learn", "device", "enocean"]
     # by EEP: back to the profile choice
     result = await configure(flow_id, {"next_step_id": "enocean"})
@@ -1318,8 +1346,7 @@ async def test_device_form_shows_teach_in_hint(hass: HomeAssistant, gateway) -> 
     entry, _server = gateway
     configure = hass.config_entries.subentries.async_configure
     result = await _init_flow(hass, entry)
-    result = await configure(result["flow_id"], {"next_step_id": "enocean"})
-    result = await configure(result["flow_id"], {"next_step_id": "enocean_lighting"})
+    result = await _choose_model(hass, result["flow_id"], "psc")
     result = await configure(result["flow_id"], {"next_step_id": "device"})
     assert "PSC132" in result["description_placeholders"]["hint"]
     result = await _init_flow(hass, entry)

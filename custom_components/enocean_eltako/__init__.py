@@ -25,6 +25,7 @@ from .catalog import (
     CENTRAL,
     GENERIC_EEP,
     GROUP_VIRTUAL,
+    OPT_CHANNEL,
     OPT_FIELDS,
     OPT_PLATFORM,
     OPT_STATUS_REQUEST,
@@ -57,6 +58,7 @@ from .hub import BusGroupRuntime, Hub, async_get_hub
 from .panel import async_register_panel
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
+from .protocol.eep import vld
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS, Protocol
@@ -322,8 +324,8 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
     stale: list[tuple[str, str]] = []
     for device in entry.runtime_data.devices.values():
         prefix = f"{device.unique_prefix}_1"
-        if device.model.kind in ("switch", "psc"):
-            default = Platform.LIGHT if device.model.kind == "switch" else Platform.SWITCH
+        if device.model.kind in ("switch", "psc", "vld_switch"):
+            default = Platform.SWITCH if device.model.kind == "psc" else Platform.LIGHT
             chosen = device.options.get(OPT_PLATFORM, default)
             other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
             stale.append((other, f"{prefix}_{'light' if other == Platform.LIGHT else 'switch'}"))
@@ -341,6 +343,10 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
             registry.async_remove(entity_id)
 
 
+# VLD actuators answer a status query with their state (D2-01 command 3, D2-05 command 3)
+VLD_QUERIES = {"vld_switch": vld.encode_switch_query, "vld_cover": vld.encode_blind_query}
+
+
 def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """E2: ask actuators that support it for their state, at background priority.
 
@@ -350,14 +356,17 @@ def _async_request_states(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) 
     @callback
     def request(_event: Any = None) -> None:
         for device in entry.runtime_data.devices.values():
-            if device.options.get(OPT_STATUS_REQUEST) and device.has_sender(CENTRAL.id):
-                with contextlib.suppress(HomeAssistantError):
-                    device.send(
-                        STATUS_REQUEST,
-                        profile=CENTRAL.id,
-                        priority=Priority.BACKGROUND,
-                        confirm=False,
-                    )
+            if not device.options.get(OPT_STATUS_REQUEST):
+                continue
+            if device.has_sender(CENTRAL.id):
+                query, profile = STATUS_REQUEST, CENTRAL.id
+            elif device.model.kind in VLD_QUERIES and device.senders:
+                channel = int(device.options.get(OPT_CHANNEL, 0))
+                query, profile = VLD_QUERIES[device.model.kind](channel), None
+            else:
+                continue
+            with contextlib.suppress(HomeAssistantError):
+                device.send(query, profile=profile, priority=Priority.BACKGROUND, confirm=False)
 
     # async_at_started: unsubscribing after HA started is safe (async_listen_once is not)
     entry.async_on_unload(async_at_started(hass, request))
