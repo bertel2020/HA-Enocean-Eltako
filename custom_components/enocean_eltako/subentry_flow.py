@@ -79,6 +79,7 @@ from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
 from .protocol.eep.teach_in import MANUFACTURER_ELTAKO, TeachIn4BS, decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
+from .protocol.models import MODELS
 from .protocol.sender_pool import SenderIdError, SenderPool
 from .protocol.telegram import Rorg
 
@@ -183,7 +184,11 @@ class DeviceForm:
             self.hass, self.hass.config.language, "selector", [DOMAIN]
         )
         prefix = f"component.{DOMAIN}.selector.teach_hint.options."
-        return translations.get(prefix + model.kind) or translations.get(prefix + "default", "")
+        hint = translations.get(prefix + model.kind) or translations.get(prefix + "default", "")
+        if MODELS[self._get_entry().data[CONF_MODEL]].bus and model.group != GROUP_VIRTUAL:
+            # E11: bus actors confirm a taught-in controller only with the FAM14 switch at 2
+            hint = f"{hint} {translations.get(prefix + 'bus', '')}".strip()
+        return hint
 
     async def _form(
         self,

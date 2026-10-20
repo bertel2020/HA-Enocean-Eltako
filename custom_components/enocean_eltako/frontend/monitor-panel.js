@@ -3,11 +3,12 @@
 
 const MAX_ROWS = 1000;
 const HISTORY = 200;
+const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
 
 const TEXT = {
   en: {
-    title: "EnOcean monitor",
+    title: "EnOcean",
     all: "All gateways",
     search: "Filter: ID, device, data",
     dirAll: "Received and sent",
@@ -33,9 +34,22 @@ const TEXT = {
     unknownDevice: "unknown",
     empty: "No telegrams yet. Press a button or switch an actuator.",
     filterHint: "Click an ID to filter by it",
+    connected: "Connected",
+    disconnected: "Disconnected",
+    onDemand: "On demand",
+    notLoaded: "Not loaded",
+    perMinute: "Telegrams/min",
+    lastTelegram: "Last heard",
+    queue: "Queue",
+    unconfirmed: "Unconfirmed",
+    devices: "Devices",
+    freeSenders: "Free sender IDs",
+    ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
+    since: (s) => `for ${s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`}`,
+    cardHint: "Click to show only this gateway's telegrams",
   },
   de: {
-    title: "EnOcean-Monitor",
+    title: "EnOcean",
     all: "Alle Gateways",
     search: "Filter: ID, Gerät, Daten",
     dirAll: "Empfangen und gesendet",
@@ -61,6 +75,19 @@ const TEXT = {
     unknownDevice: "unbekannt",
     empty: "Noch keine Telegramme. Eine Taste drücken oder einen Aktor schalten.",
     filterHint: "Auf eine ID klicken, um danach zu filtern",
+    connected: "Verbunden",
+    disconnected: "Getrennt",
+    onDemand: "Bei Bedarf",
+    notLoaded: "Nicht geladen",
+    perMinute: "Telegramme/min",
+    lastTelegram: "Zuletzt",
+    queue: "Warteschlange",
+    unconfirmed: "Unbestätigt",
+    devices: "Geräte",
+    freeSenders: "Freie Sender-IDs",
+    ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
+    since: (s) => `seit ${s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`}`,
+    cardHint: "Klicken, um nur die Telegramme dieses Gateways zu zeigen",
   },
 };
 
@@ -97,6 +124,25 @@ const STYLE = `
     background: var(--secondary-background-color); color: var(--secondary-text-color); }
   .badge.teach { background: var(--warning-color, #f4b400); color: #000; }
   .dir { font-weight: 600; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;
+    padding: 16px 16px 0; }
+  .card { background: var(--card-background-color); border-radius: 12px; padding: 12px 14px; cursor: pointer;
+    border: 2px solid transparent; box-shadow: var(--ha-card-box-shadow, none); }
+  .card.selected { border-color: var(--primary-color); }
+  .card h3 { margin: 0; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .card .sub { font-size: 12px; color: var(--secondary-text-color); margin: 2px 0 8px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--disabled-text-color, #bdbdbd); }
+  .dot.ok { background: var(--success-color, #43a047); }
+  .dot.bad { background: var(--error-color, #db4437); }
+  .dot.idle { background: var(--warning-color, #ffa600); }
+  .state { font-size: 12px; font-weight: 400; color: var(--secondary-text-color); margin-left: auto; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; }
+  .metrics div { display: flex; justify-content: space-between; gap: 6px; min-width: 0; }
+  .metrics span { color: var(--secondary-text-color); overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .metrics b { font-weight: 500; white-space: nowrap; }
+  .metrics b.warn { color: var(--error-color, #db4437); }
   .empty { padding: 32px 16px; text-align: center; color: var(--secondary-text-color); }
 `;
 
@@ -140,6 +186,8 @@ class EnOceanEltakoMonitor extends HTMLElement {
   }
 
   disconnectedCallback() {
+    clearInterval(this._timer);
+    this._timer = null;
     if (this._unsub) {
       this._unsub.then((unsub) => unsub()).catch(() => {});
       this._unsub = null;
@@ -151,6 +199,7 @@ class EnOceanEltakoMonitor extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
       <div class="header"><ha-menu-button></ha-menu-button><span class="title">${esc(t.title)}</span></div>
+      <div class="cards" id="cards"></div>
       <div class="toolbar">
         <select id="gateway"><option value="">${esc(t.all)}</option></select>
         <input id="text" type="search" placeholder="${esc(t.search)}" title="${esc(t.filterHint)}">
@@ -183,6 +232,14 @@ class EnOceanEltakoMonitor extends HTMLElement {
       this._render();
     });
     $("export").addEventListener("click", () => this._export());
+    $("cards").addEventListener("click", (e) => {
+      const card = e.target.closest(".card");
+      if (!card) return;
+      const value = this._filter.gateway === card.dataset.entry ? "" : card.dataset.entry;
+      $("gateway").value = value;
+      this._set("gateway", value);
+      this._renderCards();
+    });
     $("wrap").addEventListener("click", (e) => {
       const id = e.target.closest(".id");
       if (!id) return;
@@ -198,11 +255,9 @@ class EnOceanEltakoMonitor extends HTMLElement {
       type: "enocean_eltako/telegrams/subscribe",
       history: HISTORY,
     });
-    try {
-      this._gateways = await this._hass.callWS({ type: "enocean_eltako/gateways" });
-    } catch (err) {
-      this._gateways = [];
-    }
+    await this._refreshStatus();
+    clearInterval(this._timer);
+    this._timer = setInterval(() => this._refreshStatus(), STATUS_INTERVAL);
     const select = this.shadowRoot.getElementById("gateway");
     select.length = 1; // keep "all gateways" after a reconnect
     for (const gw of this._gateways) {
@@ -211,6 +266,72 @@ class EnOceanEltakoMonitor extends HTMLElement {
       option.textContent = gw.title;
       select.appendChild(option);
     }
+  }
+
+  async _refreshStatus() {
+    let gateways;
+    try {
+      gateways = await this._hass.callWS({ type: "enocean_eltako/gateways" });
+    } catch (err) {
+      return;
+    }
+    const now = Date.now();
+    this._rates = this._rates || {};
+    for (const gw of gateways) {
+      const previous = this._rates[gw.entry_id];
+      if (previous && gw.telegrams != null && now > previous.at) {
+        gw.rate = Math.max(0, ((gw.telegrams - previous.count) * 60000) / (now - previous.at));
+      } else if (previous) {
+        gw.rate = previous.rate;
+      }
+      if (gw.telegrams != null && (!previous || now - previous.at >= 55000)) {
+        this._rates[gw.entry_id] = { at: now, count: gw.telegrams, rate: gw.rate };
+      } else if (previous) {
+        previous.rate = gw.rate;
+      }
+    }
+    this._gateways = gateways;
+    this._renderCards();
+  }
+
+  _renderCards() {
+    const t = this._t;
+    const cards = this.shadowRoot.getElementById("cards");
+    if (!cards) return;
+    const now = Date.now() / 1000;
+    cards.innerHTML = this._gateways
+      .map((gw) => {
+        let dot = "";
+        let state = t.notLoaded;
+        if (gw.loaded) {
+          if (gw.connected) [dot, state] = ["ok", t.connected];
+          else if (gw.on_demand) [dot, state] = ["idle", t.onDemand];
+          else {
+            dot = "bad";
+            state = t.disconnected;
+            if (gw.disconnected_since) state += ` ${t.since(Math.round(now - gw.disconnected_since))}`;
+          }
+        }
+        const last = gw.last_telegram != null ? t.ago(Math.max(0, Math.round(now - gw.last_telegram))) : "–";
+        const rate = gw.rate != null ? gw.rate.toFixed(gw.rate < 10 ? 1 : 0) : "–";
+        const metric = (label, value, warn) =>
+          `<div><span>${esc(label)}</span><b class="${warn ? "warn" : ""}">${esc(value)}</b></div>`;
+        const metrics = gw.loaded
+          ? metric(t.perMinute, rate) +
+            metric(t.lastTelegram, last) +
+            metric(t.queue, gw.queue ?? "–", gw.queue > 5) +
+            metric(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0) +
+            metric(t.devices, gw.devices ?? "–") +
+            metric(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)
+          : "";
+        const selected = this._filter.gateway === gw.entry_id ? " selected" : "";
+        return `<div class="card${selected}" data-entry="${esc(gw.entry_id)}" title="${esc(t.cardHint)}">
+          <h3><span class="dot ${dot}"></span>${esc(gw.title)}<span class="state">${esc(state)}</span></h3>
+          <div class="sub">${esc([gw.model, gw.base_id, gw.connection].filter(Boolean).join(" · "))}</div>
+          <div class="metrics">${metrics}</div>
+        </div>`;
+      })
+      .join("");
   }
 
   _add(row) {

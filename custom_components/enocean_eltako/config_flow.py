@@ -32,6 +32,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
+from homeassistant.helpers.translation import async_get_translations
 
 from .catalog import CATALOG, GENERIC_EEPS, DeviceModel, generic_model
 from .const import (
@@ -62,6 +63,7 @@ from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
+from .protocol.sender_pool import SenderState
 from .protocol.telegram import Rorg
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .subentry_flow import SUBENTRY_FLOWS, DeviceForm, candidates, receives
@@ -503,10 +505,69 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
-    """Runtime options: send spacing, discovery; bus gateways always vs on demand; ESP3
-    repeater."""
+    """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater)
+    and the sender ID page (E3)."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["settings", "senders"])
+
+    async def async_step_senders(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Who uses which sender ID; blocked IDs can be freed once the teach-out is done."""
+        entry = self.config_entry
+        runtime = getattr(entry, "runtime_data", None)
+        if runtime is None:
+            return self.async_abort(reason="gateway_not_loaded")
+        stores = [runtime.senders] + ([runtime.bus.senders] if runtime.bus is not None else [])
+        if user_input is not None:
+            freed = {parse_id(text) for text in user_input.get("free", [])}
+            for store in stores:
+                for sender in freed & {s for s, _a in store.pool.allocations()}:
+                    store.pool.confirm_teach_out(sender)
+                await store.async_save()
+            return self.async_abort(reason="senders_freed" if freed else "senders_unchanged")
+        translations = await async_get_translations(
+            self.hass, self.hass.config.language, "selector", [DOMAIN]
+        )
+        prefix = f"component.{DOMAIN}.selector.sender_state.options."
+        titles = {
+            s.unique_id: s.title
+            for e in self.hass.config_entries.async_entries(DOMAIN, include_ignore=False)
+            for s in e.subentries.values()
+        }
+        rows: list[str] = []
+        blocked: list[str] = []
+        free = 0
+        for store in stores:
+            pool = store.pool
+            free += pool.free_count()
+            for sender, allocation in pool.allocations():
+                _kind, _sep, rest = allocation.owner.partition(":")
+                device, _sep, profile = rest.rpartition(":")
+                state = translations.get(prefix + allocation.state.value, allocation.state.value)
+                name = titles.get(device, device or allocation.owner)
+                rows.append(f"| {format_id(sender)} | {name} | {profile or '-'} | {state} |")
+                if allocation.state is SenderState.BLOCKED:
+                    blocked.append(format_id(sender))
+        schema: dict[Any, Any] = {}
+        if blocked:
+            schema[vol.Optional("free", default=[])] = SelectSelector(
+                SelectSelectorConfig(options=blocked, multiple=True, mode=SelectSelectorMode.LIST)
+            )
+        return self.async_show_form(
+            step_id="senders",
+            data_schema=vol.Schema(schema),
+            description_placeholders={
+                "free": str(free),
+                "size": str(sum(store.pool.size for store in stores)),
+                "rows": "\n".join(rows) or "| - | - | - | - |",
+            },
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(
                 data={**user_input, CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY])}
@@ -536,7 +597,7 @@ class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
                 )
             )
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema(schema), self.config_entry.options
             ),

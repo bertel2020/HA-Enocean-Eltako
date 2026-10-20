@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigSubentry
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 Listener = Callable[[dict[str, Any]], None]
+LATENCY_SAMPLES = 10  # E11: confirmation times kept per device
 
 
 @dataclass
@@ -48,6 +50,8 @@ class RadioStats:
     telegrams: int = 0
     commands: int = 0
     confirmed: int = 0
+    # E11: seconds from command to the actuator's answer (queue wait and retries included)
+    latencies: deque[float] = field(default_factory=lambda: deque(maxlen=LATENCY_SAMPLES))
 
     @property
     def success_rate(self) -> float | None:
@@ -195,13 +199,14 @@ class EnOceanDevice:
         expect = (lambda t: t.sender == self.device_id) if confirm else None
         runtime = self.entry.runtime_data
         queue_key = (self.unique_prefix, key) if key else None
+        started = time.monotonic()
         if runtime.bus is not None and sender_id in runtime.bus.senders.pool:
             task = self.entry.async_create_task(
                 self.hass,
                 runtime.bus.group.submit(telegram, priority, key=queue_key, expect=expect),
                 f"{DOMAIN} send {self.subentry.title}",
             )
-            task.add_done_callback(lambda t: self._log_result(t.result()))
+            task.add_done_callback(lambda t: self._log_result(t.result(), started))
             if confirm:
                 self.stats.commands += 1
             return
@@ -212,7 +217,7 @@ class EnOceanDevice:
                 translation_placeholders={"gateway": self.entry.title},
             )
         future = runtime.queue.submit(telegram, priority, key=queue_key, expect=expect)
-        future.add_done_callback(lambda f: self._log_result(f.result()))
+        future.add_done_callback(lambda f: self._log_result(f.result(), started))
         if confirm:
             self.stats.commands += 1
 
@@ -222,9 +227,10 @@ class EnOceanDevice:
         self.send(button, profile=profile, status=ROCKER_STATUS_PRESSED, confirm=confirm)
         self.send(bytes(1), profile=profile, status=ROCKER_STATUS_RELEASED, confirm=False)
 
-    def _log_result(self, result: SendResult) -> None:
+    def _log_result(self, result: SendResult, started: float) -> None:
         if result == SendResult.CONFIRMED:
             self.stats.confirmed += 1
+            self.stats.latencies.append(time.monotonic() - started)
             self._notify_stats()
         elif result in (SendResult.UNCONFIRMED, SendResult.FAILED):
             _LOGGER.warning("%s: command %s", self.subentry.title, result)

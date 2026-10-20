@@ -220,6 +220,10 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["menu_options"] == ["settings", "senders"]
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert set(result["data_schema"].schema) == {"message_delay", "discovery", "mode"}
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"message_delay": 25.0, "discovery": False, "mode": "on_demand"}
@@ -232,6 +236,9 @@ async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> No
     entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert set(result["data_schema"].schema) == {"message_delay", "discovery"}
 
 

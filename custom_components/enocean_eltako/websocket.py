@@ -11,12 +11,14 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN
+from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .hub import async_get_hub
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
+from .protocol.models import MODELS
 from .protocol.monitor import MonitorEntry
 from .protocol.telegram import Rorg
 
@@ -94,12 +96,33 @@ def ws_subscribe_telegrams(
 def ws_gateways(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The gateway entries, for the panel's filter."""
-    connection.send_result(
-        msg["id"],
-        [
-            {"entry_id": e.entry_id, "title": e.title, "loaded": e.entry_id in loaded}
-            for loaded in [{x.entry_id for x in hass.config_entries.async_loaded_entries(DOMAIN)}]
-            for e in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
-        ],
-    )
+    """The gateway entries with their state: the panel's overview and filter."""
+    entries = hass.config_entries.async_entries(DOMAIN, include_ignore=False)
+    connection.send_result(msg["id"], [gateway_status(e) for e in entries])
+
+
+def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
+    model = MODELS.get(entry.data.get(CONF_MODEL, ""))
+    status: dict[str, Any] = {
+        "entry_id": entry.entry_id,
+        "title": entry.title,
+        "model": model.name if model else None,
+        "base_id": entry.data.get(CONF_BASE_ID),
+        "loaded": entry.state is ConfigEntryState.LOADED,
+    }
+    runtime = getattr(entry, "runtime_data", None)
+    if status["loaded"] and runtime is not None:
+        gateway = runtime.gateway
+        status |= {
+            "connected": gateway.connected,
+            "on_demand": runtime.on_demand,
+            "connection": str(gateway.connection),
+            "telegrams": gateway.telegrams_received,
+            "last_telegram": gateway.last_telegram,
+            "queue": len(runtime.queue),
+            "unconfirmed": runtime.queue.stats.unconfirmed + runtime.queue.stats.failed,
+            "devices": len(runtime.devices),
+            "free_senders": runtime.senders.pool.free_count(),
+            "disconnected_since": runtime.disconnected_since,
+        }
+    return status

@@ -269,13 +269,20 @@
         "virtual_contact": "Anlernen: Aktor in den Lernmodus für einen Fensterkontakt bringen (FSB14: Funktion 20/40, Heizungsaktor: Fensterkontakt), dann „Einlernen Fensterkontakt“ drücken.",
         "virtual_temperature": "Anlernen: Aktor in den Lernmodus für einen Temperaturfühler bringen, dann „Einlernen Temperatur“ drücken.",
         "virtual_motion": "Anlernen: Aktor in den Lernmodus für einen Bewegungsmelder bringen, dann „Einlernen Bewegung“ drücken.",
-        "virtual_rocker": "Anlernen: Aktor in den Lernmodus bringen, dann auf dieser Geräteseite die Taste drücken, die er lernen soll."
+        "virtual_rocker": "Anlernen: Aktor in den Lernmodus bringen, dann auf dieser Geräteseite die Taste drücken, die er lernen soll.",
+        "bus": "Am Eltako-Bus: Damit der Aktor eine Bestätigung sendet, muss der obere Drehschalter des FAM14 beim Anlernen auf Position 2 stehen."
       }
     },
     "when_unavailable": {
       "options": {
         "skip": "Nichts senden",
         "safe": "Sicheren Wert senden"
+      }
+    },
+    "sender_state": {
+      "options": {
+        "assigned": "zugewiesen",
+        "blocked": "gesperrt"
       }
     }
   },
@@ -317,6 +324,17 @@
     "step": {
       "init": {
         "title": "Gateway-Optionen",
+        "menu_options": {
+          "settings": "Einstellungen",
+          "senders": "Sender-IDs"
+        },
+        "menu_option_descriptions": {
+          "settings": "Pause zwischen Telegrammen, Discovery, Verbindung, Repeater.",
+          "senders": "Welche Sender-ID zu welchem Gerät gehört; gesperrte IDs freigeben."
+        }
+      },
+      "settings": {
+        "title": "Einstellungen",
         "data": {
           "message_delay": "Pause zwischen Telegrammen",
           "mode": "Verbindung",
@@ -329,7 +347,22 @@
           "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt.",
           "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten."
         }
+      },
+      "senders": {
+        "title": "Sender-IDs",
+        "description": "{free} von {size} Sender-IDs sind frei.\n\n| Sender-ID | Gerät | Profil | Zustand |\n|---|---|---|---|\n{rows}\n\nEine **gesperrte** ID gehörte zu einem entfernten Gerät. Sie bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist, damit kein neues Gerät einen Aktor schaltet, der sie noch kennt. Ist das Ablernen erledigt, hier auswählen und freigeben.",
+        "data": {
+          "free": "Freigeben"
+        },
+        "data_description": {
+          "free": "Nur auswählen, wenn die ID in keinem Aktor mehr eingelernt ist."
+        }
       }
+    },
+    "abort": {
+      "senders_freed": "Die gewählten Sender-IDs sind wieder frei.",
+      "senders_unchanged": "Nichts geändert.",
+      "gateway_not_loaded": "Das Gateway ist nicht geladen."
     }
   },
   "config_subentries": {
@@ -857,6 +890,14 @@
     "gateway_disconnected": {
       "title": "{name} ist getrennt",
       "description": "Die Verbindung zu {name} ({connection}) ist seit mehr als 5 Minuten unterbrochen; Home Assistant versucht es weiter. USB-Kabel bzw. den ser2net-Dienst und das Netzwerk prüfen."
+    },
+    "base_id_changed": {
+      "title": "{name} meldet eine andere Base-ID",
+      "description": "Das Gateway meldet die Base-ID **{reported}**, eingerichtet ist **{configured}**. Wurde das Gateway oder sein Funkmodul getauscht? Die Aktoren kennen die alten Sender-IDs, und das neue Gateway kann nicht von ihnen senden: Befehle aus Home Assistant kommen nicht an.\n\nEntweder das ursprüngliche Gateway wieder anschließen oder dieses Gateway neu einrichten und die Aktoren mit den neuen Sender-IDs neu anlernen."
+    },
+    "bus_slow_confirmations": {
+      "title": "Bus-Aktoren an {name} bestätigen langsam",
+      "description": "Die Aktoren an diesem Gateway bestätigen Befehle im Mittel erst nach **{seconds} s**. Laut Eltako gibt der FAM14 Bestätigungen nur in **Betriebsart 5** sofort weiter, mit einer per PCT14 erstellten Geräteliste. Betriebsart am FAM14 prüfen (siehe Anleitung) und die Geräteliste mit dem PCT14 anlegen."
     }
   },
   "device_automation": {

@@ -106,15 +106,34 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
-## Telegram monitor
+## EnOcean panel
 
-The **EnOcean** sidebar panel (admins only) lists every received and sent telegram live:
-time, gateway, direction, sender ID with the device name, telegram type, data, status,
-signal strength and the decoded values. Sent telegrams name the device and sender profile;
-a teach-in telegram of an unknown sender shows its EEP. Filter by gateway, direction or text
-(click an ID to filter by it), hide repetitions, show unknown senders only, pause, and export
-the visible telegrams as JSON lines. It shows the last 200 telegrams of the running session
-and keeps up to 1,000.
+The **EnOcean** sidebar panel (admins only) starts with a card per gateway: connected,
+disconnected (and for how long) or on demand, telegrams per minute, last telegram, send
+queue, unconfirmed commands, devices and free sender IDs. Click a card to show only that
+gateway's telegrams.
+
+Below it, the telegram monitor lists every received and sent telegram live: time, gateway,
+direction, sender ID with the device name, telegram type, data, status, signal strength and
+the decoded values. Sent telegrams name the device and sender profile; a teach-in telegram of
+an unknown sender shows its EEP. Filter by gateway, direction or text (click an ID to filter
+by it), hide repetitions, show unknown senders only, pause, and export the visible telegrams
+as JSON lines. It shows the last 200 telegrams of the running session and keeps up to 1,000.
+
+## Gateway options and repairs
+
+**Configure** on a gateway opens **Settings** (pause between telegrams, discovery, bus
+connection, ESP3 repeater) and **Sender IDs**: which of the 128 sender IDs belongs to which
+device and profile, how many are free, and which are blocked. An ID of a removed device stays
+blocked until it is taught out of every actuator; free it there once that is done.
+
+Repairs point out what needs a hand:
+
+- a gateway that stays disconnected, or a device that has gone silent
+- a gateway that reports a different base ID than the one set up (gateway or radio module
+  replaced): the actuators know the old sender IDs, so commands would not arrive
+- bus actuators that confirm commands after more than 3 s on average: the FAM14 passes
+  confirmations on right away only in operating mode 5 with a device list made by PCT14
 
 ## Blueprints
 

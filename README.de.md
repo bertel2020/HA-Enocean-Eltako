@@ -110,16 +110,36 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Taster | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
-## Telegramm-Monitor
+## Panel EnOcean
 
-Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt jedes empfangene und
-gesendete Telegramm live: Zeit, Gateway, Richtung, Sender-ID mit Gerätenamen, Telegrammtyp,
-Daten, Status, Signalstärke und die entschlüsselten Werte. Gesendete Telegramme nennen Gerät
-und Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei.
-Filtern nach Gateway, Richtung oder Text (Klick auf eine ID filtert danach), Wiederholungen
-ausblenden, nur unbekannte Sender zeigen, anhalten und die sichtbaren Telegramme als
-JSON-Zeilen exportieren. Es zeigt die letzten 200 Telegramme der laufenden Sitzung und hält
-bis zu 1.000.
+Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine Karte je
+Gateway: verbunden, getrennt (und seit wann) oder bei Bedarf, Telegramme pro Minute, letztes
+Telegramm, Sendewarteschlange, unbestätigte Befehle, Geräte und freie Sender-IDs. Ein Klick
+auf eine Karte zeigt nur die Telegramme dieses Gateways.
+
+Darunter steht der Telegramm-Monitor mit jedem empfangenen und gesendeten Telegramm live:
+Zeit, Gateway, Richtung, Sender-ID mit Gerätenamen, Telegrammtyp, Daten, Status,
+Signalstärke und die entschlüsselten Werte. Gesendete Telegramme nennen Gerät und
+Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei. Filtern nach
+Gateway, Richtung oder Text (Klick auf eine ID filtert danach), Wiederholungen ausblenden, nur
+unbekannte Sender zeigen, anhalten und die sichtbaren Telegramme als JSON-Zeilen exportieren.
+Es zeigt die letzten 200 Telegramme der laufenden Sitzung und hält bis zu 1.000.
+
+## Gateway-Optionen und Reparaturen
+
+**Konfigurieren** an einem Gateway öffnet **Einstellungen** (Pause zwischen Telegrammen,
+Discovery, Bus-Verbindung, ESP3-Repeater) und **Sender-IDs**: welche der 128 Sender-IDs zu
+welchem Gerät und Profil gehört, wie viele frei sind und welche gesperrt sind. Die ID eines
+entfernten Geräts bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist; danach lässt sie
+sich dort freigeben.
+
+Reparaturen weisen darauf hin, wo etwas zu tun ist:
+
+- ein Gateway bleibt getrennt oder ein Gerät meldet sich nicht mehr
+- ein Gateway meldet eine andere Base-ID als eingerichtet (Gateway oder Funkmodul getauscht):
+  die Aktoren kennen die alten Sender-IDs, Befehle kämen nicht an
+- Bus-Aktoren bestätigen Befehle im Mittel erst nach mehr als 3 s: der FAM14 gibt
+  Bestätigungen nur in Betriebsart 5 mit einer per PCT14 erstellten Geräteliste sofort weiter
 
 ## Blueprints
 

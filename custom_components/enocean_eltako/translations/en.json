@@ -269,13 +269,20 @@
         "virtual_contact": "Teach-in: put the actuator into learn mode for a window contact (FSB14: function 20/40, heating actuator: window contact), then press “Teach in window contact”.",
         "virtual_temperature": "Teach-in: put the actuator into learn mode for a temperature sensor, then press “Teach in temperature”.",
         "virtual_motion": "Teach-in: put the actuator into learn mode for a motion sensor, then press “Teach in motion”.",
-        "virtual_rocker": "Teach-in: put the actuator into learn mode, then press the button on this device page that it should learn."
+        "virtual_rocker": "Teach-in: put the actuator into learn mode, then press the button on this device page that it should learn.",
+        "bus": "On the Eltako bus: for the actuator to send a confirmation, the FAM14's upper rotary switch must be at position 2 while teaching in."
       }
     },
     "when_unavailable": {
       "options": {
         "skip": "Send nothing",
         "safe": "Send the safe value"
+      }
+    },
+    "sender_state": {
+      "options": {
+        "assigned": "assigned",
+        "blocked": "blocked"
       }
     }
   },
@@ -317,6 +324,17 @@
     "step": {
       "init": {
         "title": "Gateway options",
+        "menu_options": {
+          "settings": "Settings",
+          "senders": "Sender IDs"
+        },
+        "menu_option_descriptions": {
+          "settings": "Pause between telegrams, discovery, connection, repeater.",
+          "senders": "Which sender ID belongs to which device; free blocked IDs."
+        }
+      },
+      "settings": {
+        "title": "Settings",
         "data": {
           "message_delay": "Pause between telegrams",
           "mode": "Connection",
@@ -329,7 +347,22 @@
           "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect.",
           "discovery": "Offer unknown senders this gateway receives as discovered devices."
         }
+      },
+      "senders": {
+        "title": "Sender IDs",
+        "description": "{free} of {size} sender IDs are free.\n\n| Sender ID | Device | Profile | State |\n|---|---|---|---|\n{rows}\n\nA **blocked** ID belonged to a removed device. It stays blocked until it is taught out of every actuator, so no new device switches an actuator that still knows it. Once the teach-out is done, select it here and free it.",
+        "data": {
+          "free": "Free"
+        },
+        "data_description": {
+          "free": "Only select an ID that is no longer taught into any actuator."
+        }
       }
+    },
+    "abort": {
+      "senders_freed": "The selected sender IDs are free again.",
+      "senders_unchanged": "Nothing changed.",
+      "gateway_not_loaded": "The gateway is not loaded."
     }
   },
   "config_subentries": {
@@ -857,6 +890,14 @@
     "gateway_disconnected": {
       "title": "{name} is disconnected",
       "description": "The connection to {name} ({connection}) has been down for more than 5 minutes; Home Assistant keeps retrying. Check the USB cable or the ser2net service and the network."
+    },
+    "base_id_changed": {
+      "title": "{name} reports a different base ID",
+      "description": "The gateway reports base ID **{reported}**, but **{configured}** is set up. Was the gateway or its radio module replaced? The actuators know the old sender IDs, and the new gateway cannot send from them: commands from Home Assistant do not arrive.\n\nEither connect the original gateway again, or set this gateway up anew and teach the actuators the new sender IDs."
+    },
+    "bus_slow_confirmations": {
+      "title": "Bus actuators on {name} confirm slowly",
+      "description": "The actuators on this gateway confirm commands after **{seconds} s** on average (median). According to Eltako the FAM14 passes confirmations on right away only in **operating mode 5**, with a device list made by PCT14. Check the operating mode on the FAM14 (see its manual) and create the device list with the PCT14."
     }
   },
   "device_automation": {

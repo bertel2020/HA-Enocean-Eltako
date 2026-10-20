@@ -166,8 +166,15 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     assert (event["dir"], event["device"], event["profile"]) == ("tx", "Licht Diele", "central")
 
     await client.send_json({"id": 2, "type": "enocean_eltako/gateways"})
-    result = (await client.receive_json())["result"]
-    assert result == [{"entry_id": entry.entry_id, "title": "FAM-USB Keller", "loaded": True}]
+    (status,) = (await client.receive_json())["result"]
+    assert status["entry_id"] == entry.entry_id
+    assert (status["title"], status["model"], status["base_id"]) == (
+        "FAM-USB Keller",
+        "Eltako FAM-USB",
+        "FF-B7-44-80",
+    )
+    assert status["loaded"] and status["connected"]
+    assert (status["telegrams"], status["devices"], status["queue"]) == (2, 1, 0)
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 

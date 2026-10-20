@@ -16,6 +16,7 @@ from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
@@ -57,7 +58,7 @@ from .panel import async_register_panel
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
-from .protocol.ids import parse_id
+from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS, Protocol
 from .protocol.send_queue import Priority, SendQueue
 from .protocol.sender_pool import SenderState
@@ -143,6 +144,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
                 listener()
             if connected:
                 _async_apply_repeater(hass, entry)
+                _async_check_base_id(hass, entry)
 
     gateway = Gateway(
         model.protocol,
@@ -206,6 +208,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     entry.async_on_unload(async_setup_discovery(hass, entry))
     if gateway.connected:
         _async_apply_repeater(hass, entry)
+        _async_check_base_id(hass, entry)
+    entry.async_on_unload(
+        lambda: ir.async_delete_issue(hass, DOMAIN, base_id_issue_id(entry.entry_id))
+    )
     entry.runtime_data.health_check = async_setup_health(hass, entry)
     _async_request_states(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -232,6 +238,55 @@ def _async_apply_repeater(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) 
             _LOGGER.warning("%s did not accept repeater level %s", entry.title, level)
 
     entry.async_create_background_task(hass, write(), f"{DOMAIN} {entry.title} repeater")
+
+
+def base_id_issue_id(entry_id: str) -> str:
+    return f"base_id_changed_{entry_id}"
+
+
+@callback
+def _async_check_base_id(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """E3: after every (re)connect, the gateway must still report the configured base ID.
+
+    Otherwise (gateway swapped, TCM replaced) every sender ID is wrong: the actuators know
+    the old IDs and the new gateway refuses to send from them. A repair issue says so.
+    """
+    if not MODELS[entry.data[CONF_MODEL]].reads_base_id:
+        return
+    configured = parse_id(entry.data[CONF_BASE_ID])
+
+    async def check() -> None:
+        try:
+            reported = await entry.runtime_data.gateway.read_base_id()
+        except ConnectionError:
+            return
+        if reported is None:
+            return
+        issue_id = base_id_issue_id(entry.entry_id)
+        if reported == configured:
+            ir.async_delete_issue(hass, DOMAIN, issue_id)
+            return
+        _LOGGER.warning(
+            "%s reports base ID %s instead of %s",
+            entry.title,
+            format_id(reported),
+            format_id(configured),
+        )
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key="base_id_changed",
+            translation_placeholders={
+                "name": entry.title,
+                "configured": format_id(configured),
+                "reported": format_id(reported),
+            },
+        )
+
+    entry.async_create_background_task(hass, check(), f"{DOMAIN} {entry.title} base ID")
 
 
 def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
