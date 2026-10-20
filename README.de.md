@@ -59,7 +59,7 @@ andere EnOcean-Geräte. Ziele:
 
 ## Unterstützte Geräte
 
-Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem von fünf Wegen:
+Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem von sechs Wegen:
 
 - **Gerät anlernen** (empfohlen): eine Taste am Gerät drücken oder den Aktor vor Ort
   schalten; die Geräteart wird aus dem Telegramm vorgeschlagen.
@@ -74,11 +74,49 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
   gesendete Wert.
 - **Per EEP** (Experte): Jedes der 318 Standardprofile der EnOcean Alliance wird zu einem Gerät
   mit einem Sensor je Wert; ein Code wie `A5-04-02` findet es direkt.
+- **Eigene Definition**: Geräte, die du selbst in
+  `/config/enocean_eltako/custom_devices.yaml` beschreibst (siehe unten).
 
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
 erscheint als **entdeckt**-Karte auf der Integrationsseite. **Hinzufügen** schlägt die
 Geräteart vor und trägt die ID ein; **Ignorieren** blendet fremde Sender (z. B. vom
 Nachbarn) dauerhaft aus. In den Optionen des Gateways lässt sich die Discovery abschalten.
+
+**Schaltaktoren ohne Rückmeldung** (z. B. ältere oder reine 230-V-Aktoren): unter
+**Wandtaster** die ID eines im Aktor eingelernten Tasters eintragen und die Tasten für Ein und
+Aus wählen (dieselbe Taste für beides schaltet um). Seine Tastendrücke setzen dann den Zustand in
+Home Assistant, als angenommen markiert, bis der Aktor sich selbst meldet.
+
+### Eigene Gerätedefinitionen
+
+Einen Sensor, den der Katalog nicht kennt, in `/config/enocean_eltako/custom_devices.yaml`
+beschreiben: ein Standard-EEP und welche seiner Felder Sensoren und Binärsensoren werden, mit
+Namen, Geräteklassen und Einheiten. Danach den Gateway-Eintrag neu laden; **Gerät hinzufügen →
+Eigene Definition** listet die Definitionen.
+
+```yaml
+devices:
+  - id: acme_climate
+    name: Acme room sensor
+    manufacturer: Acme
+    eep: A5-04-01
+    interval: 600          # optional: Sekunden zwischen Telegrammen (Stille-Erkennung)
+    sensors:
+      - field: TMP         # Feldkürzel des Profils
+        device_class: temperature
+      - field: HUM
+        name: Humidity     # optional, sonst der Name aus dem EEP
+        device_class: humidity
+        unit: "%"          # optional, sonst die Einheit aus dem EEP
+    binary_sensors:
+      - field: TSN
+        on: 1              # optional, sonst jeder Wert außer 0
+```
+
+Fehler erscheinen als Reparaturhinweis mit jeder einzelnen Stelle; die übrigen Definitionen
+werden trotzdem geladen. Fällt eine Definition weg, laufen ihre Geräte als generische
+EEP-Geräte weiter. Geräte per EEP oder Definition haben einen Diagnosesensor **Rohdaten**
+(standardmäßig deaktiviert) mit den Bytes des letzten Telegramms, um die Felder zu prüfen.
 
 Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 
@@ -176,7 +214,7 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 Die optionale App [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) (Home
 Assistant OS oder Supervised) hält die seriellen Ports der Gateways und bietet jedes Gateway
 auf einem TCP-Port an. So können mehrere Programme ein Gateway gleichzeitig nutzen, z. B. die
-alte Integration `eltako` während des Umstiegs. Die App meldet ihre Gateways an: Sie erscheinen
+alte Integration `eltako` während des Umstiegs. Die App meldet ihre Gateways an: Jedes erscheint
 hier als entdeckt (**EnOcean Proxy**); Modell wählen, und das Gateway ist mit **Nachlieferung
 über EnOcean Proxy** eingerichtet. Nach einem Neustart von Home Assistant liefert die App die
 Telegramme nach, die inzwischen ankamen (nur Funktelegramme, höchstens 15 Minuten alt), mit ihrer
@@ -257,6 +295,9 @@ python -m pytest
 
 `python scripts/fetch_eep.py --generated` und danach
 `python scripts/generate_eep.py` erzeugen die Standardprofile neu.
+`python scripts/build_protocol_package.py` baut die Protokollschicht als eigenständiges Wheel
+(`enocean-eltako-protocol`, ohne Home Assistant nutzbar) nach `dist/`; die CI baut es bei jedem
+Push. Auf PyPI ist es noch nicht veröffentlicht.
 `python scripts/fetch_eep.py` lädt die offiziellen EEP-Definitionen nach
 `.eep_cache/`. Diese Dateien gehören der EnOcean Alliance und werden nie
 eingecheckt (siehe [NOTICE](NOTICE)).

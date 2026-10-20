@@ -8,3 +8,4 @@ htmlcov/
 .DS_Store
 # Official EnOcean Alliance EEP files: never commit (see NOTICE)
 .eep_cache/
+/dist/

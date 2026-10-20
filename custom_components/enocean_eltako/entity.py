@@ -48,7 +48,8 @@ class EnOceanEntity(Entity):
     def _handle_values(self, values: dict[str, Any]) -> None:
         # write state only on a real change (cyclic repetitions are common)
         changed = self._apply(values)
-        if self._assume_until_heard and not self._heard:
+        # I4: a wall switch press is a guess, only the actuator itself confirms the state
+        if self._assume_until_heard and not self._heard and not values.get("assumed"):
             self._heard = True
             changed = True
         if changed:

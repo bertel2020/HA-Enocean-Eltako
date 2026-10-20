@@ -17,7 +17,16 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import OPT_DEVICE_CLASS, OPT_INVERT, OPT_OFF_BUTTON, OPT_ON_BUTTON
+from .catalog import (
+    CUSTOM,
+    OPT_DEVICE_CLASS,
+    OPT_INVERT,
+    OPT_OFF_BUTTON,
+    OPT_ON_BUTTON,
+    custom_definition,
+    custom_key,
+)
+from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayConnectionSensor
@@ -68,6 +77,36 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
 }
 
 
+def _custom_value(shortcut: str, on: int | None) -> Callable[[dict[str, Any]], bool | None]:
+    def value(values: dict[str, Any]) -> bool | None:
+        if (raw := values.get(shortcut)) is None:
+            return None
+        return raw == on if on is not None else bool(raw)
+
+    return value
+
+
+def custom_binary_descriptions(
+    definition: CustomDevice,
+) -> tuple[EnOceanBinarySensorDescription, ...]:
+    """I8: the binary sensors of the user's definition."""
+    return tuple(
+        EnOceanBinarySensorDescription(
+            key=custom_key(b.field.shortcut),
+            name=b.name,
+            device_class=BinarySensorDeviceClass(b.device_class) if b.device_class else None,
+            value_fn=_custom_value(b.field.shortcut, b.on),
+        )
+        for b in definition.binary_sensors
+    )
+
+
+def model_binary_descriptions(device: EnOceanDevice) -> tuple[EnOceanBinarySensorDescription, ...]:
+    if device.model.kind == CUSTOM and (definition := custom_definition(device.options)):
+        return custom_binary_descriptions(definition)
+    return BINARY_SENSORS.get(device.model.kind, ())
+
+
 BUTTONS = ("a1", "a0", "b1", "b0")  # F6-02-01 R1 values 0...3
 
 
@@ -98,7 +137,7 @@ async def async_setup_entry(
     for subentry_id, device in entry.runtime_data.devices.items():
         if Platform.BINARY_SENSOR not in device.model.platforms:
             continue
-        descriptions = BINARY_SENSORS.get(device.model.kind, ())
+        descriptions = model_binary_descriptions(device)
         if device.model.kind == "rocker_contact":
             descriptions = (
                 EnOceanBinarySensorDescription(

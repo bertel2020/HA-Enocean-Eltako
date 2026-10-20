@@ -28,6 +28,7 @@ from homeassistant.helpers.translation import async_get_translations
 from .catalog import (
     CATALOG,
     CONTROLLER,
+    CUSTOM,
     EEP_OPTIONS,
     EEP_TO_MODEL,
     GENERIC_EEP,
@@ -56,9 +57,13 @@ from .catalog import (
     OPT_TIME_OPENS,
     OPT_UNAVAILABLE_WHEN_SILENT,
     OPT_VENT_TIME,
+    OPT_WALL_OFF,
+    OPT_WALL_ON,
+    OPT_WALL_SWITCH,
     OPT_WHEN_UNAVAILABLE,
     DeviceModel,
     categories_of,
+    custom_model,
     eep_choice,
     generic_fields,
     generic_model,
@@ -66,6 +71,7 @@ from .catalog import (
     models_in,
 )
 from .const import (
+    CONF_CUSTOM,
     CONF_DEVICE_ID,
     CONF_EEP,
     CONF_MODEL,
@@ -77,6 +83,7 @@ from .const import (
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
+from .custom_devices import DEFINITIONS
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
@@ -163,6 +170,9 @@ OPTION_KEYS = (
     OPT_SOURCE,
     OPT_WHEN_UNAVAILABLE,
     OPT_CHANNEL,
+    OPT_WALL_SWITCH,
+    OPT_WALL_ON,
+    OPT_WALL_OFF,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -183,6 +193,7 @@ class DeviceForm:
 
     hass: HomeAssistant
     _device_model: DeviceModel | None
+    _custom = ""  # I8: id of the chosen definition
     _get_entry: Any
 
     async def _teach_hint(self, model: DeviceModel) -> str:
@@ -326,6 +337,12 @@ class DeviceForm:
                     options=[*BUTTONS, "released"], translation_key="rocker_button"
                 )
             )
+        if OPT_WALL_SWITCH in model.options:
+            schema[vol.Optional(OPT_WALL_SWITCH)] = TextSelector()
+            for opt, default in ((OPT_WALL_ON, "a0"), (OPT_WALL_OFF, "a1")):
+                schema[vol.Required(opt, default=default)] = SelectSelector(
+                    SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
+                )
         if OPT_CALIBRATION in model.options:
             schema[vol.Required(OPT_CALIBRATION, default="passive")] = SelectSelector(
                 SelectSelectorConfig(
@@ -381,6 +398,13 @@ class DeviceForm:
                 errors[field] = "sender_in_use"
                 continue
             wanted[sender_profile.id] = sender
+        if wall_switch := (user_input.get(OPT_WALL_SWITCH) or "").strip():
+            try:
+                user_input = {**user_input, OPT_WALL_SWITCH: format_id(parse_id(wall_switch))}
+            except ValueError:
+                errors[OPT_WALL_SWITCH] = "invalid_id"
+        else:
+            user_input = {k: v for k, v in user_input.items() if k != OPT_WALL_SWITCH}
         if errors:
             return None
         released = {
@@ -412,8 +436,10 @@ class DeviceForm:
             CONF_MODEL: model.id,
             CONF_DEVICE_ID: format_id(device_id),
         }
-        if model.id == GENERIC_EEP and model.receive is not None:
-            data[CONF_EEP] = str(model.receive)
+        if model.id in (GENERIC_EEP, CUSTOM) and model.receive is not None:
+            data[CONF_EEP] = str(model.receive)  # I8: the fallback when a definition is gone
+        if model.id == CUSTOM:
+            data[CONF_CUSTOM] = self._custom
         if wanted:
             data[CONF_SENDERS] = [
                 {CONF_PROFILE: p, CONF_SENDER_ID: format_id(s)} for p, s in wanted.items()
@@ -450,8 +476,33 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
         self._device_model = None  # also when coming back: learning then suggests the kind
+        custom = [CUSTOM] if DEFINITIONS else []  # I8: the user's own definitions
         return self.async_show_menu(
-            step_id="user", menu_options=["learn", *GROUPS, GROUP_VIRTUAL, "eep"]
+            step_id="user", menu_options=["learn", *GROUPS, GROUP_VIRTUAL, "eep", *custom]
+        )
+
+    async def async_step_custom(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """I8: a device of the user's definitions (custom_devices.yaml)."""
+        if user_input is not None:
+            self._custom = user_input[CONF_CUSTOM]
+            return await self._async_chosen(custom_model(DEFINITIONS[self._custom]), back="custom")
+        return self.async_show_form(
+            step_id="custom",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_CUSTOM): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=d.id, label=f"{d.name} ({d.eep.eep})")
+                                for d in DEFINITIONS.values()
+                            ],
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
         )
 
     async def async_step_virtual(
@@ -677,6 +728,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         subentry = self._get_reconfigure_subentry()
         data = dict(subentry.data)
         self._device_model = model = model_for(data)
+        self._custom = data.get(CONF_CUSTOM, "")
         device_id = parse_id(data[CONF_DEVICE_ID])
         current = {s[CONF_PROFILE]: s[CONF_SENDER_ID] for s in data.get(CONF_SENDERS, ())}
         errors: dict[str, str] = {}

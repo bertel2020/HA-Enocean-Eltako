@@ -16,6 +16,9 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 from .catalog import (
     GROUP_VIRTUAL,
+    OPT_WALL_OFF,
+    OPT_WALL_ON,
+    OPT_WALL_SWITCH,
     ROCKER_STATUS_PRESSED,
     ROCKER_STATUS_RELEASED,
     DeviceModel,
@@ -23,6 +26,7 @@ from .catalog import (
 )
 from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
+from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.ute import decode_ute_request, encode_ute_response
 from .protocol.ids import BROADCAST, format_id, parse_id
@@ -37,6 +41,26 @@ _LOGGER = logging.getLogger(__name__)
 Listener = Callable[[dict[str, Any]], None]
 LATENCY_SAMPLES = 10  # E11: confirmation times kept per device
 UTE_WINDOW = 60.0  # seconds a teach-in button waits for the actuator's UTE query
+
+
+WALL_SWITCH_EEP = EEPRef("F6-02-01", "std")
+ROCKER_BUTTONS = ("a1", "a0", "b1", "b0")  # F6-02-01 R1 values 0...3
+
+
+def wall_switch_state(
+    r1: int, on_button: str, off_button: str, current: bool | None
+) -> bool | None:
+    """On/off a wall switch press stands for; one button for both toggles."""
+    button = ROCKER_BUTTONS[r1] if 0 <= r1 < len(ROCKER_BUTTONS) else None
+    if button is None:
+        return None
+    if on_button == off_button:
+        return not current if button == on_button else None
+    if button == on_button:
+        return True
+    if button == off_button:
+        return False
+    return None
 
 
 @dataclass
@@ -78,7 +102,8 @@ class EnOceanDevice:
             p.id: configured[p.id] for p in self.model.senders if p.id in configured
         }
         self.options: dict[str, Any] = dict(subentry.data)
-        self.last_received: ReceivedTelegram | None = None
+        self.last_received: ReceivedTelegram | None = None  # last one decoded
+        self.last_telegram: RadioTelegram | None = None  # last one heard
         self.stats = RadioStats()
         self.started = time.time()
         self.silent = False  # E5: no telegram for 3x the expected interval
@@ -88,6 +113,7 @@ class EnOceanDevice:
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
         self._ute_profile: str | None = None  # VLD: profile whose teach-in is armed ...
         self._ute_until = 0.0  # ... until this time.monotonic()
+        self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
 
     @property
     def unique_prefix(self) -> str:
@@ -119,7 +145,34 @@ class EnOceanDevice:
 
     def start(self) -> Callable[[], None]:
         dispatcher = self.entry.runtime_data.hub.dispatcher
-        return dispatcher.add_listener(self.device_id, self._on_received)
+        remove = dispatcher.add_listener(self.device_id, self._on_received)
+        if not (wall_switch := self.options.get(OPT_WALL_SWITCH)):
+            return remove
+        remove_wall = dispatcher.add_listener(parse_id(wall_switch), self._on_wall_switch)
+
+        def remove_both() -> None:
+            remove()
+            remove_wall()
+
+        return remove_both
+
+    @callback
+    def _on_wall_switch(self, received: ReceivedTelegram) -> None:
+        """I4: a press on the wall switch teached into the actuator sets the assumed state."""
+        values = decode_telegram(WALL_SWITCH_EEP, received.telegram)
+        if values is None or values.get("EB") != 1 or "R1" not in values:
+            return
+        on = wall_switch_state(
+            values["R1"],
+            self.options.get(OPT_WALL_ON, "a0"),
+            self.options.get(OPT_WALL_OFF, "a1"),
+            self.wall_state,
+        )
+        if on is None:
+            return
+        self.wall_state = on
+        for listener in list(self._listeners):
+            listener({"on": on, "assumed": True})
 
     def add_listener(self, listener: Listener) -> Callable[[], None]:
         self._listeners.append(listener)
@@ -151,6 +204,7 @@ class EnOceanDevice:
     def _record(self, received: ReceivedTelegram) -> None:
         stats, telegram = self.stats, received.telegram
         stats.last_seen = received.timestamp
+        self.last_telegram = telegram
         stats.gateway = received.gateway
         stats.telegrams += 1
         stats.repeat_count = telegram.status & 0x0F
@@ -174,6 +228,8 @@ class EnOceanDevice:
         if values is None:
             return
         self.last_received = received
+        if "on" in values:
+            self.wall_state = bool(values["on"])
         for listener in list(self._listeners):
             listener(values)
 

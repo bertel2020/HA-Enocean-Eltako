@@ -64,17 +64,17 @@ def readable_fields(
     Uses the platforms' entity descriptions, so "MR 15, DT 1, DIV 0" reads "Power 15 W".
     Kinds without sensors (switches, rockers, covers) keep their raw keys, minus LRN bits.
     """
-    from .binary_sensor import BINARY_SENSORS  # noqa: PLC0415 - platforms import this module
-    from .sensor import SENSORS, generic_descriptions  # noqa: PLC0415
+    from .binary_sensor import model_binary_descriptions  # noqa: PLC0415 - platforms import this
+    from .sensor import generic_descriptions, model_descriptions  # noqa: PLC0415
 
     model = device.model
-    sensors = SENSORS.get(model.kind, ())
-    if model.kind == GENERIC_EEP and model.receive is not None:
+    sensors = model_descriptions(device)
+    if model.kind == GENERIC_EEP and model.receive is not None:  # every field, chosen or not
         sensors = generic_descriptions(model.receive.eep)
     fields: list[dict[str, Any]] = []
     for platform, descriptions in (
         ("sensor", sensors),
-        ("binary_sensor", BINARY_SENSORS.get(model.kind, ())),
+        ("binary_sensor", model_binary_descriptions(device)),
     ):
         for description in descriptions:
             if description.entity_registry_enabled_default is False:

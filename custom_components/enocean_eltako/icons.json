@@ -202,6 +202,9 @@
       },
       "sun_west": {
         "default": "mdi:weather-sunny"
+      },
+      "raw_data": {
+        "default": "mdi:hexadecimal"
       }
     }
   },

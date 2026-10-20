@@ -108,7 +108,10 @@
           "vent_time": "Lüftungsschlitz-Zeit",
           "tilt_time": "Wendezeit Lamellen",
           "channel": "Kanal",
-          "sender_vld": "Sender-ID: VLD-Befehle"
+          "sender_vld": "Sender-ID: VLD-Befehle",
+          "wall_switch": "ID des Wandtasters (optional)",
+          "wall_on_button": "Wandtaster: Taste für Ein",
+          "wall_off_button": "Wandtaster: Taste für Aus"
         },
         "data_description": {
           "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -124,7 +127,10 @@
           "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
           "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
           "channel": "Ausgang des Aktors (0 = erster Kanal).",
-          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
+          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
+          "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+          "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+          "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
         }
       },
       "proxy_confirm": {
@@ -137,7 +143,8 @@
     },
     "error": {
       "cannot_connect": "Die Verbindung lässt sich nicht öffnen. Prüfe Schnittstelle, Host und Baudrate.",
-      "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80."
+      "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80.",
+      "invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3."
     },
     "abort": {
       "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet.",
@@ -397,7 +404,8 @@
             "eltako": "Eltako-Gerät",
             "enocean": "EnOcean-Gerät anderer Hersteller",
             "virtual": "Virtueller Sensor (Home Assistant sendet)",
-            "eep": "Per EEP (Experte)"
+            "eep": "Per EEP (Experte)",
+            "custom": "Eigene Definition (custom_devices.yaml)"
           },
           "menu_option_descriptions": {
             "learn": "Lerntaste oder eine Taste am Gerät drücken bzw. den Aktor vor Ort schalten. Die Geräteart wird aus dem Telegramm vorgeschlagen.",
@@ -554,7 +562,10 @@
             "sender_temperature": "Sender-ID: Temperatur (A5-02-05)",
             "sender_motion": "Sender-ID: Bewegung (A5-07-01)",
             "channel": "Kanal",
-            "sender_vld": "Sender-ID: VLD-Befehle"
+            "sender_vld": "Sender-ID: VLD-Befehle",
+            "wall_switch": "ID des Wandtasters (optional)",
+            "wall_on_button": "Wandtaster: Taste für Ein",
+            "wall_off_button": "Wandtaster: Taste für Aus"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -576,7 +587,10 @@
             "sender_temperature": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
             "sender_motion": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
             "channel": "Ausgang des Aktors (0 = erster Kanal).",
-            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
+            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
+            "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+            "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
           }
         },
         "reconfigure": {
@@ -610,7 +624,10 @@
             "source": "Quelle",
             "when_unavailable": "Quelle nicht verfügbar",
             "channel": "Kanal",
-            "sender_vld": "Sender-ID: VLD-Befehle"
+            "sender_vld": "Sender-ID: VLD-Befehle",
+            "wall_switch": "ID des Wandtasters (optional)",
+            "wall_on_button": "Wandtaster: Taste für Ein",
+            "wall_off_button": "Wandtaster: Taste für Aus"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -628,7 +645,10 @@
             "source": "Entität, deren Zustand gesendet wird. Kontakt: an = offen.",
             "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift.",
             "channel": "Ausgang des Aktors (0 = erster Kanal).",
-            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
+            "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
+            "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+            "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
           }
         },
         "address": {
@@ -680,6 +700,13 @@
         "measure_result": {
           "title": "Gemessen",
           "description": "Auf: {time_opens} s, ab: {time_closes} s. Absenden speichert diese Laufzeiten."
+        },
+        "custom": {
+          "title": "Eigene Gerätedefinition",
+          "description": "Geräte aus `/config/enocean_eltako/custom_devices.yaml`.",
+          "data": {
+            "custom": "Definition"
+          }
         }
       },
       "error": {
@@ -838,6 +865,9 @@
       },
       "sender_id_vld": {
         "name": "Sender-ID VLD"
+      },
+      "raw_data": {
+        "name": "Rohdaten"
       }
     },
     "binary_sensor": {
@@ -936,6 +966,10 @@
     "bus_slow_confirmations": {
       "title": "Bus-Aktoren an {name} bestätigen langsam",
       "description": "Die Aktoren an diesem Gateway bestätigen Befehle im Mittel erst nach **{seconds} s**. Laut Eltako gibt der FAM14 Bestätigungen nur in **Betriebsart 5** sofort weiter, mit einer per PCT14 erstellten Geräteliste. Betriebsart am FAM14 prüfen (siehe Anleitung) und die Geräteliste mit dem PCT14 anlegen."
+    },
+    "custom_devices_invalid": {
+      "title": "Fehler in den EnOcean-Gerätedefinitionen",
+      "description": "Einige Definitionen in `{path}` wurden ausgelassen:\n\n{errors}\n\nDatei korrigieren und den Gateway-Eintrag neu laden. Geräte, deren Definition fehlt, laufen als generische EEP-Geräte weiter."
     }
   },
   "device_automation": {

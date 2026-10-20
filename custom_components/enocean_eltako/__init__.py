@@ -53,6 +53,7 @@ from .const import (
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
+from .custom_devices import async_load as async_load_custom_devices
 from .device import EnOceanDevice
 from .discovery import async_abort_configured, async_setup_discovery
 from .health import async_setup_health
@@ -216,6 +217,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         )
         .id
     )
+    await async_load_custom_devices(hass)  # I8: re-read on every (re)load
     _async_setup_devices(hass, entry)
     async_abort_configured(hass, entry)
     entry.async_on_unload(async_setup_discovery(hass, entry))

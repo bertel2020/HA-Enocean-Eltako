@@ -6,6 +6,7 @@ DOMAIN: Final = "enocean_eltako"
 
 CONF_MODEL: Final = "model"
 CONF_EEP: Final = "eep"  # device added by EEP: its "A5-04-02:std" reference
+CONF_CUSTOM: Final = "custom"  # I8: id of the user's device definition
 # Connection dict under "device": HA's usb integration finds the port at ("device", "path")
 # and shows which entry uses it.
 CONF_DEVICE: Final = "device"

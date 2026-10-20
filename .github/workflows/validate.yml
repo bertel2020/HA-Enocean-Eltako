@@ -46,6 +46,31 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
+  package:
+    name: Protocol package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install build
+          python scripts/build_protocol_package.py
+      - name: Import without Home Assistant
+        run: |
+          python -m venv /tmp/pkg
+          /tmp/pkg/bin/pip install dist/*.whl
+          cd /tmp && /tmp/pkg/bin/python -I -c "import enocean_eltako_protocol.gateway, enocean_eltako_protocol.eep.std.profiles"
+      - name: Keep the built package
+        uses: actions/upload-artifact@v4
+        with:
+          name: enocean-eltako-protocol
+          path: dist/
+
   hassfest:
     name: Hassfest
     runs-on: ubuntu-latest

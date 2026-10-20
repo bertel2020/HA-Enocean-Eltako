@@ -78,6 +78,7 @@ class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
         await super().async_added_to_hass()
         if (last := await self.async_get_last_state()) is not None and last.state in ("on", "off"):
             self._attr_is_on = last.state == "on"
+            self._device.wall_state = self._attr_is_on  # I4: a toggling wall switch
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         switch_actuator(self._device, True)

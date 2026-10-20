@@ -36,8 +36,17 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import GENERIC_EEP, GROUP_VIRTUAL, OPT_FIELDS, generic_fields
+from .catalog import (
+    CUSTOM,
+    GENERIC_EEP,
+    GROUP_VIRTUAL,
+    OPT_FIELDS,
+    custom_definition,
+    custom_key,
+    generic_fields,
+)
 from .const import CONF_MODEL
+from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
@@ -278,6 +287,42 @@ def generic_descriptions(eep: str) -> tuple[EnOceanSensorDescription, ...]:
     return tuple(descriptions)
 
 
+def custom_descriptions(definition: CustomDevice) -> tuple[EnOceanSensorDescription, ...]:
+    """I8: the sensors of the user's definition; unit from the EEP unless given."""
+    descriptions = []
+    for sensor in definition.sensors:
+        f = sensor.field
+        scaled = f.scale is not None or f.scale_ref is not None
+        unit = sensor.unit or (None if f.unit in _NO_UNIT else f.unit)
+        state_class = sensor.state_class or (SensorStateClass.MEASUREMENT if scaled else None)
+        descriptions.append(
+            EnOceanSensorDescription(
+                key=custom_key(f.shortcut),
+                name=sensor.name,
+                device_class=SensorDeviceClass(sensor.device_class)
+                if sensor.device_class
+                else None,
+                native_unit_of_measurement=unit,
+                state_class=SensorStateClass(state_class) if state_class else None,
+                value_fn=_field(f.shortcut, 2 if scaled else None),
+            )
+        )
+    return tuple(descriptions)
+
+
+def model_descriptions(device: EnOceanDevice) -> tuple[EnOceanSensorDescription, ...]:
+    """Sensor descriptions of a device: by kind, by EEP, or by the user's definition."""
+    model = device.model
+    if model.kind == CUSTOM and (definition := custom_definition(device.options)) is not None:
+        return custom_descriptions(definition)
+    if model.kind == GENERIC_EEP and model.receive is not None:
+        descriptions = generic_descriptions(model.receive.eep)
+        if (chosen := device.options.get(OPT_FIELDS)) is not None:
+            descriptions = tuple(d for d in descriptions if d.key in chosen)
+        return descriptions
+    return SENSORS.get(model.kind, ())
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EnOceanEltakoConfigEntry,
@@ -303,14 +348,12 @@ async def async_setup_entry(
             diagnostics.append(CommandSuccessSensor(device))
         if device.model.kind == "cover":
             diagnostics.append(PositionAccuracySensor(device))
+        if device.model.kind in (GENERIC_EEP, CUSTOM):
+            diagnostics.append(RawDataSensor(device))
         async_add_entities(diagnostics, config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
-        descriptions = SENSORS.get(device.model.kind, ())
-        if device.model.kind == GENERIC_EEP and device.model.receive is not None:
-            descriptions = generic_descriptions(device.model.receive.eep)
-            if (chosen := device.options.get(OPT_FIELDS)) is not None:
-                descriptions = tuple(d for d in descriptions if d.key in chosen)
+        descriptions = model_descriptions(device)
         entities: list[SensorEntity] = [EnOceanSensor(device, d) for d in descriptions]
         if device.model.kind == "meter":
             entities.append(MeterTotalSensor(device))
@@ -441,6 +484,26 @@ class _StatsSensor(EnOceanEntity, SensorEntity):
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False
+
+
+class RawDataSensor(_StatsSensor):
+    """I8: the last telegram's data bytes, to check or extend a definition."""
+
+    _attr_translation_key = "raw_data"
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "raw_data")
+
+    @property
+    def native_value(self) -> str | None:
+        telegram = self._device.last_telegram
+        return telegram.data.hex(" ").upper() if telegram is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        telegram = self._device.last_telegram
+        return {"rorg": f"{telegram.rorg:02X}" if telegram is not None else None}
 
 
 class EnOceanIdSensor(EnOceanEntity, SensorEntity):

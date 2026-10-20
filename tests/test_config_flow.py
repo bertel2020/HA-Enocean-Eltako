@@ -445,3 +445,40 @@ async def test_enocean_proxy_app_discovery(hass: HomeAssistant) -> None:
         DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
     )
     assert again["reason"] == "already_configured"
+
+
+async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> None:
+    """One app message lists every gateway; each unconfigured one gets its own flow."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    MockConfigEntry(
+        domain=DOMAIN,
+        data={"device": {"type": "tcp", "host": "abc-enocean-proxy", "port": 9100}},
+    ).add_to_hass(hass)
+    info = HassioServiceInfo(
+        config={
+            "host": "abc-enocean-proxy",
+            "status_port": 9199,
+            "replay": True,
+            "gateways": [
+                {"name": "FAM", "port": 9100, "protocol": "esp2"},
+                {"name": "MGW-LAN", "port": 9101, "protocol": "esp3"},
+                {"name": "USB 300", "port": 9102, "protocol": "esp3"},
+            ],
+        },
+        name="EnOcean Proxy",
+        slug="enocean_proxy",
+        uuid="1234",
+    )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+    )
+    await hass.async_block_till_done()
+    assert result["step_id"] == "proxy_confirm"
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert sorted(f["context"]["unique_id"] for f in flows) == [
+        "proxy_abc-enocean-proxy_9101",
+        "proxy_abc-enocean-proxy_9102",
+    ]
+    names = sorted(f["context"]["title_placeholders"]["name"] for f in flows)
+    assert names == ["MGW-LAN (EnOcean Proxy)", "USB 300 (EnOcean Proxy)"]

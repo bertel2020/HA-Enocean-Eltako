@@ -108,7 +108,10 @@
           "vent_time": "Vent slot time",
           "tilt_time": "Slat turning time",
           "channel": "Channel",
-          "sender_vld": "Sender ID: VLD commands"
+          "sender_vld": "Sender ID: VLD commands",
+          "wall_switch": "Wall switch ID (optional)",
+          "wall_on_button": "Wall switch: button for on",
+          "wall_off_button": "Wall switch: button for off"
         },
         "data_description": {
           "time_opens": "Full travel time from closed to open.",
@@ -124,7 +127,10 @@
           "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
           "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
           "channel": "Output of the actuator (0 = first channel).",
-          "sender_vld": "Reported to the actuator during the UTE teach-in."
+          "sender_vld": "Reported to the actuator during the UTE teach-in.",
+          "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+          "wall_on_button": "Same button for on and off: every press toggles.",
+          "wall_off_button": "Same button for on and off: every press toggles."
         }
       },
       "proxy_confirm": {
@@ -137,7 +143,8 @@
     },
     "error": {
       "cannot_connect": "Cannot open the connection. Check the port, host and baud rate.",
-      "invalid_base_id": "Not a valid base ID. It lies between FF-80-00-00 and FF-FF-FF-80 and ends in 00 or 80."
+      "invalid_base_id": "Not a valid base ID. It lies between FF-80-00-00 and FF-FF-FF-80 and ends in 00 or 80.",
+      "invalid_id": "Not a valid ID. Four hex bytes, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3."
     },
     "abort": {
       "already_configured": "A gateway with this base ID is already set up.",
@@ -397,7 +404,8 @@
             "eltako": "Eltako device",
             "enocean": "EnOcean device of another manufacturer",
             "virtual": "Virtual sensor (Home Assistant sends)",
-            "eep": "By EEP (expert)"
+            "eep": "By EEP (expert)",
+            "custom": "Own definition (custom_devices.yaml)"
           },
           "menu_option_descriptions": {
             "learn": "Press the learn button or a button on the device, or switch the actuator locally. The kind is suggested from its telegram.",
@@ -554,7 +562,10 @@
             "sender_temperature": "Sender ID: temperature (A5-02-05)",
             "sender_motion": "Sender ID: motion (A5-07-01)",
             "channel": "Channel",
-            "sender_vld": "Sender ID: VLD commands"
+            "sender_vld": "Sender ID: VLD commands",
+            "wall_switch": "Wall switch ID (optional)",
+            "wall_on_button": "Wall switch: button for on",
+            "wall_off_button": "Wall switch: button for off"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -576,7 +587,10 @@
             "sender_temperature": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
             "sender_motion": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
             "channel": "Output of the actuator (0 = first channel).",
-            "sender_vld": "Reported to the actuator during the UTE teach-in."
+            "sender_vld": "Reported to the actuator during the UTE teach-in.",
+            "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+            "wall_on_button": "Same button for on and off: every press toggles.",
+            "wall_off_button": "Same button for on and off: every press toggles."
           }
         },
         "reconfigure": {
@@ -610,7 +624,10 @@
             "source": "Source",
             "when_unavailable": "Source unavailable",
             "channel": "Channel",
-            "sender_vld": "Sender ID: VLD commands"
+            "sender_vld": "Sender ID: VLD commands",
+            "wall_switch": "Wall switch ID (optional)",
+            "wall_on_button": "Wall switch: button for on",
+            "wall_off_button": "Wall switch: button for off"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -628,7 +645,10 @@
             "source": "Entity whose state is sent. Contact: on = open.",
             "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example.",
             "channel": "Output of the actuator (0 = first channel).",
-            "sender_vld": "Reported to the actuator during the UTE teach-in."
+            "sender_vld": "Reported to the actuator during the UTE teach-in.",
+            "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+            "wall_on_button": "Same button for on and off: every press toggles.",
+            "wall_off_button": "Same button for on and off: every press toggles."
           }
         },
         "address": {
@@ -680,6 +700,13 @@
         "measure_result": {
           "title": "Measured",
           "description": "Up: {time_opens} s, down: {time_closes} s. Submit to save these travel times."
+        },
+        "custom": {
+          "title": "Own device definition",
+          "description": "Devices defined in `/config/enocean_eltako/custom_devices.yaml`.",
+          "data": {
+            "custom": "Definition"
+          }
         }
       },
       "error": {
@@ -838,6 +865,9 @@
       },
       "sender_id_vld": {
         "name": "Sender ID VLD"
+      },
+      "raw_data": {
+        "name": "Raw data"
       }
     },
     "binary_sensor": {
@@ -936,6 +966,10 @@
     "bus_slow_confirmations": {
       "title": "Bus actuators on {name} confirm slowly",
       "description": "The actuators on this gateway confirm commands after **{seconds} s** on average (median). According to Eltako the FAM14 passes confirmations on right away only in **operating mode 5**, with a device list made by PCT14. Check the operating mode on the FAM14 (see its manual) and create the device list with the PCT14."
+    },
+    "custom_devices_invalid": {
+      "title": "Errors in the EnOcean device definitions",
+      "description": "Some definitions in `{path}` were left out:\n\n{errors}\n\nFix the file and reload the gateway entry. Devices whose definition is missing keep working as generic EEP devices."
     }
   },
   "device_automation": {

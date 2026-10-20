@@ -56,7 +56,7 @@ devices, written from scratch. Goals:
 
 ## Supported devices
 
-Add a device under the gateway with **Add device** in one of five ways:
+Add a device under the gateway with **Add device** in one of six ways:
 
 - **Listen for the device** (recommended): press a button on it or switch the actuator
   locally; the kind is suggested from its telegram.
@@ -70,11 +70,49 @@ Add a device under the gateway with **Add device** in one of five ways:
   button on the device page; the device page also shows the value sent last.
 - **By EEP** (expert): any of the 318 standard profiles of the EnOcean Alliance becomes a
   device with one sensor per value; type a code such as `A5-04-02` to find it.
+- **Own definition**: devices you describe yourself in
+  `/config/enocean_eltako/custom_devices.yaml` (see below).
 
 Even simpler: every sender the gateway hears that is not set up yet shows up as a
 **discovered** card on the integration page. **Add** suggests the kind and fills in the ID;
 **Ignore** hides senders that are not yours (a neighbour's, for example) for good. Discovery
 can be switched off per gateway in its options.
+
+**Switching actuators that do not report** (e.g. older or 230 V-only ones): enter the ID of a
+pushbutton taught into the actuator under **Wall switch** and pick its on and off buttons
+(the same button for both toggles). Its presses then set the state in Home Assistant, marked
+as assumed until the actuator reports itself.
+
+### Own device definitions
+
+For a sensor the catalog does not know, describe it in
+`/config/enocean_eltako/custom_devices.yaml`: a standard EEP plus which of its fields become
+sensors and binary sensors, with names, device classes and units. Afterwards reload the
+gateway entry; **Add device → Own definition** lists the definitions.
+
+```yaml
+devices:
+  - id: acme_climate
+    name: Acme room sensor
+    manufacturer: Acme
+    eep: A5-04-01
+    interval: 600          # optional: seconds between telegrams (silence detection)
+    sensors:
+      - field: TMP         # field shortcut of the profile
+        device_class: temperature
+      - field: HUM
+        name: Humidity     # optional, default: the EEP's name
+        device_class: humidity
+        unit: "%"          # optional, default: the EEP's unit
+    binary_sensors:
+      - field: TSN
+        on: 1              # optional, default: any value but 0
+```
+
+Mistakes show up as a repair issue naming each one; the other definitions still load. If a
+definition is removed, its devices keep working as generic EEP devices. Devices added by EEP
+or by definition have a diagnostic sensor **Raw data** (disabled by default) with the bytes of
+the last telegram, to check the fields.
 
 Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 
@@ -169,7 +207,7 @@ Rockers report short, long and double presses per button. Ready-made automations
 The optional [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) app (Home
 Assistant OS or Supervised) keeps the gateways' serial ports and offers each gateway on a
 TCP port, so several programs can use one gateway at the same time, e.g. the old `eltako`
-integration while moving over. The app announces its gateways: they show up here as
+integration while moving over. The app announces its gateways: each one shows up here as
 discovered (**EnOcean Proxy**); pick the model and the gateway is set up with **Replay over
 EnOcean Proxy** switched on. After a Home Assistant restart the app delivers the telegrams
 that arrived meanwhile (radio telegrams only, up to 15 minutes old) with their reception
@@ -245,6 +283,9 @@ python -m pytest
 
 `python scripts/fetch_eep.py --generated` followed by
 `python scripts/generate_eep.py` regenerates the standard profiles.
+`python scripts/build_protocol_package.py` builds the protocol layer as a standalone wheel
+(`enocean-eltako-protocol`, no Home Assistant needed) into `dist/`; CI builds it on every
+push. It is not published on PyPI yet.
 `python scripts/fetch_eep.py` downloads the official EEP definitions into
 `.eep_cache/`. These files belong to the EnOcean Alliance and are never
 committed (see [NOTICE](NOTICE)).

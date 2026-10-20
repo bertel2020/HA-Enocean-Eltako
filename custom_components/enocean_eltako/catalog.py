@@ -13,7 +13,8 @@ from typing import Any
 
 from homeassistant.const import Platform
 
-from .const import CONF_EEP, CONF_MODEL
+from .const import CONF_CUSTOM, CONF_EEP, CONF_MODEL
+from .custom_devices import DEFINITIONS, CustomDevice
 from .protocol.eep import EEPRef, virtual, vld
 from .protocol.eep.eltako import heating, shutter, switching
 from .protocol.eep.model import Field, encode
@@ -40,6 +41,9 @@ OPT_FIELDS = "fields"  # device added by EEP: the profile values shown as sensor
 OPT_SOURCE = "source"  # I9 virtual sensor: the HA entity whose state is sent
 OPT_WHEN_UNAVAILABLE = "when_unavailable"  # I9: source unavailable -> skip | safe value
 OPT_CHANNEL = "channel"  # VLD actuators: output channel (D2-01 I/O, D2-05 CHN)
+OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on/off state
+OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
+OPT_WALL_OFF = "wall_off_button"  # I4: its button that switches off (same button = toggle)
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -118,6 +122,7 @@ GROUP_VIRTUAL = "virtual"  # I9: Home Assistant sends as a sensor or rocker
 GROUPS = (GROUP_ELTAKO, GROUP_ENOCEAN)  # catalog menus by category
 CATEGORIES = ("lighting", "covers", "climate", "buttons", "sensors", "meters", "virtual")
 GENERIC_EEP = "eep"  # model id of a device added by EEP alone (receive-only sensors)
+CUSTOM = "custom"  # I8: model id of a device of the user's definitions
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,7 +171,7 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.LIGHT, Platform.SWITCH),
             category="lighting",
             senders=(CENTRAL, ROCKER),
-            options=(OPT_STATUS_REQUEST,),
+            options=(OPT_STATUS_REQUEST, OPT_WALL_SWITCH),
             examples="FSR61, FSR14, FL62, FSR71",
         ),
         DeviceModel(
@@ -513,6 +518,11 @@ def generic_fields(eep: str) -> list[tuple[str, Field]]:
     return [(f"eep_{_key(shortcut)}", f) for shortcut, f in seen.items()]
 
 
+def custom_key(shortcut: str) -> str:
+    """I8: entity key of a field of the user's definition."""
+    return f"custom_{_key(shortcut)}"
+
+
 def _key(shortcut: str) -> str:
     """Entity key part: "TMP" -> "tmp", "Acceleration Status" -> "acceleration_status"."""
     return "_".join("".join(c if c.isalnum() else " " for c in shortcut.lower()).split())
@@ -525,8 +535,37 @@ def generic_model(ref: EEPRef) -> DeviceModel:
     )
 
 
+def custom_model(definition: CustomDevice) -> DeviceModel:
+    """I8: receive-only device with the sensors of the user's definition."""
+    platforms = (
+        *((Platform.SENSOR,) if definition.sensors else ()),
+        *((Platform.BINARY_SENSOR,) if definition.binary_sensors else ()),
+    )
+    return DeviceModel(
+        CUSTOM,
+        definition.eep,
+        platforms,
+        group=GROUP_ENOCEAN,
+        interval=definition.interval,
+        manufacturer=definition.manufacturer,
+        examples=definition.name,
+    )
+
+
+def custom_definition(data: Mapping[str, Any]) -> CustomDevice | None:
+    return DEFINITIONS.get(data.get(CONF_CUSTOM, "")) if data[CONF_MODEL] == CUSTOM else None
+
+
 def model_for(data: Mapping[str, Any]) -> DeviceModel:
-    """Catalog entry of a device subentry, or its generic model when added by EEP."""
+    """Catalog entry of a device subentry, or its generic model when added by EEP.
+
+    A device of the user's definitions falls back to the generic model of its EEP when the
+    definition is gone (or broken), so it keeps its radio and its raw data.
+    """
+    if data[CONF_MODEL] == CUSTOM:
+        if (definition := custom_definition(data)) is not None:
+            return custom_model(definition)
+        return generic_model(EEPRef.parse(data[CONF_EEP]))
     if data[CONF_MODEL] == GENERIC_EEP:
         return generic_model(EEPRef.parse(data[CONF_EEP]))
     return CATALOG[data[CONF_MODEL]]

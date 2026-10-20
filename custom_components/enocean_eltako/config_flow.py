@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import probatio as vol
 from homeassistant.config_entries import (
+    SOURCE_HASSIO,
     SOURCE_RECONFIGURE,
     SOURCE_ZEROCONF,
     ConfigEntry,
@@ -20,6 +21,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
+from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.selector import (
     BooleanSelector,
     NumberSelector,
@@ -166,18 +168,49 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         return await self.async_step_zeroconf_confirm()
 
     async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
-        """The EnOcean Proxy app announced a gateway (one discovery per proxied gateway)."""
-        config = discovery_info.config
-        host, port = str(config["host"]), int(config["port"])
-        for entry in self._async_current_entries(include_ignore=False):
-            device = entry.data.get(CONF_DEVICE, {})
-            if device.get(CONF_HOST) == host and device.get(CONF_PORT) == port:
-                return self.async_abort(reason="already_configured")
+        """The EnOcean Proxy app announced its gateways.
+
+        The Supervisor keeps one message per app and service, so the app lists all gateways
+        in one message; this flow takes the first unconfigured one and starts a flow of its
+        own for each further one. Older app versions sent a single gateway (host + port).
+        """
+        config = dict(discovery_info.config)
+        if "gateways" in config:
+            gateways = [dict(g) for g in config.pop("gateways")]
+        else:
+            gateways = [{k: config.pop(k) for k in ("name", "port", "protocol") if k in config}]
+        host = str(config["host"])
+        configured = {
+            (
+                entry.data.get(CONF_DEVICE, {}).get(CONF_HOST),
+                entry.data.get(CONF_DEVICE, {}).get(CONF_PORT),
+            )
+            for entry in self._async_current_entries(include_ignore=False)
+        }
+        gateways = [g for g in gateways if (host, int(g["port"])) not in configured]
+        if not gateways:
+            return self.async_abort(reason="already_configured")
+        for extra in gateways[1:]:
+            discovery_flow.async_create_flow(
+                self.hass,
+                DOMAIN,
+                {"source": SOURCE_HASSIO},
+                HassioServiceInfo(
+                    config={**config, "gateways": [extra]},
+                    name=discovery_info.name,
+                    slug=discovery_info.slug,
+                    uuid=discovery_info.uuid,
+                ),
+            )
+        gateway = gateways[0]
+        port = int(gateway["port"])
         await self.async_set_unique_id(f"proxy_{host}_{port}")
         self._abort_if_unique_id_configured()
-        self._proxy = config
+        self._proxy = {**config, **gateway}
         self._connection = TcpConnection(host, port)
-        self.context["title_placeholders"] = {"name": f"{config.get('name', host)} (EnOcean Proxy)"}
+        self.context["title_placeholders"] = {
+            "name": f"{gateway.get('name', host)} (EnOcean Proxy)"
+        }
         return await self.async_step_proxy_confirm()
 
     async def async_step_proxy_confirm(
