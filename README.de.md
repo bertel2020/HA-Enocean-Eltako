@@ -64,6 +64,11 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
   dem Katalog wählen.
 - **Per EEP** (Experte): Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert.
 
+Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
+erscheint als **entdeckt**-Karte auf der Integrationsseite. **Hinzufügen** schlägt die
+Geräteart vor und trägt die ID ein; **Ignorieren** blendet fremde Sender (z. B. vom
+Nachbarn) dauerhaft aus. In den Optionen des Gateways lässt sich die Discovery abschalten.
+
 Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 
 <!-- devices:start -->

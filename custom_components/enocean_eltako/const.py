@@ -20,6 +20,7 @@ CONF_REPEATER: Final = "repeater"  # ESP3 gateways: unchanged | off | 1 | 2
 REPEATER_UNCHANGED: Final = "unchanged"
 REPEATER_LEVELS: Final = {"off": 0, "1": 1, "2": 2}
 CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
+CONF_DISCOVERY: Final = "discovery"  # offer unknown senders as discovered devices
 
 MODE_ALWAYS: Final = "always"
 MODE_ON_DEMAND: Final = "on_demand"  # bus gateway connected only for failover / import

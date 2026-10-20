@@ -71,6 +71,57 @@
         "data_description": {
           "name": "Erscheint auf der Integrationsseite und als Gateway-Gerät. Später über das Menü des Eintrags umbenennen."
         }
+      },
+      "discovered": {
+        "title": "Neues Gerät entdeckt",
+        "description": "Gateway **{gateway}** hat ein Telegramm von **{device_id}** empfangen (Profil {eep}, Empfang {dbm}). Welche Art von Gerät ist es? Gehört es nicht dir (z. B. Nachbar), schließe dieses Fenster und wähle bei der Karte **Ignorieren**.",
+        "data": {
+          "model": "Art"
+        }
+      },
+      "discovered_device": {
+        "title": "Entdecktes Gerät einrichten",
+        "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.\n\n{hint}",
+        "data": {
+          "name": "Name",
+          "platform": "Art",
+          "time_opens": "Laufzeit auf",
+          "time_closes": "Laufzeit ab",
+          "device_class": "Art",
+          "invert": "Umkehren",
+          "sender_central": "Sender-ID: Zentralbefehl (A5-38-08)",
+          "sender_rocker": "Sender-ID: Taster (F6-02-01)",
+          "sender_controller": "Sender-ID: Controller",
+          "sender_direction_rocker": "Sender-ID: Richtungstaster (F6-02-01)",
+          "routing": "Fahren über",
+          "on_button": "Ein mit",
+          "off_button": "Aus mit",
+          "temperature_sensor": "Raumtemperatur",
+          "send_interval": "Sendeintervall",
+          "unavailable_when_silent": "Nicht verfügbar, wenn stumm",
+          "status_request": "Zustand beim Start abfragen",
+          "long_press": "Lang ab",
+          "double_press": "Doppelt innerhalb",
+          "calibration": "Kalibrierung",
+          "fields": "Angezeigte Werte",
+          "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
+          "vent_time": "Lüftungsschlitz-Zeit",
+          "tilt_time": "Wendezeit Lamellen"
+        },
+        "data_description": {
+          "time_opens": "Volle Laufzeit von zu nach auf.",
+          "time_closes": "Volle Laufzeit von auf nach zu.",
+          "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
+          "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
+          "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
+          "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
+          "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
+          "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
+          "fields": "Werte des Profils, die als Sensor erscheinen.",
+          "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
+          "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
+          "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
+        }
       }
     },
     "error": {
@@ -80,7 +131,11 @@
     "abort": {
       "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet.",
       "reconfigure_successful": "Die Verbindung wurde geändert.",
-      "wrong_gateway": "Das ist ein anderes Gateway (andere Base-ID). Lege es stattdessen als neues Gateway an."
+      "wrong_gateway": "Das ist ein anderes Gateway (andere Base-ID). Lege es stattdessen als neues Gateway an.",
+      "device_added": "Das Gerät wurde dem Gateway hinzugefügt.",
+      "no_matching_kind": "Für dieses Telegramm passt keine Geräteart. Lege das Gerät über das Gateway mit **Gerät hinzufügen → Per EEP (Experte)** an.",
+      "discovery_reset": "Das Gerät wird wieder angeboten, sobald es das nächste Mal sendet.",
+      "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist."
     }
   },
   "selector": {
@@ -251,12 +306,14 @@
         "data": {
           "message_delay": "Pause zwischen Telegrammen",
           "mode": "Verbindung",
-          "repeater": "Repeater"
+          "repeater": "Repeater",
+          "discovery": "Geräte entdecken"
         },
         "data_description": {
           "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
           "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen.",
-          "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt."
+          "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt.",
+          "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten."
         }
       }
     }

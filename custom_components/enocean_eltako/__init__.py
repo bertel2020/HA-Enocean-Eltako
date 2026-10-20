@@ -49,6 +49,7 @@ from .const import (
     REPEATER_UNCHANGED,
 )
 from .device import EnOceanDevice
+from .discovery import async_abort_configured, async_setup_discovery
 from .health import async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .protocol.bus_group import BusMember
@@ -197,6 +198,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         .id
     )
     _async_setup_devices(hass, entry)
+    async_abort_configured(hass, entry)
+    entry.async_on_unload(async_setup_discovery(hass, entry))
     if gateway.connected:
         _async_apply_repeater(hass, entry)
     entry.runtime_data.health_check = async_setup_health(hass, entry)

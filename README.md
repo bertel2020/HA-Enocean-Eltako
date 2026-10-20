@@ -63,6 +63,11 @@ Add a device under the gateway with **Add device** in one of four ways:
   from the catalog.
 - **By EEP** (expert): standard sensor profiles become a device with one sensor per value.
 
+Even simpler: every sender the gateway hears that is not set up yet shows up as a
+**discovered** card on the integration page. **Add** suggests the kind and fills in the ID;
+**Ignore** hides senders that are not yours (a neighbour's, for example) for good. Discovery
+can be switched off per gateway in its options.
+
 Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 
 <!-- devices:start -->

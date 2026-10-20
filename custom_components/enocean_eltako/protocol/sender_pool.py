@@ -148,6 +148,10 @@ class SenderRegistry:
         self._reserved[sender] = owner
         return lambda: self._reserved.pop(sender, None)
 
+    def in_pool(self, sender: int) -> bool:
+        """The ID lies in one of our pools (our own sender, not a foreign device)."""
+        return any(sender in pool for pool in self._pools.values())
+
     def _taken(self, sender: int, pool_key: str) -> bool:
         if sender in self._reserved:
             return True

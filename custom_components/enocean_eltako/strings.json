@@ -71,6 +71,57 @@
         "data_description": {
           "name": "Shown on the integration page and as the gateway device. Rename later in the entry's menu."
         }
+      },
+      "discovered": {
+        "title": "New device discovered",
+        "description": "Gateway **{gateway}** received a telegram from **{device_id}** (profile {eep}, signal {dbm}). What kind of device is it? If it is not yours (a neighbour's, for example), close this dialog and choose **Ignore** on the card.",
+        "data": {
+          "model": "Kind"
+        }
+      },
+      "discovered_device": {
+        "title": "Set up discovered device",
+        "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.\n\n{hint}",
+        "data": {
+          "name": "Name",
+          "platform": "Type",
+          "time_opens": "Travel time up",
+          "time_closes": "Travel time down",
+          "device_class": "Kind",
+          "invert": "Invert",
+          "sender_central": "Sender ID: Central command (A5-38-08)",
+          "sender_rocker": "Sender ID: Rocker (F6-02-01)",
+          "sender_controller": "Sender ID: controller",
+          "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
+          "routing": "Moved by",
+          "on_button": "On with",
+          "off_button": "Off with",
+          "temperature_sensor": "Room temperature",
+          "send_interval": "Send interval",
+          "unavailable_when_silent": "Unavailable when silent",
+          "status_request": "Ask for the state at startup",
+          "long_press": "Long press from",
+          "double_press": "Double press within",
+          "calibration": "Calibration",
+          "fields": "Shown values",
+          "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
+          "vent_time": "Vent slot time",
+          "tilt_time": "Slat turning time"
+        },
+        "data_description": {
+          "time_opens": "Full travel time from closed to open.",
+          "time_closes": "Full travel time from open to closed.",
+          "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
+          "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
+          "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
+          "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
+          "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
+          "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
+          "fields": "Values of the profile that become sensors.",
+          "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
+          "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
+          "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
+        }
       }
     },
     "error": {
@@ -80,7 +131,11 @@
     "abort": {
       "already_configured": "A gateway with this base ID is already set up.",
       "reconfigure_successful": "The connection was changed.",
-      "wrong_gateway": "This is a different gateway (other base ID). Add it as a new gateway instead."
+      "wrong_gateway": "This is a different gateway (other base ID). Add it as a new gateway instead.",
+      "device_added": "The device was added to the gateway.",
+      "no_matching_kind": "No device kind fits this telegram. Add the device on the gateway with **Add device → By EEP (expert)**.",
+      "discovery_reset": "The device will be offered again the next time it sends.",
+      "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
     }
   },
   "selector": {
@@ -251,12 +306,14 @@
         "data": {
           "message_delay": "Pause between telegrams",
           "mode": "Connection",
-          "repeater": "Repeater"
+          "repeater": "Repeater",
+          "discovery": "Discover devices"
         },
         "data_description": {
           "message_delay": "Minimum time between two telegrams sent by this gateway.",
           "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between.",
-          "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect."
+          "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect.",
+          "discovery": "Offer unknown senders this gateway receives as discovered devices."
         }
       }
     }
