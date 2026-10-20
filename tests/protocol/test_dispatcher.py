@@ -97,3 +97,17 @@ def test_press_release_press_is_not_a_duplicate() -> None:
         d.dispatch("gw1", telegram)
         clock.now += 0.03
     assert len(got) == 4
+
+
+def test_replayed_telegrams_are_compared_by_reception_time() -> None:
+    """After a restart the proxy replays minutes of telegrams at once: the same telegram
+    twice, minutes apart, stays two telegrams; a repetition at the same time stays one."""
+    clock = Clock()  # arrival: all at once
+    d = Dispatcher(clock=clock)
+    got = []
+    d.add_listener(SWITCH.sender, got.append)
+    d.dispatch("gw1", SWITCH, timestamp=1000.0)
+    d.dispatch("gw1", SWITCH, timestamp=1000.05)  # repetition
+    d.dispatch("gw1", SWITCH, timestamp=1180.0)  # three minutes later
+    assert len(got) == 2
+    assert [r.timestamp for r in got] == [1000.0, 1180.0]

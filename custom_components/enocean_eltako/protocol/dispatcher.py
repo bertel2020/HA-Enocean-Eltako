@@ -67,7 +67,8 @@ class Dispatcher:
         self._monitors: list[Listener] = []
         self._unknown: list[Listener] = []
         self._aliases: dict[int, int] = {}
-        self._last: dict[int, tuple[tuple[int, bytes, int], float]] = {}
+        # per sender: the last telegram's key, clock() and wall time of reception
+        self._last: dict[int, tuple[tuple[int, bytes, int], float, float]] = {}
         self.stats = DispatcherStats()
 
     def add_listener(self, sender: int | None, listener: Listener) -> Callable[[], None]:
@@ -113,14 +114,22 @@ class Dispatcher:
         timestamp: when it was really received (replayed by the EnOcean Proxy app).
         """
         now = self._clock()
+        received_at = timestamp or time.time()
         sender = self._aliases.get(telegram.sender, telegram.sender)
         # status low nibble = repeater count, differs between original and repetition
         key = (telegram.rorg, telegram.data, telegram.status & 0xF0)
         last = self._last.get(sender)
-        duplicate = last is not None and last[0] == key and now - last[1] < self._window
+        if last is None or last[0] != key:
+            duplicate = False
+        elif timestamp is not None:
+            # replayed after a restart: minutes of telegrams arrive within milliseconds, so
+            # compare the reception times, not the arrival
+            duplicate = abs(received_at - last[2]) < self._window
+        else:
+            duplicate = now - last[1] < self._window
         if not duplicate:
-            self._last[sender] = (key, now)
-        received = ReceivedTelegram(telegram, gateway, timestamp or time.time(), sender, duplicate)
+            self._last[sender] = (key, now, received_at)
+        received = ReceivedTelegram(telegram, gateway, received_at, sender, duplicate)
 
         self.stats.received += 1
         self.stats.per_gateway[gateway] = self.stats.per_gateway.get(gateway, 0) + 1
