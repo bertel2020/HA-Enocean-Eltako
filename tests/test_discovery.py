@@ -131,6 +131,8 @@ async def test_panel_adds_sender_as_device(hass: HomeAssistant, gateway, hass_ws
     assert (await client.receive_json())["result"] == {"reason": "already_in_progress"}
     await client.send_json({"id": 3, "type": "enocean_eltako/discover", "sender": "01-99-99-99"})
     assert (await client.receive_json())["error"]["code"] == "not_found"
+    await client.send_json({"id": 4, "type": "enocean_eltako/discover", "sender": "no ID"})
+    assert (await client.receive_json())["error"]["code"] == "invalid_id"
 
 
 async def test_panel_add_without_card_keeps_sender_open(

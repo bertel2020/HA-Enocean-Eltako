@@ -246,3 +246,52 @@ async def test_add_virtual_weather_needs_an_entity(hass: HomeAssistant, gateway)
     assert result["data"]["weather_wind"] == "sensor.wind"
     assert "weather_rain" not in result["data"]
     await hass.async_block_till_done()
+
+
+MOTION = 0xFFB74496
+EDGE_VIRTUALS = [
+    _virtual(
+        "virtual_motion",
+        MOTION,
+        "Bewegung HA",
+        "motion",
+        source="binary_sensor.pir",
+        invert=True,
+        send_interval=0,
+    ),
+    _virtual(
+        "virtual_temperature",
+        TEMPERATURE,
+        "Temperatur HA",
+        "temperature",
+        source="sensor.room",
+        send_interval=0,
+    ),
+    _virtual(
+        "virtual_brightness",
+        BRIGHTNESS,
+        "Helligkeit HA",
+        "brightness",
+        source="sensor.lux",
+        send_interval=0,
+    ),
+]
+
+
+@pytest.mark.parametrize("gateway", [EDGE_VIRTUALS], indirect=True)
+async def test_virtual_edges(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    """Inverted motion; attribute changes and values that are no number send nothing."""
+    entry, server = gateway
+    hass.states.async_set("binary_sensor.pir", "on")
+    await _settle(hass)
+    assert _sent(server, Rorg.BS4, "00000008", MOTION)  # inverted: no motion
+    hass.states.async_set("binary_sensor.pir", "off")
+    await _settle(hass)
+    assert _sent(server, Rorg.BS4, "0000ff08", MOTION)
+
+    server.received.clear()
+    hass.states.async_set("binary_sensor.pir", "off", {"friendly_name": "PIR"})
+    hass.states.async_set("sensor.room", "warm", {"unit_of_measurement": "°C"})
+    hass.states.async_set("sensor.lux", "bright", {"unit_of_measurement": "lx"})
+    await _settle(hass)
+    assert bytes(server.received) == b""

@@ -10,7 +10,13 @@ from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.const import DOMAIN
-from custom_components.enocean_eltako.custom_devices import DEFINITIONS, FILE, ISSUE_ID, parse
+from custom_components.enocean_eltako.custom_devices import (
+    DEFINITIONS,
+    FILE,
+    ISSUE_ID,
+    async_load,
+    parse,
+)
 from custom_components.enocean_eltako.protocol.models import Protocol
 
 from .fake_gateway import FakeGateway
@@ -69,6 +75,60 @@ def test_parse_reports_errors_and_keeps_valid_definitions() -> None:
     assert any("warmth" in e for e in errors)
     assert parse(None) == ({}, [])
     assert parse(["x"])[1] == ["the file needs a list 'devices'"]
+
+
+def test_parse_reports_malformed_entries() -> None:
+    """Each malformed part names its place; the definition is left out."""
+    tmp = {"field": "TMP"}
+    definitions, errors = parse(
+        {
+            "devices": [
+                "not a mapping",
+                {"id": " ", "name": "X", "eep": "A5-02-05", "sensors": [tmp]},
+                {"id": "no_list", "name": "X", "eep": "A5-02-05", "sensors": "TMP"},
+                {"id": "no_field", "name": "X", "eep": "A5-02-05", "sensors": [{"name": "T"}]},
+                {"id": "twice", "name": "X", "eep": "A5-02-05", "sensors": [tmp, tmp]},
+                {"id": "interval", "name": "X", "eep": "A5-02-05", "interval": 0, "sensors": [tmp]},
+                {
+                    "id": "on",
+                    "name": "X",
+                    "eep": "A5-04-01",
+                    "binary_sensors": [{"field": "TSN", "on": "yes"}],
+                },
+                {
+                    "id": "ok",
+                    "name": "OK",
+                    "eep": "a5-02-05",
+                    "interval": 600,
+                    "sensors": [{"field": "TMP", "unit": "°C", "state_class": "measurement"}],
+                },
+            ]
+        }
+    )
+    assert list(definitions) == ["ok"]
+    assert definitions["ok"].interval == 600
+    assert definitions["ok"].sensors[0].unit == "°C"
+    for message in (
+        "devices[0]: must be a mapping",
+        "devices[1]: id must be a text",
+        "no_list: must be a list",
+        "no_field[0]: needs a field",
+        "twice[1]: field 'TMP' used twice",
+        "interval: interval must be a number of seconds",
+        "on[0]: on must be a number",
+    ):
+        assert any(e.startswith(message) for e in errors), message
+
+
+async def test_unreadable_file_raises_issue(hass: HomeAssistant) -> None:
+    _write(hass, "devices: [unclosed\n")
+    assert await async_load(hass) == {}
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_ID)
+    assert issue is not None
+    assert issue.translation_placeholders["errors"]
+    _write(hass, YAML)
+    assert list(await async_load(hass)) == ["acme_climate"]
+    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_ID) is None
 
 
 def _entry(server: FakeGateway, **data) -> MockConfigEntry:
