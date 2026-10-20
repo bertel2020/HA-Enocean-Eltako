@@ -1,6 +1,11 @@
 {
   "domain": "enocean_eltako",
   "name": "EnOcean Eltako",
+  "after_dependencies": [
+    "frontend",
+    "http",
+    "panel_custom"
+  ],
   "codeowners": [
     "@bertel2020"
   ],

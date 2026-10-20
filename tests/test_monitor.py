@@ -107,3 +107,82 @@ async def test_diagnostics(hass: HomeAssistant, setup):
     assert diag["send_queue"]["length"] == 0
     assert diag["sender_pool"]["start"] == "FF-B7-44-80"
     assert diag["telegrams"][-1]["sender"] == "00-21-63-43"
+
+
+async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, hass_ws_client):
+    from homeassistant.config_entries import ConfigSubentryData
+
+    from custom_components.enocean_eltako.protocol.eep.teach_in import encode_teach_in_4bs
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 2,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            )
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/telegrams/subscribe"})
+    assert (await client.receive_json())["success"]
+
+    server.push(
+        esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x70, 0, 0, 0]), 0x0510A2B3, 0x30).encode()
+    )
+    event = (await client.receive_json())["event"]
+    assert event["gateway_name"] == "FAM-USB Keller"
+    assert event["device"] == "Licht Diele"
+    assert event["values"] == {"on": True}
+
+    server.push(
+        esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, encode_teach_in_4bs("A5-02-05"), 0x01A0B0C0).encode()
+    )
+    event = (await client.receive_json())["event"]
+    assert "device" not in event
+    assert event["teach_in"] == "A5-02-05"
+
+    await entry.runtime_data.queue.submit(RadioTelegram(Rorg.BS4, bytes(4), 0xFFB74481))
+    event = (await client.receive_json())["event"]
+    assert (event["dir"], event["device"], event["profile"]) == ("tx", "Licht Diele", "central")
+
+    await client.send_json({"id": 2, "type": "enocean_eltako/gateways"})
+    result = (await client.receive_json())["result"]
+    assert result == [{"entry_id": entry.entry_id, "title": "FAM-USB Keller", "loaded": True}]
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_panel_registered_with_frontend(hass: HomeAssistant):
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from custom_components.enocean_eltako import panel
+
+    hass.http = MagicMock(async_register_static_paths=AsyncMock())
+    hass.config.components.add("frontend")
+    with patch.object(panel.panel_custom, "async_register_panel", AsyncMock()) as register:
+        await panel.async_register_panel(hass)
+    kwargs = register.call_args.kwargs
+    assert kwargs["frontend_url_path"] == "enocean-eltako"
+    assert kwargs["require_admin"] is True
+    assert kwargs["module_url"].startswith("/enocean_eltako_static/monitor-panel.js?v=")
+    assert panel.PANEL_FILE.is_file()

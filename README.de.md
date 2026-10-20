@@ -30,8 +30,9 @@
 > oder durch Warten auf ein Telegramm: Schaltaktoren, Dimmer, Rollläden
 > (Controller und Richtungstaster parallel), Fenstergriffe, Kontakte, Taster,
 > Zähler, Sensoren, Permundo PSC132/PSC234, Raumregler und Heizungsaktoren,
-> die Home Assistant regelt. Telegramme stehen in den Diagnosedaten und
-> lassen sich mit der Aktion `enocean_eltako.capture` mitschneiden. Noch nicht
+> die Home Assistant regelt. Telegramme erscheinen live im Seitenleisten-Panel
+> **EnOcean** und in den Diagnosedaten und lassen sich mit der Aktion
+> `enocean_eltako.capture` mitschneiden. Noch nicht
 > mit echter Hardware getestet. Nicht produktiv einsetzen. Die bestehende
 > Integration `eltako` läuft parallel weiter; diese hier hat die eigene
 > Domain `enocean_eltako`.
@@ -108,6 +109,17 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Bewegungsmelder | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Taster | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
+
+## Telegramm-Monitor
+
+Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt jedes empfangene und
+gesendete Telegramm live: Zeit, Gateway, Richtung, Sender-ID mit Gerätenamen, Telegrammtyp,
+Daten, Status, Signalstärke und die entschlüsselten Werte. Gesendete Telegramme nennen Gerät
+und Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei.
+Filtern nach Gateway, Richtung oder Text (Klick auf eine ID filtert danach), Wiederholungen
+ausblenden, nur unbekannte Sender zeigen, anhalten und die sichtbaren Telegramme als
+JSON-Zeilen exportieren. Es zeigt die letzten 200 Telegramme der laufenden Sitzung und hält
+bis zu 1.000.
 
 ## Blueprints
 

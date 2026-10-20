@@ -53,6 +53,7 @@ from .device import EnOceanDevice
 from .discovery import async_abort_configured, async_setup_discovery
 from .health import async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
+from .panel import async_register_panel
 from .protocol.bus_group import BusMember
 from .protocol.dispatcher import WILDCARD, ReceivedTelegram
 from .protocol.gateway import Gateway
@@ -98,9 +99,10 @@ type EnOceanEltakoConfigEntry = ConfigEntry[GatewayRuntime]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the telegram monitor websocket API and services."""
+    """Register the telegram monitor websocket API, its panel and the services."""
     async_setup_websocket(hass)
     async_setup_services(hass)
+    await async_register_panel(hass)
     return True
 
 

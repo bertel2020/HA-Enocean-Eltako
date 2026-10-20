@@ -30,8 +30,8 @@
 > dimmers, shutters (controller and direction rocker in parallel), window
 > handles, contacts, rockers, meters, sensors, Permundo PSC132/PSC234, room
 > controllers and heating actuators controlled by Home Assistant. Telegrams
-> show up in the diagnostics and can be recorded with the action
-> `enocean_eltako.capture`.
+> show up live in the **EnOcean** sidebar panel and in the diagnostics, and can
+> be recorded with the action `enocean_eltako.capture`.
 > Not tested on real hardware yet; do not use it in production. The existing
 > `eltako` integration keeps running in parallel; this one uses its own domain
 > `enocean_eltako`.
@@ -105,6 +105,16 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Virtual sensor (Home Assistant sends) | Virtual motion sensor | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
+
+## Telegram monitor
+
+The **EnOcean** sidebar panel (admins only) lists every received and sent telegram live:
+time, gateway, direction, sender ID with the device name, telegram type, data, status,
+signal strength and the decoded values. Sent telegrams name the device and sender profile;
+a teach-in telegram of an unknown sender shows its EEP. Filter by gateway, direction or text
+(click an ID to filter by it), hide repetitions, show unknown senders only, pause, and export
+the visible telegrams as JSON lines. It shows the last 200 telegrams of the running session
+and keeps up to 1,000.
 
 ## Blueprints
 
