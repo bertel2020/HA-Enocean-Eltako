@@ -401,6 +401,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._rows = [];
     this._pending = [];
+    this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
     this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
     this._gateways = [];
@@ -521,7 +522,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._keys = new Set();
       this._rows = [];
       this._pending = [];
+      this._missed = 0;
       this._expanded.clear();
+      this._renderBar();
       this._render();
     });
     $("export").addEventListener("click", () => this._export());
@@ -586,7 +589,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._keys.add(key);
     if (this._paused) {
+      // held back up to the list size; older ones would drop out on resume anyway
       this._pending.push(row);
+      this._missed += 1;
+      for (const r of this._pending.splice(0, this._pending.length - MAX_ROWS)) this._keys.delete(rowKey(r));
       this._renderBar();
       return;
     }
@@ -625,6 +631,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _togglePause() {
     this._paused = !this._paused;
+    this._missed = 0;
     if (!this._paused) {
       this._rows = [...this._pending.reverse(), ...this._rows];
       this._pending = [];
@@ -727,7 +734,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const live = this.shadowRoot.getElementById("live");
     if (!live) return;
     live.classList.toggle("paused", this._paused);
-    live.querySelector("span").textContent = this._paused ? t.paused(this._pending.length) : t.live;
+    live.querySelector("span").textContent = this._paused ? t.paused(this._missed) : t.live;
     const pause = this.shadowRoot.getElementById("pause");
     const label = this._paused ? t.resume : t.pause;
     pause.innerHTML = svg(this._paused ? ICON.play : ICON.pause);
