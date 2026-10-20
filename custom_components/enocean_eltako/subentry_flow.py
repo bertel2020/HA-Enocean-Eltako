@@ -60,7 +60,12 @@ from .catalog import (
     OPT_WALL_OFF,
     OPT_WALL_ON,
     OPT_WALL_SWITCH,
+    OPT_WEATHER_BRIGHTNESS,
+    OPT_WEATHER_RAIN,
+    OPT_WEATHER_TEMPERATURE,
+    OPT_WEATHER_WIND,
     OPT_WHEN_UNAVAILABLE,
+    WEATHER_SOURCES,
     DeviceModel,
     categories_of,
     custom_model,
@@ -101,6 +106,21 @@ SOURCE_SELECTORS = {
     "virtual_motion": EntitySelectorConfig(domain=["binary_sensor", "input_boolean"]),
     "virtual_temperature": EntitySelectorConfig(
         domain=["sensor", "input_number"], device_class="temperature"
+    ),
+    "virtual_brightness": EntitySelectorConfig(
+        domain=["sensor", "input_number"], device_class="illuminance"
+    ),
+}
+WEATHER_SELECTORS = {
+    OPT_WEATHER_TEMPERATURE: EntitySelectorConfig(
+        domain=["sensor", "input_number"], device_class="temperature"
+    ),
+    OPT_WEATHER_WIND: EntitySelectorConfig(
+        domain=["sensor", "input_number"], device_class="wind_speed"
+    ),
+    OPT_WEATHER_RAIN: EntitySelectorConfig(domain=["binary_sensor", "input_boolean"]),
+    OPT_WEATHER_BRIGHTNESS: EntitySelectorConfig(
+        domain=["sensor", "input_number"], device_class="illuminance"
     ),
 }
 WHEN_UNAVAILABLE = ["skip", "safe"]
@@ -173,6 +193,7 @@ OPTION_KEYS = (
     OPT_WALL_SWITCH,
     OPT_WALL_ON,
     OPT_WALL_OFF,
+    *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -295,8 +316,12 @@ class DeviceForm:
             schema[vol.Required(OPT_CHANNEL, default=0)] = NumberSelector(
                 NumberSelectorConfig(min=0, max=29, step=1, mode=NumberSelectorMode.BOX)
             )
-        if OPT_SOURCE in model.options:
-            schema[vol.Required(OPT_SOURCE)] = EntitySelector(SOURCE_SELECTORS[model.kind])
+        for opt, selector in WEATHER_SELECTORS.items():
+            if opt in model.options:
+                schema[vol.Optional(opt)] = EntitySelector(selector)
+        if OPT_SOURCE in model.options or OPT_WEATHER_TEMPERATURE in model.options:
+            if OPT_SOURCE in model.options:
+                schema[vol.Required(OPT_SOURCE)] = EntitySelector(SOURCE_SELECTORS[model.kind])
             schema[vol.Required(OPT_SEND_INTERVAL, default=DEFAULT_VIRTUAL_INTERVAL)] = (
                 NumberSelector(
                     NumberSelectorConfig(
@@ -398,6 +423,10 @@ class DeviceForm:
                 errors[field] = "sender_in_use"
                 continue
             wanted[sender_profile.id] = sender
+        if OPT_WEATHER_TEMPERATURE in model.options and not any(
+            user_input.get(key) for key in WEATHER_SOURCES
+        ):
+            errors["base"] = "weather_no_source"
         if wall_switch := (user_input.get(OPT_WALL_SWITCH) or "").strip():
             try:
                 user_input = {**user_input, OPT_WALL_SWITCH: format_id(parse_id(wall_switch))}

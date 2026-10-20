@@ -226,7 +226,10 @@
         "multisensor": "Multisensor (VLD D2-14-40) (FMS55SB)",
         "multisensor_contact": "Multisensor with contact (VLD D2-14-41) (FMMS44SB)",
         "digital_input": "Digital input (FSM60B)",
-        "digital_inputs": "Four digital inputs and temperature (FHMB, FRWB)"
+        "digital_inputs": "Four digital inputs and temperature (FHMB)",
+        "virtual_brightness": "Virtual brightness sensor (FAH60)",
+        "virtual_weather": "Virtual weather station (FWS61)",
+        "virtual_scene": "Virtual scene button (scenes 1–4)"
       }
     },
     "routing": {
@@ -298,7 +301,10 @@
         "virtual_rocker": "Teach-in: put the actuator into learn mode, then press the button on this device page that it should learn.",
         "bus": "On the Eltako bus: for the actuator to send a confirmation, the FAM14's upper rotary switch must be at position 2 while teaching in.",
         "vld_switch": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s (e.g. the button on the actuator). It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot send the answer.",
-        "vld_cover": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s. It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3)."
+        "vld_cover": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s. It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3).",
+        "virtual_brightness": "Teach-in: put the actuator into learn mode for a brightness sensor (FSB14: function 150 for the shading automatic), then press “Teach in brightness sensor”.",
+        "virtual_weather": "Teach-in: put the actuator into learn mode for a weather station (see its manual, e.g. wind and rain alarm), then press “Teach in weather station”.",
+        "virtual_scene": "Teach-in: put the actuator into learn mode for a scene button (FSB14: function 180/200), then press one of the scene buttons on this device page. Scenes are stored on the actuator as its manual describes."
       }
     },
     "when_unavailable": {
@@ -495,7 +501,10 @@
             "model_multisensor": "Multisensor (VLD D2-14-40)",
             "model_multisensor_contact": "Multisensor with contact (VLD D2-14-41)",
             "model_digital_input": "Digital input",
-            "model_digital_inputs": "Four digital inputs and temperature"
+            "model_digital_inputs": "Four digital inputs and temperature",
+            "model_virtual_brightness": "Virtual brightness sensor",
+            "model_virtual_weather": "Virtual weather station",
+            "model_virtual_scene": "Virtual scene button"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -528,7 +537,10 @@
             "model_multisensor": "FMS55SB",
             "model_multisensor_contact": "FMMS44SB",
             "model_digital_input": "FSM60B",
-            "model_digital_inputs": "FHMB, FRWB"
+            "model_digital_inputs": "FHMB",
+            "model_virtual_brightness": "FAH60",
+            "model_virtual_weather": "FWS61",
+            "model_virtual_scene": "scenes 1–4"
           }
         },
         "learned": {
@@ -583,7 +595,11 @@
             "sender_vld": "Sender ID: VLD commands",
             "wall_switch": "Wall switch ID (optional)",
             "wall_on_button": "Wall switch: button for on",
-            "wall_off_button": "Wall switch: button for off"
+            "wall_off_button": "Wall switch: button for off",
+            "weather_temperature": "Temperature",
+            "weather_wind": "Wind speed",
+            "weather_rain": "Rain",
+            "weather_brightness": "Brightness"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -608,7 +624,11 @@
             "sender_vld": "Reported to the actuator during the UTE teach-in.",
             "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
             "wall_on_button": "Same button for on and off: every press toggles.",
-            "wall_off_button": "Same button for on and off: every press toggles."
+            "wall_off_button": "Same button for on and off: every press toggles.",
+            "weather_temperature": "Optional. Without it 20 °C is sent.",
+            "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
+            "weather_rain": "Optional, on = rain.",
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
           }
         },
         "reconfigure": {
@@ -645,7 +665,11 @@
             "sender_vld": "Sender ID: VLD commands",
             "wall_switch": "Wall switch ID (optional)",
             "wall_on_button": "Wall switch: button for on",
-            "wall_off_button": "Wall switch: button for off"
+            "wall_off_button": "Wall switch: button for off",
+            "weather_temperature": "Temperature",
+            "weather_wind": "Wind speed",
+            "weather_rain": "Rain",
+            "weather_brightness": "Brightness"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -666,7 +690,11 @@
             "sender_vld": "Reported to the actuator during the UTE teach-in.",
             "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
             "wall_on_button": "Same button for on and off: every press toggles.",
-            "wall_off_button": "Same button for on and off: every press toggles."
+            "wall_off_button": "Same button for on and off: every press toggles.",
+            "weather_temperature": "Optional. Without it 20 °C is sent.",
+            "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
+            "weather_rain": "Optional, on = rain.",
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
           }
         },
         "address": {
@@ -735,7 +763,8 @@
         "sender_in_use": "Already used by another device.",
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
         "sender_pool_exhausted": "No free sender ID left.",
-        "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02."
+        "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02.",
+        "weather_no_source": "Choose at least one entity for the weather station."
       },
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
@@ -988,6 +1017,24 @@
       },
       "teach_in_vld": {
         "name": "Teach in (UTE)"
+      },
+      "teach_in_brightness": {
+        "name": "Teach in brightness sensor"
+      },
+      "teach_in_weather": {
+        "name": "Teach in weather station"
+      },
+      "scene_1": {
+        "name": "Scene 1"
+      },
+      "scene_2": {
+        "name": "Scene 2"
+      },
+      "scene_3": {
+        "name": "Scene 3"
+      },
+      "scene_4": {
+        "name": "Scene 4"
       }
     }
   },

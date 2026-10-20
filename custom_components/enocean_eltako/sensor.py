@@ -728,6 +728,11 @@ class VirtualValueSensor(_VirtualSensorEntity):
         if device.model.kind == "virtual_temperature":
             self._attr_device_class = SensorDeviceClass.TEMPERATURE
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+        elif device.model.kind == "virtual_brightness":
+            self._attr_device_class = SensorDeviceClass.ILLUMINANCE
+            self._attr_native_unit_of_measurement = LIGHT_LUX
+        elif device.model.kind == "virtual_weather":
+            pass  # a summary text: "21.5 °C, 3.2 m/s, dry, 12000 lx"
         else:
             self._attr_device_class = SensorDeviceClass.ENUM
             self._attr_translation_key = f"sent_{device.model.kind.removeprefix('virtual_')}"

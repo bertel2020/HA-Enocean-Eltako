@@ -314,7 +314,8 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         device = EnOceanDevice(hass, entry, subentry)
         runtime.devices[subentry_id] = device
         entry.async_on_unload(device.start())
-        if device.model.group == GROUP_VIRTUAL and device.model.kind != "virtual_rocker":
+        buttons_only = device.model.kind in ("virtual_rocker", "virtual_scene")
+        if device.model.group == GROUP_VIRTUAL and not buttons_only:
             device.virtual = VirtualSensor(hass, device)
             entry.async_on_unload(device.virtual.start())
         owners.update(sender_owner(device.device_id, p) for p in device.senders)

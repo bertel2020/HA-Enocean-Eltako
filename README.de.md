@@ -66,8 +66,11 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
 - **Eltako-Gerät** oder **EnOcean-Gerät anderer Hersteller**: Kategorie und Geräteart aus
   dem Katalog wählen.
 - **Virtueller Sensor**: Home Assistant sendet selbst als Fensterkontakt (D5-00-01),
-  Bewegungsmelder (A5-07-01), Temperaturfühler (A5-02-05) oder Taster (F6-02-01) mit eigener
-  Sender-ID. So senkt ein HA-Fensterkontakt den Heizungsaktor ab oder eine HA-Temperatur dient
+  Bewegungsmelder (A5-07-01), Temperaturfühler (A5-02-05), Helligkeitssensor (FAH60-Format),
+  Wetterstation (FWS61-Format: Temperatur, Wind, Regen, Helligkeit aus beliebigen Entitäten),
+  Taster (F6-02-01) oder Szenentaster (Szenen 1–4, z. B. FSB14 Einlernfunktion 180/200) mit
+  eigener Sender-ID. Ein HA-Luxsensor steuert so die Beschattungsautomatik eines FSB14, ein
+  Wetterdienst dessen Wind- und Regenalarm. So senkt ein HA-Fensterkontakt den Heizungsaktor ab oder eine HA-Temperatur dient
   als Raumfühler. Gesendet wird bei jeder Änderung der gewählten Entität und alle 15 min
   (einstellbar); ist die Entität nicht verfügbar, kann ein Kontakt den sicheren Wert „offen“
   senden. Eingelernt wird über den Button auf der Geräteseite, dort steht auch der zuletzt
@@ -133,7 +136,7 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Taster und Kontakte | Wippentaster (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Taster und Kontakte | Kontakt über Tastertelegramme (FTS14EM, Garagentor …) | Eltako | `F6-02-01:std` | - | binary_sensor |
 | Taster und Kontakte | Digitaleingang (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
-| Taster und Kontakte | Vier Digitaleingänge und Temperatur (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
+| Taster und Kontakte | Vier Digitaleingänge und Temperatur (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensoren | Temperatur und Feuchte (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensoren | Bewegungs- und Helligkeitssensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
 | Sensoren | VOC-Sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
@@ -154,6 +157,9 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Fensterkontakt | Home Assistant | - | `contact: D5-00-01:std` | button, sensor |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Temperaturfühler | Home Assistant | - | `temperature: A5-02-05:std` | button, sensor |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Bewegungsmelder | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Helligkeitssensor (FAH60) | Home Assistant | - | `brightness: A5-06-01:eltako` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtuelle Wetterstation (FWS61) | Home Assistant | - | `weather: A5-13-01:eltako` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Szenentaster (Szenen 1–4) | Home Assistant | - | `rocker: F6-02-01:std` | button |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Taster | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
@@ -243,6 +249,9 @@ solange ihre Ports nicht freigegeben sind.
 - **Generische Profile:** Geräte per EEP entschlüsseln jedes Standardprofil, aber Profile
   außerhalb des Katalogs sind nicht mit Hardware geprüft; einige offizielle Testcontainer
   weichen ab (siehe [docs/quality_scale.md](docs/quality_scale.md)).
+- **Virtueller Helligkeitssensor und Wetterstation** senden die dokumentierten Formate von
+  FAH60 und FWS61; noch nicht an einem Aktor geprüft. Ist eine gewählte Wetter-Entität nicht
+  verfügbar, wird nichts gesendet, damit kein falscher Alarm ausgelöst wird.
 - **Multisensoren D2-14-40/41** (FMS55SB, FMMS44SB) werden nach dem Profil entschlüsselt,
   sind aber noch nicht mit Hardware geprüft.
 - **Rollladenpositionen** von Eltako-Aktoren werden aus Laufzeiten berechnet, der Aktor meldet

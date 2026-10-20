@@ -17,6 +17,9 @@ from .gateway_entity import GatewayReconnectButton
 
 # F6-02-01 rocker action of each button (pressed)
 ROCKER_BUTTONS = {"b0": 0x70, "b1": 0x50, "a0": 0x30, "a1": 0x10}
+# I9 scene button (double rocker taught in as scene button, e.g. FSB14 learn function
+# 180/200): scene 1...4 = left top, left bottom, right top, right bottom
+SCENE_BUTTONS = ("a0", "a1", "b0", "b1")
 
 PARALLEL_UPDATES = 0
 
@@ -34,6 +37,10 @@ async def async_setup_entry(
             buttons.append(CalibrateButton(device))
         if device.model.kind == "virtual_rocker":
             buttons.extend(VirtualRockerButton(device, b) for b in ROCKER_BUTTONS)
+        elif device.model.kind == "virtual_scene":
+            buttons.extend(
+                VirtualRockerButton(device, b, scene=n) for n, b in enumerate(SCENE_BUTTONS, 1)
+            )
         elif device.virtual is not None:
             buttons.append(SendNowButton(device))
         async_add_entities(buttons, config_subentry_id=subentry_id)
@@ -91,10 +98,11 @@ class SendNowButton(EnOceanEntity, ButtonEntity):
 class VirtualRockerButton(EnOceanEntity, ButtonEntity):
     """I9: a rocker button pressed and released by Home Assistant (FT55-like)."""
 
-    def __init__(self, device: EnOceanDevice, button: str) -> None:
-        super().__init__(device, f"press_{button}")
+    def __init__(self, device: EnOceanDevice, button: str, scene: int | None = None) -> None:
+        key = f"press_{button}" if scene is None else f"scene_{scene}"
+        super().__init__(device, key)
         self._code = bytes([ROCKER_BUTTONS[button]])
-        self._attr_translation_key = f"press_{button}"
+        self._attr_translation_key = key
 
     async def async_press(self) -> None:
         self._device.press("rocker", self._code, confirm=False)

@@ -39,6 +39,16 @@ OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavaila
 OPT_CALIBRATION = "calibration"  # I6 cover: passive | before_move
 OPT_FIELDS = "fields"  # device added by EEP: the profile values shown as sensors
 OPT_SOURCE = "source"  # I9 virtual sensor: the HA entity whose state is sent
+OPT_WEATHER_TEMPERATURE = "weather_temperature"  # I9 weather: entity per value (optional)
+OPT_WEATHER_WIND = "weather_wind"
+OPT_WEATHER_RAIN = "weather_rain"
+OPT_WEATHER_BRIGHTNESS = "weather_brightness"
+WEATHER_SOURCES = (
+    OPT_WEATHER_TEMPERATURE,
+    OPT_WEATHER_WIND,
+    OPT_WEATHER_RAIN,
+    OPT_WEATHER_BRIGHTNESS,
+)
 OPT_WHEN_UNAVAILABLE = "when_unavailable"  # I9: source unavailable -> skip | safe value
 OPT_CHANNEL = "channel"  # VLD actuators: output channel (D2-01 I/O, D2-05 CHN)
 OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on/off state
@@ -113,6 +123,12 @@ VIRTUAL_TEMPERATURE = SenderProfile(
 )
 VIRTUAL_MOTION = SenderProfile(
     "motion", EEPRef("A5-07-01", "std"), Rorg.BS4, virtual.MOTION_TEACH_IN
+)
+VIRTUAL_BRIGHTNESS = SenderProfile(
+    "brightness", EEPRef("A5-06-01", "eltako"), Rorg.BS4, virtual.BRIGHTNESS_TEACH_IN
+)
+VIRTUAL_WEATHER = SenderProfile(
+    "weather", EEPRef("A5-13-01", "eltako"), Rorg.BS4, virtual.WEATHER_TEACH_IN
 )
 
 
@@ -325,7 +341,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("A5-30-03:std"),
             (Platform.BINARY_SENSOR, Platform.SENSOR),
             category="buttons",
-            examples="FHMB, FRWB",
+            examples="FHMB",
         ),
         DeviceModel(
             "co2",
@@ -447,6 +463,38 @@ CATALOG: dict[str, DeviceModel] = {
             manufacturer="Home Assistant",
             options=(OPT_SOURCE, OPT_INVERT, OPT_SEND_INTERVAL),
             examples="FBH",
+        ),
+        DeviceModel(
+            "virtual_brightness",
+            None,
+            (Platform.BUTTON, Platform.SENSOR),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(VIRTUAL_BRIGHTNESS,),
+            manufacturer="Home Assistant",
+            options=(OPT_SOURCE, OPT_SEND_INTERVAL),
+            examples="FAH60",
+        ),
+        DeviceModel(
+            "virtual_weather",
+            None,
+            (Platform.BUTTON, Platform.SENSOR),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(VIRTUAL_WEATHER,),
+            manufacturer="Home Assistant",
+            options=(*WEATHER_SOURCES, OPT_SEND_INTERVAL),
+            examples="FWS61",
+        ),
+        DeviceModel(
+            "virtual_scene",
+            None,
+            (Platform.BUTTON,),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(ROCKER,),
+            manufacturer="Home Assistant",
+            examples="FT55 as scene button",
         ),
         DeviceModel(
             "virtual_rocker",

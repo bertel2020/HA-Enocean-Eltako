@@ -16,7 +16,7 @@ Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 | Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor |
 | Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
-| Buttons and contacts | Four digital inputs and temperature (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
+| Buttons and contacts | Four digital inputs and temperature (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensors | Temperature and humidity (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensors | Motion and brightness sensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
 | Sensors | VOC sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
@@ -37,4 +37,7 @@ Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 | Virtual sensor (Home Assistant sends) | Virtual window contact | Home Assistant | - | `contact: D5-00-01:std` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual temperature sensor | Home Assistant | - | `temperature: A5-02-05:std` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual motion sensor | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual brightness sensor (FAH60) | Home Assistant | - | `brightness: A5-06-01:eltako` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual weather station (FWS61) | Home Assistant | - | `weather: A5-13-01:eltako` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual scene button (scenes 1–4) | Home Assistant | - | `rocker: F6-02-01:std` | button |
 | Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |

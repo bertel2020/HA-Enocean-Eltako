@@ -161,3 +161,88 @@ async def test_add_virtual_contact_via_flow(hass: HomeAssistant, gateway) -> Non
     data = entry.subentries[subentry.subentry_id].data
     assert data["senders"] == [{"profile": "contact", "sender_id": "FF-B7-44-81"}]
     assert data["invert"] is True
+
+
+BRIGHTNESS = 0xFFB74493
+WEATHER = 0xFFB74494
+SCENE = 0xFFB74495
+
+MORE_VIRTUALS = [
+    _virtual(
+        "virtual_brightness",
+        BRIGHTNESS,
+        "Helligkeit HA",
+        "brightness",
+        source="sensor.lux",
+        send_interval=0,
+    ),
+    _virtual(
+        "virtual_weather",
+        WEATHER,
+        "Wetter HA",
+        "weather",
+        weather_wind="sensor.wind",
+        weather_rain="binary_sensor.rain",
+        weather_brightness="sensor.lux",
+        send_interval=0,
+    ),
+    _virtual("virtual_scene", SCENE, "Szenen HA", "rocker"),
+]
+
+
+def test_brightness_encoding() -> None:
+    from custom_components.enocean_eltako.protocol.eep import virtual
+
+    assert virtual.encode_brightness(50).hex() == "3200000f"  # twilight byte
+    assert virtual.encode_brightness(150).hex() == "6400000f"  # 100...300 lx: 100 lx
+    assert virtual.encode_brightness(300).hex() == "6401000f"  # never 0 above 300 lx
+    assert virtual.encode_brightness(99999).hex() == "64ff000f"
+
+
+@pytest.mark.parametrize("gateway", [MORE_VIRTUALS], indirect=True)
+async def test_brightness_weather_and_scenes(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    from custom_components.enocean_eltako.protocol.eep import virtual
+
+    entry, server = gateway
+    hass.states.async_set("sensor.lux", "15150", {"unit_of_measurement": "lx"})
+    hass.states.async_set("sensor.wind", "36", {"unit_of_measurement": "km/h"})  # 10 m/s
+    hass.states.async_set("binary_sensor.rain", "on")
+    await _settle(hass)
+    assert _sent(server, Rorg.BS4, "6480000f", BRIGHTNESS)  # (15150-300)/29700*255 = 127.5
+    # no temperature entity: 20 degC; the brightness is also the sun on all sides
+    weather = virtual.encode_weather(15150, 20.0, 10.0, night=False, rain=True)
+    assert _sent(server, Rorg.BS4, weather.hex(), WEATHER)
+    assert _sent(server, Rorg.BS4, virtual.encode_sun(15.15, 15.15, 15.15).hex(), WEATHER)
+
+    server.received.clear()
+    hass.states.async_set("sensor.wind", "unavailable")
+    await _settle(hass)
+    assert not _sent(server, Rorg.BS4, weather.hex(), WEATHER)  # nothing while unavailable
+
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_FF-B7-44-95_1_scene_3")},
+        blocking=True,
+    )
+    await _settle(hass)
+    assert _sent(server, Rorg.RPS, "70", SCENE, 0x30)  # scene 3 = right top
+
+
+async def test_add_virtual_weather_needs_an_entity(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await configure(result["flow_id"], {"next_step_id": "virtual"})
+    result = await configure(result["flow_id"], {"next_step_id": "model_virtual_weather"})
+    assert result["step_id"] == "device"
+    form = {"name": "Wetter", "sender_weather": "FF-B7-44-81", "send_interval": 900}
+    result = await configure(result["flow_id"], form)
+    assert result["errors"] == {"base": "weather_no_source"}
+    result = await configure(result["flow_id"], {**form, "weather_wind": "sensor.wind"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["weather_wind"] == "sensor.wind"
+    assert "weather_rain" not in result["data"]
+    await hass.async_block_till_done()

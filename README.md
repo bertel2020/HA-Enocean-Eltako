@@ -63,8 +63,11 @@ Add a device under the gateway with **Add device** in one of six ways:
 - **Eltako device** or **EnOcean device of another manufacturer**: pick category and kind
   from the catalog.
 - **Virtual sensor**: Home Assistant itself sends as a window contact (D5-00-01), motion
-  sensor (A5-07-01), temperature sensor (A5-02-05) or rocker (F6-02-01) with its own sender
-  ID. An HA window contact can lower the heating actuator, an HA temperature can be its room
+  sensor (A5-07-01), temperature sensor (A5-02-05), brightness sensor (FAH60 format),
+  weather station (FWS61 format: temperature, wind, rain, brightness from any entities),
+  rocker (F6-02-01) or scene button (scenes 1–4, e.g. FSB14 learn function 180/200) with its
+  own sender ID. An HA lux sensor can drive the shading automatic of an FSB14, a weather
+  service its wind and rain alarm. An HA window contact can lower the heating actuator, an HA temperature can be its room
   sensor. It sends on every change of the chosen entity and repeats every 15 min (adjustable);
   if the entity is unavailable, a contact can send the safe value "open". Teach it in with the
   button on the device page; the device page also shows the value sent last.
@@ -129,7 +132,7 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor |
 | Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
-| Buttons and contacts | Four digital inputs and temperature (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
+| Buttons and contacts | Four digital inputs and temperature (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensors | Temperature and humidity (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensors | Motion and brightness sensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
 | Sensors | VOC sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
@@ -150,6 +153,9 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Virtual sensor (Home Assistant sends) | Virtual window contact | Home Assistant | - | `contact: D5-00-01:std` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual temperature sensor | Home Assistant | - | `temperature: A5-02-05:std` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual motion sensor | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual brightness sensor (FAH60) | Home Assistant | - | `brightness: A5-06-01:eltako` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual weather station (FWS61) | Home Assistant | - | `weather: A5-13-01:eltako` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual scene button (scenes 1–4) | Home Assistant | - | `rocker: F6-02-01:std` | button |
 | Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
@@ -236,6 +242,9 @@ its ports.
 - **Generic profiles:** devices added by EEP decode every standard profile, but profiles
   outside the catalog are not checked against hardware; some official test containers
   disagree (see [docs/quality_scale.md](docs/quality_scale.md)).
+- **Virtual brightness sensor and weather station** send Eltako's FAH60 and FWS61
+  formats as documented; not checked against an actuator yet. While a chosen weather
+  entity is unavailable nothing is sent, so no false alarm goes out.
 - **Multisensors D2-14-40/41** (FMS55SB, FMMS44SB) are decoded from the profile but not
   checked against hardware yet.
 - **Cover positions** of Eltako actuators are calculated from run times, the actuator

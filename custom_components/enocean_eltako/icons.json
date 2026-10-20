@@ -80,6 +80,24 @@
       },
       "teach_in_vld": {
         "default": "mdi:school-outline"
+      },
+      "teach_in_brightness": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_weather": {
+        "default": "mdi:school-outline"
+      },
+      "scene_1": {
+        "default": "mdi:palette"
+      },
+      "scene_2": {
+        "default": "mdi:palette"
+      },
+      "scene_3": {
+        "default": "mdi:palette"
+      },
+      "scene_4": {
+        "default": "mdi:palette"
       }
     },
     "event": {

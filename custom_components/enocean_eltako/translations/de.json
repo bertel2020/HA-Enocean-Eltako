@@ -226,7 +226,10 @@
         "multisensor": "Multisensor (VLD D2-14-40) (FMS55SB)",
         "multisensor_contact": "Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB)",
         "digital_input": "Digitaleingang (FSM60B)",
-        "digital_inputs": "Vier Digitaleingänge und Temperatur (FHMB, FRWB)"
+        "digital_inputs": "Vier Digitaleingänge und Temperatur (FHMB)",
+        "virtual_brightness": "Virtueller Helligkeitssensor (FAH60)",
+        "virtual_weather": "Virtuelle Wetterstation (FWS61)",
+        "virtual_scene": "Virtueller Szenentaster (Szenen 1–4)"
       }
     },
     "routing": {
@@ -298,7 +301,10 @@
         "virtual_rocker": "Anlernen: Aktor in den Lernmodus bringen, dann auf dieser Geräteseite die Taste drücken, die er lernen soll.",
         "bus": "Am Eltako-Bus: Damit der Aktor eine Bestätigung sendet, muss der obere Drehschalter des FAM14 beim Anlernen auf Position 2 stehen.",
         "vld_switch": "Anlernen: Auf dieser Geräteseite „Einlernen (UTE)“ drücken, dann innerhalb von 60 s den Aktor in den Lernmodus bringen (z. B. Taste am Aktor). Er sendet eine Anfrage, die Home Assistant beantwortet. Dafür ist ein ESP3-Gateway nötig (USB300, MGW-ETH, generisch ESP3); ESP2-Gateways wie der FAM-USB können die Antwort nicht senden.",
-        "vld_cover": "Anlernen: Auf dieser Geräteseite „Einlernen (UTE)“ drücken, dann innerhalb von 60 s den Aktor in den Lernmodus bringen. Er sendet eine Anfrage, die Home Assistant beantwortet. Dafür ist ein ESP3-Gateway nötig (USB300, MGW-ETH, generisch ESP3)."
+        "vld_cover": "Anlernen: Auf dieser Geräteseite „Einlernen (UTE)“ drücken, dann innerhalb von 60 s den Aktor in den Lernmodus bringen. Er sendet eine Anfrage, die Home Assistant beantwortet. Dafür ist ein ESP3-Gateway nötig (USB300, MGW-ETH, generisch ESP3).",
+        "virtual_brightness": "Anlernen: Aktor in den Lernmodus für einen Helligkeitssensor bringen (FSB14: Funktion 150 für die Beschattungsautomatik), dann „Helligkeitssensor einlernen“ drücken.",
+        "virtual_weather": "Anlernen: Aktor in den Lernmodus für eine Wetterstation bringen (siehe Anleitung, z. B. Wind- und Regenalarm), dann „Wetterstation einlernen“ drücken.",
+        "virtual_scene": "Anlernen: Aktor in den Lernmodus für einen Szenentaster bringen (FSB14: Funktion 180/200), dann einen der Szenen-Buttons auf dieser Geräteseite drücken. Die Szenen speichert der Aktor wie in seiner Anleitung beschrieben."
       }
     },
     "when_unavailable": {
@@ -495,7 +501,10 @@
             "model_multisensor": "Multisensor (VLD D2-14-40)",
             "model_multisensor_contact": "Multisensor mit Kontakt (VLD D2-14-41)",
             "model_digital_input": "Digitaleingang",
-            "model_digital_inputs": "Vier Digitaleingänge und Temperatur"
+            "model_digital_inputs": "Vier Digitaleingänge und Temperatur",
+            "model_virtual_brightness": "Virtueller Helligkeitssensor",
+            "model_virtual_weather": "Virtuelle Wetterstation",
+            "model_virtual_scene": "Virtueller Szenentaster"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -528,7 +537,10 @@
             "model_multisensor": "FMS55SB",
             "model_multisensor_contact": "FMMS44SB",
             "model_digital_input": "FSM60B",
-            "model_digital_inputs": "FHMB, FRWB"
+            "model_digital_inputs": "FHMB",
+            "model_virtual_brightness": "FAH60",
+            "model_virtual_weather": "FWS61",
+            "model_virtual_scene": "Szenen 1–4"
           }
         },
         "learned": {
@@ -583,7 +595,11 @@
             "sender_vld": "Sender-ID: VLD-Befehle",
             "wall_switch": "ID des Wandtasters (optional)",
             "wall_on_button": "Wandtaster: Taste für Ein",
-            "wall_off_button": "Wandtaster: Taste für Aus"
+            "wall_off_button": "Wandtaster: Taste für Aus",
+            "weather_temperature": "Temperatur",
+            "weather_wind": "Windgeschwindigkeit",
+            "weather_rain": "Regen",
+            "weather_brightness": "Helligkeit"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -608,7 +624,11 @@
             "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
             "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
             "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+            "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
+            "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
+            "weather_rain": "Optional, ein = Regen.",
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
           }
         },
         "reconfigure": {
@@ -645,7 +665,11 @@
             "sender_vld": "Sender-ID: VLD-Befehle",
             "wall_switch": "ID des Wandtasters (optional)",
             "wall_on_button": "Wandtaster: Taste für Ein",
-            "wall_off_button": "Wandtaster: Taste für Aus"
+            "wall_off_button": "Wandtaster: Taste für Aus",
+            "weather_temperature": "Temperatur",
+            "weather_wind": "Windgeschwindigkeit",
+            "weather_rain": "Regen",
+            "weather_brightness": "Helligkeit"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -666,7 +690,11 @@
             "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
             "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
             "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+            "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
+            "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
+            "weather_rain": "Optional, ein = Regen.",
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
           }
         },
         "address": {
@@ -735,7 +763,8 @@
         "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
         "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
         "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
-        "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben."
+        "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben.",
+        "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen."
       },
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
@@ -988,6 +1017,24 @@
       },
       "teach_in_vld": {
         "name": "Einlernen (UTE)"
+      },
+      "teach_in_brightness": {
+        "name": "Helligkeitssensor einlernen"
+      },
+      "teach_in_weather": {
+        "name": "Wetterstation einlernen"
+      },
+      "scene_1": {
+        "name": "Szene 1"
+      },
+      "scene_2": {
+        "name": "Szene 2"
+      },
+      "scene_3": {
+        "name": "Szene 3"
+      },
+      "scene_4": {
+        "name": "Szene 4"
       }
     }
   },
