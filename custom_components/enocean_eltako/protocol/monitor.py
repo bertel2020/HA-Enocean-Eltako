@@ -73,6 +73,18 @@ class TelegramMonitor:
             )
         return entries[-limit:] if limit else entries
 
+    def received_since(self, gateway: str, since: float) -> int:
+        """Received telegrams (repetitions included) at or after since; the panel's rate.
+
+        Counts the whole buffer: replayed telegrams keep their reception time, so the
+        buffer is not strictly in time order.
+        """
+        return sum(
+            1
+            for e in self._buffers.get(gateway, ())
+            if e.direction == "rx" and e.timestamp >= since
+        )
+
     def subscribe(self, subscriber: Subscriber) -> Callable[[], None]:
         self._subscribers.append(subscriber)
         return lambda: self._subscribers.remove(subscriber)

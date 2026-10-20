@@ -547,7 +547,9 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _keydown(e) {
     const input = this.shadowRoot.getElementById("text");
-    if (e.key === "/" && input && this.shadowRoot.activeElement !== input && !e.composedPath()[0]?.matches?.("input, textarea")) {
+    const target = e.composedPath()[0];
+    const typing = target?.isContentEditable || target?.matches?.("input, textarea, select");
+    if (e.key === "/" && input && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       input.focus();
     } else if (e.key === "Escape" && this.shadowRoot.activeElement === input) {
@@ -559,9 +561,14 @@ class EnOceanEltakoPanel extends HTMLElement {
   // ---- data --------------------------------------------------------------------------------
 
   async _subscribe() {
-    this._unsub = this._hass.connection.subscribeMessage((row) => this._add(row), {
+    const unsub = this._hass.connection.subscribeMessage((row) => this._add(row), {
       type: "enocean_eltako/telegrams/subscribe",
       history: HISTORY,
+    });
+    this._unsub = unsub;
+    // failed (e.g. connection lost while subscribing): the next hass update tries again
+    unsub.catch(() => {
+      if (this._unsub === unsub) this._unsub = null;
     });
     await this._refreshStatus();
     clearInterval(this._timer);
@@ -603,7 +610,11 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _trim() {
-    for (const r of this._rows.splice(MAX_ROWS)) this._keys.delete(rowKey(r));
+    for (const r of this._rows.splice(MAX_ROWS)) {
+      const key = rowKey(r);
+      this._keys.delete(key);
+      this._expanded.delete(key);
+    }
   }
 
   _schedule() {
@@ -775,8 +786,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           else pill = ["bad", gw.disconnected_since ? `${t.disconnected} ${t.since(Math.round(now - gw.disconnected_since))}` : t.disconnected];
         }
         const last = gw.last_telegram != null ? `${t.lastHeard} ${t.ago(Math.max(0, Math.round(now - gw.last_telegram)))}` : t.never;
-        const perMinute = this._perMinute(gw.entry_id);
-        const rate = perMinute < 10 ? perMinute.toFixed(1).replace(/\.0$/, "") : String(Math.round(perMinute));
+        const rate = gw.per_minute ?? "–";
         const stat = (label, value, warn) => `<span>${esc(label)} <b class="${warn ? "warn" : ""}">${esc(value)}</b></span>`;
         const selected = this._filter.gateway === gw.entry_id;
         const expanded = this._gatewayDetails.has(gw.entry_id);
@@ -810,18 +820,6 @@ class EnOceanEltakoPanel extends HTMLElement {
         <span class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${share}" aria-label="${esc(t.airtimeHint)}"><i class="${level}" style="width:${Math.min(100, share)}%"></i></span>
         <b>${esc(share.toLocaleString(this._hass.language, { maximumFractionDigits: 1 }))} %</b>
       </div>`;
-  }
-
-  _perMinute(gateway) {
-    // received telegrams of the last minute, from the list itself (repetitions included)
-    const since = Date.now() - 60000;
-    let count = 0;
-    for (const r of [...this._pending.slice().reverse(), ...this._rows]) {
-      if (r.gateway !== gateway || r.dir !== "rx") continue;
-      if (Date.parse(r.time) < since) break;
-      count += 1;
-    }
-    return count;
   }
 
   _value(value) {

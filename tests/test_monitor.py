@@ -192,6 +192,7 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     )
     assert status["loaded"] and status["connected"]
     assert (status["telegrams"], status["devices"], status["queue"]) == (3, 2, 0)
+    assert status["per_minute"] == 3
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 

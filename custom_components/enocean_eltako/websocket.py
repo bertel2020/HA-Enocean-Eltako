@@ -7,6 +7,7 @@ ID), the decoded values, and the EEP of a 4BS teach-in from an unknown sender.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import probatio as vol
@@ -209,6 +210,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "on_demand": runtime.on_demand,
             "connection": str(gateway.connection),
             "telegrams": gateway.telegrams_received,
+            "per_minute": runtime.hub.monitor.received_since(entry.entry_id, time.time() - 60),
             "last_telegram": gateway.last_telegram,
             "queue": len(runtime.queue),
             "unconfirmed": runtime.queue.stats.unconfirmed + runtime.queue.stats.failed,

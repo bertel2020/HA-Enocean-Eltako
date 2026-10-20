@@ -16,6 +16,8 @@ def test_ring_buffer_and_history() -> None:
     assert m.history("gw1")[0].timestamp == 1002.0
     assert [e.direction for e in m.history()][-1] == "tx"
     assert len(m.history(limit=2)) == 2
+    assert m.received_since("gw1", 1003.0) == 2
+    assert m.received_since("gw2", 0.0) == 0  # sent ones do not count
 
 
 def test_entry_as_dict_and_subscribe() -> None:
