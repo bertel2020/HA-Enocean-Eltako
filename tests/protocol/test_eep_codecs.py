@@ -48,7 +48,12 @@ def test_shutter_status_and_command() -> None:
         "direction": "down",
     }
     assert shutter.encode_command(shutter.UP, 25).hex() == "00190108"
-    assert shutter.encode_command(shutter.DOWN, 2.5).hex() == "0019020a"
+    # whole seconds unless the 100 ms form is chosen (not every firmware knows it)
+    assert shutter.encode_command(shutter.DOWN, 2.5).hex() == "00030208"
+    assert shutter.encode_command(shutter.DOWN, 0.2).hex() == "00010208"  # at least 1 s
+    assert shutter.encode_command(shutter.UP, 300).hex() == "00ff0108"  # at most 255 s
+    assert shutter.encode_command(shutter.DOWN, 2.5, tenths=True).hex() == "0019020a"
+    assert shutter.encode_command(shutter.UP, 25, tenths=True).hex() == "00190108"
     assert shutter.encode_command(shutter.STOP).hex() == "00000008"
 
 

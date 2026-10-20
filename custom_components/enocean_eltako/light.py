@@ -14,6 +14,7 @@ from . import EnOceanEltakoConfigEntry
 from .catalog import (
     CENTRAL,
     OPT_CHANNEL,
+    OPT_INVERT,
     OPT_PLATFORM,
     ROCKER,
 )
@@ -25,8 +26,14 @@ from .protocol.eep.eltako import switching
 PARALLEL_UPDATES = 0
 
 
+def inverted(device: EnOceanDevice) -> bool:
+    """Reversed relay logic (e.g. a release): on means the relay is off, both ways."""
+    return bool(device.options.get(OPT_INVERT))
+
+
 def switch_actuator(device: EnOceanDevice, on: bool) -> None:
     """A profile with an on/off command when configured, otherwise the rocker's buttons."""
+    on = on != inverted(device)
     for profile_id in device.senders:
         profile = device.model.sender_profile(profile_id)
         if profile.switch_fn is not None:
@@ -71,6 +78,7 @@ class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "light")
+        self._invert = inverted(device)
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -86,7 +94,7 @@ class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
 
     def _apply(self, values: dict[str, Any]) -> bool:
         on = on_state(values)
-        if on is None or on == self._attr_is_on:
+        if on is None or (on := on != self._invert) == self._attr_is_on:
             return False
         self._attr_is_on = on
         return True

@@ -169,14 +169,17 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     @callback
     def _send(self) -> None:
-        if self._attr_current_temperature is None:
+        if self._sensor is not None and self._attr_current_temperature is None:
             return  # no room temperature yet; the actuator keeps its last values
         setpoint = (
             0.0 if self._attr_hvac_mode == HVACMode.OFF else self._attr_target_temperature or 0
         )
         try:
             self._device.send(
-                heating.encode_controller(setpoint, self._attr_current_temperature),
+                # without an entity the actuator's own thermostat measures (setpoint only)
+                heating.encode_controller(
+                    setpoint, self._attr_current_temperature if self._sensor else None
+                ),
                 priority=Priority.AUTOMATION,
                 key="controller",
                 confirm=False,
@@ -214,7 +217,12 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     def _apply(self, values: dict[str, Any]) -> bool:
         if "mode" not in values:
-            return False
+            # the actuator's acknowledgement: its thermostat's temperature, if HA has none
+            temperature = values.get("temperature")
+            if self._sensor is not None or temperature in (None, self._attr_current_temperature):
+                return False
+            self._attr_current_temperature = temperature
+            return True
         if values["mode"] == "off":
             action = HVACAction.OFF
         elif self._attr_hvac_mode == HVACMode.COOL:

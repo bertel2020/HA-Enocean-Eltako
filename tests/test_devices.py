@@ -907,6 +907,81 @@ async def test_heating_actuator_controlled_by_ha(hass: HomeAssistant, room_senso
     assert not ir.async_get(hass).issues
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "heating_actuator",
+                "05-00-00-53",
+                "Heizung Flur",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-A3"}],
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_heating_actuator_with_its_thermostat(hass: HomeAssistant, gateway) -> None:
+    """Without a temperature entity: setpoint only, the room temperature from the actuator."""
+    from custom_components.enocean_eltako.protocol.eep.eltako import heating
+
+    _entry, server = gateway
+    entity_id = _entity(hass, "climate", f"{BASE}_05-00-00-53_1_climate")
+    await _settle(hass)
+    setpoint_only = esp2.encode_radio(
+        RadioTelegram(Rorg.BS4, bytes.fromhex("00860008"), 0xFFB744A3)  # 21 degC, DB1 = 0
+    )
+    assert setpoint_only in bytes(server.received)
+    _push(server, 0x07, bytes.fromhex("0086820F"), 0x05000053)  # acknowledgement, 19.6 degC
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["current_temperature"] == 19.6
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_05-00-00-53_1_teach_in_controller")},
+    )
+    await _settle(hass)
+    teach_in = esp2.encode_radio(RadioTelegram(Rorg.BS4, heating.TEACH_IN, 0xFFB744A3))
+    assert heating.TEACH_IN.hex() == "40300d85"
+    assert teach_in in bytes(server.received)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B9",
+                "Freigabe",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-8B"}],
+                platform="switch",
+                invert=True,
+            ),
+            _subentry("window_handle", "00-21-63-44", "Fenster", invert=True),
+        ]
+    ],
+    indirect=True,
+)
+async def test_inverted_switch_and_window_handle(hass: HomeAssistant, gateway) -> None:
+    """Reversed relay logic: commands and state swapped; a window handle reads on = closed."""
+    from custom_components.enocean_eltako.protocol.eep.eltako import switching
+
+    _entry, server = gateway
+    switch = _entity(hass, "switch", f"{BASE}_05-10-A2-B9_1_switch")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": switch})
+    await _settle(hass)
+    relay_off = RadioTelegram(Rorg.BS4, switching.encode_switch(False), 0xFFB7448B)
+    assert esp2.encode_radio(relay_off) in bytes(server.received)
+    _push(server, 0x05, b"\x50", 0x0510A2B9, 0x30)  # the relay reports off
+    await _settle(hass)
+    assert hass.states.get(switch).state == "on"
+    _push(server, 0x05, b"\xf0", 0x00216344, 0x20)  # handle closed
+    await _settle(hass)
+    window = _entity(hass, "binary_sensor", f"{BASE}_00-21-63-44_1_window")
+    assert hass.states.get(window).state == "on"
+
+
 def test_heating_controller_telegram() -> None:
     from custom_components.enocean_eltako.protocol.eep.eltako import heating
 
@@ -1574,6 +1649,7 @@ async def test_heating_actuator_cooling(hass: HomeAssistant, room_sensor, gatewa
                 time_opens=40,
                 time_closes=40,
                 tilt_time=1.5,
+                run_time_tenths=True,
             )
         ]
     ],
@@ -1592,7 +1668,7 @@ async def test_blind_tilt(hass: HomeAssistant, gateway) -> None:
         "cover", "set_cover_tilt_position", {"entity_id": entity_id, "tilt_position": 40}
     )
     await _settle(hass)
-    turn = shutter.encode_command(shutter.DOWN, 0.9)  # 100 ms resolution
+    turn = shutter.encode_command(shutter.DOWN, 0.9, tenths=True)  # 100 ms resolution
     assert turn[3] & 0x02
     assert esp2.encode_radio(RadioTelegram(Rorg.BS4, turn, 0xFFB74494)) in bytes(server.received)
     _push(server, 0x07, bytes.fromhex("0009020A"), 0x05000022)  # drove down 0.9 s

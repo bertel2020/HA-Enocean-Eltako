@@ -48,6 +48,7 @@ from .catalog import (
     OPT_CALIBRATION,
     OPT_CHANNEL,
     OPT_ROUTING,
+    OPT_TENTHS,
     OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
@@ -113,6 +114,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
                 | CoverEntityFeature.SET_TILT_POSITION
             )
         self._before_move = device.options.get(OPT_CALIBRATION) == "before_move"
+        self._tenths = bool(device.options.get(OPT_TENTHS))
         self._attr_is_opening = False
         self._attr_is_closing = False
         routing = device.options.get(OPT_ROUTING, CONTROLLER.id)
@@ -245,7 +247,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         for profile in profiles:
             if profile == CONTROLLER.id:
                 self._device.send(
-                    shutter.encode_command(command, round(seconds, 1)),
+                    shutter.encode_command(command, round(seconds, 1), tenths=self._tenths),
                     profile=profile,
                     key="move",
                 )

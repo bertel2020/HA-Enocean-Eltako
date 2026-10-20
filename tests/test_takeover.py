@@ -42,6 +42,12 @@ OLD_GATEWAY = {
             },
             {"id": "FF-C2-4A-92", "eep": "M5-38-08", "name": "Ohne Sender"},
             {
+                "id": "FF-C2-4A-97",
+                "eep": "F6-02-01",
+                "name": "Toggler",
+                "sender": {"id": "FF-B7-44-C0", "eep": "F6-02-01"},
+            },
+            {
                 "id": "FF-C2-4A-93",
                 "eep": "M5-38-08",
                 "name": "Kaputt",
@@ -81,6 +87,7 @@ OLD_GATEWAY = {
                 "invert_signal": True,
             },
             {"id": "FF-C2-4A-8F", "eep": "F6-02-01", "name": "Doppelt"},
+            {"id": "00-21-63-43", "eep": "F6-10-00", "name": "Fenster", "invert_signal": True},
         ],
         "sensor": [
             {"id": "05-00-00-12", "eep": "A5-12-01", "name": "Zähler"},
@@ -118,12 +125,14 @@ def test_plan_actuators() -> None:
     assert light.data == {"platform": "light", "rocker_on_button": "a0", "rocker_off_button": "a1"}
     dimmer = devices["Dimmer Flur"]
     assert (dimmer.model, dimmer.senders, dimmer.data) == ("dimmer", {"central": 0xFFB744B7}, {})
-    socket = devices["Steckdose"]  # right rocker, on and off swapped by invert_signal
+    socket = devices["Steckdose"]  # right rocker; invert_signal reverses commands and state
     assert socket.data == {
         "platform": "switch",
-        "rocker_on_button": "b1",
-        "rocker_off_button": "b0",
+        "invert": True,
+        "rocker_on_button": "b0",
+        "rocker_off_button": "b1",
     }
+    assert devices["Toggler"].reason == "takeover_unsupported"  # reports as a rocker
     cover = devices["Rollladen"]
     assert cover.senders == {"controller": 0xFFB744BC}
     assert cover.data == {"time_opens": 25.0, "time_closes": 24.0, "tilt_time": 1.5}
@@ -140,6 +149,8 @@ def test_plan_sensors() -> None:
     door = devices["Haustür"]
     assert (door.model, door.data) == ("contact", {"device_class": "door", "invert": True})
     assert devices["Zähler"].model == "meter"
+    window = devices["Fenster"]
+    assert (window.model, window.data) == ("window_handle", {"invert": True})
     motion = devices["Bewegung"]
     assert (motion.model, motion.data) == ("eep", {"eep": "A5-07-01:std"})
     assert devices["Unbekannt"].reason == "takeover_unsupported"

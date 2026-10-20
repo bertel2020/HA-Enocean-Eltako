@@ -55,6 +55,7 @@ from .catalog import (
     OPT_SOURCE,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
+    OPT_TENTHS,
     OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
@@ -190,6 +191,7 @@ OPTION_KEYS = (
     OPT_LONG_PRESS,
     OPT_DOUBLE_PRESS,
     OPT_CALIBRATION,
+    OPT_TENTHS,
     OPT_SOURCE,
     OPT_WHEN_UNAVAILABLE,
     OPT_CHANNEL,
@@ -388,7 +390,7 @@ class DeviceForm:
                 )
             )
         if OPT_TEMPERATURE_SENSOR in model.options:
-            schema[vol.Required(OPT_TEMPERATURE_SENSOR)] = EntitySelector(
+            schema[vol.Optional(OPT_TEMPERATURE_SENSOR)] = EntitySelector(
                 EntitySelectorConfig(domain="sensor", device_class="temperature")
             )
             schema[vol.Required(OPT_SEND_INTERVAL, default=60)] = NumberSelector(
@@ -411,6 +413,8 @@ class DeviceForm:
                     options=["passive", "before_move"], translation_key=OPT_CALIBRATION
                 )
             )
+        if OPT_TENTHS in model.options:
+            schema[vol.Required(OPT_TENTHS, default=False)] = BooleanSelector()
         if OPT_DEVICE_CLASS in model.options:
             schema[vol.Required(OPT_DEVICE_CLASS, default="window")] = SelectSelector(
                 SelectSelectorConfig(options=DEVICE_CLASSES, translation_key=OPT_DEVICE_CLASS)

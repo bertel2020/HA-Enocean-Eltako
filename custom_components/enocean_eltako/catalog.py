@@ -55,6 +55,7 @@ OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on
 OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
 OPT_WALL_OFF = "wall_off_button"  # I4: its button that switches off (same button = toggle)
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
+OPT_TENTHS = "run_time_tenths"  # cover: controller run times in 100 ms (newer firmware)
 OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up
 OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
 
@@ -193,7 +194,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="lighting",
             senders=(ROCKER, CENTRAL),
             any_sender=True,
-            options=(OPT_STATUS_REQUEST, OPT_WALL_SWITCH, OPT_ROCKER_ON),
+            options=(OPT_STATUS_REQUEST, OPT_INVERT, OPT_WALL_SWITCH, OPT_ROCKER_ON),
             examples="FSR61, FSR14, FL62, FSR71",
         ),
         DeviceModel(
@@ -219,6 +220,7 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_TILT_TIME,
                 OPT_ROUTING,
                 OPT_CALIBRATION,
+                OPT_TENTHS,
                 OPT_ROCKER_ON,
             ),
             examples="FSB14, FSB61, FSB71, FJ62",
@@ -241,6 +243,7 @@ CATALOG: dict[str, DeviceModel] = {
             _ref("F6-10-00:std"),
             (Platform.SENSOR, Platform.BINARY_SENSOR),
             category="buttons",
+            options=(OPT_INVERT,),
             examples="FTKE, FFG7B",
         ),
         DeviceModel(
@@ -404,6 +407,7 @@ CATALOG: dict[str, DeviceModel] = {
             group=GROUP_ENOCEAN,
             base="window_handle",
             manufacturer="EnOcean",
+            options=(OPT_INVERT,),
             examples="Hoppe SecuSignal",
         ),
         DeviceModel(

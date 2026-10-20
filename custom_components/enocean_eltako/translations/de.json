@@ -108,13 +108,14 @@
           "vent_time": "Lüftungsschlitz-Zeit",
           "tilt_time": "Wendezeit Lamellen",
           "channel": "Kanal",
-          "sender_vld": "Sender-ID: VLD-Befehle"
+          "sender_vld": "Sender-ID: VLD-Befehle",
+          "run_time_tenths": "Fahrzeiten in 100 ms"
         },
         "data_description": {
           "time_opens": "Volle Laufzeit von zu nach auf.",
           "time_closes": "Volle Laufzeit von auf nach zu.",
           "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
-          "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
+          "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant). Leer: Home Assistant sendet nur den Sollwert, der im Aktor eingelernte Thermostat misst.",
           "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
           "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
           "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
@@ -125,7 +126,9 @@
           "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
           "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
           "channel": "Ausgang des Aktors (0 = erster Kanal).",
-          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
+          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
+          "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
+          "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht."
         },
         "sections": {
           "rocker_buttons": {
@@ -651,14 +654,15 @@
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit"
+            "weather_brightness": "Helligkeit",
+            "run_time_tenths": "Fahrzeiten in 100 ms"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
             "time_opens": "Volle Laufzeit von zu nach auf.",
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
-            "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
+            "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant). Leer: Home Assistant sendet nur den Sollwert, der im Aktor eingelernte Thermostat misst.",
             "send_interval": "Wie oft gesendet wird. Heizungsaktor: mindestens alle 10 min, sonst geht er nach 1 h in den Störbetrieb. Virtueller Sensor: Wiederholung zusätzlich zu jeder Änderung, 0 = nur bei Änderung.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
@@ -678,7 +682,9 @@
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
+            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht."
           },
           "sections": {
             "rocker_buttons": {
@@ -744,13 +750,14 @@
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit"
+            "weather_brightness": "Helligkeit",
+            "run_time_tenths": "Fahrzeiten in 100 ms"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
-            "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
+            "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant). Leer: Home Assistant sendet nur den Sollwert, der im Aktor eingelernte Thermostat misst.",
             "send_interval": "Wie oft gesendet wird. Heizungsaktor: mindestens alle 10 min, sonst geht er nach 1 h in den Störbetrieb. Virtueller Sensor: Wiederholung zusätzlich zu jeder Änderung, 0 = nur bei Änderung.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
@@ -767,7 +774,9 @@
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
+            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht."
           },
           "sections": {
             "rocker_buttons": {

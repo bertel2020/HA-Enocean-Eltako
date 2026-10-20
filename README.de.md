@@ -210,11 +210,14 @@ sich dort freigeben.
 **Aus eltako übernehmen** liest die Geräte der alten Integration `eltako` aus der
 `configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
 IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. `left`/`right` eines
-Taster-Senders und `invert_signal` eines Schalters werden zu den Tasten, die er drückt;
-Fahrzeiten von Rollläden werden übernommen. Buttons der alten Integration werden nicht
-übernommen (dafür einen virtuellen Taster anlegen), Heizungsaktoren brauchen danach ihre
-Raumtemperatur-Entität. Die alte Integration abschalten, sobald ihre Geräte hier laufen: beide
-dürfen nicht denselben Port öffnen.
+Taster-Senders wird zu den Tasten, die er drückt, `invert_signal` von Schaltern und
+Fenstergriffen zu **Umkehren**, Fahrzeiten von Rollläden werden übernommen. Buttons der alten
+Integration und Schalter, die sich als Taster melden, werden nicht übernommen (dafür einen
+virtuellen Taster anlegen). Heizungsaktoren bekommen wie bei der alten Integration nur den Sollwert
+und behalten ihren Thermostat; eine Raumtemperatur-Entität lässt sich ergänzen. Rollläden
+bekommen wie bei der alten Integration ganze Sekunden; **Fahrzeiten in 100 ms** ist für Aktoren, die diese Form kennen. Die alte
+Integration abschalten, sobald ihre Geräte hier laufen: beide dürfen nicht denselben Port
+öffnen.
 
 Reparaturen weisen darauf hin, wo etwas zu tun ist:
 

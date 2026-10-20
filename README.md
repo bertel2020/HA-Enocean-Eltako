@@ -201,10 +201,13 @@ blocked until it is taught out of every actuator; free it there once that is don
 **Take over from eltako** reads the devices of the old `eltako` integration from
 `configuration.yaml` (the gateway with the same base ID) and sets up the chosen ones with
 their IDs, names and sender IDs, so the actuators need no new teach-in. A rocker sender's
-`left`/`right` and a switch's `invert_signal` become the rocker buttons it presses; cover
-times are carried over. Buttons of the old integration are not taken over (use a virtual
-rocker), heating actuators need their room temperature entity afterwards. Turn the old
-integration off once its devices run here: both must not open the same port.
+`left`/`right` becomes the rocker buttons it presses, `invert_signal` of switches and window
+handles becomes **Invert**, cover times are carried over. Buttons of the old integration and
+switches reporting as rockers are not taken over (use a virtual rocker). Heating actuators, as
+with the old integration, get only the setpoint and keep their thermostat; a room temperature
+entity can be added. Covers get whole seconds as with the old integration; **Run times in 100 ms** is for actuators that
+know that form. Turn the old integration off once its devices run here: both must not open
+the same port.
 
 Repairs point out what needs a hand:
 

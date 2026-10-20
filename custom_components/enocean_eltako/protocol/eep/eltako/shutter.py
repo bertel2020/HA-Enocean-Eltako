@@ -7,7 +7,8 @@ G5-3F-7F (status, not an official profile), same sender ID for both forms:
         0x01 up / 0x02 down, DB0 = 0x0A.
 
 H5-3F-7F = A5-3F-7F:eltako (command; officially A5-3F-7F is manufacturer specific):
-    DB2 = run time in seconds 1...255 (DB0.1 = 0) or DB3/DB2 = run time in 100 ms (DB0.1 = 1),
+    DB2 = run time in seconds 1...255 (DB0.1 = 0) or DB3/DB2 = run time in 100 ms (DB0.1 = 1;
+    not every actuator firmware knows this form, so it is used only when chosen),
     DB1 = command 0x00 stop, 0x01 up, 0x02 down, DB0.2 = lock, DB0.3 = LRN (1 = data).
     Teach-in: 4BS FF F8 0D 80 (teach-in function 180/200 on the FSB14).
 """
@@ -36,13 +37,16 @@ def decode_status(data: bytes) -> dict[str, Any] | None:
     return None
 
 
-def encode_command(command: int, seconds: float = 0, *, lock: bool = False) -> bytes:
-    """Stop/up/down; times above 25.5 s or with tenths use the 100 ms form."""
+def encode_command(
+    command: int, seconds: float = 0, *, tenths: bool = False, lock: bool = False
+) -> bytes:
+    """Stop/up/down in whole seconds 1...255; with tenths, times that are no whole seconds
+    up to 255 use the 100 ms form."""
     db0 = 0x08 | (0x04 if lock else 0)
     if command == STOP:
         return bytes([0, 0, STOP, db0])
-    tenths = round(seconds * 10)
-    if tenths % 10 == 0 and 1 <= tenths // 10 <= 255:
-        return bytes([0, tenths // 10, command, db0])
-    tenths = max(1, min(0xFFFF, tenths))
-    return bytes([tenths >> 8, tenths & 0xFF, command, db0 | 0x02])
+    raw = round(seconds * 10)
+    if not tenths or (raw % 10 == 0 and 1 <= raw // 10 <= 255):
+        return bytes([0, max(1, min(255, int(seconds + 0.5))), command, db0])
+    raw = max(1, min(0xFFFF, raw))
+    return bytes([raw >> 8, raw & 0xFF, command, db0 | 0x02])

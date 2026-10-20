@@ -14,7 +14,7 @@ from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_CHANNEL, OPT_PLATFORM
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
-from .light import on_state, switch_actuator
+from .light import inverted, on_state, switch_actuator
 from .protocol.eep import vld
 
 PARALLEL_UPDATES = 0
@@ -41,6 +41,7 @@ class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "switch")
+        self._invert = inverted(device)
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -56,7 +57,7 @@ class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
 
     def _apply(self, values: dict[str, Any]) -> bool:
         on = on_state(values)
-        if on is None or on == self._attr_is_on:
+        if on is None or (on := on != self._invert) == self._attr_is_on:
             return False
         self._attr_is_on = on
         return True

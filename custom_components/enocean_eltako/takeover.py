@@ -123,12 +123,9 @@ def _parse_sender(text: Any) -> tuple[int, str]:
     return parse_id(parts[0]), side
 
 
-def _rocker_buttons(side: str, swapped: bool) -> dict[str, str]:
+def _rocker_buttons(side: str) -> dict[str, str]:
     rocker = "a" if side == "left" else "b"
-    on, off = f"{rocker}0", f"{rocker}1"
-    if swapped:
-        on, off = off, on
-    return {OPT_ROCKER_ON: on, OPT_ROCKER_OFF: off}
+    return {OPT_ROCKER_ON: f"{rocker}0", OPT_ROCKER_OFF: f"{rocker}1"}
 
 
 def _sensor(device: TakeoverDevice, eep: str, conf: Mapping[str, Any]) -> None:
@@ -158,23 +155,27 @@ def _actuator(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str
         return
     sender_eep = str(sender_conf.get("eep", "")).upper()
     if platform in (Platform.LIGHT, Platform.SWITCH):
+        if eep in ROCKER_EEPS:  # a switch reporting as a rocker: the old one toggled per press
+            device.reason = "takeover_unsupported"
+            return
         device.model = "dimmer" if platform == Platform.LIGHT and eep == "A5-38-08" else "switch"
         if device.model == "switch":
             device.data[OPT_PLATFORM] = platform
+            # the old switch platform reversed commands and state with invert_signal
+            if platform == Platform.SWITCH and conf.get("invert_signal"):
+                device.data[OPT_INVERT] = True
         if sender_eep == "A5-38-08":
             device.senders[CENTRAL.id] = sender
         elif sender_eep in ROCKER_EEPS:
             device.senders[ROCKER.id] = sender
-            # the old switch platform swapped on and off with invert_signal
-            swapped = platform == Platform.SWITCH and bool(conf.get("invert_signal"))
-            device.data.update(_rocker_buttons(side, swapped))
+            device.data.update(_rocker_buttons(side))
     elif platform == Platform.COVER:
         device.model = "cover"
         if sender_eep == "H5-3F-7F":
             device.senders[CONTROLLER.id] = sender
         elif sender_eep in ROCKER_EEPS:
             device.senders[DIRECTION_ROCKER.id] = sender
-            device.data.update(_rocker_buttons(side, False))
+            device.data.update(_rocker_buttons(side))
         for old, new in (("time_opens", OPT_TIME_OPENS), ("time_closes", OPT_TIME_CLOSES)):
             if conf.get(old):
                 device.data[new] = float(conf[old])
