@@ -170,8 +170,9 @@ TCP port, so several programs can use one gateway at the same time, e.g. the old
 integration while moving over. The app announces its gateways: they show up here as
 discovered (**EnOcean Proxy**); pick the model and the gateway is set up with **Replay over
 EnOcean Proxy** switched on. After a Home Assistant restart the app delivers the telegrams
-that arrived meanwhile (radio telegrams only, up to 15 minutes old), so cover positions and
-meter readings stay right. The app is reachable from Home Assistant only, unless you open
+that arrived meanwhile (radio telegrams only, up to 15 minutes old) with their reception
+time, so cover positions, meter readings and "last seen" stay right. Its status page also
+records captures (e.g. PCT14 with a FAM14) and shows the air time against the 1 % limit. The app is reachable from Home Assistant only, unless you open
 its ports.
 
 ## Known limitations

@@ -105,8 +105,13 @@ class Dispatcher:
     def is_known(self, sender: int) -> bool:
         return self._aliases.get(sender, sender) in self._listeners
 
-    def dispatch(self, gateway: str, telegram: RadioTelegram) -> ReceivedTelegram:
-        """Feed one received telegram; returns it with the duplicate flag set."""
+    def dispatch(
+        self, gateway: str, telegram: RadioTelegram, timestamp: float | None = None
+    ) -> ReceivedTelegram:
+        """Feed one received telegram; returns it with the duplicate flag set.
+
+        timestamp: when it was really received (replayed by the EnOcean Proxy app).
+        """
         now = self._clock()
         sender = self._aliases.get(telegram.sender, telegram.sender)
         # status low nibble = repeater count, differs between original and repetition
@@ -115,7 +120,7 @@ class Dispatcher:
         duplicate = last is not None and last[0] == key and now - last[1] < self._window
         if not duplicate:
             self._last[sender] = (key, now)
-        received = ReceivedTelegram(telegram, gateway, time.time(), sender, duplicate)
+        received = ReceivedTelegram(telegram, gateway, timestamp or time.time(), sender, duplicate)
 
         self.stats.received += 1
         self.stats.per_gateway[gateway] = self.stats.per_gateway.get(gateway, 0) + 1

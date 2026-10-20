@@ -141,6 +141,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         hub.dispatcher.dispatch(entry.entry_id, telegram)
 
     @callback
+    def on_replayed(telegram: RadioTelegram, received_at: float) -> None:
+        """Telegrams the EnOcean Proxy kept during a restart, with their reception time."""
+        hub.dispatcher.dispatch(entry.entry_id, telegram, timestamp=received_at)
+
+    @callback
     def on_connection_change(connected: bool) -> None:
         if hasattr(entry, "runtime_data"):
             entry.runtime_data.disconnected_since = None if connected else time.time()
@@ -156,6 +161,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         on_telegram=on_telegram,
         on_connection_change=on_connection_change,
         hello=PROXY_REPLAY_REQUEST if entry.options.get(CONF_PROXY_REPLAY) else b"",
+        on_replayed=on_replayed,
     )
     if not on_demand:
         try:

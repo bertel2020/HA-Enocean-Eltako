@@ -20,6 +20,10 @@ RECONNECT_DELAYS = (1, 2, 5, 10, 30, 60)
 Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.StreamWriter]]]
 
 
+REPLAY_BLOCK = b"EOPX TS "  # start of the EnOcean Proxy replay with reception times
+REPLAY_END = b"EOPX END\n"
+
+
 class _Codec:
     """Protocol-specific framing behind one interface."""
 
@@ -75,6 +79,7 @@ class Gateway:
         on_connection_change: Callable[[bool], None] | None = None,
         opener: Opener = open_connection,
         hello: bytes = b"",
+        on_replayed: Callable[[RadioTelegram, float], None] | None = None,
     ) -> None:
         self.protocol = protocol
         self.connection = connection
@@ -82,6 +87,7 @@ class Gateway:
         self._on_connection_change = on_connection_change
         self._opener = opener
         self._hello = hello  # sent first after every connect (EnOcean Proxy replay request)
+        self._on_replayed = on_replayed
         self._codec = _Codec(protocol)
         self._writer: asyncio.StreamWriter | None = None
         self._reader_task: asyncio.Task[None] | None = None
@@ -194,8 +200,15 @@ class Gateway:
         await self._writer.drain()
 
     async def _read_loop(self, reader: asyncio.StreamReader) -> None:
+        pending = bytearray() if self._hello else None  # a replay block may come first
         try:
             while chunk := await reader.read(1024):
+                if pending is not None:
+                    pending += chunk
+                    chunk, done = self._take_replay(pending)
+                    if not done:
+                        continue
+                    pending = None
                 for item in self._codec.decoder.feed(chunk):
                     self._handle(item)
         except OSError as err:
@@ -204,6 +217,38 @@ class Gateway:
             # stream ended by the other side (EOF or error), not by _disconnect()
             self._log_outage("Connection to %s closed", self.connection)
             await self._disconnect()
+
+    def _take_replay(self, buffer: bytearray) -> tuple[bytes, bool]:
+        """EnOcean Proxy replay with reception times: "EOPX TS <n>", n lines
+        "<unix time> <hex frame>", "EOPX END". Returns the bytes after the block and whether
+        the start of the stream is settled (no block, or the block complete)."""
+        head = bytes(buffer[: len(REPLAY_BLOCK)])
+        if not REPLAY_BLOCK.startswith(head) and not head.startswith(REPLAY_BLOCK):
+            return bytes(buffer), True  # an older proxy or none: binary from the start
+        if len(buffer) < len(REPLAY_BLOCK):
+            return b"", False
+        end = buffer.find(REPLAY_END)
+        if end < 0:
+            return b"", False
+        block, rest = bytes(buffer[:end]), bytes(buffer[end + len(REPLAY_END) :])
+        replayed = 0
+        for line in block.decode("ascii", "replace").splitlines()[1:]:
+            stamp, _, hex_frame = line.partition(" ")
+            try:
+                items = self._codec.decoder.feed(bytes.fromhex(hex_frame))
+                received_at = float(stamp)
+            except ValueError:
+                continue
+            for item in items:
+                if (telegram := self._codec.radio(item)) is None:
+                    continue
+                replayed += 1
+                if self._on_replayed is not None:
+                    self._on_replayed(telegram, received_at)
+                elif self._on_telegram is not None:
+                    self._on_telegram(telegram)
+        _LOGGER.info("%s: %d telegrams replayed by the EnOcean Proxy", self.connection, replayed)
+        return rest, True
 
     def _log_outage(self, message: str, *args: object) -> None:
         """Warn once per outage; repeats (reconnect attempts, flapping port) only at debug."""

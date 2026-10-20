@@ -135,3 +135,52 @@ async def test_bus_polling_is_dropped_before_dispatch(fake: FakeGateway) -> None
     assert gw.polls_dropped == 40
     assert await gw.read_base_id() == 0xFFB74480  # bus traffic does not answer the command
     await gw.close()
+
+
+@pytest.mark.parametrize("block", [True, False])
+async def test_proxy_replay_with_reception_times(block: bool) -> None:
+    """EnOcean Proxy >= 0.4 sends a text block with reception times; older ones none."""
+    frame = esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x70, 0, 0, 0]), 0x00216343, 0x30)
+    live = esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x50, 0, 0, 0]), 0x00216343, 0x30)
+    request = asyncio.Event()
+
+    async def proxy(reader, writer) -> None:
+        assert await reader.readline() == b"EOPX REPLAY TS\n"
+        request.set()
+        if block:
+            text = f"EOPX TS 1\n1700000000.250 {frame.encode().hex()}\nEOPX END\n".encode()
+            writer.write(text[:9])  # in pieces, the binary stream right behind
+            await writer.drain()
+            await asyncio.sleep(0.02)
+            writer.write(text[9:] + live.encode())
+        else:
+            writer.write(live.encode())
+        await writer.drain()
+        await reader.read()  # until the gateway closes the connection
+        writer.close()
+
+    server = await asyncio.start_server(proxy, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    replayed: list[tuple[RadioTelegram, float]] = []
+    received: list[RadioTelegram] = []
+    gw = Gateway(
+        Protocol.ESP2,
+        TcpConnection("127.0.0.1", port),
+        on_telegram=received.append,
+        on_replayed=lambda telegram, at: replayed.append((telegram, at)),
+        hello=b"EOPX REPLAY TS\n",
+    )
+    await gw.connect()
+    await asyncio.wait_for(request.wait(), 2)
+    for _ in range(100):
+        if received:
+            break
+        await asyncio.sleep(0.01)
+    await gw.close()
+    server.close()
+    await server.wait_closed()
+    assert [t.data for t in received] == [b"\x50"]  # the live telegram
+    if block:
+        assert [(t.data, at) for t, at in replayed] == [(b"\x70", 1700000000.25)]
+    else:
+        assert replayed == []

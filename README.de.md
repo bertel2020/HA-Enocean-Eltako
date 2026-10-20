@@ -177,8 +177,10 @@ auf einem TCP-Port an. So können mehrere Programme ein Gateway gleichzeitig nut
 alte Integration `eltako` während des Umstiegs. Die App meldet ihre Gateways an: Sie erscheinen
 hier als entdeckt (**EnOcean Proxy**); Modell wählen, und das Gateway ist mit **Nachlieferung
 über EnOcean Proxy** eingerichtet. Nach einem Neustart von Home Assistant liefert die App die
-Telegramme nach, die inzwischen ankamen (nur Funktelegramme, höchstens 15 Minuten alt), damit
-Rollladenpositionen und Zählerstände stimmen. Die App ist nur aus Home Assistant erreichbar,
+Telegramme nach, die inzwischen ankamen (nur Funktelegramme, höchstens 15 Minuten alt), mit ihrer
+Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Ihre
+Statusseite nimmt außerdem Mitschnitte auf (z. B. PCT14 mit FAM14) und zeigt die Funkbelegung
+gegenüber dem 1-%-Limit. Die App ist nur aus Home Assistant erreichbar,
 solange ihre Ports nicht freigegeben sind.
 
 ## Bekannte Einschränkungen
