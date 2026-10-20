@@ -167,17 +167,21 @@ Use **Telegrams** to filter by gateway. **Details** expands the connection, send
 and unconfirmed commands. For an EnOcean Proxy gateway it also shows the proxy version,
 connected programs, air time against the 1 % limit and any capture send lock.
 
-Below, every received and sent telegram appears live, newest first: device name (or
-"unknown sender"), sender ID, gateway,
-telegram type, the decoded values with name and unit as the entities show them ("Power
-15 W") and the signal strength. Telegrams per minute count the received telegrams of the
+Below, every received and sent telegram appears live in a table, newest first, 50 per page:
+time, direction, device name (or "unknown sender") with sender ID, telegram type, the decoded values with name and unit as the entities show them ("Power
+15 W"), the signal strength and, with several gateways, the gateway. Click a column header
+to sort by time, direction, sender, type, signal or gateway (on a phone: the sort list).
+Pages hold 25, 50, 100 or 200 rows; the browser remembers the page size and sort order. On a
+later page new telegrams do not push the rows away: the page stays, and a button jumps to
+the new ones. Telegrams per minute count the received telegrams of the
 last minute. Sent telegrams name the device and
 sender profile; a teach-in of an unknown sender shows its EEP. Click a telegram for its raw
 data, status, destination and signal in dBm, or to show only that sender. Unknown senders
 also offer **Add device** in these details to open their discovered card.
 
-Search by device, ID (with or without dashes) or data (key `/`), choose received or sent,
-show unknown senders only or include repetitions; **Reset filters** clears them. Pause keeps
+Search by device, ID (with or without dashes), value name or data (key `/`), choose received
+or sent, a gateway or a telegram type (RPS, 1BS, 4BS, VLD …), show unknown senders only or
+include repetitions; **Reset filters** clears them. Pause keeps
 collecting (up to 1,000) and shows how many telegrams arrived; export saves the visible ones
 as JSON lines. While text in the list is selected, for example to copy an ID, new telegrams
 wait until the selection ends. The panel loads the last 200 telegrams of the running session

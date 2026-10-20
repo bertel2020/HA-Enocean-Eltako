@@ -172,17 +172,23 @@ Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über
 stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
 und eine Sendesperre während eines Mitschnitts.
 
-Darunter erscheint jedes empfangene und gesendete Telegramm live, das neueste oben:
-Gerätename (oder „Unbekannter Sender“), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie
-bei den Entitäten („Leistung 15 W“) und die Signalstärke. Telegramme pro Minute zählen die
+Darunter erscheint jedes empfangene und gesendete Telegramm live in einer Tabelle, das
+neueste oben, 50 je Seite: Zeit, Richtung, Gerätename (oder „Unbekannter Sender“) mit
+Sender-ID, Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den
+Entitäten („Leistung 15 W“), die Signalstärke und bei mehreren Gateways das Gateway. Ein
+Klick auf einen Spaltenkopf sortiert nach Zeit, Richtung, Sender, Typ, Signal oder Gateway
+(auf dem Handy: die Sortierliste). Seiten fassen 25, 50, 100 oder 200 Zeilen; Seitengröße und
+Sortierung merkt sich der Browser. Auf einer späteren Seite verschieben neue Telegramme die
+Zeilen nicht: Die Seite bleibt, ein Knopf springt zu den neuen. Telegramme pro Minute zählen die
 empfangenen Telegramme der letzten Minute.
 Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
 Senders steht die EEP dabei. Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und
 Signal in dBm oder filtert auf diesen Sender. Bei unbekannten Sendern öffnet dort
 **Gerät hinzufügen** die zugehörige Entdeckt-Karte.
 
-Suchen nach Gerät, ID (mit oder ohne Bindestriche) oder Daten (Taste `/`), nur Empfangenes
-oder Gesendetes, nur unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt
+Suchen nach Gerät, ID (mit oder ohne Bindestriche), Wertname oder Daten (Taste `/`), nur
+Empfangenes oder Gesendetes, ein Gateway oder ein Telegrammtyp (RPS, 1BS, 4BS, VLD …), nur
+unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt
 alles auf. Anhalten sammelt weiter (bis zu 1.000) und zeigt, wie viele Telegramme
 eingetroffen sind; Exportieren speichert die sichtbaren als JSON-Zeilen. Solange in der Liste
 Text markiert ist, etwa um eine ID zu kopieren, warten neue Telegramme, bis die Markierung

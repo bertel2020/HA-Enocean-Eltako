@@ -4,6 +4,8 @@
 // enocean_eltako/gateways and enocean_eltako/discover.
 
 const MAX_ROWS = 1000;
+const PAGE_SIZES = [25, 50, 100, 200];
+const STORAGE_KEY = "enocean_eltako_monitor"; // page size and sort order, per browser
 const HISTORY = 200;
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
@@ -23,6 +25,10 @@ const ICON = {
     "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",
   plus: "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z",
   chevron: "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z",
+  first: "M18.41,16.59L13.82,12L18.41,7.41L17,6L11,12L17,18L18.41,16.59M6,6H8V18H6V6Z",
+  prev: "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z",
+  next: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
+  last: "M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M16,6H18V18H16V6Z",
   filter: "M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z",
   tower:
     "M12,10A2,2 0 0,1 14,12C14,12.5 13.82,12.94 13.53,13.29L16.7,22H14.57L12,14.93L9.43,22H7.3L10.47,13.29C10.18,12.94 10,12.5 10,12A2,2 0 0,1 12,10M12,8A4,4 0 0,0 8,12C8,12.5 8.1,13 8.28,13.46L7.4,15.86C6.53,14.81 6,13.47 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12C18,13.47 17.47,14.81 16.6,15.86L15.72,13.46C15.9,13 16,12.5 16,12A4,4 0 0,0 12,8M12,4A8,8 0 0,0 4,12C4,14.36 5,16.5 6.64,17.94L5.92,19.94C3.54,18.11 2,15.23 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12C22,15.23 20.46,18.11 18.08,19.94L17.36,17.94C19,16.5 20,14.36 20,12A8,8 0 0,0 12,4Z",
@@ -33,6 +39,11 @@ const TEXT = {
     title: "EnOcean",
     gateways: "Gateways",
     sender: "Sender", content: "Content", unavailable: "Not available",
+    direction: "Direction", allTypes: "All types", sortHint: "Sort by this column", sortLabel: "Sort",
+    sortOptions: { "time:desc": "Newest first", "time:asc": "Oldest first", "sender:asc": "Sender A–Z", "type:asc": "Type", "dbm:desc": "Strongest signal", "gateway:asc": "Gateway" },
+    rowsPerPage: "Rows per page", range: (a, b, n) => `${a}–${b} of ${n}`,
+    firstPage: "First page", prevPage: "Previous page", nextPage: "Next page", lastPage: "Last page",
+    newAbove: (n) => (n === 1 ? "1 new above" : `${n} new above`),
     telegrams: "Telegrams",
     live: "Live",
     paused: (n) => (n ? `Paused · ${n} new` : "Paused"),
@@ -110,6 +121,11 @@ const TEXT = {
     title: "EnOcean",
     gateways: "Gateways",
     sender: "Sender", content: "Inhalt", unavailable: "Nicht verfügbar",
+    direction: "Richtung", allTypes: "Alle Typen", sortHint: "Nach dieser Spalte sortieren", sortLabel: "Sortieren",
+    sortOptions: { "time:desc": "Neueste zuerst", "time:asc": "Älteste zuerst", "sender:asc": "Sender A–Z", "type:asc": "Typ", "dbm:desc": "Stärkstes Signal", "gateway:asc": "Gateway" },
+    rowsPerPage: "Zeilen pro Seite", range: (a, b, n) => `${a}–${b} von ${n}`,
+    firstPage: "Erste Seite", prevPage: "Vorherige Seite", nextPage: "Nächste Seite", lastPage: "Letzte Seite",
+    newAbove: (n) => (n === 1 ? "1 neues oben" : `${n} neue oben`),
     telegrams: "Telegramme",
     live: "Live",
     paused: (n) => (n ? `Pausiert · ${n} neu` : "Pausiert"),
@@ -289,7 +305,7 @@ const STYLE = `
   .chip { height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); font-size: 13px;
     display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
   .chip svg { width: 16px; height: 16px; }
-  .chip[aria-pressed="true"], .chip.removable { border-color: transparent; color: var(--accent);
+  .chip[aria-pressed="true"] { border-color: transparent; color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .chip.add { color: var(--accent); }
   .meta { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: 12px; color: var(--muted); }
@@ -298,34 +314,58 @@ const STYLE = `
   .notice[hidden] { display: none; }
   .notice span { flex: 1; }
 
-  /* telegram rows */
-  .column-head, .row { display: grid; grid-template-columns: 92px 28px minmax(160px, 1fr) minmax(0, 1fr) 56px; gap: 12px; }
-  .column-head { padding: 8px 12px 8px 16px; background: var(--soft); color: var(--muted); font-size: 12px; }
-  .list { display: block; }
-  .row { align-items: center; padding: 12px 12px 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
-  .row:first-child { border-top: 0; }
-  .row:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
-  .row.fresh { animation: fresh 1.2s ease-out; }
+  /* telegram table: sortable columns, one page at a time */
+  .select { height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);
+    color: var(--primary-text-color); font: inherit; font-size: 13px; padding: 0 8px; max-width: 220px; }
+  .select[hidden] { display: none; }
+  .telegrams { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+  .telegrams col.c-time { width: 112px; }
+  .telegrams col.c-dir { width: 48px; }
+  .telegrams col.c-who { width: 30%; }
+  .telegrams col.c-type { width: 76px; }
+  .telegrams col.c-signal { width: 92px; }
+  .telegrams col.c-gw { width: 140px; }
+  .telegrams col.c-end { width: 48px; }
+  .telegrams th { position: sticky; top: var(--header-height, 56px); z-index: 1; padding: 0; text-align: left;
+    background: var(--soft); border-bottom: 1px solid var(--line); }
+  .telegrams th > button, .telegrams th > span { display: flex; align-items: center; gap: 2px; width: 100%; height: 38px;
+    padding: 0 8px; font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; white-space: nowrap; }
+  .telegrams th:first-child > * { padding-left: 16px; }
+  .telegrams th > button:hover, .telegrams th[aria-sort] > button { color: var(--primary-text-color); }
+  .telegrams th .sort { width: 16px; height: 16px; opacity: 0; transition: transform .15s, opacity .15s; }
+  .telegrams th > button:hover .sort { opacity: .45; }
+  .telegrams th[aria-sort] .sort { opacity: 1; }
+  .telegrams th[aria-sort="ascending"] .sort { transform: rotate(180deg); }
+  .telegrams td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: middle; min-width: 0; }
+  .telegrams td:first-child { padding-left: 16px; }
+  .telegrams tbody tr:first-child td { border-top: 0; }
+  tr.row { cursor: pointer; }
+  tr.row:hover > td { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  tr.row.open > td, tr.detail-row > td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  tr.row.fresh > td { animation: fresh 1.2s ease-out; }
   @keyframes fresh { from { background: color-mix(in srgb, var(--accent) 16%, transparent); } }
-  .row.dup { opacity: .6; }
-  .time { font-family: var(--code-font-family, ui-monospace, monospace); font-size: 13px; }
+  tr.row.dup { opacity: .6; }
+  tr.detail-row > td { border-top: 0; padding: 0 12px 12px 16px; cursor: default; }
+  tr.empty-row > td { padding: 0; }
+  .time { font-family: var(--code-font-family, ui-monospace, monospace); white-space: nowrap; }
   .time small { color: var(--muted); }
   .dir { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--soft); }
   .dir svg { width: 16px; height: 16px; }
   .dir.tx { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
-  .who { min-width: 0; }
   .who .line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .who .name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who .name.unknown { font-weight: 400; color: var(--muted); }
   .who .line2 { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
-  .tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+  .tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); white-space: nowrap; }
   .tag.teach, .tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--primary-text-color); }
-  .values { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
-  .value { font-size: 13px; white-space: nowrap; }
+  .values { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
+  .value { white-space: nowrap; }
   .value span { color: var(--muted); }
   .value b { font-weight: 500; }
-  .raw { font-size: 12px; color: var(--muted); }
-  .end { display: flex; align-items: center; justify-content: flex-end; gap: 6px; color: var(--muted); }
+  .raw { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .gw { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .signal { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .end { text-align: right; }
   .end .chev { transition: transform .15s; }
   .expand { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
   .expand:hover { background: var(--soft); }
@@ -333,12 +373,26 @@ const STYLE = `
   .bars { width: 18px; height: 14px; }
   .bars rect { fill: var(--line); }
   .bars rect.on { fill: var(--muted); }
-  .details { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px 20px; margin: 4px 0; padding: 16px; border-radius: 8px; background: var(--soft); cursor: default; }
+  .details { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 20px;
+    margin: 0; padding: 14px 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); }
   .details div { min-width: 0; }
   .details dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
   .details dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
   .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+  .m-only { display: none; }
+
+  .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 12px;
+    padding: 8px 8px 8px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .pager label { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .pager .range { min-width: 110px; text-align: right; white-space: nowrap; }
+  .pager .nav { display: inline-flex; }
+  .pager .icon-btn { width: 36px; height: 36px; }
+  .pager .icon-btn:disabled { opacity: .35; cursor: default; background: none; color: var(--muted); }
+  .pager[hidden] { display: none; }
+  .pager .newer { margin-right: auto; }
+  .pager .newer[hidden] { display: none; }
+  .meta .chip { height: 26px; font-size: 12px; }
+  .meta .chip[hidden] { display: none; }
 
   .empty { display: grid; justify-items: center; gap: 6px; padding: 48px 16px; text-align: center; color: var(--muted); }
   .empty svg { width: 48px; height: 48px; opacity: .5; }
@@ -352,14 +406,32 @@ const STYLE = `
     .rate { border: 0; padding: 0; flex: 1; }
     .gateway-count { flex: 1; }
     .gateway-actions { flex-basis: 100%; }
-    .column-head { display: none; }
-    .row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 10px; padding: 12px; }
-    .row .time { grid-column: 3; grid-row: 1; font-size: 12px; text-align: right; }
-    .row .dir { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
-    .row .who { grid-column: 2; grid-row: 1; }
-    .row .values { grid-column: 2; grid-row: 2; justify-content: flex-start; }
-    .row .end { grid-column: 3; grid-row: 2; }
+    .telegrams colgroup, .telegrams thead { display: none; }
+    .telegrams, .telegrams tbody { display: block; }
+    tr.row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 4px 10px; padding: 12px;
+      grid-template-areas: "dir who who time" "dir values signal end"; border-top: 1px solid var(--line); }
+    .telegrams tbody tr:first-child { border-top: 0; }
+    tr.row > td { display: block; padding: 0; border: 0; background: none !important; }
+    tr.row:hover, tr.row.open { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+    tr.row.fresh { animation: fresh 1.2s ease-out; }
+    tr.row > td.time { grid-area: time; font-size: 12px; text-align: right; }
+    tr.row > td.dirc { grid-area: dir; align-self: start; }
+    tr.row > td.who { grid-area: who; }
+    tr.row > td.content { grid-area: values; }
+    tr.row > td.sig { grid-area: signal; align-self: center; }
+    tr.row > td.sig .dbm { display: none; }
+    tr.row > td.end { grid-area: end; }
+    tr.row > td.type, tr.row > td.gwc { display: none; }
+    tr.detail-row, tr.detail-row > td { display: block; }
+    tr.detail-row > td { padding: 0 12px 12px; }
+    tr.empty-row, tr.empty-row > td { display: block; }
+    .m-only { display: inline; }
+    select.m-only { display: block; }
     .time small { display: none; }
+    .pager { justify-content: space-between; gap: 4px; padding: 8px; }
+    .pager .range { min-width: 0; margin-left: auto; }
+    .pager .icon-btn { width: 34px; height: 34px; }
+    .pager label span { display: none; }
     .filters .search { flex-basis: 100%; }
     .filters .chip { padding: 0 10px; font-size: 12px; flex: 1 1 auto; justify-content: center; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
@@ -391,6 +463,30 @@ function bars(dbm) {
 // buttons that keep the keyboard focus when their row or card is drawn again
 const FOCUSABLE = [".expand", "[data-only]", ".add", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
+// column sort: each compares ascending; equal rows stay newest first
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const SORTERS = {
+  time: (a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0),
+  dir: (a, b) => collator.compare(a.dir, b.dir),
+  sender: (a, b) => collator.compare(a.device || `\uffff${a.sender}`, b.device || `\uffff${b.sender}`), // unknown last
+  type: (a, b) => collator.compare(RORG[a.rorg] || a.rorg, RORG[b.rorg] || b.rorg),
+  dbm: (a, b) => (a.dbm ?? -999) - (b.dbm ?? -999),
+  gateway: (a, b) => collator.compare(a.gateway_name || "", b.gateway_name || ""),
+};
+const DESC_FIRST = new Set(["time", "dbm"]); // first click: newest, strongest
+
+function loadView() {
+  try {
+    const view = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return {
+      pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
+      sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : { key: "time", desc: true },
+    };
+  } catch (err) {
+    return { pageSize: 50, sort: { key: "time", desc: true } };
+  }
+}
+
 function rowKey(r) {
   return `${r.time}|${r.dir}|${r.sender}|${r.data}|${r.gateway}`;
 }
@@ -403,7 +499,14 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pending = [];
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
-    this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
+    this._filter = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
+    const view = loadView();
+    this._sort = view.sort;
+    this._pageSize = view.pageSize;
+    this._offset = 0; // first row of the page within the sorted, filtered rows
+    this._pageFirst = null; // that row: new rows sorting before it keep the page in place
+    this._newAbove = 0;
+    this._multi = false; // more than one gateway: gateway column and filter
     this._gateways = [];
     this._expanded = new Set();
     this._keys = new Set(); // rows shown or pending, so a repeated history is not added twice
@@ -486,14 +589,26 @@ class EnOceanEltakoPanel extends HTMLElement {
               <button data-dir="rx" aria-pressed="false">${esc(t.rx)}</button>
               <button data-dir="tx" aria-pressed="false">${esc(t.tx)}</button>
             </div>
+            <select class="select" id="gatewayFilter" aria-label="${esc(t.gateway)}" hidden></select>
+            <select class="select" id="typeFilter" aria-label="${esc(t.type)}"></select>
             <button class="chip" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
             <button class="chip" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
-            <span id="gatewayChip"></span>
+            <select class="select m-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
           </div>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
-          <div class="meta"><span id="count"></span></div>
-          <div class="column-head" aria-hidden="true"><span>${esc(t.time)}</span><span></span><span>${esc(t.sender)}</span><span>${esc(t.content)}</span><span></span></div>
-          <div class="list" id="list"></div>
+          <div class="meta"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <table class="telegrams" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
+          <div class="pager" id="pager">
+            <button class="chip newer" id="newer" hidden></button>
+            <label><span>${esc(t.rowsPerPage)}</span><select class="select" id="pageSize" aria-label="${esc(t.rowsPerPage)}">${PAGE_SIZES.map((n) => `<option value="${n}">${n}</option>`).join("")}</select></label>
+            <span class="range" id="range" aria-live="polite"></span>
+            <span class="nav">
+              <button class="icon-btn" id="pgFirst" title="${esc(t.firstPage)}" aria-label="${esc(t.firstPage)}">${svg(ICON.first)}</button>
+              <button class="icon-btn" id="pgPrev" title="${esc(t.prevPage)}" aria-label="${esc(t.prevPage)}">${svg(ICON.prev)}</button>
+              <button class="icon-btn" id="pgNext" title="${esc(t.nextPage)}" aria-label="${esc(t.nextPage)}">${svg(ICON.next)}</button>
+              <button class="icon-btn" id="pgLast" title="${esc(t.lastPage)}" aria-label="${esc(t.lastPage)}">${svg(ICON.last)}</button>
+            </span>
+          </div>
         </section>
       </main>`;
     const $ = (id) => this.shadowRoot.getElementById(id);
@@ -515,9 +630,44 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("unknown").addEventListener("click", () => this._set("unknown", !this._filter.unknown));
     $("repeats").addEventListener("click", () => this._set("repeats", !this._filter.repeats));
-    $("gatewayChip").addEventListener("click", () => this._set("gateway", ""));
+    $("gatewayFilter").addEventListener("change", (e) => this._set("gateway", e.target.value));
+    $("typeFilter").addEventListener("change", (e) => this._set("type", e.target.value));
+    $("resetTop").addEventListener("click", () => this._resetFilters());
+    $("thead").addEventListener("click", (e) => {
+      const button = e.target.closest("[data-sort]");
+      if (!button) return;
+      const key = button.dataset.sort;
+      this._setSort(key, this._sort.key === key ? !this._sort.desc : DESC_FIRST.has(key));
+    });
+    $("sortSelect").addEventListener("change", (e) => {
+      const [key, dir] = e.target.value.split(":");
+      this._setSort(key, dir === "desc");
+    });
+    $("pageSize").addEventListener("change", (e) => {
+      this._pageSize = Number(e.target.value);
+      this._offset = Math.floor(this._offset / this._pageSize) * this._pageSize;
+      this._saveView();
+      this._render();
+    });
+    $("pager").addEventListener("click", (e) => {
+      const button = e.target.closest("button");
+      if (!button || button.disabled) return;
+      const size = this._pageSize;
+      const total = this._total || 0;
+      const moves = {
+        pgFirst: 0,
+        newer: 0,
+        pgPrev: Math.max(0, this._offset - size),
+        pgNext: this._offset + size,
+        pgLast: Math.max(0, Math.floor((total - 1) / size) * size),
+      };
+      if (!(button.id in moves)) return;
+      this._offset = moves[button.id];
+      this._render();
+    });
     $("pause").addEventListener("click", () => this._togglePause());
     $("clear").addEventListener("click", () => {
+      this._offset = 0;
       this._cleared = this._keys;
       this._keys = new Set();
       this._rows = [];
@@ -540,6 +690,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       } else this._set("gateway", this._filter.gateway === entry ? "" : entry);
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
+    $("pageSize").value = String(this._pageSize);
+    this._renderHead();
+    this._renderFilters();
     this._renderBar();
     this._renderCards();
     this._render();
@@ -584,6 +737,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._gateways = gateways;
     this._renderCards(true);
+    const multi = gateways.length > 1;
+    if (multi !== this._multi) {
+      this._multi = multi;
+      this._renderHead();
+      this._render();
+    }
+    this._renderFilters();
   }
 
   _add(row) {
@@ -603,6 +763,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderBar();
       return;
     }
+    this._keepPlace(row);
     this._rows.unshift(row);
     this._trim();
     if (this._initialised) this._fresh.add(key);
@@ -614,6 +775,39 @@ class EnOceanEltakoPanel extends HTMLElement {
       const key = rowKey(r);
       this._keys.delete(key);
       this._expanded.delete(key);
+      // the oldest drop out; sorted oldest first they stood before the page
+      if (this._offset && this._pageFirst && this._matches(r) && this._compare(r, this._pageFirst) < 0) this._offset -= 1;
+    }
+  }
+
+  _keepPlace(row) {
+    // on a later page, a new row sorting before it moves the page along: the rows being
+    // read stay where they are, and a button offers the new ones
+    if (!this._offset || !this._pageFirst || !this._matches(row)) return;
+    if (this._compare(row, this._pageFirst) < 0) {
+      this._offset += 1;
+      this._newAbove += 1;
+    }
+  }
+
+  _compare(a, b) {
+    const order = SORTERS[this._sort.key](a, b);
+    return (this._sort.desc ? -order : order) || SORTERS.time(b, a);
+  }
+
+  _setSort(key, desc) {
+    this._sort = { key, desc };
+    this._offset = 0;
+    this._saveView();
+    this._renderHead();
+    this._render();
+  }
+
+  _saveView() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort }));
+    } catch (err) {
+      // private window or blocked storage: the view just is not remembered
     }
   }
 
@@ -628,6 +822,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _set(key, value) {
     this._filter[key] = value;
+    this._offset = 0;
     if (key === "gateway") this._renderCards();
     this._renderFilters();
     this._render();
@@ -644,6 +839,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._paused = !this._paused;
     this._missed = 0;
     if (!this._paused) {
+      for (const row of this._pending) this._keepPlace(row);
       this._rows = [...this._pending.reverse(), ...this._rows];
       this._pending = [];
       this._trim();
@@ -680,7 +876,8 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _resetFilters() {
-    this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
+    this._filter = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
+    this._offset = 0;
     this.shadowRoot.getElementById("text").value = "";
     this.shadowRoot.getElementById("clearText").hidden = true;
     this._renderCards();
@@ -712,20 +909,25 @@ class EnOceanEltakoPanel extends HTMLElement {
     notice.querySelector("span").textContent = text;
   }
 
-  _visible() {
+  _matches(r) {
     const f = this._filter;
     const text = f.text.toLowerCase();
     const compact = text.replace(/[-:\s]/g, "");
-    return this._rows.filter(
-      (r) =>
-        (!f.gateway || r.gateway === f.gateway) &&
-        (!f.dir || r.dir === f.dir) &&
-        (f.repeats || !r.duplicate) &&
-        !(f.unknown && (r.device || r.dir === "tx")) &&
-        (!text ||
-          [r.device, r.data, r.teach_in, r.profile, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
-          (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact)))
+    return (
+      (!f.gateway || r.gateway === f.gateway) &&
+      (!f.dir || r.dir === f.dir) &&
+      (!f.type || r.rorg === f.type) &&
+      (f.repeats || !r.duplicate) &&
+      !(f.unknown && (r.device || r.dir === "tx")) &&
+      (!text ||
+        [r.device, r.data, r.teach_in, r.profile, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
+        (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
+        (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact)))
     );
+  }
+
+  _visible() {
+    return this._rows.filter((r) => this._matches(r));
   }
 
   _export() {
@@ -762,10 +964,64 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     $("unknown").setAttribute("aria-pressed", String(f.unknown));
     $("repeats").setAttribute("aria-pressed", String(f.repeats));
-    const gw = this._gateways.find((g) => g.entry_id === f.gateway);
-    $("gatewayChip").innerHTML = gw
-      ? `<button class="chip removable" title="${esc(this._t.allGateways)}">${svg(ICON.filter)}${esc(gw.title)}${svg(ICON.close)}</button>`
-      : "";
+    const gateways = $("gatewayFilter");
+    this._options(gateways, [["", this._t.allGateways], ...this._gateways.map((g) => [g.entry_id, g.title])], f.gateway);
+    gateways.hidden = !this._multi && !f.gateway;
+    $("resetTop").hidden = !(f.gateway || f.text || f.dir || f.type || f.repeats || f.unknown);
+  }
+
+  _options(select, options, value) {
+    // rebuilt only when the choices change, so an open list stays open
+    const key = JSON.stringify(options);
+    if (select.dataset.options !== key) {
+      select.innerHTML = options.map(([v, label]) => `<option value="${esc(v)}">${esc(label)}</option>`).join("");
+      select.dataset.options = key;
+    }
+    select.value = value;
+  }
+
+  _renderHead() {
+    // static header: rebuilt only for a new sort or when the gateway column comes or goes
+    const t = this._t;
+    const columns = [
+      ["time", t.time, "time"],
+      ["dir", "", "dir", t.direction],
+      ["who", t.sender, "sender"],
+      ["type", t.type, "type"],
+      ["content", t.content],
+      ["signal", t.signal, "dbm"],
+      ...(this._multi ? [["gw", t.gateway, "gateway"]] : []),
+      ["end", ""],
+    ];
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const focused = this.shadowRoot.activeElement?.dataset?.sort;
+    $("cols").innerHTML = columns.map(([id]) => `<col class="c-${id}">`).join("");
+    $("thead").innerHTML = `<tr>${columns
+      .map(([id, label, sort, aria]) => {
+        if (!sort) return `<th scope="col"><span>${esc(label)}</span></th>`;
+        const active = this._sort.key === sort;
+        const state = active ? ` aria-sort="${this._sort.desc ? "descending" : "ascending"}"` : "";
+        return `<th scope="col"${state}><button data-sort="${sort}" title="${esc(t.sortHint)}" aria-label="${esc(aria || label)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></th>`;
+      })
+      .join("")}</tr>`;
+    if (focused) $("thead").querySelector(`[data-sort="${focused}"]`)?.focus({ preventScroll: true });
+    const options = Object.entries(t.sortOptions).filter(([v]) => this._multi || !v.startsWith("gateway"));
+    const current = `${this._sort.key}:${this._sort.desc ? "desc" : "asc"}`;
+    if (!options.some(([v]) => v === current)) options.push([current, `${t.sortLabel}: ${current}`]);
+    this._options($("sortSelect"), options, current);
+  }
+
+  _renderPager(total, shown) {
+    const t = this._t;
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const last = this._offset + shown >= total;
+    $("range").textContent = total ? t.range(this._offset + 1, this._offset + shown, total) : t.range(0, 0, 0);
+    $("pgFirst").disabled = $("pgPrev").disabled = this._offset === 0;
+    $("pgNext").disabled = $("pgLast").disabled = last;
+    const newer = $("newer");
+    newer.hidden = !(this._offset && this._newAbove);
+    newer.textContent = t.newAbove(this._newAbove);
+    $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
   _renderCards(background = false) {
@@ -844,12 +1100,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const extra =
       (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
-    const line2 = [
-      `<span class="mono">${esc(r.sender)}</span>`,
-      r.profile ? esc(r.profile) : "",
-      this._gateways.length > 1 ? esc(r.gateway_name) : "",
-      esc(type),
-    ].filter(Boolean).join(" · ");
+    // on phones type and gateway have no column of their own
+    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(r.profile) : ""].filter(Boolean).join(" · ") +
+      `<span class="m-only"> · ${esc(type)}${this._multi ? ` · ${esc(r.gateway_name)}` : ""}</span>`;
     const fields = r.fields || (r.values ? Object.entries(r.values).map(([label, value]) => ({ label, value })) : null);
     const values = fields && fields.length
       ? fields
@@ -861,7 +1114,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
     const details = expanded
-      ? `<dl class="details">
+      ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(time.toLocaleString(this._hass.language))}.${ms}</dd></div>
           <div><dt>${esc(t.gateway)}</dt><dd>${esc(r.gateway_name)}</dd></div>
           <div><dt>${esc(t.type)}</dt><dd>${esc(type)} (${esc(r.rorg)})</dd></div>
@@ -871,35 +1124,53 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
           <div class="actions"><button class="chip" data-only="${esc(r.sender)}">${svg(ICON.filter)}${esc(t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
-        </dl>`
+        </dl></td></tr>`
       : "";
-    const classes = ["row", r.duplicate ? "dup" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
-    return `<div class="${classes}" data-key="${esc(key)}">
-      <span class="time">${esc(clock)}<small>.${ms}</small></span>
-      <span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span>
-      <div class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></div>
-      <div class="values">${extra}${values}</div>
-      <div class="end">${bars(r.dbm)}<button class="expand" aria-expanded="${expanded}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button></div>
-      ${details}
-    </div>`;
+    const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
+    return `<tr class="${classes}" data-key="${esc(key)}">
+      <td class="time">${esc(clock)}<small>.${ms}</small></td>
+      <td class="dirc"><span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
+      <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
+      <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
+      <td class="content"><div class="values">${extra}${values}</div></td>
+      <td class="sig"><span class="signal">${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span></span></td>
+      ${this._multi ? `<td class="gwc"><div class="gw">${esc(r.gateway_name)}</div></td>` : ""}
+      <td class="end"><button class="expand" aria-expanded="${expanded}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button></td>
+    </tr>${details}`;
   }
 
   _render(background = false) {
     const t = this._t;
     const list = this.shadowRoot.getElementById("list");
     if (!list) return;
-    const rows = this._visible();
-    this.shadowRoot.getElementById("count").textContent = t.count(rows.length, this._rows.length);
+    this._renderTypes();
+    const rows = this._visible().sort((a, b) => this._compare(a, b));
+    const total = rows.length;
+    this._total = total;
+    if (this._offset >= total) this._offset = total ? Math.floor((total - 1) / this._pageSize) * this._pageSize : 0;
+    if (this._offset === 0) this._newAbove = 0;
+    const page = rows.slice(this._offset, this._offset + this._pageSize);
+    this._pageFirst = page[0] || null;
+    this.shadowRoot.getElementById("count").textContent = t.count(total, this._rows.length);
+    this._renderPager(total, page.length);
     if (this._hold("list", list, background)) return;
-    if (!rows.length) {
+    if (!page.length) {
       const filtered = this._rows.length > 0;
-      this._replace(list, `<div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.emptyTitle)}</b><span>${esc(filtered ? t.noMatchText : t.emptyText)}</span>${
+      this._replace(list, `<tr class="empty-row"><td colspan="8"><div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.emptyTitle)}</b><span>${esc(filtered ? t.noMatchText : t.emptyText)}</span>${
         filtered ? `<button class="chip reset">${esc(t.resetFilters)}</button>` : ""
-      }</div>`);
+      }</div></td></tr>`);
     } else {
-      this._replace(list, rows.map((r) => this._row(r)).join(""));
+      this._replace(list, page.map((r) => this._row(r)).join(""));
     }
     this._fresh.clear();
+  }
+
+  _renderTypes() {
+    // the telegram types heard so far, plus the chosen one
+    const types = new Set(this._rows.map((r) => r.rorg));
+    if (this._filter.type) types.add(this._filter.type);
+    const options = [...types].sort().map((rorg) => [rorg, RORG[rorg] ? `${RORG[rorg]} (${rorg})` : rorg]);
+    this._options(this.shadowRoot.getElementById("typeFilter"), [["", this._t.allTypes], ...options], this._filter.type);
   }
 
   _selecting(container) {
@@ -931,8 +1202,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     container.innerHTML = html;
     if (focus) {
-      const holder = [...container.querySelectorAll(`[${focus.attr}]`)].find((h) => h.getAttribute(focus.attr) === focus.value);
-      holder?.querySelector(focus.selector)?.focus({ preventScroll: true });
+      // a row and its details share the key: take the one that has the button
+      [...container.querySelectorAll(`[${focus.attr}]`)]
+        .filter((h) => h.getAttribute(focus.attr) === focus.value)
+        .map((h) => h.querySelector(focus.selector))
+        .find(Boolean)
+        ?.focus({ preventScroll: true });
     }
   }
 }
