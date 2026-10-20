@@ -16,6 +16,9 @@ from .transport import Connection, open_connection
 _LOGGER = logging.getLogger(__name__)
 
 RECONNECT_DELAYS = (1, 2, 5, 10, 30, 60)
+# a connection that holds this long ends an outage; one that drops sooner (a port another
+# program holds opens fine and fails at once) counts as a failed attempt: backoff, no new warning
+STABLE_AFTER = 30.0
 
 Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.StreamWriter]]]
 
@@ -101,6 +104,8 @@ class Gateway:
         self.polls_dropped = 0
         self.last_telegram: float | None = None  # time.time() of the last radio telegram
         self._outage_logged = False  # one warning per outage, then debug until it is back
+        self._connected_at = 0.0  # time.monotonic() of the last successful connect
+        self._stable_timer: asyncio.TimerHandle | None = None
 
     @property
     def connected(self) -> bool:
@@ -115,11 +120,10 @@ class Gateway:
             self._writer.write(self._hello)
         self._disconnected.clear()
         self._reader_task = asyncio.create_task(self._read_loop(reader))
-        if self._outage_logged:
-            _LOGGER.info("Connection to %s restored", self.connection)
-            self._outage_logged = False
-        else:
-            _LOGGER.debug("Connected to %s", self.connection)
+        self._connected_at = time.monotonic()
+        _LOGGER.debug("Connected to %s", self.connection)
+        if self._outage_logged:  # "restored" once the connection holds
+            self._stable_timer = asyncio.get_running_loop().call_later(STABLE_AFTER, self._stable)
         if self._on_connection_change:
             self._on_connection_change(True)
 
@@ -138,8 +142,22 @@ class Gateway:
                     )
                     await asyncio.sleep(delay)
                     continue
-                attempt = 0
             await self._disconnected.wait()
+            if self._closing:
+                break
+            if time.monotonic() - self._connected_at < STABLE_AFTER:
+                # dropped right after connecting: wait like after a failed attempt
+                delay = RECONNECT_DELAYS[min(attempt, len(RECONNECT_DELAYS) - 1)]
+                attempt += 1
+                await asyncio.sleep(delay)
+            else:
+                attempt = 0
+
+    def _stable(self) -> None:
+        self._stable_timer = None
+        if self.connected and self._outage_logged:
+            _LOGGER.info("Connection to %s restored", self.connection)
+            self._outage_logged = False
 
     async def read_base_id(self, timeout: float = 3) -> int | None:
         """Ask the gateway for its base ID; None if it does not answer."""
@@ -283,6 +301,9 @@ class Gateway:
 
     async def _disconnect(self) -> None:
         was_connected = self.connected
+        if self._stable_timer is not None:
+            self._stable_timer.cancel()
+            self._stable_timer = None
         self._disconnected.set()
         task, self._reader_task = self._reader_task, None
         if task is not None and task is not asyncio.current_task():

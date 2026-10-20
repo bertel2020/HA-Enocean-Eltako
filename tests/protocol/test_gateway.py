@@ -78,6 +78,7 @@ async def test_connect_refused_raises() -> None:
 
 async def test_run_reconnects_after_server_restart(monkeypatch, caplog) -> None:
     monkeypatch.setattr(gateway, "RECONNECT_DELAYS", (0.05,))
+    monkeypatch.setattr(gateway, "STABLE_AFTER", 0.1)
     server = await FakeGateway(Protocol.ESP3).start()
     port = server.port
     changes: list[bool] = []
@@ -93,6 +94,7 @@ async def test_run_reconnects_after_server_restart(monkeypatch, caplog) -> None:
     await asyncio.wait_for(server.connected.wait(), 2)
     assert gw.connected
     assert await gw.read_base_id() == 0xFFB74480
+    await asyncio.sleep(0.2)  # "restored" once the connection held
     await gw.close()
     await asyncio.wait_for(task, 1)
     await server.stop()
@@ -184,3 +186,28 @@ async def test_proxy_replay_with_reception_times(block: bool) -> None:
         assert [(t.data, at) for t, at in replayed] == [(b"\x70", 1700000000.25)]
     else:
         assert replayed == []
+
+
+async def test_flapping_connection_warns_once_and_backs_off(monkeypatch, caplog) -> None:
+    """A port that opens and drops at once (held by another program): one warning, no
+    "restored", and the attempts slow down instead of reconnecting at once."""
+    monkeypatch.setattr(gateway, "RECONNECT_DELAYS", (0.02, 0.05, 0.1))
+    accepted = 0
+
+    async def drop(_reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        nonlocal accepted
+        accepted += 1
+        writer.close()
+
+    server = await asyncio.start_server(drop, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    gw = Gateway(Protocol.ESP3, TcpConnection("127.0.0.1", port))
+    task = asyncio.create_task(gw.run())
+    await asyncio.sleep(0.5)
+    await gw.close()
+    await asyncio.wait_for(task, 1)
+    server.close()
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert len(warnings) == 1
+    assert not any("restored" in r.getMessage() for r in caplog.records)
+    assert 3 <= accepted <= 10  # backoff: no tight reconnect loop
