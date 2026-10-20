@@ -68,6 +68,7 @@ from .protocol.send_queue import Priority, SendQueue
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
+from .proxy_status import async_setup_proxy_status
 from .senders import SenderStore, async_remove_store, bus_key, radio_key
 from .services import async_setup_services
 from .subentry_flow import sender_owner
@@ -94,6 +95,7 @@ class GatewayRuntime:
     health_check: Callable[[], None] | None = None
     connection_listeners: list[Callable[[], None]] = field(default_factory=list)
     gateway_device_id: str | None = None  # device registry ID, parent of all devices
+    proxy: dict[str, Any] | None = None  # EnOcean Proxy app status (proxy_status.py)
 
     def add_connection_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self.connection_listeners.append(listener)
@@ -217,6 +219,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     _async_setup_devices(hass, entry)
     async_abort_configured(hass, entry)
     entry.async_on_unload(async_setup_discovery(hass, entry))
+    if (stop_proxy_status := async_setup_proxy_status(hass, entry)) is not None:
+        entry.async_on_unload(stop_proxy_status)
     if gateway.connected:
         _async_apply_repeater(hass, entry)
         _async_check_base_id(hass, entry)

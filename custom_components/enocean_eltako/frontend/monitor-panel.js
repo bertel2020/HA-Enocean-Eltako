@@ -44,8 +44,9 @@ const TEXT = {
     dirAll: "All",
     rx: "Received",
     tx: "Sent",
-    unknownOnly: "Unknown senders",
-    repeats: "Repetitions",
+    unknownOnly: "Unknown senders only",
+    repeats: "Show repetitions",
+    details: "Details",
     allGateways: "All gateways",
     count: (shown, total) => (shown === total ? `${total} telegrams` : `${shown} of ${total} telegrams`),
     unknownDevice: "Unknown sender",
@@ -89,6 +90,12 @@ const TEXT = {
     ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
     since: (s) => (s < 3600 ? `for ${Math.round(s / 60)} min` : `for ${Math.round(s / 3600)} h`),
     cardHint: "Show only this gateway's telegrams",
+    viaProxy: (version) => (version ? `via EnOcean Proxy ${version}` : "via EnOcean Proxy"),
+    proxyUnreachable: "proxy status not reachable",
+    airtime: "Air time",
+    airtimeHint: "Share of the allowed 1 % radio time used in the last hour (estimated by the proxy)",
+    programs: (n) => (n === 1 ? "1 program connected" : `${n} programs connected`),
+    alone: (peer) => `only ${peer} may send (capture)`,
     noGateways: "No gateway set up yet.",
     addResult: {
       already_configured: "This sender is already set up or ignored (see ignored integrations).",
@@ -113,8 +120,9 @@ const TEXT = {
     dirAll: "Alle",
     rx: "Empfangen",
     tx: "Gesendet",
-    unknownOnly: "Unbekannte Sender",
-    repeats: "Wiederholungen",
+    unknownOnly: "Nur unbekannte Sender",
+    repeats: "Wiederholungen zeigen",
+    details: "Details",
     allGateways: "Alle Gateways",
     count: (shown, total) => (shown === total ? `${total} Telegramme` : `${shown} von ${total} Telegrammen`),
     unknownDevice: "Unbekannter Sender",
@@ -158,6 +166,12 @@ const TEXT = {
     ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
     since: (s) => (s < 3600 ? `seit ${Math.round(s / 60)} min` : `seit ${Math.round(s / 3600)} h`),
     cardHint: "Nur die Telegramme dieses Gateways zeigen",
+    viaProxy: (version) => (version ? `über EnOcean Proxy ${version}` : "über EnOcean Proxy"),
+    proxyUnreachable: "Proxy-Status nicht erreichbar",
+    airtime: "Funkbelegung",
+    airtimeHint: "Anteil der erlaubten 1 % Sendezeit in der letzten Stunde (vom Proxy geschätzt)",
+    programs: (n) => (n === 1 ? "1 Programm verbunden" : `${n} Programme verbunden`),
+    alone: (peer) => `nur ${peer} darf senden (Mitschnitt)`,
     noGateways: "Noch kein Gateway eingerichtet.",
     addResult: {
       already_configured: "Dieser Sender ist schon eingerichtet oder ignoriert (siehe ignorierte Integrationen).",
@@ -203,7 +217,7 @@ const STYLE = `
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
   .card { text-align: left; background: var(--surface); border-radius: var(--radius); padding: 14px 16px;
     border: 1px solid var(--line); box-shadow: var(--ha-card-box-shadow, none);
-    display: grid; gap: 10px; transition: border-color .15s, box-shadow .15s; }
+    display: grid; gap: 10px; align-content: start; transition: border-color .15s, box-shadow .15s; }
   .card:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
   .card .top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -219,10 +233,22 @@ const STYLE = `
   .rate b { font-size: 26px; font-weight: 400; line-height: 1; }
   .rate span { font-size: 13px; color: var(--muted); }
   .rate .last { margin-left: auto; }
-  .stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+  .stats > span { display: flex; justify-content: space-between; gap: 8px; }
   .stats b { color: var(--primary-text-color); font-weight: 500; }
   .stats b.warn { color: var(--bad); }
   .hint { color: var(--muted); font-size: 14px; padding: 4px; }
+  .proxy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px;
+    color: var(--muted); padding-top: 8px; border-top: 1px solid var(--line); }
+  .proxy .muted { color: var(--muted); }
+  .tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--primary-text-color); }
+  .airtime { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); }
+  .airtime b { color: var(--primary-text-color); font-weight: 500; }
+  .meter { height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--accent); }
+  .meter i.warn { background: var(--warn); }
+  .meter i.bad { background: var(--bad); }
 
   /* telegram section */
   .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
@@ -298,7 +324,9 @@ const STYLE = `
   .raw { font-size: 12px; color: var(--muted); }
   .end { display: flex; align-items: center; justify-content: flex-end; gap: 6px; color: var(--muted); }
   .end .chev { transition: transform .15s; }
-  .row[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .expand { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
+  .expand:hover { background: var(--soft); }
+  .expand[aria-expanded="true"] .chev { transform: rotate(180deg); }
   .bars { width: 18px; height: 14px; }
   .bars rect { fill: var(--line); }
   .bars rect.on { fill: var(--muted); }
@@ -324,6 +352,7 @@ const STYLE = `
     .row .end { display: none; }
     .details { margin-left: 0; }
     .filters .segmented { order: 3; }
+    .filters .chip { padding: 0 10px; font-size: 12px; flex: 1 1 auto; justify-content: center; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
     .cards { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 86%;
@@ -479,13 +508,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (card) this._set("gateway", this._filter.gateway === card.dataset.entry ? "" : card.dataset.entry);
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
-    $("list").addEventListener("keydown", (e) => {
-      const row = e.target.closest(".row");
-      if (row && e.target === row && (e.key === "Enter" || e.key === " ")) {
-        e.preventDefault();
-        this._toggleRow(row.dataset.key);
-      }
-    });
     this._renderBar();
     this._renderCards();
     this._render();
@@ -712,13 +734,35 @@ class EnOceanEltakoPanel extends HTMLElement {
              <div class="stats">${stat(t.devices, gw.devices ?? "–")}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}</div>`
           : "";
         const selected = this._filter.gateway === gw.entry_id;
+        const proxy = gw.via_proxy ? this._proxyLine(gw) : "";
+        const sub = [gw.model !== gw.title ? gw.model : "", gw.base_id, gw.connection].filter(Boolean).join(" · ");
         return `<button class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}" title="${esc(t.cardHint)}" aria-pressed="${selected}">
           <div class="top"><span class="name">${esc(gw.title)}</span><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span></div>
-          <div class="sub">${esc([gw.model !== gw.title ? gw.model : "", gw.base_id, gw.connection].filter(Boolean).join(" · "))}</div>
-          ${body}
+          <div class="sub" title="${esc(sub)}">${esc(sub)}</div>
+          ${body}${proxy}
         </button>`;
       })
       .join("");
+  }
+
+  _proxyLine(gw) {
+    const t = this._t;
+    const p = gw.proxy;
+    if (!p) {
+      return `<div class="proxy"><span class="tag">${esc(t.viaProxy(""))}</span><span class="muted">${esc(t.proxyUnreachable)}</span></div>`;
+    }
+    const share = Number(p.duty_of_limit ?? 0);
+    const level = share >= 80 ? "bad" : share >= 50 ? "warn" : "";
+    return `<div class="proxy">
+        <span class="tag">${esc(t.viaProxy(p.version))}</span>
+        <span>${esc(t.programs(p.programs ?? 0))}</span>
+        ${p.exclusive_peer ? `<span class="tag warn">${esc(t.alone(p.exclusive_peer))}</span>` : ""}
+      </div>
+      <div class="airtime" title="${esc(t.airtimeHint)}">
+        <span>${esc(t.airtime)}</span>
+        <span class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${share}" aria-label="${esc(t.airtimeHint)}"><i class="${level}" style="width:${Math.min(100, share)}%"></i></span>
+        <b>${esc(share.toLocaleString(this._hass.language, { maximumFractionDigits: 1 }))} %</b>
+      </div>`;
   }
 
   _perMinute(gateway) {
@@ -786,12 +830,12 @@ class EnOceanEltakoPanel extends HTMLElement {
         </dl>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
-    return `<div class="${classes}" data-key="${esc(key)}" tabindex="0" role="button" aria-expanded="${expanded}">
+    return `<div class="${classes}" data-key="${esc(key)}">
       <span class="time">${esc(clock)}<small>.${ms}</small></span>
       <span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span>
-      <div class="who"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></div>
+      <div class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></div>
       <div class="values">${extra}${values}</div>
-      <div class="end">${bars(r.dbm)}${svg(ICON.chevron, "chev")}</div>
+      <div class="end">${bars(r.dbm)}<button class="expand" aria-expanded="${expanded}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button></div>
       ${details}
     </div>`;
   }

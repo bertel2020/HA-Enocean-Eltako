@@ -69,6 +69,7 @@ from .protocol.models import MODELS, GatewayModel, Protocol
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import Rorg
 from .protocol.transport import Connection, SerialConnection, TcpConnection
+from .proxy_status import CONF_PROXY_STATUS_PORT
 from .subentry_flow import SUBENTRY_FLOWS, DeviceForm, candidates, receives
 
 _LOGGER = logging.getLogger(__name__)
@@ -517,6 +518,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._options = {CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY}
         if self._proxy is not None and self._proxy.get("replay"):
             self._options[CONF_PROXY_REPLAY] = True  # telegrams missed during restarts
+        if self._proxy is not None and self._proxy.get("status_port"):
+            self._data[CONF_PROXY_STATUS_PORT] = int(self._proxy["status_port"])
         if bus_group is not None:
             self._data[CONF_BUS_GROUP] = bus_group
             # A FAM14 next to another bus gateway is only needed for failover and import.

@@ -119,7 +119,9 @@ Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine K
 Gateway: verbunden, getrennt (und seit wann) oder bei Bedarf, Telegramme pro Minute, letztes
 Telegramm, Geräte, freie Sender-IDs, Sendewarteschlange und unbestätigte Befehle. Ein Klick
 auf eine Karte zeigt nur die Telegramme dieses Gateways; auf dem Handy lassen sich die Karten
-seitlich wischen.
+seitlich wischen. Ein Gateway über die App EnOcean Proxy zeigt zusätzlich deren Version, die
+weiteren verbundenen Programme, die Funkbelegung gegenüber dem 1-%-Limit und eine
+Sendesperre während eines Mitschnitts.
 
 Darunter erscheint jedes empfangene und gesendete Telegramm live, das neueste oben:
 Gerätename (oder „Unbekannter Sender“ mit dem Knopf **Anlegen**, der seine Entdeckt-Karte

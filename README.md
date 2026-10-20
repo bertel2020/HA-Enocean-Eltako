@@ -114,7 +114,9 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 The **EnOcean** sidebar panel (admins only) starts with a card per gateway: connected,
 disconnected (and for how long) or on demand, telegrams per minute, last telegram, devices,
 free sender IDs, send queue and unconfirmed commands. Click a card to show only that
-gateway's telegrams; on a phone the cards scroll sideways.
+gateway's telegrams; on a phone the cards scroll sideways. A gateway reached through the
+EnOcean Proxy app also shows the app's version, the other programs connected, the air time
+against the 1 % limit and a send lock while a capture runs.
 
 Below, every received and sent telegram appears live, newest first: device name (or
 "unknown sender" with an **Add** button that opens its discovered card), sender ID, gateway,

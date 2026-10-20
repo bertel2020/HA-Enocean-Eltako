@@ -22,7 +22,7 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
 from .catalog import GENERIC_EEP
-from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
+from .const import CONF_BASE_ID, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
 from .discovery import discovery_data
 from .hub import async_get_hub
 from .protocol.eep.codecs import decode_telegram
@@ -208,6 +208,8 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "devices": len(runtime.devices),
             "free_senders": runtime.senders.pool.free_count(),
             "disconnected_since": runtime.disconnected_since,
+            "proxy": runtime.proxy,
+            "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),
         }
     return status
 
