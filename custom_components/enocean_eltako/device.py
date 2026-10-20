@@ -300,8 +300,8 @@ class EnOceanDevice:
     def rocker_button(self, on: bool) -> bytes:
         """The rocker sender's press for on / up or off / down (the chosen buttons)."""
         if on:
-            return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_ON, "b0")]])
-        return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_OFF, "b1")]])
+            return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_ON, "a0")]])
+        return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_OFF, "a1")]])
 
     def _log_result(self, result: SendResult, started: float) -> None:
         if result == SendResult.CONFIRMED:

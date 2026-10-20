@@ -108,12 +108,7 @@
           "vent_time": "Lüftungsschlitz-Zeit",
           "tilt_time": "Wendezeit Lamellen",
           "channel": "Kanal",
-          "sender_vld": "Sender-ID: VLD-Befehle",
-          "wall_switch": "ID des Wandtasters (optional)",
-          "wall_on_button": "Wandtaster: Taste für Ein",
-          "wall_off_button": "Wandtaster: Taste für Aus",
-          "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
-          "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
+          "sender_vld": "Sender-ID: VLD-Befehle"
         },
         "data_description": {
           "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -130,12 +125,35 @@
           "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
           "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
           "channel": "Ausgang des Aktors (0 = erster Kanal).",
-          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
-          "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
-          "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-          "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-          "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
-          "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
+          "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
+        },
+        "sections": {
+          "rocker_buttons": {
+            "name": "Taster-Sender: Tasten",
+            "description": "Welche Tasten Home Assistant mit der Taster-Sender-ID drückt. Nur ändern, wenn die ID auf die rechte Wippe oder mit vertauschtem oben/unten eingelernt ist.",
+            "data": {
+              "rocker_on_button": "Taste für Ein / Auf",
+              "rocker_off_button": "Taste für Aus / Ab"
+            },
+            "data_description": {
+              "rocker_on_button": "A = linke Wippe, B = rechte; 0 = oben, 1 = unten. Der Einlern-Button drückt diese Taste.",
+              "rocker_off_button": "Meist die andere Hälfte derselben Wippe."
+            }
+          },
+          "wall_switch_settings": {
+            "name": "Wandtaster (Empfang, für Aktoren ohne Rückmeldung)",
+            "description": "Home Assistant hört einen im Aktor eingelernten Wandtaster mit und setzt aus seinen Tastendrücken den angenommenen Zustand.",
+            "data": {
+              "wall_switch": "Wandtaster-ID",
+              "wall_on_button": "Taste für Ein",
+              "wall_off_button": "Taste für Aus"
+            },
+            "data_description": {
+              "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+              "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+              "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+            }
+          }
         }
       },
       "proxy_confirm": {
@@ -156,7 +174,8 @@
       "sender_none": "Mindestens eine Sender-ID eintragen.",
       "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
       "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
-      "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen."
+      "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen.",
+      "wall_switch_invalid_id": "Keine gültige Wandtaster-ID. Vier Hex-Bytes, zum Beispiel FE-D8-12-34."
     },
     "abort": {
       "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet.",
@@ -605,15 +624,10 @@
             "sender_motion": "Sender-ID: Bewegung (A5-07-01)",
             "channel": "Kanal",
             "sender_vld": "Sender-ID: VLD-Befehle",
-            "wall_switch": "ID des Wandtasters (optional)",
-            "wall_on_button": "Wandtaster: Taste für Ein",
-            "wall_off_button": "Wandtaster: Taste für Aus",
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit",
-            "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
-            "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
+            "weather_brightness": "Helligkeit"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -637,15 +651,38 @@
             "sender_motion": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
             "channel": "Ausgang des Aktors (0 = erster Kanal).",
             "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
-            "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
-            "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
-            "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
-            "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+          },
+          "sections": {
+            "rocker_buttons": {
+              "name": "Taster-Sender: Tasten",
+              "description": "Welche Tasten Home Assistant mit der Taster-Sender-ID drückt. Nur ändern, wenn die ID auf die rechte Wippe oder mit vertauschtem oben/unten eingelernt ist.",
+              "data": {
+                "rocker_on_button": "Taste für Ein / Auf",
+                "rocker_off_button": "Taste für Aus / Ab"
+              },
+              "data_description": {
+                "rocker_on_button": "A = linke Wippe, B = rechte; 0 = oben, 1 = unten. Der Einlern-Button drückt diese Taste.",
+                "rocker_off_button": "Meist die andere Hälfte derselben Wippe."
+              }
+            },
+            "wall_switch_settings": {
+              "name": "Wandtaster (Empfang, für Aktoren ohne Rückmeldung)",
+              "description": "Home Assistant hört einen im Aktor eingelernten Wandtaster mit und setzt aus seinen Tastendrücken den angenommenen Zustand.",
+              "data": {
+                "wall_switch": "Wandtaster-ID",
+                "wall_on_button": "Taste für Ein",
+                "wall_off_button": "Taste für Aus"
+              },
+              "data_description": {
+                "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+                "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+                "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+              }
+            }
           }
         },
         "reconfigure": {
@@ -680,15 +717,10 @@
             "when_unavailable": "Quelle nicht verfügbar",
             "channel": "Kanal",
             "sender_vld": "Sender-ID: VLD-Befehle",
-            "wall_switch": "ID des Wandtasters (optional)",
-            "wall_on_button": "Wandtaster: Taste für Ein",
-            "wall_off_button": "Wandtaster: Taste für Aus",
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit",
-            "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
-            "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
+            "weather_brightness": "Helligkeit"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -708,15 +740,38 @@
             "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift.",
             "channel": "Ausgang des Aktors (0 = erster Kanal).",
             "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
-            "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
-            "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-            "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
-            "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
-            "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+          },
+          "sections": {
+            "rocker_buttons": {
+              "name": "Taster-Sender: Tasten",
+              "description": "Welche Tasten Home Assistant mit der Taster-Sender-ID drückt. Nur ändern, wenn die ID auf die rechte Wippe oder mit vertauschtem oben/unten eingelernt ist.",
+              "data": {
+                "rocker_on_button": "Taste für Ein / Auf",
+                "rocker_off_button": "Taste für Aus / Ab"
+              },
+              "data_description": {
+                "rocker_on_button": "A = linke Wippe, B = rechte; 0 = oben, 1 = unten. Der Einlern-Button drückt diese Taste.",
+                "rocker_off_button": "Meist die andere Hälfte derselben Wippe."
+              }
+            },
+            "wall_switch_settings": {
+              "name": "Wandtaster (Empfang, für Aktoren ohne Rückmeldung)",
+              "description": "Home Assistant hört einen im Aktor eingelernten Wandtaster mit und setzt aus seinen Tastendrücken den angenommenen Zustand.",
+              "data": {
+                "wall_switch": "Wandtaster-ID",
+                "wall_on_button": "Taste für Ein",
+                "wall_off_button": "Taste für Aus"
+              },
+              "data_description": {
+                "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
+                "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+                "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+              }
+            }
           }
         },
         "address": {
@@ -787,7 +842,8 @@
         "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
         "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
         "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben.",
-        "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen."
+        "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen.",
+        "wall_switch_invalid_id": "Keine gültige Wandtaster-ID. Vier Hex-Bytes, zum Beispiel FE-D8-12-34."
       },
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",

@@ -10,6 +10,7 @@ import probatio as vol
 from homeassistant.config_entries import ConfigSubentryFlow, SubentryFlowResult
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -200,6 +201,38 @@ OPTION_KEYS = (
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
+# collapsed sections of rarely needed fields; the subentry data stays flat
+SECTION_ROCKER = "rocker_buttons"
+SECTION_WALL = "wall_switch_settings"
+SECTIONS = {
+    SECTION_ROCKER: (OPT_ROCKER_ON, OPT_ROCKER_OFF),
+    SECTION_WALL: (OPT_WALL_SWITCH, OPT_WALL_ON, OPT_WALL_OFF),
+}
+
+
+def flatten_sections(values: dict[str, Any]) -> dict[str, Any]:
+    """Form input with the fields of its sections moved to the top level."""
+    flat = {k: v for k, v in values.items() if k not in SECTIONS}
+    for name in SECTIONS:
+        flat.update(values.get(name) or {})
+    return flat
+
+
+def nest_sections(values: dict[str, Any]) -> dict[str, Any]:
+    """Flat values grouped like the form: section fields under their section."""
+    nested = {k: v for k, v in values.items() if not any(k in f for f in SECTIONS.values())}
+    for name, fields in SECTIONS.items():
+        nested[name] = {k: values[k] for k in fields if k in values}
+    return nested
+
+
+def _buttons_section(fields: dict[Any, Any], buttons: tuple[tuple[str, str], ...]) -> section:
+    """A collapsed section: the given fields plus one rocker button choice per option."""
+    for opt, default in buttons:
+        fields[vol.Required(opt, default=default)] = SelectSelector(
+            SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
+        )
+    return section(vol.Schema(fields), {"collapsed": True})
 
 
 def sender_owner(device_id: int, profile: str) -> str:
@@ -372,17 +405,6 @@ class DeviceForm:
                     options=[*BUTTONS, "released"], translation_key="rocker_button"
                 )
             )
-        if OPT_WALL_SWITCH in model.options:
-            schema[vol.Optional(OPT_WALL_SWITCH)] = TextSelector()
-            for opt, default in ((OPT_WALL_ON, "a0"), (OPT_WALL_OFF, "a1")):
-                schema[vol.Required(opt, default=default)] = SelectSelector(
-                    SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
-                )
-        if OPT_ROCKER_ON in model.options:
-            for opt, default in ((OPT_ROCKER_ON, "b0"), (OPT_ROCKER_OFF, "b1")):
-                schema[vol.Required(opt, default=default)] = SelectSelector(
-                    SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
-                )
         if OPT_CALIBRATION in model.options:
             schema[vol.Required(OPT_CALIBRATION, default="passive")] = SelectSelector(
                 SelectSelectorConfig(
@@ -410,6 +432,15 @@ class DeviceForm:
             schema[vol.Required(OPT_STATUS_REQUEST, default=False)] = BooleanSelector()
         if model.interval:
             schema[vol.Required(OPT_UNAVAILABLE_WHEN_SILENT, default=False)] = BooleanSelector()
+        if OPT_ROCKER_ON in model.options:
+            schema[vol.Optional(SECTION_ROCKER, default={})] = _buttons_section(
+                {}, ((OPT_ROCKER_ON, "a0"), (OPT_ROCKER_OFF, "a1"))
+            )
+        if OPT_WALL_SWITCH in model.options:
+            schema[vol.Optional(SECTION_WALL, default={})] = _buttons_section(
+                {vol.Optional(OPT_WALL_SWITCH): TextSelector()},
+                ((OPT_WALL_ON, "a0"), (OPT_WALL_OFF, "a1")),
+            )
         return schema
 
     async def _async_save(
@@ -421,6 +452,7 @@ class DeviceForm:
     ) -> dict[str, Any] | None:
         """Validate and assign sender IDs; returns the subentry data or None on errors."""
         assert self._device_model is not None
+        user_input = flatten_sections(user_input)
         model = self._device_model
         pool = self._pool()
         wanted: dict[str, int] = {}
@@ -448,7 +480,7 @@ class DeviceForm:
             try:
                 user_input = {**user_input, OPT_WALL_SWITCH: format_id(parse_id(wall_switch))}
             except ValueError:
-                errors[OPT_WALL_SWITCH] = "invalid_id"
+                errors["base"] = "wall_switch_invalid_id"  # a field in a section
         else:
             user_input = {k: v for k, v in user_input.items() if k != OPT_WALL_SWITCH}
         if errors:
@@ -788,11 +820,13 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 return self.async_update_and_abort(
                     self._get_entry(), subentry, title=user_input[CONF_NAME], data=result
                 )
-        suggested = {
-            CONF_NAME: subentry.title,
-            **{k: data[k] for k in (*OPTION_KEYS, OPT_DEVICE_CLASS) if k in data},
-            **{sender_field(p): s for p, s in current.items()},
-        }
+        suggested = nest_sections(
+            {
+                CONF_NAME: subentry.title,
+                **{k: data[k] for k in (*OPTION_KEYS, OPT_DEVICE_CLASS) if k in data},
+                **{sender_field(p): s for p, s in current.items()},
+            }
+        )
         schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
         form: SubentryFlowResult = await self._form(
             "reconfigure", schema, user_input or suggested, errors

@@ -95,8 +95,10 @@ async def test_add_switch_actuator_via_flow(hass: HomeAssistant, gateway) -> Non
     )
     assert result["step_id"] == "device"
     schema = result["data_schema"].schema
-    sender_key = next(k for k in schema if k == "sender_central")
-    assert sender_key.description["suggested_value"] == "FF-B7-44-80"
+    keys = [k for k in schema if str(k).startswith("sender_")]
+    assert keys == ["sender_rocker", "sender_central"]  # the rocker first, it gets the suggestion
+    assert keys[0].description["suggested_value"] == "FF-B7-44-80"
+    assert not keys[1].description
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         {
@@ -140,7 +142,7 @@ async def test_switch_actuator_with_rocker_only(hass: HomeAssistant, gateway) ->
     )
     assert result["errors"] == {"base": "sender_none"}
     schema = result["data_schema"].schema
-    sender_key = next(k for k in schema if k == "sender_central")
+    sender_key = next(k for k in schema if k == "sender_rocker")
     assert sender_key.description["suggested_value"] == ""  # stays cleared
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -153,15 +155,15 @@ async def test_switch_actuator_with_rocker_only(hass: HomeAssistant, gateway) ->
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["senders"] == [{"profile": "rocker", "sender_id": "FF-B7-44-8F"}]
-    assert result["data"]["rocker_on_button"] == "b0"
-    assert result["data"]["rocker_off_button"] == "b1"
+    assert result["data"]["rocker_on_button"] == "a0"  # the collapsed section's defaults
+    assert result["data"]["rocker_off_button"] == "a1"
     await hass.async_block_till_done()
     await server.connected.wait()
 
     entity_id = _entity(hass, "light", f"{BASE}_05-10-A2-B4_1_light")
     await hass.services.async_call("light", "turn_on", {"entity_id": entity_id})
     await _settle(hass)
-    press = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x70", 0xFFB7448F, 0x30))
+    press = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x30", 0xFFB7448F, 0x30))
     assert press in bytes(server.received)
     assert entry.runtime_data.senders.pool.get(0xFFB74480) is None
     assert _entity(hass, "button", f"{BASE}_05-10-A2-B4_1_teach_in_central") is None
@@ -261,6 +263,66 @@ async def test_rocker_sender_buttons(hass: HomeAssistant, gateway) -> None:
     assert press(0x10, 0xFFB7448E) in received
     assert press(0x70, 0xFFB7448E) not in received
     assert press(0x50, 0xFFB7448D) in received  # B1 opens
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B7",
+                "Licht Keller",
+                senders=[{"profile": "rocker", "sender_id": "FF-B7-44-8C"}],
+                platform="light",
+                rocker_on_button="b0",
+                rocker_off_button="b1",
+                wall_switch="FE-D8-12-34",
+                wall_on_button="a0",
+                wall_off_button="a0",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_reconfigure_sections(hass: HomeAssistant, gateway) -> None:
+    """Rocker buttons and wall switch sit in collapsed sections; the data stays flat."""
+    entry, _ = gateway
+    entry.runtime_data.senders.pool.assign(0xFFB7448C, "device:05-10-A2-B7:rocker")
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    schema = result["data_schema"].schema
+    sections = {
+        str(k): v for k, v in schema.items() if str(k) in ("rocker_buttons", "wall_switch_settings")
+    }
+    assert list(sections) == ["rocker_buttons", "wall_switch_settings"]
+    assert all(v.options["collapsed"] for v in sections.values())
+    wall = {str(k): k.description for k in sections["wall_switch_settings"].schema.schema}
+    assert wall["wall_switch"] == {"suggested_value": "FE-D8-12-34"}
+    rocker = {str(k): k.description for k in sections["rocker_buttons"].schema.schema}
+    assert rocker["rocker_on_button"] == {"suggested_value": "b0"}
+
+    user_input = {
+        "name": "Licht Keller",
+        "sender_rocker": "FF-B7-44-8C",
+        "platform": "light",
+        "rocker_buttons": {"rocker_on_button": "a0", "rocker_off_button": "a1"},
+        "wall_switch_settings": {"wall_switch": "nonsense"},
+    }
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], user_input)
+    assert result["errors"] == {"base": "wall_switch_invalid_id"}
+    user_input["wall_switch_settings"] = {"wall_switch": "fed81235", "wall_on_button": "b0"}
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], user_input)
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    data = entry.subentries[subentry_id].data
+    assert "rocker_buttons" not in data and "wall_switch_settings" not in data
+    assert (data["rocker_on_button"], data["rocker_off_button"]) == ("a0", "a1")
+    assert (data["wall_switch"], data["wall_on_button"], data["wall_off_button"]) == (
+        "FE-D8-12-35",
+        "b0",
+        "a1",
+    )
 
 
 async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
@@ -587,11 +649,61 @@ async def test_migrate_subentries_to_sender_list(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
     await hass.async_block_till_done()
-    assert entry.minor_version == 2
+    assert entry.minor_version == 3
     by_title = {s.title: s.data for s in entry.subentries.values()}
     assert by_title["Licht"]["senders"] == [{"profile": "central", "sender_id": "FF-B7-44-81"}]
     assert "sender_id" not in by_title["Licht"]
-    assert by_title["Kontakt"]["schema"] == 2 and "senders" not in by_title["Kontakt"]
+    assert "rocker_on_button" not in by_title["Licht"]  # no rocker sender
+    assert by_title["Kontakt"]["schema"] == 3 and "senders" not in by_title["Kontakt"]
+
+
+async def test_migrate_rocker_buttons_explicit(hass: HomeAssistant) -> None:
+    """1.3: devices with a rocker sender keep pressing B0/B1, the new default is A0/A1."""
+
+    def device(model: str, device_id: str, profile: str, **extra) -> ConfigSubentryData:
+        return ConfigSubentryData(
+            data={
+                "schema": 2,
+                "model": model,
+                "device_id": device_id,
+                "senders": [{"profile": profile, "sender_id": "FF-B7-44-8F"}],
+                **extra,
+            },
+            subentry_type="device",
+            title=device_id,
+            unique_id=device_id,
+        )
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=BASE,
+        version=1,
+        minor_version=2,
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": 1},
+            "base_id": BASE,
+        },
+        subentries_data=[
+            device("switch", "05-10-A2-B3", "rocker"),
+            device("switch", "05-10-A2-B4", "rocker", rocker_on_button="a0"),
+            device("cover", "05-00-00-23", "direction_rocker"),
+            device("switch", "05-10-A2-B5", "central"),
+        ],
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
+    await hass.async_block_till_done()
+    assert entry.minor_version == 3
+    data = {s.title: s.data for s in entry.subentries.values()}
+    assert {k: data["05-10-A2-B3"][k] for k in ("rocker_on_button", "rocker_off_button")} == {
+        "rocker_on_button": "b0",
+        "rocker_off_button": "b1",
+    }
+    assert data["05-10-A2-B4"]["rocker_on_button"] == "a0"  # chosen ones stay
+    assert data["05-00-00-23"]["rocker_off_button"] == "b1"
+    assert "rocker_on_button" not in data["05-10-A2-B5"]
+    assert all(d["schema"] == 3 for d in data.values())
 
 
 async def _start_device_flow(hass: HomeAssistant, entry, model: str):

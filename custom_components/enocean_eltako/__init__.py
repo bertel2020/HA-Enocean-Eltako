@@ -23,13 +23,17 @@ from homeassistant.helpers.typing import ConfigType
 from .catalog import (
     CATALOG,
     CENTRAL,
+    DIRECTION_ROCKER,
     GENERIC_EEP,
     GROUP_VIRTUAL,
     OPT_CHANNEL,
     OPT_FIELDS,
     OPT_PLATFORM,
+    OPT_ROCKER_OFF,
+    OPT_ROCKER_ON,
     OPT_STATUS_REQUEST,
     PLATFORMS,
+    ROCKER,
     STATUS_REQUEST,
     generic_fields,
 )
@@ -115,7 +119,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> bool:
-    """1.1 -> 1.2: device subentries move "sender_id" into "senders" (schema 2)."""
+    """1.1 -> 1.2: device subentries move "sender_id" into "senders" (schema 2).
+
+    1.2 -> 1.3: the rocker sender's buttons default to A0/A1; devices with a rocker sender
+    keep the B0/B1 they pressed so far as explicit options (schema 3).
+    """
     if entry.version > 1:
         return False  # downgrade not supported
     if entry.minor_version < 2:
@@ -126,10 +134,24 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             model = CATALOG.get(data.get(CONF_MODEL, ""))
             sender = data.pop(CONF_SENDER_ID, None)
             if sender and model and model.senders:
-                data[CONF_SENDERS] = [{CONF_PROFILE: model.senders[0].id, CONF_SENDER_ID: sender}]
+                # schema 1 had one sender: the central command where the model has one
+                profile = next((p for p in model.senders if p.id == CENTRAL.id), model.senders[0])
+                data[CONF_SENDERS] = [{CONF_PROFILE: profile.id, CONF_SENDER_ID: sender}]
             data["schema"] = 2
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=2)
+    if entry.minor_version < 3:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 3:
+                continue
+            profiles = {s[CONF_PROFILE] for s in data.get(CONF_SENDERS, ())}
+            if profiles & {ROCKER.id, DIRECTION_ROCKER.id}:
+                data.setdefault(OPT_ROCKER_ON, "b0")
+                data.setdefault(OPT_ROCKER_OFF, "b1")
+            data["schema"] = 3
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=3)
     return True
 
 

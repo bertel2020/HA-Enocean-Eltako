@@ -101,7 +101,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     discovered devices (discovery.py) and adds them to the gateway that heard them."""
 
     VERSION = 1
-    MINOR_VERSION = 2  # 1.2: device subentries list their senders (schema 2)
+    MINOR_VERSION = 3  # 1.2: senders listed (schema 2); 1.3: rocker buttons explicit (schema 3)
 
     def __init__(self) -> None:
         self._model: GatewayModel | None = None

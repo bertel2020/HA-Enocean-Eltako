@@ -108,12 +108,7 @@
           "vent_time": "Vent slot time",
           "tilt_time": "Slat turning time",
           "channel": "Channel",
-          "sender_vld": "Sender ID: VLD commands",
-          "wall_switch": "Wall switch ID (optional)",
-          "wall_on_button": "Wall switch: button for on",
-          "wall_off_button": "Wall switch: button for off",
-          "rocker_on_button": "Rocker sender: button for on / up",
-          "rocker_off_button": "Rocker sender: button for off / down"
+          "sender_vld": "Sender ID: VLD commands"
         },
         "data_description": {
           "time_opens": "Full travel time from closed to open.",
@@ -130,12 +125,35 @@
           "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
           "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
           "channel": "Output of the actuator (0 = first channel).",
-          "sender_vld": "Reported to the actuator during the UTE teach-in.",
-          "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
-          "wall_on_button": "Same button for on and off: every press toggles.",
-          "wall_off_button": "Same button for on and off: every press toggles.",
-          "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
-          "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
+          "sender_vld": "Reported to the actuator during the UTE teach-in."
+        },
+        "sections": {
+          "rocker_buttons": {
+            "name": "Rocker sender: buttons",
+            "description": "Which buttons Home Assistant presses with the rocker sender ID. Change them only if the ID is taught in on the right rocker or with top and bottom swapped.",
+            "data": {
+              "rocker_on_button": "Button for on / up",
+              "rocker_off_button": "Button for off / down"
+            },
+            "data_description": {
+              "rocker_on_button": "A = left rocker, B = right; 0 = top, 1 = bottom. The teach-in button presses this one.",
+              "rocker_off_button": "Usually the other half of the same rocker."
+            }
+          },
+          "wall_switch_settings": {
+            "name": "Wall switch (receive, for actuators without feedback)",
+            "description": "Home Assistant listens to a wall switch taught into the actuator and sets the assumed state from its presses.",
+            "data": {
+              "wall_switch": "Wall switch ID",
+              "wall_on_button": "Button for on",
+              "wall_off_button": "Button for off"
+            },
+            "data_description": {
+              "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+              "wall_on_button": "Same button for on and off: every press toggles.",
+              "wall_off_button": "Same button for on and off: every press toggles."
+            }
+          }
         }
       },
       "proxy_confirm": {
@@ -156,7 +174,8 @@
       "sender_none": "Enter at least one sender ID.",
       "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
       "sender_pool_exhausted": "No free sender ID left.",
-      "weather_no_source": "Choose at least one entity for the weather station."
+      "weather_no_source": "Choose at least one entity for the weather station.",
+      "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34."
     },
     "abort": {
       "already_configured": "A gateway with this base ID is already set up.",
@@ -605,15 +624,10 @@
             "sender_motion": "Sender ID: motion (A5-07-01)",
             "channel": "Channel",
             "sender_vld": "Sender ID: VLD commands",
-            "wall_switch": "Wall switch ID (optional)",
-            "wall_on_button": "Wall switch: button for on",
-            "wall_off_button": "Wall switch: button for off",
             "weather_temperature": "Temperature",
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
-            "weather_brightness": "Brightness",
-            "rocker_on_button": "Rocker sender: button for on / up",
-            "rocker_off_button": "Rocker sender: button for off / down"
+            "weather_brightness": "Brightness"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -637,15 +651,38 @@
             "sender_motion": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
             "channel": "Output of the actuator (0 = first channel).",
             "sender_vld": "Reported to the actuator during the UTE teach-in.",
-            "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
-            "wall_on_button": "Same button for on and off: every press toggles.",
-            "wall_off_button": "Same button for on and off: every press toggles.",
             "weather_temperature": "Optional. Without it 20 °C is sent.",
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
-            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
-            "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
-            "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
+          },
+          "sections": {
+            "rocker_buttons": {
+              "name": "Rocker sender: buttons",
+              "description": "Which buttons Home Assistant presses with the rocker sender ID. Change them only if the ID is taught in on the right rocker or with top and bottom swapped.",
+              "data": {
+                "rocker_on_button": "Button for on / up",
+                "rocker_off_button": "Button for off / down"
+              },
+              "data_description": {
+                "rocker_on_button": "A = left rocker, B = right; 0 = top, 1 = bottom. The teach-in button presses this one.",
+                "rocker_off_button": "Usually the other half of the same rocker."
+              }
+            },
+            "wall_switch_settings": {
+              "name": "Wall switch (receive, for actuators without feedback)",
+              "description": "Home Assistant listens to a wall switch taught into the actuator and sets the assumed state from its presses.",
+              "data": {
+                "wall_switch": "Wall switch ID",
+                "wall_on_button": "Button for on",
+                "wall_off_button": "Button for off"
+              },
+              "data_description": {
+                "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+                "wall_on_button": "Same button for on and off: every press toggles.",
+                "wall_off_button": "Same button for on and off: every press toggles."
+              }
+            }
           }
         },
         "reconfigure": {
@@ -680,15 +717,10 @@
             "when_unavailable": "Source unavailable",
             "channel": "Channel",
             "sender_vld": "Sender ID: VLD commands",
-            "wall_switch": "Wall switch ID (optional)",
-            "wall_on_button": "Wall switch: button for on",
-            "wall_off_button": "Wall switch: button for off",
             "weather_temperature": "Temperature",
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
-            "weather_brightness": "Brightness",
-            "rocker_on_button": "Rocker sender: button for on / up",
-            "rocker_off_button": "Rocker sender: button for off / down"
+            "weather_brightness": "Brightness"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -708,15 +740,38 @@
             "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example.",
             "channel": "Output of the actuator (0 = first channel).",
             "sender_vld": "Reported to the actuator during the UTE teach-in.",
-            "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
-            "wall_on_button": "Same button for on and off: every press toggles.",
-            "wall_off_button": "Same button for on and off: every press toggles.",
             "weather_temperature": "Optional. Without it 20 °C is sent.",
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
-            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
-            "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
-            "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
+          },
+          "sections": {
+            "rocker_buttons": {
+              "name": "Rocker sender: buttons",
+              "description": "Which buttons Home Assistant presses with the rocker sender ID. Change them only if the ID is taught in on the right rocker or with top and bottom swapped.",
+              "data": {
+                "rocker_on_button": "Button for on / up",
+                "rocker_off_button": "Button for off / down"
+              },
+              "data_description": {
+                "rocker_on_button": "A = left rocker, B = right; 0 = top, 1 = bottom. The teach-in button presses this one.",
+                "rocker_off_button": "Usually the other half of the same rocker."
+              }
+            },
+            "wall_switch_settings": {
+              "name": "Wall switch (receive, for actuators without feedback)",
+              "description": "Home Assistant listens to a wall switch taught into the actuator and sets the assumed state from its presses.",
+              "data": {
+                "wall_switch": "Wall switch ID",
+                "wall_on_button": "Button for on",
+                "wall_off_button": "Button for off"
+              },
+              "data_description": {
+                "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
+                "wall_on_button": "Same button for on and off: every press toggles.",
+                "wall_off_button": "Same button for on and off: every press toggles."
+              }
+            }
           }
         },
         "address": {
@@ -787,7 +842,8 @@
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
         "sender_pool_exhausted": "No free sender ID left.",
         "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02.",
-        "weather_no_source": "Choose at least one entity for the weather station."
+        "weather_no_source": "Choose at least one entity for the weather station.",
+        "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34."
       },
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",

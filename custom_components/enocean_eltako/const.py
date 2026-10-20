@@ -36,4 +36,4 @@ CONF_SENDER_ID: Final = "sender_id"
 CONF_SENDERS: Final = "senders"  # [{"profile": "controller", "sender_id": "FF-B7-44-81"}, ...]
 CONF_PROFILE: Final = "profile"
 CONF_NAME: Final = "name"
-SUBENTRY_SCHEMA: Final = 2  # version of the device subentry data (subentries have none)
+SUBENTRY_SCHEMA: Final = 3  # version of the device subentry data (subentries have none)
