@@ -1,3 +1,5 @@
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="custom_components/enocean_eltako/brand/dark_logo.png"><img src="custom_components/enocean_eltako/brand/logo.png" alt="EnOcean Eltako logo" width="350"></picture></p>
+
 <h1 align="center">EnOcean Eltako for Home Assistant</h1>
 
 <p align="center">
