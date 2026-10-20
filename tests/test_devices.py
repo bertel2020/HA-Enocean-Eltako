@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from homeassistant.config_entries import ConfigSubentryData
+from homeassistant.config_entries import ConfigEntryState, ConfigSubentryData
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
@@ -323,6 +323,28 @@ async def test_reconfigure_sections(hass: HomeAssistant, gateway) -> None:
         "b0",
         "a1",
     )
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("switch", "05-10-A2-B8", "Licht Flur", platform="light")]],
+    indirect=True,
+)
+async def test_options_of_a_loaded_gateway(hass: HomeAssistant, gateway) -> None:
+    """Saving the settings of a loaded gateway with devices reloads it once."""
+    entry, server = gateway
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"message_delay": 20, "discovery": False}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    assert entry.options["message_delay"] == 20 and entry.options["discovery"] is False
+    assert entry.state is ConfigEntryState.LOADED
 
 
 async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:

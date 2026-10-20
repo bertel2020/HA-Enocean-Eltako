@@ -17,7 +17,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     ConfigSubentry,
     ConfigSubentryFlow,
-    OptionsFlowWithReload,
+    OptionsFlow,
 )
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
@@ -645,9 +645,13 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         return dict(SUBENTRY_FLOWS)
 
 
-class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
+class EnOceanEltakoOptionsFlow(OptionsFlow):
     """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater)
-    and the sender ID page (E3)."""
+    and the sender ID page (E3).
+
+    No OptionsFlowWithReload: the entry's update listener reloads it on every change
+    (subentries as well), and Home Assistant refuses the two together.
+    """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(step_id="init", menu_options=["settings", "senders"])
