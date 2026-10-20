@@ -388,6 +388,9 @@ function bars(dbm) {
   return `<svg class="bars" viewBox="0 0 18 14" role="img" aria-label="${dbm} dBm"><title>${dbm} dBm</title>${rects}</svg>`;
 }
 
+// buttons that keep the keyboard focus when their row or card is drawn again
+const FOCUSABLE = [".expand", "[data-only]", ".add", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+
 function rowKey(r) {
   return `${r.time}|${r.dir}|${r.sender}|${r.data}|${r.gateway}`;
 }
@@ -409,7 +412,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._unsub = null;
     this._frame = null;
     this._timer = null;
+    this._drawn = new WeakMap(); // last HTML per container: unchanged status costs nothing
+    this._stale = { list: false, cards: false }; // redraw held back while text is selected
     this._onKey = (e) => this._keydown(e);
+    this._onSelection = () => {
+      if (this._stale.list) this._render(true);
+      if (this._stale.cards) this._renderCards(true);
+    };
   }
 
   set hass(hass) {
@@ -430,11 +439,13 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   connectedCallback() {
     window.addEventListener("keydown", this._onKey);
+    document.addEventListener("selectionchange", this._onSelection);
     if (this._hass && !this._unsub) this._subscribe();
   }
 
   disconnectedCallback() {
     window.removeEventListener("keydown", this._onKey);
+    document.removeEventListener("selectionchange", this._onSelection);
     clearInterval(this._timer);
     this._timer = null;
     if (this._unsub) {
@@ -562,7 +573,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     this._gateways = gateways;
-    this._renderCards();
+    this._renderCards(true);
   }
 
   _add(row) {
@@ -593,7 +604,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (this._frame) return;
     this._frame = requestAnimationFrame(() => {
       this._frame = null;
-      this._render();
+      this._render(true);
       this._initialised = true;
     });
   }
@@ -645,7 +656,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._resetFilters();
       return;
     }
-    if (e.target.closest(".details")) return;
+    if (e.target.closest(".details") || this._selecting(this.shadowRoot.getElementById("list"))) return;
     const row = e.target.closest(".row");
     if (row) this._toggleRow(row.dataset.key);
   }
@@ -739,16 +750,16 @@ class EnOceanEltakoPanel extends HTMLElement {
       : "";
   }
 
-  _renderCards() {
+  _renderCards(background = false) {
     const t = this._t;
     const cards = this.shadowRoot.getElementById("cards");
-    if (!cards) return;
+    if (!cards || this._hold("cards", cards, background)) return;
     if (!this._gateways.length) {
-      cards.innerHTML = `<div class="hint">${esc(t.noGateways)}</div>`;
+      this._replace(cards, `<div class="hint">${esc(t.noGateways)}</div>`);
       return;
     }
     const now = Date.now() / 1000;
-    cards.innerHTML = this._gateways
+    this._replace(cards, this._gateways
       .map((gw) => {
         let pill = ["", t.notLoaded];
         if (gw.loaded) {
@@ -771,7 +782,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
         </article>`;
       })
-      .join("");
+      .join(""));
   }
 
   _proxyLine(gw) {
@@ -868,21 +879,56 @@ class EnOceanEltakoPanel extends HTMLElement {
     </div>`;
   }
 
-  _render() {
+  _render(background = false) {
     const t = this._t;
     const list = this.shadowRoot.getElementById("list");
     if (!list) return;
     const rows = this._visible();
     this.shadowRoot.getElementById("count").textContent = t.count(rows.length, this._rows.length);
+    if (this._hold("list", list, background)) return;
     if (!rows.length) {
       const filtered = this._rows.length > 0;
-      list.innerHTML = `<div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.emptyTitle)}</b><span>${esc(filtered ? t.noMatchText : t.emptyText)}</span>${
+      this._replace(list, `<div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.emptyTitle)}</b><span>${esc(filtered ? t.noMatchText : t.emptyText)}</span>${
         filtered ? `<button class="chip reset">${esc(t.resetFilters)}</button>` : ""
-      }</div>`;
+      }</div>`);
     } else {
-      list.innerHTML = rows.map((r) => this._row(r)).join("");
+      this._replace(list, rows.map((r) => this._row(r)).join(""));
     }
     this._fresh.clear();
+  }
+
+  _selecting(container) {
+    // shadowRoot.getSelection: Chromium; elsewhere the document selection reaches into it
+    const sel = this.shadowRoot.getSelection ? this.shadowRoot.getSelection() : document.getSelection();
+    if (!sel || sel.isCollapsed) return false;
+    return sel.anchorNode === this || container.contains(sel.anchorNode);
+  }
+
+  _hold(name, container, background) {
+    // a new telegram or status update does not wipe text the user is selecting (to copy an ID)
+    this._stale[name] = background && this._selecting(container);
+    return this._stale[name];
+  }
+
+  _replace(container, html) {
+    // redraw, keeping the keyboard focus on the same button of the same row or card
+    if (this._drawn.get(container) === html) return;
+    this._drawn.set(container, html);
+    const active = this.shadowRoot.activeElement;
+    let focus = null;
+    if (active && container.contains(active)) {
+      const holder = active.closest("[data-key], [data-entry]");
+      const selector = FOCUSABLE.find((s) => active.matches(s));
+      if (holder && selector) {
+        const attr = holder.hasAttribute("data-key") ? "data-key" : "data-entry";
+        focus = { attr, value: holder.getAttribute(attr), selector };
+      }
+    }
+    container.innerHTML = html;
+    if (focus) {
+      const holder = [...container.querySelectorAll(`[${focus.attr}]`)].find((h) => h.getAttribute(focus.attr) === focus.value);
+      holder?.querySelector(focus.selector)?.focus({ preventScroll: true });
+    }
   }
 }
 
