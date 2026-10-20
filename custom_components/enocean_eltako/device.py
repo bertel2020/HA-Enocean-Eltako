@@ -13,7 +13,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .catalog import ROCKER_STATUS_PRESSED, ROCKER_STATUS_RELEASED, DeviceModel, model_for
+from .catalog import (
+    GROUP_VIRTUAL,
+    ROCKER_STATUS_PRESSED,
+    ROCKER_STATUS_RELEASED,
+    DeviceModel,
+    model_for,
+)
 from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep.codecs import decode_telegram
@@ -73,6 +79,7 @@ class EnOceanDevice:
         self._listeners: list[Listener] = []
         self._stat_listeners: list[Callable[[], None]] = []
         self.cover_entity: Any = None  # set by the cover entity (calibrate button, accuracy)
+        self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
 
     @property
     def unique_prefix(self) -> str:
@@ -83,12 +90,18 @@ class EnOceanDevice:
         return self.model.receive.eep if self.model.receive else self.model.id
 
     @property
+    def _model_label(self) -> str:
+        if self.model.group == GROUP_VIRTUAL:  # it sends as a profile, it is no Eltako model
+            return f"{self.model.senders[0].eep}"
+        return self.model.examples.split(",")[0] if self.model.examples else self._model_name
+
+    @property
     def device_info(self) -> DeviceInfo:
         info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_prefix)},
             name=self.subentry.title,
             manufacturer=self.model.manufacturer,
-            model=self.model.examples.split(",")[0] if self.model.examples else self._model_name,
+            model=self._model_label,
             model_id=str(self.model.receive) if self.model.receive else None,
             serial_number=format_id(self.device_id),
         )

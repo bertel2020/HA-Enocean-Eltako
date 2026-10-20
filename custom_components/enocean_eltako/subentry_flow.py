@@ -33,6 +33,7 @@ from .catalog import (
     GENERIC_EEPS,
     GROUP_ELTAKO,
     GROUP_ENOCEAN,
+    GROUP_VIRTUAL,
     GROUPS,
     OPT_CALIBRATION,
     OPT_DEVICE_CLASS,
@@ -45,6 +46,7 @@ from .catalog import (
     OPT_PLATFORM,
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
+    OPT_SOURCE,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
     OPT_TILT_TIME,
@@ -52,6 +54,7 @@ from .catalog import (
     OPT_TIME_OPENS,
     OPT_UNAVAILABLE_WHEN_SILENT,
     OPT_VENT_TIME,
+    OPT_WHEN_UNAVAILABLE,
     DeviceModel,
     categories_of,
     generic_fields,
@@ -80,6 +83,16 @@ from .protocol.sender_pool import SenderIdError, SenderPool
 from .protocol.telegram import Rorg
 
 DEVICE_CLASSES = ["door", "window", "garage_door", "opening"]
+# I9: entities a virtual sensor can follow
+SOURCE_SELECTORS = {
+    "virtual_contact": EntitySelectorConfig(domain=["binary_sensor", "input_boolean", "switch"]),
+    "virtual_motion": EntitySelectorConfig(domain=["binary_sensor", "input_boolean"]),
+    "virtual_temperature": EntitySelectorConfig(
+        domain=["sensor", "input_number"], device_class="temperature"
+    ),
+}
+WHEN_UNAVAILABLE = ["skip", "safe"]
+DEFAULT_VIRTUAL_INTERVAL = 900  # seconds, as Eltako sensors repeat their state
 LEARN_TIMEOUT = 60.0
 MEASURE_MAX_RUN = 120  # seconds a measuring run may last (the click stops it earlier)
 DRIVEN_TIME_WAIT = 3.0  # seconds to wait for the actuator's driven-time report
@@ -138,6 +151,8 @@ OPTION_KEYS = (
     OPT_LONG_PRESS,
     OPT_DOUBLE_PRESS,
     OPT_CALIBRATION,
+    OPT_SOURCE,
+    OPT_WHEN_UNAVAILABLE,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 
@@ -199,7 +214,8 @@ class DeviceForm:
     def _fields(self, model: DeviceModel, current: dict[str, str]) -> dict[Any, Any]:
         """Sender IDs (first profile required, suggested from the pool) and model options."""
         schema: dict[Any, Any] = {}
-        for index, profile in enumerate(model.senders):
+        virtual_fixed = model.group == GROUP_VIRTUAL and bool(current)
+        for index, profile in enumerate(() if virtual_fixed else model.senders):
             field = sender_field(profile.id)
             if index == 0:
                 suggested = current.get(profile.id)
@@ -248,6 +264,23 @@ class DeviceForm:
                         mode=NumberSelectorMode.BOX,
                     )
                 )
+        if OPT_SOURCE in model.options:
+            schema[vol.Required(OPT_SOURCE)] = EntitySelector(SOURCE_SELECTORS[model.kind])
+            schema[vol.Required(OPT_SEND_INTERVAL, default=DEFAULT_VIRTUAL_INTERVAL)] = (
+                NumberSelector(
+                    NumberSelectorConfig(
+                        min=0,
+                        max=3600,
+                        step=60,
+                        unit_of_measurement="s",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                )
+            )
+        if OPT_WHEN_UNAVAILABLE in model.options:
+            schema[vol.Required(OPT_WHEN_UNAVAILABLE, default="skip")] = SelectSelector(
+                SelectSelectorConfig(options=WHEN_UNAVAILABLE, translation_key=OPT_WHEN_UNAVAILABLE)
+            )
         if OPT_ROUTING in model.options:
             schema[vol.Required(OPT_ROUTING, default=model.senders[0].id)] = SelectSelector(
                 SelectSelectorConfig(
@@ -396,7 +429,17 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
         self._device_model = None  # also when coming back: learning then suggests the kind
-        return self.async_show_menu(step_id="user", menu_options=["learn", *GROUPS, "eep"])
+        return self.async_show_menu(
+            step_id="user", menu_options=["learn", *GROUPS, GROUP_VIRTUAL, "eep"]
+        )
+
+    async def async_step_virtual(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """I9: Home Assistant sends as a sensor or rocker; the kinds, back to the start."""
+        self._kinds = [m.id for m in CATALOG.values() if m.group == GROUP_VIRTUAL]
+        self._group = "user"
+        return await self.async_step_kind()
 
     async def async_step_eltako(
         self, user_input: dict[str, Any] | None = None
@@ -430,6 +473,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     async def _async_chosen(self, model: DeviceModel, back: str) -> SubentryFlowResult:
         self._device_model = model
         self._back = back
+        if model.group == GROUP_VIRTUAL:  # its ID is its own sender ID
+            return await self.async_step_device()
         return await self.async_step_address()
 
     def _model_form(
@@ -533,7 +578,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     ) -> SubentryFlowResult:
         if self._device_model is None:  # kind not chosen yet: listen again or pick it
             return self.async_show_menu(
-                step_id="learn_timeout", menu_options=["learn", *GROUPS, "eep"]
+                step_id="learn_timeout", menu_options=["learn", *GROUPS, GROUP_VIRTUAL, "eep"]
             )
         return self.async_show_menu(
             step_id="learn_timeout", menu_options=["learn", "device", self._back]
@@ -563,15 +608,17 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         assert self._device_model is not None
         entry = self._get_entry()
         errors: dict[str, str] = {}
+        virtual = self._device_model.group == GROUP_VIRTUAL
+        id_field = sender_field(self._device_model.senders[0].id) if virtual else CONF_DEVICE_ID
         if user_input is not None:
             device_id = None
             try:
-                device_id = parse_id(user_input[CONF_DEVICE_ID])
+                device_id = parse_id(user_input[id_field])
             except ValueError:
-                errors[CONF_DEVICE_ID] = "invalid_id"
+                errors[id_field] = "sender_invalid_id" if virtual else "invalid_id"
             else:
                 if any(s.unique_id == format_id(device_id) for s in entry.subentries.values()):
-                    errors[CONF_DEVICE_ID] = "already_configured"
+                    errors[id_field] = "already_configured"
             if device_id is not None and not errors:
                 result = await self._async_save(user_input, device_id, {}, errors)
                 if result is not None:
@@ -580,7 +627,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                     )
         schema = {
             vol.Required(CONF_NAME): TextSelector(),
-            vol.Required(CONF_DEVICE_ID): TextSelector(),
+            **({} if virtual else {vol.Required(CONF_DEVICE_ID): TextSelector()}),
             **self._fields(self._device_model, {}),
         }
         if user_input is None and self._learned is not None:
@@ -601,6 +648,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if user_input is None and model.kind == "cover" and not self._settings_chosen:
             return self.async_show_menu(step_id="cover_menu", menu_options=["settings", "measure"])
         if user_input is not None:
+            if model.group == GROUP_VIRTUAL:  # the sender is the device's ID: it stays
+                user_input = {**user_input, **{sender_field(p): s for p, s in current.items()}}
             result = await self._async_save(user_input, device_id, current, errors)
             if result is not None:
                 return self.async_update_and_abort(

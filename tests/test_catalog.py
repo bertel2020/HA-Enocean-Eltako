@@ -12,6 +12,7 @@ from custom_components.enocean_eltako.catalog import (
     CATEGORIES,
     EEP_OPTIONS,
     EEP_TO_MODEL,
+    GROUP_VIRTUAL,
     GROUPS,
     categories_of,
 )
@@ -91,12 +92,12 @@ def test_flow_texts_cover_the_catalog(name: str) -> None:
         assert set(steps[group]["menu_options"]) == expected | {"user"}  # + back
         assert set(steps[group]["menu_option_descriptions"]) == expected
     kinds = {f"model_{m}" for m in CATALOG}
-    assert set(steps["kind"]["menu_options"]) == kinds | set(GROUPS)  # + back
+    assert set(steps["kind"]["menu_options"]) == kinds | set(GROUPS) | {"user"}  # + back
 
 
 def test_catalog_entries_have_a_place_in_the_menus() -> None:
     for model in CATALOG.values():
-        assert model.group in GROUPS and model.category in CATEGORIES, model.id
+        assert model.group in (*GROUPS, GROUP_VIRTUAL) and model.category in CATEGORIES, model.id
         assert model.base is None or model.base in CATALOG, model.id
     assert all(m in CATALOG for m in EEP_TO_MODEL.values())
 

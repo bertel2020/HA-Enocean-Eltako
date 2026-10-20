@@ -14,7 +14,7 @@ from typing import Any
 from homeassistant.const import Platform
 
 from .const import CONF_EEP, CONF_MODEL
-from .protocol.eep import EEPRef
+from .protocol.eep import EEPRef, virtual
 from .protocol.eep.eltako import heating, shutter, switching
 from .protocol.eep.model import Field, encode
 from .protocol.eep.std.profiles import PROFILES
@@ -37,6 +37,8 @@ OPT_STATUS_REQUEST = "status_request"  # E2: actuator answers "send confirmation
 OPT_UNAVAILABLE_WHEN_SILENT = "unavailable_when_silent"  # E5: entities unavailable when silent
 OPT_CALIBRATION = "calibration"  # I6 cover: passive | before_move
 OPT_FIELDS = "fields"  # device added by EEP: the profile values shown as sensors
+OPT_SOURCE = "source"  # I9 virtual sensor: the HA entity whose state is sent
+OPT_WHEN_UNAVAILABLE = "when_unavailable"  # I9: source unavailable -> skip | safe value
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
 
 
@@ -86,12 +88,23 @@ COOLING_SWITCH = SenderProfile("cooling", EEPRef("F6-02-01", "std"), Rorg.RPS, C
 DIRECTION_ROCKER = SenderProfile(
     "direction_rocker", EEPRef("F6-02-01", "std"), Rorg.RPS, ROCKER_PRESS_UP
 )
+# I9 virtual sensors: HA sends as the sensor; the sender ID is also the device's ID
+VIRTUAL_CONTACT = SenderProfile(
+    "contact", EEPRef("D5-00-01", "std"), Rorg.BS1, virtual.CONTACT_TEACH_IN
+)
+VIRTUAL_TEMPERATURE = SenderProfile(
+    "temperature", EEPRef("A5-02-05", "std"), Rorg.BS4, virtual.TEMPERATURE_TEACH_IN
+)
+VIRTUAL_MOTION = SenderProfile(
+    "motion", EEPRef("A5-07-01", "std"), Rorg.BS4, virtual.MOTION_TEACH_IN
+)
 
 
 GROUP_ELTAKO = "eltako"
 GROUP_ENOCEAN = "enocean"  # other manufacturers
-GROUPS = (GROUP_ELTAKO, GROUP_ENOCEAN)
-CATEGORIES = ("lighting", "covers", "climate", "buttons", "sensors", "meters")
+GROUP_VIRTUAL = "virtual"  # I9: Home Assistant sends as a sensor or rocker
+GROUPS = (GROUP_ELTAKO, GROUP_ENOCEAN)  # catalog menus by category
+CATEGORIES = ("lighting", "covers", "climate", "buttons", "sensors", "meters", "virtual")
 GENERIC_EEP = "eep"  # model id of a device added by EEP alone (receive-only sensors)
 
 
@@ -318,6 +331,49 @@ CATALOG: dict[str, DeviceModel] = {
             options=(OPT_DEVICE_CLASS, OPT_INVERT),
             manufacturer="EnOcean",
             examples="NodOn SDO",
+        ),
+        DeviceModel(
+            "virtual_contact",
+            None,
+            (Platform.BUTTON, Platform.SENSOR),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(VIRTUAL_CONTACT,),
+            manufacturer="Home Assistant",
+            options=(OPT_SOURCE, OPT_INVERT, OPT_SEND_INTERVAL, OPT_WHEN_UNAVAILABLE),
+            examples="FTK",
+        ),
+        DeviceModel(
+            "virtual_temperature",
+            None,
+            (Platform.BUTTON, Platform.SENSOR),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(VIRTUAL_TEMPERATURE,),
+            manufacturer="Home Assistant",
+            options=(OPT_SOURCE, OPT_SEND_INTERVAL),
+            examples="FTR55",
+        ),
+        DeviceModel(
+            "virtual_motion",
+            None,
+            (Platform.BUTTON, Platform.SENSOR),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(VIRTUAL_MOTION,),
+            manufacturer="Home Assistant",
+            options=(OPT_SOURCE, OPT_INVERT, OPT_SEND_INTERVAL),
+            examples="FBH",
+        ),
+        DeviceModel(
+            "virtual_rocker",
+            None,
+            (Platform.BUTTON,),
+            category="virtual",
+            group=GROUP_VIRTUAL,
+            senders=(ROCKER,),
+            manufacturer="Home Assistant",
+            examples="FT55, FTS14EM",
         ),
     )
 }

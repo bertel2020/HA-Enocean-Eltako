@@ -36,13 +36,14 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import GENERIC_EEP, OPT_FIELDS, generic_fields
+from .catalog import GENERIC_EEP, GROUP_VIRTUAL, OPT_FIELDS, generic_fields
 from .const import CONF_MODEL
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
 from .protocol.ids import format_id
 from .protocol.models import MODELS
+from .virtual import CONTACT_CLOSED, CONTACT_OPEN, MOTION, NO_MOTION
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -278,6 +279,12 @@ async def async_setup_entry(
     async_add_entities([GatewaySensor(entry, d) for d in GATEWAY_SENSORS if bus or not d.bus_only])
     for subentry_id, device in entry.runtime_data.devices.items():
         # E5/I7 diagnostics for every device
+        if device.model.group == GROUP_VIRTUAL:  # sends only: no radio statistics
+            virtual: list[SensorEntity] = [SenderIdSensor(device, p) for p in device.senders]
+            if device.virtual is not None:
+                virtual += [VirtualValueSensor(device), VirtualLastSentSensor(device)]
+            async_add_entities(virtual, config_subentry_id=subentry_id)
+            continue
         diagnostics: list[SensorEntity] = [
             LastSeenSensor(device),
             RssiSensor(device),
@@ -549,3 +556,50 @@ class PositionAccuracySensor(_StatsSensor):
     def native_value(self) -> float | None:
         cover = self._device.cover_entity
         return round(cover.position.inaccuracy, 1) if cover is not None else None
+
+
+class _VirtualSensorEntity(EnOceanEntity, SensorEntity):
+    """I9: what a virtual sensor sent last."""
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(self._device.virtual.add_listener(self.async_write_ha_state))
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class VirtualValueSensor(_VirtualSensorEntity):
+    _attr_translation_key = "sent_value"
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "sent_value")
+        if device.model.kind == "virtual_temperature":
+            self._attr_device_class = SensorDeviceClass.TEMPERATURE
+            self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+        else:
+            self._attr_device_class = SensorDeviceClass.ENUM
+            self._attr_translation_key = f"sent_{device.model.kind.removeprefix('virtual_')}"
+            self._attr_options = (
+                [CONTACT_OPEN, CONTACT_CLOSED]
+                if device.model.kind == "virtual_contact"
+                else [MOTION, NO_MOTION]
+            )
+
+    @property
+    def native_value(self) -> Any:
+        return self._device.virtual.sent_value
+
+
+class VirtualLastSentSensor(_VirtualSensorEntity):
+    _attr_translation_key = "last_sent"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "last_sent")
+
+    @property
+    def native_value(self) -> datetime | None:
+        last = self._device.virtual.last_sent
+        return dt_util.utc_from_timestamp(last) if last is not None else None

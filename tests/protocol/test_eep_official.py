@@ -28,6 +28,8 @@ KNOWN_CONTAINER_ERRORS = {
     ("A5-12-01", "MR"),
     ("A5-12-02", "MR"),
     ("A5-12-03", "MR"),
+    # "unused field test": the LRN bit is masked out (ignoremask 0x09) but expected as 1
+    ("A5-07-01", "LRNB"),
 }
 
 

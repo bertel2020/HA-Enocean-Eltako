@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 from custom_components.enocean_eltako.catalog import (  # noqa: E402
     CATALOG,
     CATEGORIES,
+    GROUP_VIRTUAL,
     GROUPS,
 )
 
@@ -34,7 +35,10 @@ def _translations(lang: str) -> dict:
 
 
 def _category(data: dict, group: str, category: str) -> str:
-    return data["config_subentries"]["device"]["step"][group]["menu_options"][f"{group}_{category}"]
+    steps = data["config_subentries"]["device"]["step"]
+    if group == GROUP_VIRTUAL:  # no category menu: the entry of the start menu
+        return steps["user"]["menu_options"][GROUP_VIRTUAL]
+    return steps[group]["menu_options"][f"{group}_{category}"]
 
 
 def table(lang: str) -> str:
@@ -42,7 +46,7 @@ def table(lang: str) -> str:
     names = data["selector"]["device_model"]["options"]
     models = sorted(
         CATALOG.values(),
-        key=lambda m: (GROUPS.index(m.group), CATEGORIES.index(m.category)),
+        key=lambda m: ((*GROUPS, GROUP_VIRTUAL).index(m.group), CATEGORIES.index(m.category)),
     )
     lines = [
         "| " + " | ".join(HEADERS[lang]) + " |",

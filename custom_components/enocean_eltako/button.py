@@ -1,4 +1,5 @@
-"""Teach-in buttons (one per sender profile of an actuator), calibration, gateway reconnect."""
+"""Teach-in buttons (one per sender profile of an actuator), calibration, gateway reconnect;
+I9 virtual sensors: send now, virtual rocker buttons."""
 
 from __future__ import annotations
 
@@ -14,6 +15,9 @@ from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayReconnectButton
 
+# F6-02-01 rocker action of each button (pressed)
+ROCKER_BUTTONS = {"b0": 0x70, "b1": 0x50, "a0": 0x30, "a1": 0x10}
+
 PARALLEL_UPDATES = 0
 
 
@@ -28,6 +32,10 @@ async def async_setup_entry(
         buttons: list[ButtonEntity] = [TeachInButton(device, p) for p in device.senders]
         if device.model.kind == "cover":
             buttons.append(CalibrateButton(device))
+        if device.model.kind == "virtual_rocker":
+            buttons.extend(VirtualRockerButton(device, b) for b in ROCKER_BUTTONS)
+        elif device.virtual is not None:
+            buttons.append(SendNowButton(device))
         async_add_entities(buttons, config_subentry_id=subentry_id)
 
 
@@ -60,6 +68,36 @@ class CalibrateButton(EnOceanEntity, ButtonEntity):
     async def async_press(self) -> None:
         if self._device.cover_entity is not None:
             self.hass.async_create_task(self._device.cover_entity.async_calibrate())
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class SendNowButton(EnOceanEntity, ButtonEntity):
+    """I9: send the source's current value right away (e.g. after teaching in)."""
+
+    _attr_translation_key = "send_now"
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "send_now")
+
+    async def async_press(self) -> None:
+        self._device.virtual.send_current()
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class VirtualRockerButton(EnOceanEntity, ButtonEntity):
+    """I9: a rocker button pressed and released by Home Assistant (FT55-like)."""
+
+    def __init__(self, device: EnOceanDevice, button: str) -> None:
+        super().__init__(device, f"press_{button}")
+        self._code = bytes([ROCKER_BUTTONS[button]])
+        self._attr_translation_key = f"press_{button}"
+
+    async def async_press(self) -> None:
+        self._device.press("rocker", self._code, confirm=False)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False

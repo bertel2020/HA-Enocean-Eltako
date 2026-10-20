@@ -25,7 +25,9 @@ REFERENCES = {"D2-01-09": "D2-01-00"}
 
 # Profiles generated today (phase 2: the EEPs of the reference system); extend deliberately.
 PROFILES = (
+    "A5-02-05",
     "A5-04-02",
+    "A5-07-01",
     "A5-08-01",
     "A5-09-04",
     "A5-10-06",

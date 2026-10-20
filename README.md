@@ -47,6 +47,7 @@ devices, written from scratch. Goals:
   EnOcean Alliance definitions; Eltako variants kept strictly separate
 - **Covers** (FSB14/61/71) with controller and direction-rocker senders in
   parallel, position tracking and calibration at the end positions
+- **Virtual sensors:** HA entities sent as EnOcean contact, motion, temperature or rocker
 - **Teach-in, discovery, telegram monitor**, import from the FAM14 bus memory
   and a takeover assistant for the old `eltako` integration
 - **No third-party EnOcean libraries:** no extra requirements; serial ports
@@ -55,12 +56,18 @@ devices, written from scratch. Goals:
 
 ## Supported devices
 
-Add a device under the gateway with **Add device** in one of four ways:
+Add a device under the gateway with **Add device** in one of five ways:
 
 - **Listen for the device** (recommended): press a button on it or switch the actuator
   locally; the kind is suggested from its telegram.
 - **Eltako device** or **EnOcean device of another manufacturer**: pick category and kind
   from the catalog.
+- **Virtual sensor**: Home Assistant itself sends as a window contact (D5-00-01), motion
+  sensor (A5-07-01), temperature sensor (A5-02-05) or rocker (F6-02-01) with its own sender
+  ID. An HA window contact can lower the heating actuator, an HA temperature can be its room
+  sensor. It sends on every change of the chosen entity and repeats every 15 min (adjustable);
+  if the entity is unavailable, a contact can send the safe value "open". Teach it in with the
+  button on the device page; the device page also shows the value sent last.
 - **By EEP** (expert): standard sensor profiles become a device with one sensor per value.
 
 Even simpler: every sender the gateway hears that is not set up yet shows up as a
@@ -93,6 +100,10 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Buttons and contacts | Rocker switch (NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event |
 | Buttons and contacts | Window handle (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor |
 | Buttons and contacts | Door / window contact (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor |
+| Virtual sensor (Home Assistant sends) | Virtual window contact | Home Assistant | - | `contact: D5-00-01:std` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual temperature sensor | Home Assistant | - | `temperature: A5-02-05:std` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual motion sensor | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
+| Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
 ## Blueprints

@@ -196,7 +196,11 @@
         "enocean_window_handle": "Fenstergriff (Hoppe SecuSignal …)",
         "enocean_contact": "Tür-/Fensterkontakt (NodOn …)",
         "gas_meter": "Gaszähler (F3Z14D …)",
-        "water_meter": "Wasserzähler (F3Z14D …)"
+        "water_meter": "Wasserzähler (F3Z14D …)",
+        "virtual_contact": "Virtueller Fensterkontakt",
+        "virtual_temperature": "Virtueller Temperaturfühler",
+        "virtual_motion": "Virtueller Bewegungsmelder",
+        "virtual_rocker": "Virtueller Taster"
       }
     },
     "routing": {
@@ -261,7 +265,17 @@
         "default": "Anlernen: Aktor in den Lernmodus bringen (Drehschalter LRN oder Lerntaste), dann auf dieser Geräteseite den passenden Einlernen-Button drücken.",
         "psc": "Anlernen: Lernmodus am PSC starten (PSC132: Touch ca. 3 s, PSC234: länger als 5 s, LED blinkt rot), dann innerhalb von 15 s auf dieser Geräteseite „Einlernen Controller“ drücken. Der PSC sendet vorher eine eigene Anfrage, die ignoriert wird. Fertig, wenn die LED 5× grün blinkt.",
         "cover": "Anlernen: Aktor in den Lernmodus bringen (FSB: Funktion 180/200 für den Controller, 10/30 für den Richtungstaster), dann auf dieser Geräteseite den passenden Einlernen-Button drücken.",
-        "heating_actuator": "Anlernen: Aktor in den Lernmodus für einen Raumregler bringen, dann „Einlernen Controller“ drücken; für Kühlen zusätzlich den Kühlschalter einlernen."
+        "heating_actuator": "Anlernen: Aktor in den Lernmodus für einen Raumregler bringen, dann „Einlernen Controller“ drücken; für Kühlen zusätzlich den Kühlschalter einlernen.",
+        "virtual_contact": "Anlernen: Aktor in den Lernmodus für einen Fensterkontakt bringen (FSB14: Funktion 20/40, Heizungsaktor: Fensterkontakt), dann „Einlernen Fensterkontakt“ drücken.",
+        "virtual_temperature": "Anlernen: Aktor in den Lernmodus für einen Temperaturfühler bringen, dann „Einlernen Temperatur“ drücken.",
+        "virtual_motion": "Anlernen: Aktor in den Lernmodus für einen Bewegungsmelder bringen, dann „Einlernen Bewegung“ drücken.",
+        "virtual_rocker": "Anlernen: Aktor in den Lernmodus bringen, dann auf dieser Geräteseite die Taste drücken, die er lernen soll."
+      }
+    },
+    "when_unavailable": {
+      "options": {
+        "skip": "Nichts senden",
+        "safe": "Sicheren Wert senden"
       }
     }
   },
@@ -332,13 +346,15 @@
             "learn": "Gerät anlernen (empfohlen)",
             "eltako": "Eltako-Gerät",
             "enocean": "EnOcean-Gerät anderer Hersteller",
+            "virtual": "Virtueller Sensor (Home Assistant sendet)",
             "eep": "Per EEP (Experte)"
           },
           "menu_option_descriptions": {
             "learn": "Lerntaste oder eine Taste am Gerät drücken bzw. den Aktor vor Ort schalten. Die Geräteart wird aus dem Telegramm vorgeschlagen.",
             "eltako": "Aus dem Eltako-Katalog wählen.",
             "enocean": "NodOn, Permundo, Hoppe und andere Hersteller.",
-            "eep": "Beliebiges unterstütztes Profil, für Geräte, die nicht im Katalog stehen."
+            "eep": "Beliebiges unterstütztes Profil, für Geräte, die nicht im Katalog stehen.",
+            "virtual": "Home Assistant sendet als Fensterkontakt, Bewegungsmelder, Temperaturfühler oder Taster, z. B. damit ein HA-Fensterkontakt die Heizung absenkt."
           }
         },
         "eltako": {
@@ -400,7 +416,12 @@
             "eltako": "Zurück",
             "enocean": "Zurück",
             "model_gas_meter": "Gaszähler",
-            "model_water_meter": "Wasserzähler"
+            "model_water_meter": "Wasserzähler",
+            "model_virtual_contact": "Virtueller Fensterkontakt",
+            "model_virtual_temperature": "Virtueller Temperaturfühler",
+            "model_virtual_motion": "Virtueller Bewegungsmelder",
+            "model_virtual_rocker": "Virtueller Taster",
+            "user": "Zurück"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -421,7 +442,11 @@
             "model_enocean_window_handle": "Hoppe SecuSignal",
             "model_enocean_contact": "NodOn",
             "model_gas_meter": "F3Z14D",
-            "model_water_meter": "F3Z14D"
+            "model_water_meter": "F3Z14D",
+            "model_virtual_contact": "Folgt einem Binärsensor; sendet wie ein FTK (D5-00-01)",
+            "model_virtual_temperature": "Folgt einem Temperatursensor; sendet wie ein Raumfühler (A5-02-05)",
+            "model_virtual_motion": "Folgt einem Binärsensor; sendet A5-07-01",
+            "model_virtual_rocker": "Vier Tasten in HA, die wie ein FT55 senden (F6-02-01)"
           }
         },
         "learned": {
@@ -466,7 +491,12 @@
             "fields": "Angezeigte Werte",
             "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
             "vent_time": "Lüftungsschlitz-Zeit",
-            "tilt_time": "Wendezeit Lamellen"
+            "tilt_time": "Wendezeit Lamellen",
+            "source": "Quelle",
+            "when_unavailable": "Quelle nicht verfügbar",
+            "sender_contact": "Sender-ID: Fensterkontakt (D5-00-01)",
+            "sender_temperature": "Sender-ID: Temperatur (A5-02-05)",
+            "sender_motion": "Sender-ID: Bewegung (A5-07-01)"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -474,14 +504,19 @@
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
-            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
+            "send_interval": "Wie oft gesendet wird. Heizungsaktor: mindestens alle 10 min, sonst geht er nach 1 h in den Störbetrieb. Virtueller Sensor: Wiederholung zusätzlich zu jeder Änderung, 0 = nur bei Änderung.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
             "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
             "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
-            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
+            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
+            "source": "Entität, deren Zustand gesendet wird. Kontakt: an = offen.",
+            "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift.",
+            "sender_contact": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
+            "sender_temperature": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest.",
+            "sender_motion": "Die Sender-ID ist zugleich die ID dieses virtuellen Geräts; sie bleibt danach fest."
           }
         },
         "reconfigure": {
@@ -511,21 +546,25 @@
             "fields": "Angezeigte Werte",
             "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
             "vent_time": "Lüftungsschlitz-Zeit",
-            "tilt_time": "Wendezeit Lamellen"
+            "tilt_time": "Wendezeit Lamellen",
+            "source": "Quelle",
+            "when_unavailable": "Quelle nicht verfügbar"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
             "time_closes": "Volle Laufzeit von auf nach zu.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant).",
-            "send_interval": "Wie oft Soll- und Isttemperatur gesendet werden. Der Aktor braucht mindestens alle 10 min ein Telegramm, sonst geht er nach 1 h in den Störbetrieb.",
+            "send_interval": "Wie oft gesendet wird. Heizungsaktor: mindestens alle 10 min, sonst geht er nach 1 h in den Störbetrieb. Virtueller Sensor: Wiederholung zusätzlich zu jeder Änderung, 0 = nur bei Änderung.",
             "unavailable_when_silent": "Entitäten als nicht verfügbar zeigen, wenn das Gerät dreimal so lange wie üblich nicht gehört wurde.",
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
             "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
             "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
-            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen."
+            "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
+            "source": "Entität, deren Zustand gesendet wird. Kontakt: an = offen.",
+            "when_unavailable": "Sicherer Wert: „offen“ senden, damit z. B. der Aussperrschutz greift."
           }
         },
         "address": {
@@ -549,9 +588,10 @@
             "device": "ID eingeben",
             "eltako": "Eltako-Gerät wählen",
             "enocean": "EnOcean-Gerät wählen",
-            "eep": "Per EEP",
             "user": "Zurück",
-            "kind": "Zurück"
+            "kind": "Zurück",
+            "virtual": "Virtueller Sensor (Home Assistant sendet)",
+            "eep": "Per EEP"
           }
         },
         "cover_menu": {
@@ -701,6 +741,35 @@
       },
       "serial_number": {
         "name": "Seriennummer"
+      },
+      "sent_value": {
+        "name": "Gesendeter Wert"
+      },
+      "sent_contact": {
+        "name": "Gesendeter Wert",
+        "state": {
+          "open": "Offen",
+          "closed": "Geschlossen"
+        }
+      },
+      "sent_motion": {
+        "name": "Gesendeter Wert",
+        "state": {
+          "motion": "Bewegung",
+          "no_motion": "Keine Bewegung"
+        }
+      },
+      "last_sent": {
+        "name": "Zuletzt gesendet"
+      },
+      "sender_id_contact": {
+        "name": "Sender-ID Fensterkontakt"
+      },
+      "sender_id_temperature": {
+        "name": "Sender-ID Temperatur"
+      },
+      "sender_id_motion": {
+        "name": "Sender-ID Bewegung"
       }
     },
     "binary_sensor": {
@@ -749,6 +818,30 @@
       },
       "teach_in_cooling": {
         "name": "Einlernen Kühlschalter"
+      },
+      "send_now": {
+        "name": "Jetzt senden"
+      },
+      "press_b0": {
+        "name": "Taste rechts oben (B0)"
+      },
+      "press_b1": {
+        "name": "Taste rechts unten (B1)"
+      },
+      "press_a0": {
+        "name": "Taste links oben (A0)"
+      },
+      "press_a1": {
+        "name": "Taste links unten (A1)"
+      },
+      "teach_in_contact": {
+        "name": "Einlernen Fensterkontakt"
+      },
+      "teach_in_temperature": {
+        "name": "Einlernen Temperatur"
+      },
+      "teach_in_motion": {
+        "name": "Einlernen Bewegung"
       }
     }
   },

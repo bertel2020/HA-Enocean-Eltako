@@ -937,7 +937,7 @@ async def test_add_device_menus(hass: HomeAssistant, gateway) -> None:
     entry, _server = gateway
     configure = hass.config_entries.subentries.async_configure
     result = await _init_flow(hass, entry)
-    assert result["menu_options"] == ["learn", "eltako", "enocean", "eep"]
+    assert result["menu_options"] == ["learn", "eltako", "enocean", "virtual", "eep"]
     eltako = await configure(result["flow_id"], {"next_step_id": "eltako"})
     assert eltako["menu_options"] == [
         "eltako_lighting",
@@ -1049,7 +1049,7 @@ async def test_learn_first_timeout_offers_the_catalog(
     await _settle(hass)
     result = await hass.config_entries.subentries.async_configure(result["flow_id"])
     assert result["step_id"] == "learn_timeout"
-    assert result["menu_options"] == ["learn", "eltako", "enocean", "eep"]
+    assert result["menu_options"] == ["learn", "eltako", "enocean", "virtual", "eep"]
 
 
 async def test_back_entries_return_to_the_previous_menu(hass: HomeAssistant, gateway) -> None:
@@ -1066,7 +1066,7 @@ async def test_back_entries_return_to_the_previous_menu(hass: HomeAssistant, gat
     result = await configure(flow_id, {"next_step_id": "eltako"})  # back to the categories
     assert result["step_id"] == "eltako"
     result = await configure(flow_id, {"next_step_id": "user"})  # back to the start
-    assert result["menu_options"] == ["learn", "eltako", "enocean", "eep"]
+    assert result["menu_options"] == ["learn", "eltako", "enocean", "virtual", "eep"]
     # a single kind goes straight to the address; back leads to the categories
     result = await configure(flow_id, {"next_step_id": "enocean"})
     result = await configure(flow_id, {"next_step_id": "enocean_lighting"})

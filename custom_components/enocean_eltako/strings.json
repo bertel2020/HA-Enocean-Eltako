@@ -196,7 +196,11 @@
         "enocean_window_handle": "Window handle (Hoppe SecuSignal …)",
         "enocean_contact": "Door / window contact (NodOn …)",
         "gas_meter": "Gas meter (F3Z14D …)",
-        "water_meter": "Water meter (F3Z14D …)"
+        "water_meter": "Water meter (F3Z14D …)",
+        "virtual_contact": "Virtual window contact",
+        "virtual_temperature": "Virtual temperature sensor",
+        "virtual_motion": "Virtual motion sensor",
+        "virtual_rocker": "Virtual rocker"
       }
     },
     "routing": {
@@ -261,7 +265,17 @@
         "default": "Teach-in: put the actuator into learn mode (rotary switch LRN or learn button), then press the matching teach-in button on this device page.",
         "psc": "Teach-in: start the learn mode on the PSC (PSC132: touch about 3 s, PSC234: more than 5 s, LED flashes red), then within 15 s press \"Teach in controller\" on this device page. The PSC first sends a request of its own, which is ignored. Done when the LED flashes green 5 times.",
         "cover": "Teach-in: put the actuator into learn mode (FSB: function 180/200 for the controller, 10/30 for the direction rocker), then press the matching teach-in button on this device page.",
-        "heating_actuator": "Teach-in: put the actuator into learn mode for a room controller, then press \"Teach in controller\"; for cooling also teach in the cooling switch."
+        "heating_actuator": "Teach-in: put the actuator into learn mode for a room controller, then press \"Teach in controller\"; for cooling also teach in the cooling switch.",
+        "virtual_contact": "Teach-in: put the actuator into learn mode for a window contact (FSB14: function 20/40, heating actuator: window contact), then press “Teach in window contact”.",
+        "virtual_temperature": "Teach-in: put the actuator into learn mode for a temperature sensor, then press “Teach in temperature”.",
+        "virtual_motion": "Teach-in: put the actuator into learn mode for a motion sensor, then press “Teach in motion”.",
+        "virtual_rocker": "Teach-in: put the actuator into learn mode, then press the button on this device page that it should learn."
+      }
+    },
+    "when_unavailable": {
+      "options": {
+        "skip": "Send nothing",
+        "safe": "Send the safe value"
       }
     }
   },
@@ -332,13 +346,15 @@
             "learn": "Listen for the device (recommended)",
             "eltako": "Eltako device",
             "enocean": "EnOcean device of another manufacturer",
+            "virtual": "Virtual sensor (Home Assistant sends)",
             "eep": "By EEP (expert)"
           },
           "menu_option_descriptions": {
             "learn": "Press the learn button or a button on the device, or switch the actuator locally. The kind is suggested from its telegram.",
             "eltako": "Pick it from the Eltako catalog.",
             "enocean": "NodOn, Permundo, Hoppe and other manufacturers.",
-            "eep": "Any supported profile, for devices not in the catalog."
+            "eep": "Any supported profile, for devices not in the catalog.",
+            "virtual": "Home Assistant sends as a window contact, motion sensor, temperature sensor or rocker, e.g. so an HA window contact lowers the heating."
           }
         },
         "eltako": {
@@ -400,7 +416,12 @@
             "eltako": "Back",
             "enocean": "Back",
             "model_gas_meter": "Gas meter",
-            "model_water_meter": "Water meter"
+            "model_water_meter": "Water meter",
+            "model_virtual_contact": "Virtual window contact",
+            "model_virtual_temperature": "Virtual temperature sensor",
+            "model_virtual_motion": "Virtual motion sensor",
+            "model_virtual_rocker": "Virtual rocker",
+            "user": "Back"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -421,7 +442,11 @@
             "model_enocean_window_handle": "Hoppe SecuSignal",
             "model_enocean_contact": "NodOn",
             "model_gas_meter": "F3Z14D",
-            "model_water_meter": "F3Z14D"
+            "model_water_meter": "F3Z14D",
+            "model_virtual_contact": "Follows a binary sensor; sends like an FTK (D5-00-01)",
+            "model_virtual_temperature": "Follows a temperature sensor; sends like a room sensor (A5-02-05)",
+            "model_virtual_motion": "Follows a binary sensor; sends A5-07-01",
+            "model_virtual_rocker": "Four buttons in HA that send like an FT55 (F6-02-01)"
           }
         },
         "learned": {
@@ -466,7 +491,12 @@
             "fields": "Shown values",
             "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
             "vent_time": "Vent slot time",
-            "tilt_time": "Slat turning time"
+            "tilt_time": "Slat turning time",
+            "source": "Source",
+            "when_unavailable": "Source unavailable",
+            "sender_contact": "Sender ID: window contact (D5-00-01)",
+            "sender_temperature": "Sender ID: temperature (A5-02-05)",
+            "sender_motion": "Sender ID: motion (A5-07-01)"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -474,14 +504,19 @@
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
-            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
+            "send_interval": "How often it sends. Heating actuator: at least every 10 min, otherwise it goes into fault mode after 1 h. Virtual sensor: repetition on top of every change, 0 = only on change.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
             "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
             "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
-            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
+            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
+            "source": "Entity whose state is sent. Contact: on = open.",
+            "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example.",
+            "sender_contact": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
+            "sender_temperature": "The sender ID is also the ID of this virtual device; it stays fixed afterwards.",
+            "sender_motion": "The sender ID is also the ID of this virtual device; it stays fixed afterwards."
           }
         },
         "reconfigure": {
@@ -511,21 +546,25 @@
             "fields": "Shown values",
             "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
             "vent_time": "Vent slot time",
-            "tilt_time": "Slat turning time"
+            "tilt_time": "Slat turning time",
+            "source": "Source",
+            "when_unavailable": "Source unavailable"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
             "time_closes": "Full travel time from open to closed.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant).",
-            "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
+            "send_interval": "How often it sends. Heating actuator: at least every 10 min, otherwise it goes into fault mode after 1 h. Virtual sensor: repetition on top of every change, 0 = only on change.",
             "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
             "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
             "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
-            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first."
+            "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
+            "source": "Entity whose state is sent. Contact: on = open.",
+            "when_unavailable": "Safe value: send “open” so a lock-out protection still works, for example."
           }
         },
         "address": {
@@ -549,9 +588,10 @@
             "device": "Enter the ID",
             "eltako": "Pick an Eltako device",
             "enocean": "Pick an EnOcean device",
-            "eep": "By EEP",
             "user": "Back",
-            "kind": "Back"
+            "kind": "Back",
+            "virtual": "Virtual sensor (Home Assistant sends)",
+            "eep": "By EEP"
           }
         },
         "cover_menu": {
@@ -701,6 +741,35 @@
       },
       "serial_number": {
         "name": "Serial number"
+      },
+      "sent_value": {
+        "name": "Sent value"
+      },
+      "sent_contact": {
+        "name": "Sent value",
+        "state": {
+          "open": "Open",
+          "closed": "Closed"
+        }
+      },
+      "sent_motion": {
+        "name": "Sent value",
+        "state": {
+          "motion": "Motion",
+          "no_motion": "No motion"
+        }
+      },
+      "last_sent": {
+        "name": "Last sent"
+      },
+      "sender_id_contact": {
+        "name": "Sender ID window contact"
+      },
+      "sender_id_temperature": {
+        "name": "Sender ID temperature"
+      },
+      "sender_id_motion": {
+        "name": "Sender ID motion"
       }
     },
     "binary_sensor": {
@@ -749,6 +818,30 @@
       },
       "teach_in_cooling": {
         "name": "Teach in cooling switch"
+      },
+      "send_now": {
+        "name": "Send now"
+      },
+      "press_b0": {
+        "name": "Button top right (B0)"
+      },
+      "press_b1": {
+        "name": "Button bottom right (B1)"
+      },
+      "press_a0": {
+        "name": "Button top left (A0)"
+      },
+      "press_a1": {
+        "name": "Button bottom left (A1)"
+      },
+      "teach_in_contact": {
+        "name": "Teach in window contact"
+      },
+      "teach_in_temperature": {
+        "name": "Teach in temperature"
+      },
+      "teach_in_motion": {
+        "name": "Teach in motion"
       }
     }
   },

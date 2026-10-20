@@ -48,6 +48,8 @@ andere EnOcean-Geräte. Ziele:
   Definitionen der EnOcean Alliance; Eltako-Varianten streng getrennt
 - **Rollläden** (FSB14/61/71) mit Controller- und Richtungstaster-Sender
   parallel, Positionsverfolgung und Kalibrierung an den Endlagen
+- **Virtuelle Sensoren:** HA-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur
+  oder -Taster senden
 - **Anlernen, Discovery, Telegramm-Monitor**, Import aus dem Bus-Speicher des
   FAM14 und ein Übernahme-Assistent für die alte Integration `eltako`
 - **Keine fremden EnOcean-Bibliotheken:** keine zusätzlichen Pakete; serielle
@@ -56,12 +58,19 @@ andere EnOcean-Geräte. Ziele:
 
 ## Unterstützte Geräte
 
-Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem von vier Wegen:
+Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem von fünf Wegen:
 
 - **Gerät anlernen** (empfohlen): eine Taste am Gerät drücken oder den Aktor vor Ort
   schalten; die Geräteart wird aus dem Telegramm vorgeschlagen.
 - **Eltako-Gerät** oder **EnOcean-Gerät anderer Hersteller**: Kategorie und Geräteart aus
   dem Katalog wählen.
+- **Virtueller Sensor**: Home Assistant sendet selbst als Fensterkontakt (D5-00-01),
+  Bewegungsmelder (A5-07-01), Temperaturfühler (A5-02-05) oder Taster (F6-02-01) mit eigener
+  Sender-ID. So senkt ein HA-Fensterkontakt den Heizungsaktor ab oder eine HA-Temperatur dient
+  als Raumfühler. Gesendet wird bei jeder Änderung der gewählten Entität und alle 15 min
+  (einstellbar); ist die Entität nicht verfügbar, kann ein Kontakt den sicheren Wert „offen“
+  senden. Eingelernt wird über den Button auf der Geräteseite, dort steht auch der zuletzt
+  gesendete Wert.
 - **Per EEP** (Experte): Standard-Sensorprofile werden zu einem Gerät mit einem Sensor je Wert.
 
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
@@ -94,6 +103,10 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Taster und Kontakte | Wippentaster (NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event |
 | Taster und Kontakte | Fenstergriff (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor |
 | Taster und Kontakte | Tür-/Fensterkontakt (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Fensterkontakt | Home Assistant | - | `contact: D5-00-01:std` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Temperaturfühler | Home Assistant | - | `temperature: A5-02-05:std` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Bewegungsmelder | Home Assistant | - | `motion: A5-07-01:std` | button, sensor |
+| Virtueller Sensor (Home Assistant sendet) | Virtueller Taster | Home Assistant | - | `rocker: F6-02-01:std` | button |
 <!-- devices:end -->
 
 ## Blueprints

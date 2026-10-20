@@ -23,6 +23,7 @@ from .catalog import (
     CATALOG,
     CENTRAL,
     GENERIC_EEP,
+    GROUP_VIRTUAL,
     OPT_FIELDS,
     OPT_PLATFORM,
     OPT_STATUS_REQUEST,
@@ -64,6 +65,7 @@ from .protocol.transport import connection_from_dict
 from .senders import SenderStore, async_remove_store, bus_key, radio_key
 from .services import async_setup_services
 from .subentry_flow import sender_owner
+from .virtual import VirtualSensor
 from .websocket import async_setup_websocket
 
 _LOGGER = logging.getLogger(__name__)
@@ -238,6 +240,9 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         device = EnOceanDevice(hass, entry, subentry)
         runtime.devices[subentry_id] = device
         entry.async_on_unload(device.start())
+        if device.model.group == GROUP_VIRTUAL and device.model.kind != "virtual_rocker":
+            device.virtual = VirtualSensor(hass, device)
+            entry.async_on_unload(device.virtual.start())
         owners.update(sender_owner(device.device_id, p) for p in device.senders)
     _async_remove_stale_entities(hass, entry)
     pool = runtime.senders.pool
