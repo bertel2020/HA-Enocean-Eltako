@@ -44,7 +44,7 @@ jobs:
       - name: Device docs up to date
         run: python scripts/gen_device_docs.py --check
       - name: Run tests
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=custom_components/enocean_eltako --cov-fail-under=95
 
   package:
     name: Protocol package
