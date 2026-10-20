@@ -126,6 +126,13 @@
           "channel": "Ausgang des Aktors (0 = erster Kanal).",
           "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet."
         }
+      },
+      "proxy_confirm": {
+        "title": "Gateway über EnOcean Proxy",
+        "description": "Die App EnOcean Proxy bietet das Gateway **{name}** unter {connection} an. Welches Modell steckt dahinter? Die Nachlieferung nach Neustarts wird eingeschaltet.",
+        "data": {
+          "model": "Modell"
+        }
       }
     },
     "error": {
@@ -347,13 +354,15 @@
           "message_delay": "Pause zwischen Telegrammen",
           "mode": "Verbindung",
           "repeater": "Repeater",
-          "discovery": "Geräte entdecken"
+          "discovery": "Geräte entdecken",
+          "proxy_replay": "Nachlieferung über EnOcean Proxy"
         },
         "data_description": {
           "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
           "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen.",
           "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt.",
-          "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten."
+          "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten.",
+          "proxy_replay": "Nur wenn dieses Gateway über die App EnOcean Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen."
         }
       },
       "senders": {

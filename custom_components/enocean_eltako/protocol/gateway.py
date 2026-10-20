@@ -74,12 +74,14 @@ class Gateway:
         on_telegram: Callable[[RadioTelegram], None] | None = None,
         on_connection_change: Callable[[bool], None] | None = None,
         opener: Opener = open_connection,
+        hello: bytes = b"",
     ) -> None:
         self.protocol = protocol
         self.connection = connection
         self._on_telegram = on_telegram
         self._on_connection_change = on_connection_change
         self._opener = opener
+        self._hello = hello  # sent first after every connect (EnOcean Proxy replay request)
         self._codec = _Codec(protocol)
         self._writer: asyncio.StreamWriter | None = None
         self._reader_task: asyncio.Task[None] | None = None
@@ -103,6 +105,8 @@ class Gateway:
         self._codec = _Codec(self.protocol)
         async with asyncio.timeout(timeout):
             reader, self._writer = await self._opener(self.connection)
+        if self._hello:
+            self._writer.write(self._hello)
         self._disconnected.clear()
         self._reader_task = asyncio.create_task(self._read_loop(reader))
         if self._outage_logged:

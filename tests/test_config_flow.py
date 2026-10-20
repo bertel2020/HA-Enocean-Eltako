@@ -403,3 +403,45 @@ async def test_reconfigure_fam14_keeps_its_base_id(hass: HomeAssistant, fake_esp
     )
     assert result["reason"] == "reconfigure_successful"
     assert entry.data["base_id"] == "FF-AA-00-00"
+
+
+async def test_enocean_proxy_app_discovery(hass: HomeAssistant) -> None:
+    """Phase 6: the EnOcean Proxy app announces a gateway; replay is switched on."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    info = HassioServiceInfo(
+        config={
+            "host": "127.0.0.1",
+            "port": server.port,
+            "name": "FAM-USB",
+            "protocol": "esp2",
+            "replay": True,
+        },
+        name="EnOcean Proxy",
+        slug="enocean_proxy",
+        uuid="1234",
+    )
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+        assert result["step_id"] == "proxy_confirm"
+        (marker, selector), *_ = result["data_schema"].schema.items()
+        assert "fam_usb" in selector.config["options"]
+        assert "mgw_eth" not in selector.config["options"]  # ESP2 models only
+        assert marker.default() == "fam_usb"  # guessed from the gateway's name
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"model": "fam_usb"}
+        )
+    finally:
+        await server.stop()
+    result = await _name(hass, result)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
+    assert result["options"]["proxy_replay"] is True
+
+    again = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+    )
+    assert again["reason"] == "already_configured"

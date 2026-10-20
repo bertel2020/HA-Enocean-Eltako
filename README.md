@@ -162,12 +162,25 @@ Rockers report short, long and double presses per button. Ready-made automations
 - `enocean_eltako.calibrate_cover`: drives Eltako covers to the nearer end position and
   back, which makes their position exact again (I6).
 
+## EnOcean Proxy app
+
+The optional [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) app (Home
+Assistant OS or Supervised) keeps the gateways' serial ports and offers each gateway on a
+TCP port, so several programs can use one gateway at the same time, e.g. the old `eltako`
+integration while moving over. The app announces its gateways: they show up here as
+discovered (**EnOcean Proxy**); pick the model and the gateway is set up with **Replay over
+EnOcean Proxy** switched on. After a Home Assistant restart the app delivers the telegrams
+that arrived meanwhile (radio telegrams only, up to 15 minutes old), so cover positions and
+meter readings stay right. The app is reachable from Home Assistant only, unless you open
+its ports.
+
 ## Known limitations
 
 - **Bus memory:** reading or writing the FAM14 bus memory (import, link view, actuator
   configuration) is not built yet; it needs captures of the PCT14 ↔ FAM14 exchange.
 - **One program per port:** a serial gateway can only be used by one integration at a time.
-  Remove it from the old `eltako` integration before adding it here.
+  Remove it from the old `eltako` integration before adding it here, or share it through the
+  EnOcean Proxy app.
 - **VLD teach-in:** D2-01 and D2-05 actuators learn by UTE, which needs an ESP3 gateway
   (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot answer.
 - **Generic profiles:** devices added by EEP decode every standard profile, but profiles

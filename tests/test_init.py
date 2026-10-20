@@ -197,3 +197,28 @@ async def test_bus_group_with_on_demand_fam14(hass: HomeAssistant) -> None:
     assert await hass.config_entries.async_unload(e_fgw.entry_id)
     assert hub.bus_groups == {}
     await fam.stop()
+
+
+async def test_proxy_replay_request_after_connect(hass: HomeAssistant) -> None:
+    """Phase 6: over the EnOcean Proxy app, ask for telegrams missed while HA was away."""
+    from custom_components.enocean_eltako.const import PROXY_REPLAY_REQUEST
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, options={"proxy_replay": True})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    for _ in range(100):
+        if server.received:
+            break
+        await asyncio.sleep(0.01)
+    assert bytes(server.received).startswith(PROXY_REPLAY_REQUEST)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
+    assert "proxy_replay" in result["data_schema"].schema  # TCP gateways only
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()

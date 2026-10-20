@@ -41,6 +41,7 @@ from .const import (
     CONF_MODE,
     CONF_MODEL,
     CONF_PROFILE,
+    CONF_PROXY_REPLAY,
     CONF_REPEATER,
     CONF_SENDER_ID,
     CONF_SENDERS,
@@ -48,6 +49,7 @@ from .const import (
     DOMAIN,
     MODE_ALWAYS,
     MODE_ON_DEMAND,
+    PROXY_REPLAY_REQUEST,
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
@@ -153,6 +155,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         connection_from_dict(entry.data[CONF_DEVICE]),
         on_telegram=on_telegram,
         on_connection_change=on_connection_change,
+        hello=PROXY_REPLAY_REQUEST if entry.options.get(CONF_PROXY_REPLAY) else b"",
     )
     if not on_demand:
         try:

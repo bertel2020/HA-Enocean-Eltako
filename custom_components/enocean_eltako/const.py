@@ -21,6 +21,8 @@ REPEATER_UNCHANGED: Final = "unchanged"
 REPEATER_LEVELS: Final = {"off": 0, "1": 1, "2": 2}
 CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
 CONF_DISCOVERY: Final = "discovery"  # offer unknown senders as discovered devices
+CONF_PROXY_REPLAY: Final = "proxy_replay"  # TCP gateway is the EnOcean Proxy app: replay
+PROXY_REPLAY_REQUEST: Final = b"EOPX REPLAY\n"  # telegrams missed while HA was away
 
 MODE_ALWAYS: Final = "always"
 MODE_ON_DEMAND: Final = "on_demand"  # bus gateway connected only for failover / import

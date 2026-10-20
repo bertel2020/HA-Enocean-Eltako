@@ -169,12 +169,25 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 - `enocean_eltako.calibrate_cover`: fährt Eltako-Rollläden an die nähere Endlage und zurück,
   danach stimmt die Position wieder genau (I6).
 
+## App EnOcean Proxy
+
+Die optionale App [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) (Home
+Assistant OS oder Supervised) hält die seriellen Ports der Gateways und bietet jedes Gateway
+auf einem TCP-Port an. So können mehrere Programme ein Gateway gleichzeitig nutzen, z. B. die
+alte Integration `eltako` während des Umstiegs. Die App meldet ihre Gateways an: Sie erscheinen
+hier als entdeckt (**EnOcean Proxy**); Modell wählen, und das Gateway ist mit **Nachlieferung
+über EnOcean Proxy** eingerichtet. Nach einem Neustart von Home Assistant liefert die App die
+Telegramme nach, die inzwischen ankamen (nur Funktelegramme, höchstens 15 Minuten alt), damit
+Rollladenpositionen und Zählerstände stimmen. Die App ist nur aus Home Assistant erreichbar,
+solange ihre Ports nicht freigegeben sind.
+
 ## Bekannte Einschränkungen
 
 - **Bus-Speicher:** Lesen und Schreiben des FAM14-Bus-Speichers (Import, Verknüpfungsansicht,
   Aktor-Konfiguration) ist noch nicht gebaut; dafür fehlen Mitschnitte zwischen PCT14 und FAM14.
 - **Ein Programm pro Port:** Ein serielles Gateway kann nur von einer Integration genutzt
-  werden. Vorher aus der alten Integration `eltako` entfernen.
+  werden. Vorher aus der alten Integration `eltako` entfernen oder über die App EnOcean Proxy
+  teilen.
 - **VLD-Anlernen:** D2-01- und D2-05-Aktoren lernen per UTE, dafür ist ein ESP3-Gateway nötig
   (USB300, MGW-ETH, generisch ESP3); ESP2-Gateways wie der FAM-USB können nicht antworten.
 - **Generische Profile:** Geräte per EEP entschlüsseln jedes Standardprofil, aber Profile

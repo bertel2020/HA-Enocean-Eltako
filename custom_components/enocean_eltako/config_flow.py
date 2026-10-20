@@ -32,6 +32,7 @@ from homeassistant.helpers.selector import (
     SerialPortSelector,
     TextSelector,
 )
+from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homeassistant.helpers.translation import async_get_translations
 
@@ -49,6 +50,7 @@ from .const import (
     CONF_MODEL,
     CONF_NAME,
     CONF_PATH,
+    CONF_PROXY_REPLAY,
     CONF_REPEATER,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
@@ -105,6 +107,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._data: dict[str, Any] = {}
         self._options: dict[str, Any] = {}
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
+        self._proxy: dict[str, Any] | None = None  # gateway announced by the EnOcean Proxy app
         self._discovery: dict[str, Any] = {}  # discovered device: gateway, ID, telegram
         self._device_model: DeviceModel | None = None
 
@@ -160,6 +163,56 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._connection = TcpConnection(host, port)
         self.context["title_placeholders"] = {"name": f"{model.name} ({host})"}
         return await self.async_step_zeroconf_confirm()
+
+    async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
+        """The EnOcean Proxy app announced a gateway (one discovery per proxied gateway)."""
+        config = discovery_info.config
+        host, port = str(config["host"]), int(config["port"])
+        for entry in self._async_current_entries(include_ignore=False):
+            device = entry.data.get(CONF_DEVICE, {})
+            if device.get(CONF_HOST) == host and device.get(CONF_PORT) == port:
+                return self.async_abort(reason="already_configured")
+        await self.async_set_unique_id(f"proxy_{host}_{port}")
+        self._abort_if_unique_id_configured()
+        self._proxy = config
+        self._connection = TcpConnection(host, port)
+        self.context["title_placeholders"] = {"name": f"{config.get('name', host)} (EnOcean Proxy)"}
+        return await self.async_step_proxy_confirm()
+
+    async def async_step_proxy_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Which gateway model sits behind the proxy (its protocol narrows the choice)."""
+        assert self._proxy is not None and self._connection is not None
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            self._model = MODELS[user_input[CONF_MODEL]]
+            result = await self._async_test_connection(errors)
+            if result is not None:
+                return result
+        protocol = Protocol.ESP3 if self._proxy.get("protocol") == "esp3" else Protocol.ESP2
+        models = [key for key, model in MODELS.items() if model.protocol is protocol]
+        name = str(self._proxy.get("name", "")).lower().replace("-", "").replace(" ", "")
+        guess = next((k for k in models if k.replace("_", "") in name), models[0])
+        return self.async_show_form(
+            step_id="proxy_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MODEL, default=guess): SelectSelector(
+                        SelectSelectorConfig(
+                            options=models,
+                            translation_key=CONF_MODEL,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    )
+                }
+            ),
+            errors=errors,
+            description_placeholders={
+                "name": str(self._proxy.get("name", "")),
+                "connection": str(self._connection),
+            },
+        )
 
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
@@ -462,6 +515,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             CONF_BASE_ID: format_id(self._base_id),
         }
         self._options = {CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY}
+        if self._proxy is not None and self._proxy.get("replay"):
+            self._options[CONF_PROXY_REPLAY] = True  # telegrams missed during restarts
         if bus_group is not None:
             self._data[CONF_BUS_GROUP] = bus_group
             # A FAM14 next to another bus gateway is only needed for failover and import.
@@ -582,6 +637,8 @@ class EnOceanEltakoOptionsFlow(OptionsFlowWithReload):
             )
         }
         schema[vol.Required(CONF_DISCOVERY, default=True)] = BooleanSelector()
+        if self.config_entry.data.get(CONF_DEVICE, {}).get("type") == "tcp":
+            schema[vol.Required(CONF_PROXY_REPLAY, default=False)] = BooleanSelector()
         if MODELS[self.config_entry.data[CONF_MODEL]].bus:
             schema[vol.Required(CONF_MODE, default=MODE_ALWAYS)] = SelectSelector(
                 SelectSelectorConfig(
