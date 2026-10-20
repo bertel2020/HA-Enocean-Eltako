@@ -143,7 +143,7 @@ class Gateway:
                     await asyncio.sleep(delay)
                     continue
             await self._disconnected.wait()
-            if self._closing:
+            if self._closed():  # close() during the wait: no backoff
                 break
             if time.monotonic() - self._connected_at < STABLE_AFTER:
                 # dropped right after connecting: wait like after a failed attempt
@@ -152,6 +152,9 @@ class Gateway:
                 await asyncio.sleep(delay)
             else:
                 attempt = 0
+
+    def _closed(self) -> bool:
+        return self._closing
 
     def _stable(self) -> None:
         self._stable_timer = None
