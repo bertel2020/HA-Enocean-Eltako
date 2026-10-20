@@ -294,7 +294,7 @@ def _async_check_base_id(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
 def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """One runtime object per device subentry; release sender IDs of removed devices."""
     runtime = entry.runtime_data
-    owners = set()
+    owners: set[str] = set()
     for subentry_id, subentry in entry.subentries.items():
         device = EnOceanDevice(hass, entry, subentry)
         runtime.devices[subentry_id] = device

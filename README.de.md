@@ -233,6 +233,7 @@ behalten die gelernten Sender-IDs; am Aktor ablernen, wenn ein neuer Regler sie 
 ```bash
 python -m pip install -r requirements_test.txt
 ruff check custom_components tests scripts
+mypy
 python scripts/check_protocol_imports.py
 python -m pytest
 ```

@@ -9,3 +9,14 @@ select = ["E", "F", "I", "UP", "B"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 timeout = 30
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+files = ["custom_components/enocean_eltako"]
+
+[[tool.mypy.overrides]]
+# Home Assistant re-exports names from its packages' __init__ (e.g. websocket_api)
+module = "homeassistant.*"
+implicit_reexport = true

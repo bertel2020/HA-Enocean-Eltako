@@ -6,7 +6,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -85,17 +85,25 @@ def _handle(values: dict[str, Any]) -> Any:
     return HANDLE_POSITIONS.get(values.get("WIN", -1))
 
 
-TEMPERATURE = {
+class _Preset(TypedDict):
+    """Keyword arguments shared by many sensor descriptions (typed for **unpacking)."""
+
+    device_class: SensorDeviceClass
+    native_unit_of_measurement: str
+    state_class: SensorStateClass
+
+
+TEMPERATURE: _Preset = {
     "device_class": SensorDeviceClass.TEMPERATURE,
     "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
     "state_class": SensorStateClass.MEASUREMENT,
 }
-HUMIDITY = {
+HUMIDITY: _Preset = {
     "device_class": SensorDeviceClass.HUMIDITY,
     "native_unit_of_measurement": PERCENTAGE,
     "state_class": SensorStateClass.MEASUREMENT,
 }
-ILLUMINANCE = {
+ILLUMINANCE: _Preset = {
     "device_class": SensorDeviceClass.ILLUMINANCE,
     "native_unit_of_measurement": LIGHT_LUX,
     "state_class": SensorStateClass.MEASUREMENT,

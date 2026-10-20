@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 
 from .telegram import RadioTelegram
@@ -96,7 +96,11 @@ class Dispatcher:
     def add_alias(self, alias: int, sender: int) -> Callable[[], None]:
         """Treat telegrams from alias as coming from sender (bus actor radio alias)."""
         self._aliases[alias] = sender
-        return lambda: self._aliases.pop(alias, None)
+
+        def remove() -> None:
+            self._aliases.pop(alias, None)
+
+        return remove
 
     def is_known(self, sender: int) -> bool:
         return self._aliases.get(sender, sender) in self._listeners
@@ -132,7 +136,7 @@ class Dispatcher:
         return received
 
     @staticmethod
-    def _call(listeners, received: ReceivedTelegram) -> None:
+    def _call(listeners: Iterable[Listener], received: ReceivedTelegram) -> None:
         for listener in list(listeners):
             try:
                 listener(received)

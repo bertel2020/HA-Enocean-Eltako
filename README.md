@@ -222,6 +222,7 @@ sender IDs they learned; teach them out on the actuator if a new controller shou
 ```bash
 python -m pip install -r requirements_test.txt
 ruff check custom_components tests scripts
+mypy
 python scripts/check_protocol_imports.py
 python -m pytest
 ```

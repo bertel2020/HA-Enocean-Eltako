@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.core import (
     HomeAssistant,
     ServiceCall,

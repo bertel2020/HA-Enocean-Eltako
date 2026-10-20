@@ -71,9 +71,8 @@ class RockerGestures:
     @callback
     def _emit(self, button: str, event_type: str, data: dict[str, Any]) -> None:
         self._buttons[button].fire(event_type, data)
-        registry_id = (
-            self._buttons[button].device_entry.id if self._buttons[button].device_entry else None
-        )
+        device_entry = self._buttons[button].device_entry
+        registry_id = device_entry.id if device_entry else None
         self._hass.bus.async_fire(
             EVENT_BUTTON,
             {"device_id": registry_id, "button": button, "type": event_type, **data},
@@ -90,8 +89,8 @@ class RockerButton(EnOceanEntity, EventEntity):
 
     @callback
     def fire(self, event_type: str, data: dict[str, Any]) -> None:
-        if self.hass is None:
-            return
+        if self.hass is None:  # not added to Home Assistant yet (typed as always set)
+            return  # type: ignore[unreachable]
         self._trigger_event(event_type, data)
         self.async_write_ha_state()
 

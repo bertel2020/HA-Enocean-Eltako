@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import (
     SOURCE_INTEGRATION_DISCOVERY,
@@ -56,7 +56,9 @@ async def async_load_labels(hass: HomeAssistant) -> dict[str, str]:
     return cache[language]
 
 
-def readable_fields(device: Any, values: dict[str, Any], labels: dict[str, str]) -> list[dict]:
+def readable_fields(
+    device: Any, values: dict[str, Any], labels: dict[str, str]
+) -> list[dict[str, Any]]:
     """Decoded values as the device's entities show them: name, value, unit.
 
     Uses the platforms' entity descriptions, so "MR 15, DT 1, DIV 0" reads "Power 15 W".
@@ -69,7 +71,7 @@ def readable_fields(device: Any, values: dict[str, Any], labels: dict[str, str])
     sensors = SENSORS.get(model.kind, ())
     if model.kind == GENERIC_EEP and model.receive is not None:
         sensors = generic_descriptions(model.receive.eep)
-    fields: list[dict] = []
+    fields: list[dict[str, Any]] = []
     for platform, descriptions in (
         ("sensor", sensors),
         ("binary_sensor", BINARY_SENSORS.get(model.kind, ())),

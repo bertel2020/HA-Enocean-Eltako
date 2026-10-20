@@ -2,3 +2,4 @@ pytest-homeassistant-custom-component
 aiousbwatcher==1.1.2
 serialx==1.11.0
 ruff
+mypy

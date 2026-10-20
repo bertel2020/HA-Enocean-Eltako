@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any
+from typing import Any, cast
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.config_entries import ConfigSubentryFlow, SubentryFlowResult
 from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -180,7 +181,7 @@ class DeviceForm:
     The flow provides hass, _model, _get_entry() (the gateway entry) and the FlowHandler API.
     """
 
-    hass: Any
+    hass: HomeAssistant
     _device_model: DeviceModel | None
     _get_entry: Any
 
@@ -222,7 +223,7 @@ class DeviceForm:
         )
 
     def _pool(self) -> SenderPool:
-        return self._get_entry().runtime_data.senders.pool
+        return cast(SenderPool, self._get_entry().runtime_data.senders.pool)
 
     def _fields(self, model: DeviceModel, current: dict[str, str]) -> dict[Any, Any]:
         """Sender IDs (first profile required, suggested from the pool) and model options."""
@@ -234,7 +235,9 @@ class DeviceForm:
                 suggested = current.get(profile.id)
                 if suggested is None and (free := self._pool().next_free()) is not None:
                     suggested = format_id(free)
-                key = vol.Required(field, default=suggested) if suggested else vol.Required(field)
+                key: vol.Required | vol.Optional = (
+                    vol.Required(field, default=suggested) if suggested else vol.Required(field)
+                )
             else:
                 key = vol.Optional(field)
             schema[key] = TextSelector()
@@ -336,8 +339,8 @@ class DeviceForm:
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
         if OPT_LONG_PRESS in model.options:
-            for opt, default in ((OPT_LONG_PRESS, 0.6), (OPT_DOUBLE_PRESS, 0.4)):
-                schema[vol.Required(opt, default=default)] = NumberSelector(
+            for opt, seconds in ((OPT_LONG_PRESS, 0.6), (OPT_DOUBLE_PRESS, 0.4)):
+                schema[vol.Required(opt, default=seconds)] = NumberSelector(
                     NumberSelectorConfig(
                         min=0.1,
                         max=3,
@@ -364,19 +367,20 @@ class DeviceForm:
         model = self._device_model
         pool = self._pool()
         wanted: dict[str, int] = {}
-        for profile in model.senders:
-            text = (user_input.get(sender_field(profile.id)) or "").strip()
+        for sender_profile in model.senders:
+            field = sender_field(sender_profile.id)
+            text = (user_input.get(field) or "").strip()
             if not text:
                 continue
             try:
                 sender = parse_id(text)
             except ValueError:
-                errors[sender_field(profile.id)] = "sender_invalid_id"
+                errors[field] = "sender_invalid_id"
                 continue
             if sender in wanted.values():
-                errors[sender_field(profile.id)] = "sender_in_use"
+                errors[field] = "sender_in_use"
                 continue
-            wanted[profile.id] = sender
+            wanted[sender_profile.id] = sender
         if errors:
             return None
         released = {
@@ -662,7 +666,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         }
         if user_input is None and self._learned is not None:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
-        return await self._form("device", schema, user_input, errors)
+        form: SubentryFlowResult = await self._form("device", schema, user_input, errors)
+        return form
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
@@ -691,7 +696,10 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             **{sender_field(p): s for p, s in current.items()},
         }
         schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
-        return await self._form("reconfigure", schema, user_input or suggested, errors)
+        form: SubentryFlowResult = await self._form(
+            "reconfigure", schema, user_input or suggested, errors
+        )
+        return form
 
     async def async_step_cover_menu(
         self, user_input: dict[str, Any] | None = None

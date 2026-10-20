@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
@@ -20,7 +22,7 @@ def bus_key(group: str) -> str:
     return f"bus_{group}"
 
 
-def _store(hass: HomeAssistant, key: str) -> Store[dict]:
+def _store(hass: HomeAssistant, key: str) -> Store[dict[str, Any]]:
     return Store(hass, STORAGE_VERSION, f"{DOMAIN}.senders.{key}")
 
 

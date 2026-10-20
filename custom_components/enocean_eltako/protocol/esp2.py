@@ -24,7 +24,7 @@ class HSeq(IntEnum):
 # ESP2 ORG <-> RORG. VLD is an Eltako extension (FAM-USB, FAM14): ORG 0xD2 with up to
 # 4 data bytes, zero-padded; longer VLD telegrams (e.g. D2-01 measurements) do not fit.
 ORG_TO_RORG = {0x05: Rorg.RPS, 0x06: Rorg.BS1, 0x07: Rorg.BS4, 0xD2: Rorg.VLD}
-RORG_TO_ORG = {rorg: org for org, rorg in ORG_TO_RORG.items()}
+RORG_TO_ORG: dict[int, int] = {rorg: org for org, rorg in ORG_TO_RORG.items()}
 
 # TCM120 commands (TCT) and messages (RMT), as used by FAM-USB.
 CMD_RD_IDBASE = 0x58

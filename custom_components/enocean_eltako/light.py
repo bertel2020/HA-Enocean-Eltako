@@ -42,7 +42,7 @@ def on_state(values: dict[str, Any]) -> bool | None:
     if "on" in values:
         return bool(values["on"])
     if values.get("CMD") == 4 and "OV" in values:
-        return values["OV"] > 0
+        return bool(values["OV"] > 0)
     return None
 
 

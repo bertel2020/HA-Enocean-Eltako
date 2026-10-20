@@ -146,7 +146,11 @@ class SenderRegistry:
     def reserve(self, sender: int, owner: str) -> Callable[[], None]:
         """Mark a foreign ID (a device's own ID, a bus alias) as unusable as sender."""
         self._reserved[sender] = owner
-        return lambda: self._reserved.pop(sender, None)
+
+        def release() -> None:
+            self._reserved.pop(sender, None)
+
+        return release
 
     def in_pool(self, sender: int) -> bool:
         """The ID lies in one of our pools (our own sender, not a foreign device)."""

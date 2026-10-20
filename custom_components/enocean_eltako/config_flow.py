@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+from types import MappingProxyType
 from typing import Any
 from uuid import uuid4
 
-import voluptuous as vol
+import probatio as vol
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
     SOURCE_ZEROCONF,
@@ -263,7 +264,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 self.hass.config_entries.async_add_subentry(
                     self._get_entry(),
                     ConfigSubentry(
-                        data=data,
+                        data=MappingProxyType(data),
                         subentry_type=SUBENTRY_DEVICE,
                         title=user_input[CONF_NAME],
                         unique_id=format_id(device_id),
@@ -274,7 +275,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_NAME): TextSelector(),
             **self._fields(self._device_model, {}),
         }
-        return await self._form("discovered_device", schema, user_input, errors)
+        result: ConfigFlowResult = await self._form("discovered_device", schema, user_input, errors)
+        return result
 
     async def async_step_unignore(self, user_input: dict[str, Any]) -> ConfigFlowResult:
         """Un-ignored discovered device: offer it again when it is heard next time."""
