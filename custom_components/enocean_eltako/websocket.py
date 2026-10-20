@@ -157,21 +157,28 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
 async def ws_subscribe_telegrams(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Stream telegrams live; with history > 0 the last N buffered ones first."""
+    """Stream telegrams live; with history > 0 the last N buffered ones first.
+
+    Buffered ones carry "history": true, so the panel can skip what it already shows when
+    the frontend subscribes again (websocket reconnect, panel reattached).
+    """
     await async_load_labels(hass)
     monitor = async_get_hub(hass).monitor
     entry_id = msg.get("entry_id")
 
     @callback
-    def forward(entry: MonitorEntry) -> None:
+    def forward(entry: MonitorEntry, history: bool = False) -> None:
         if entry_id is None or entry.gateway == entry_id:
-            connection.send_message(websocket_api.event_message(msg["id"], describe(hass, entry)))
+            data = describe(hass, entry)
+            if history:
+                data["history"] = True
+            connection.send_message(websocket_api.event_message(msg["id"], data))
 
     connection.subscriptions[msg["id"]] = monitor.subscribe(forward)
     connection.send_result(msg["id"])
     if msg["history"]:
         for entry in monitor.history(entry_id, msg["history"]):
-            forward(entry)
+            forward(entry, history=True)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/gateways"})

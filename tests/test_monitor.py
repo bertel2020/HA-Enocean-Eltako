@@ -74,11 +74,13 @@ async def test_websocket_streams_history_and_live(hass: HomeAssistant, setup, ha
     first = await client.receive_json()
     assert first["event"]["sender"] == "00-21-63-43"
     assert first["event"]["dir"] == "rx"
+    assert first["event"]["history"] is True
 
     await entry.runtime_data.queue.submit(RadioTelegram(Rorg.RPS, b"\x30", 0xFFB74481, 0x30))
     live = await client.receive_json()
     assert live["event"]["dir"] == "tx"
     assert live["event"]["sender"] == "FF-B7-44-81"
+    assert "history" not in live["event"]
 
 
 async def test_capture_writes_jsonl(hass: HomeAssistant, setup, tmp_path: Path):

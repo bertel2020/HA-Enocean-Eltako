@@ -402,6 +402,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
     this._gateways = [];
     this._expanded = new Set();
+    this._keys = new Set(); // rows shown or pending, so a repeated history is not added twice
+    this._cleared = new Set(); // rows removed with "clear display"
     this._gatewayDetails = new Set();
     this._fresh = new Set();
     this._unsub = null;
@@ -504,6 +506,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayChip").addEventListener("click", () => this._set("gateway", ""));
     $("pause").addEventListener("click", () => this._togglePause());
     $("clear").addEventListener("click", () => {
+      this._cleared = this._keys;
+      this._keys = new Set();
       this._rows = [];
       this._pending = [];
       this._expanded.clear();
@@ -562,15 +566,27 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _add(row) {
+    // every (re)subscription sends the buffered telegrams again: after a websocket reconnect
+    // and when Home Assistant reattaches the panel; keep only those not seen yet
+    const key = rowKey(row);
+    if (row.history) {
+      delete row.history;
+      if (this._keys.has(key) || this._cleared.has(key)) return;
+    }
+    this._keys.add(key);
     if (this._paused) {
       this._pending.push(row);
       this._renderBar();
       return;
     }
     this._rows.unshift(row);
-    if (this._rows.length > MAX_ROWS) this._rows.length = MAX_ROWS;
-    if (this._initialised) this._fresh.add(rowKey(row));
+    this._trim();
+    if (this._initialised) this._fresh.add(key);
     this._schedule();
+  }
+
+  _trim() {
+    for (const r of this._rows.splice(MAX_ROWS)) this._keys.delete(rowKey(r));
   }
 
   _schedule() {
@@ -599,8 +615,9 @@ class EnOceanEltakoPanel extends HTMLElement {
   _togglePause() {
     this._paused = !this._paused;
     if (!this._paused) {
-      this._rows = [...this._pending.reverse(), ...this._rows].slice(0, MAX_ROWS);
+      this._rows = [...this._pending.reverse(), ...this._rows];
       this._pending = [];
+      this._trim();
     }
     this._renderBar();
     this._render();
