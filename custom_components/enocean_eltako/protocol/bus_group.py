@@ -35,6 +35,8 @@ class BusMember:
     on_demand: bool = False
     idle_timeout: float = IDLE_TIMEOUT
     _idle: asyncio.TimerHandle | None = field(default=None, repr=False)
+    # the idle disconnect; kept here because the event loop holds tasks only weakly
+    _closing: asyncio.Task[None] | None = field(default=None, repr=False)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
     @property
@@ -65,7 +67,7 @@ class BusMember:
         self._idle = None
         if self.gateway.connected and len(self.queue) == 0:
             _LOGGER.debug("Bus gateway %s idle, disconnecting", self.name)
-            asyncio.get_running_loop().create_task(self.gateway.disconnect())
+            self._closing = asyncio.get_running_loop().create_task(self.gateway.disconnect())
 
     def cancel_idle(self) -> None:
         if self._idle is not None:
