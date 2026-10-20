@@ -1,0 +1,216 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "gateway_connection": {
+        "default": "mdi:lan-disconnect",
+        "state": {
+          "on": "mdi:lan-connect"
+        }
+      },
+      "rain": {
+        "default": "mdi:weather-cloudy",
+        "state": {
+          "on": "mdi:weather-pouring"
+        }
+      }
+    },
+    "button": {
+      "calibrate": {
+        "default": "mdi:arrow-collapse-vertical"
+      },
+      "gateway_reconnect": {
+        "default": "mdi:connection"
+      },
+      "send_now": {
+        "default": "mdi:send"
+      },
+      "press_a0": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "press_a1": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "press_b0": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "press_b1": {
+        "default": "mdi:gesture-tap-button"
+      },
+      "teach_in_central": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_contact": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_controller": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_cooling": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_direction_rocker": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_motion": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_rocker": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_temperature": {
+        "default": "mdi:school-outline"
+      },
+      "teach_in_vld": {
+        "default": "mdi:school-outline"
+      }
+    },
+    "event": {
+      "button": {
+        "default": "mdi:gesture-tap-button"
+      }
+    },
+    "sensor": {
+      "active_tariff": {
+        "default": "mdi:cash-clock"
+      },
+      "command_success": {
+        "default": "mdi:check-network-outline"
+      },
+      "dawn": {
+        "default": "mdi:weather-sunset-up"
+      },
+      "energy_night": {
+        "default": "mdi:weather-night"
+      },
+      "energy_total": {
+        "default": "mdi:lightning-bolt"
+      },
+      "enocean_id": {
+        "default": "mdi:identifier"
+      },
+      "gateway_base_id": {
+        "default": "mdi:identifier"
+      },
+      "gateway_failed": {
+        "default": "mdi:message-alert-outline"
+      },
+      "gateway_free_senders": {
+        "default": "mdi:account-multiple-plus-outline"
+      },
+      "gateway_last_telegram": {
+        "default": "mdi:message-text-clock-outline"
+      },
+      "gateway_polls_dropped": {
+        "default": "mdi:filter-remove-outline"
+      },
+      "gateway_queue": {
+        "default": "mdi:tray-full"
+      },
+      "gateway_retries": {
+        "default": "mdi:repeat"
+      },
+      "gateway_telegrams": {
+        "default": "mdi:message-text-outline"
+      },
+      "handle": {
+        "default": "mdi:window-closed-variant",
+        "state": {
+          "closed": "mdi:window-closed-variant",
+          "open": "mdi:window-open-variant",
+          "tilted": "mdi:window-shutter-open"
+        }
+      },
+      "heating_mode": {
+        "default": "mdi:radiator",
+        "state": {
+          "normal": "mdi:radiator",
+          "night_setback": "mdi:weather-night",
+          "setback": "mdi:thermometer-minus",
+          "off": "mdi:radiator-off"
+        }
+      },
+      "last_seen": {
+        "default": "mdi:clock-check-outline"
+      },
+      "last_sent": {
+        "default": "mdi:send-clock-outline"
+      },
+      "night_setback": {
+        "default": "mdi:weather-night"
+      },
+      "position_accuracy": {
+        "default": "mdi:target"
+      },
+      "rssi": {
+        "default": "mdi:signal"
+      },
+      "sender_id_central": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_contact": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_controller": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_cooling": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_direction_rocker": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_motion": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_rocker": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_temperature": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sender_id_vld": {
+        "default": "mdi:card-account-details-outline"
+      },
+      "sent_contact": {
+        "default": "mdi:send",
+        "state": {
+          "open": "mdi:window-open-variant",
+          "closed": "mdi:window-closed-variant"
+        }
+      },
+      "sent_motion": {
+        "default": "mdi:send",
+        "state": {
+          "motion": "mdi:motion-sensor",
+          "no_motion": "mdi:motion-sensor-off"
+        }
+      },
+      "sent_value": {
+        "default": "mdi:thermometer"
+      },
+      "serial_number": {
+        "default": "mdi:barcode"
+      },
+      "setpoint": {
+        "default": "mdi:thermostat"
+      },
+      "sun_east": {
+        "default": "mdi:weather-sunny"
+      },
+      "sun_south": {
+        "default": "mdi:weather-sunny"
+      },
+      "sun_west": {
+        "default": "mdi:weather-sunny"
+      }
+    }
+  },
+  "services": {
+    "capture": {
+      "service": "mdi:record-rec"
+    },
+    "calibrate_cover": {
+      "service": "mdi:arrow-collapse-vertical"
+    }
+  }
+}
