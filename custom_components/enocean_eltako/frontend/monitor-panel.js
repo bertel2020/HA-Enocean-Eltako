@@ -34,6 +34,20 @@ const ICON = {
     "M12,10A2,2 0 0,1 14,12C14,12.5 13.82,12.94 13.53,13.29L16.7,22H14.57L12,14.93L9.43,22H7.3L10.47,13.29C10.18,12.94 10,12.5 10,12A2,2 0 0,1 12,10M12,8A4,4 0 0,0 8,12C8,12.5 8.1,13 8.28,13.46L7.4,15.86C6.53,14.81 6,13.47 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12C18,13.47 17.47,14.81 16.6,15.86L15.72,13.46C15.9,13 16,12.5 16,12A4,4 0 0,0 12,8M12,4A8,8 0 0,0 4,12C4,14.36 5,16.5 6.64,17.94L5.92,19.94C3.54,18.11 2,15.23 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12C22,15.23 20.46,18.11 18.08,19.94L17.36,17.94C19,16.5 20,14.36 20,12A8,8 0 0,0 12,4Z",
 };
 
+// the integration's icon (docs/assets/enocean-eltako-icon.svg), inline: no image to load,
+// own dark tile, so it suits every header colour and theme
+const LOGO = `<svg class="logo" viewBox="16 16 480 480" aria-hidden="true">
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="#142E42"/>
+  <g fill="none" stroke="#66D8D0" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M137 144V368"/><path d="M137 145H284"/><path d="M137 256H265"/><path d="M137 367H284"/>
+  </g>
+  <circle cx="314" cy="256" r="17" fill="#F7B36B"/>
+  <g fill="none" stroke="#F5FBFC" stroke-linecap="round">
+    <path d="M345 211C365 220 378 235 378 256S365 292 345 301" stroke-width="25"/>
+    <path d="M365 157C403 181 424 215 424 256S403 331 365 355" stroke-width="22"/>
+  </g>
+</svg>`;
+
 const TEXT = {
   en: {
     title: "EnOcean",
@@ -225,6 +239,8 @@ const STYLE = `
     background: var(--app-header-background-color, var(--primary-color));
     color: var(--app-header-text-color, var(--text-primary-color, #fff)); }
   .header h1 { margin: 0 0 0 4px; font-size: 20px; font-weight: 400; }
+  .header .logo { width: 32px; height: 32px; margin-left: 4px; border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
   main { max-width: 1280px; margin: 0 auto; padding: 20px 24px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
   main > section { min-width: 0; }
@@ -564,7 +580,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
-      <div class="header"><ha-menu-button></ha-menu-button><h1>${esc(t.title)}</h1></div>
+      <div class="header"><ha-menu-button></ha-menu-button>${LOGO}<h1>${esc(t.title)}</h1></div>
       <main>
         <section aria-label="${esc(t.gateways)}">
           <div class="cards" id="cards"></div>
