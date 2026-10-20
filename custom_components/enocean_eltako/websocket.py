@@ -233,7 +233,8 @@ async def ws_discover(
 
     Uses the sender's last received telegram (gateway, type, teach-in); works also with
     discovery switched off. The result names the flow, or why there is none (already set
-    up, ignored, card already there).
+    up, ignored, card already there). A sender that got no card (no fitting kind, gateway not
+    loaded) stays open for automatic discovery.
     """
     try:
         sender = parse_id(msg["sender"])
@@ -259,6 +260,8 @@ async def ws_discover(
         data=discovery_data(last.gateway, sender, last.telegram),
     )
     if result["type"] is FlowResultType.ABORT:
+        if result["reason"] not in ("already_configured", "already_in_progress"):
+            hub.discovered.discard(sender)
         connection.send_result(msg["id"], {"reason": result["reason"]})
         return
     connection.send_result(msg["id"], {"flow_id": result["flow_id"]})

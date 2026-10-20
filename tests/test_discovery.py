@@ -131,3 +131,29 @@ async def test_panel_adds_sender_as_device(hass: HomeAssistant, gateway, hass_ws
     assert (await client.receive_json())["result"] == {"reason": "already_in_progress"}
     await client.send_json({"id": 3, "type": "enocean_eltako/discover", "sender": "01-99-99-99"})
     assert (await client.receive_json())["error"]["code"] == "not_found"
+
+
+async def test_panel_add_without_card_keeps_sender_open(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No fitting kind: the panel reports it and automatic discovery may still offer it."""
+    entry, server = gateway
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "discovery": False})
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    _push(server, 0x06, b"\x08", 0x01000078)
+    await _settle(hass)
+
+    monkeypatch.setattr("custom_components.enocean_eltako.config_flow.candidates", lambda *a: [])
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/discover", "sender": "01-00-00-78"})
+    assert (await client.receive_json())["result"] == {"reason": "no_matching_kind"}
+    assert 0x01000078 not in entry.runtime_data.hub.discovered
+
+    monkeypatch.undo()
+    await client.send_json({"id": 2, "type": "enocean_eltako/discover", "sender": "01-00-00-78"})
+    assert "flow_id" in (await client.receive_json())["result"]
+    assert 0x01000078 in entry.runtime_data.hub.discovered
