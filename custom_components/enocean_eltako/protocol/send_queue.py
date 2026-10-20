@@ -22,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DELAY = 0.01  # seconds between two telegrams
 DEFAULT_CONFIRM_TIMEOUT = 1.0
 MAX_RETRIES = 2
+SEND_TIMEOUT = 5.0  # a write that hangs (blocked serial port) fails instead of stalling the queue
 
 
 class Priority(IntEnum):
@@ -199,8 +200,9 @@ class SendQueue:
     async def _transmit(self, job: _Job) -> None:
         wait = time.monotonic() - job.queued_at
         try:
-            await self._send(job.telegram)
-        except (OSError, ValueError) as err:
+            async with asyncio.timeout(SEND_TIMEOUT):
+                await self._send(job.telegram)
+        except (OSError, ValueError) as err:  # TimeoutError is an OSError
             _LOGGER.warning("Sending %s failed: %s", job.telegram, err)
             self.stats.failed += 1
             job.finish(SendResult.FAILED)

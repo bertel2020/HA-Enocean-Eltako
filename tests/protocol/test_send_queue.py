@@ -122,3 +122,26 @@ async def test_delay_spaces_telegrams() -> None:
     await asyncio.gather(q.submit(tg(1)), q.submit(tg(2)))
     await q.stop()
     assert times[1] - times[0] >= 0.025
+
+
+async def test_hanging_write_fails_and_queue_goes_on(monkeypatch) -> None:
+    """A write that never returns (blocked serial port) fails; the next telegram is sent."""
+    from custom_components.enocean_eltako.protocol import send_queue
+
+    monkeypatch.setattr(send_queue, "SEND_TIMEOUT", 0.05)
+    written: list[RadioTelegram] = []
+
+    async def send(telegram: RadioTelegram) -> None:
+        if telegram.data == b"\x10":
+            await asyncio.Event().wait()  # hangs
+        written.append(telegram)
+
+    q = SendQueue(send, delay=0)
+    task = q.start()
+    hanging = q.submit(RadioTelegram(Rorg.RPS, b"\x10", 1))
+    next_one = q.submit(RadioTelegram(Rorg.RPS, b"\x30", 1))
+    assert await asyncio.wait_for(hanging, 1) == SendResult.FAILED
+    assert await asyncio.wait_for(next_one, 1) == SendResult.SENT
+    assert [t.data for t in written] == [b"\x30"]
+    await q.stop()
+    assert task.done()
