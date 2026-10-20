@@ -42,6 +42,12 @@ SAMPLES: dict[str, tuple[int, str, int]] = {
     "A5-04-02:std": (Rorg.BS4, "007D7D08", 0),
     "A5-08-01:eltako": (Rorg.BS4, "00800009", 0),
     "A5-09-04:std": (Rorg.BS4, "40606008", 0),
+    "A5-09-05:std": (Rorg.BS4, "01F40209", 0),  # 500 x0.1 ppb
+    "A5-09-0C:std": (Rorg.BS4, "01F40109", 0),
+    "A5-30-01:std": (Rorg.BS4, "00C8FF08", 0),
+    "A5-30-03:std": (Rorg.BS4, "00800F08", 0),
+    "D2-14-40:std": (0xD2, "5A5A5A5A5A5A5A5A5A", 0),
+    "D2-14-41:std": (0xD2, "5A5A5A5A5A5A5A5A5A", 0),
     "M5-10-06:eltako": (Rorg.RPS, "70", 0x30),
     "A5-10-06:eltako": (Rorg.BS4, "007F8009", 0),
     "A5-13-01:eltako": (Rorg.BS4, "80808C1A", 0),

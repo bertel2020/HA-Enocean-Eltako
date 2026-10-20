@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.enocean_eltako.config_flow import CannotConnect
 from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.protocol.models import Protocol
 
@@ -302,15 +303,16 @@ async def test_zeroconf_new_address_updates_entry(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
     try:
+        # discovery-update-info: no confirmation, the base ID identifies the gateway
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": config_entries.SOURCE_ZEROCONF},
             data=_zeroconf("127.0.0.1", server.port),
         )
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     finally:
         await server.stop()
     assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
     assert entry.data["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
 
 
@@ -470,10 +472,14 @@ async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> 
         slug="enocean_proxy",
         uuid="1234",
     )
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
-    )
-    await hass.async_block_till_done()
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway",
+        side_effect=CannotConnect("no such host"),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+        await hass.async_block_till_done()
     assert result["step_id"] == "proxy_confirm"
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert sorted(f["context"]["unique_id"] for f in flows) == [
@@ -482,3 +488,34 @@ async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> 
     ]
     names = sorted(f["context"]["title_placeholders"]["name"] for f in flows)
     assert names == ["MGW-LAN (EnOcean Proxy)", "USB 300 (EnOcean Proxy)"]
+
+
+async def test_enocean_proxy_app_port_change_updates_entry(hass: HomeAssistant) -> None:
+    """discovery-update-info: the app moved a gateway to another port."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-B7-44-80",
+        data={"model": "fam_usb", "device": {"type": "tcp", "host": "127.0.0.1", "port": 1}},
+    )
+    entry.add_to_hass(hass)
+    info = HassioServiceInfo(
+        config={
+            "host": "127.0.0.1",
+            "replay": True,
+            "gateways": [{"name": "FAM", "port": server.port, "protocol": "esp2"}],
+        },
+        name="EnOcean Proxy",
+        slug="enocean_proxy",
+        uuid="1234",
+    )
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+    finally:
+        await server.stop()
+    assert result["reason"] == "already_configured"
+    assert entry.data["device"]["port"] == server.port

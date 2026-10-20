@@ -132,8 +132,14 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 | Taster und Kontakte | Tür-/Fensterkontakt (FTK, FTKB …) | Eltako | `D5-00-01:std` | - | binary_sensor |
 | Taster und Kontakte | Wippentaster (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Taster und Kontakte | Kontakt über Tastertelegramme (FTS14EM, Garagentor …) | Eltako | `F6-02-01:std` | - | binary_sensor |
+| Taster und Kontakte | Digitaleingang (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
+| Taster und Kontakte | Vier Digitaleingänge und Temperatur (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensoren | Temperatur und Feuchte (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensoren | Bewegungs- und Helligkeitssensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
+| Sensoren | VOC-Sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
+| Sensoren | TVOC-Sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor |
+| Sensoren | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor |
+| Sensoren | Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor |
 | Sensoren | CO2-Sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor |
 | Sensoren | Wetterstation (FWS61, FWG14) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
 | Zähler | Energiezähler (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor |
@@ -220,7 +226,9 @@ hier als entdeckt (**EnOcean Proxy**); Modell wählen, und das Gateway ist mit *
 Telegramme nach, die inzwischen ankamen (nur Funktelegramme, höchstens 15 Minuten alt), mit ihrer
 Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Ihre
 Statusseite nimmt außerdem Mitschnitte auf (z. B. PCT14 mit FAM14) und zeigt die Funkbelegung
-gegenüber dem 1-%-Limit. Die App ist nur aus Home Assistant erreichbar,
+gegenüber dem 1-%-Limit. Ist die App älter als nötig (0.5.2), bittet ein Reparaturhinweis um
+ein Update. Legt die App ein Gateway auf einen anderen Port, findet die Integration es über die
+Basis-ID wieder und passt den Eintrag selbst an; ebenso bei einem MGW-ETH mit neuer IP-Adresse. Die App ist nur aus Home Assistant erreichbar,
 solange ihre Ports nicht freigegeben sind.
 
 ## Bekannte Einschränkungen
@@ -235,6 +243,8 @@ solange ihre Ports nicht freigegeben sind.
 - **Generische Profile:** Geräte per EEP entschlüsseln jedes Standardprofil, aber Profile
   außerhalb des Katalogs sind nicht mit Hardware geprüft; einige offizielle Testcontainer
   weichen ab (siehe [docs/quality_scale.md](docs/quality_scale.md)).
+- **Multisensoren D2-14-40/41** (FMS55SB, FMMS44SB) werden nach dem Profil entschlüsselt,
+  sind aber noch nicht mit Hardware geprüft.
 - **Rollladenpositionen** von Eltako-Aktoren werden aus Laufzeiten berechnet, der Aktor meldet
   nie, wo er angehalten hat.
 

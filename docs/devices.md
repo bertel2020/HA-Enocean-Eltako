@@ -15,8 +15,14 @@ Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 | Buttons and contacts | Door / window contact (FTK, FTKB …) | Eltako | `D5-00-01:std` | - | binary_sensor |
 | Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor |
+| Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
+| Buttons and contacts | Four digital inputs and temperature (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensors | Temperature and humidity (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensors | Motion and brightness sensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
+| Sensors | VOC sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
+| Sensors | TVOC sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor |
+| Sensors | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor |
+| Sensors | Multisensor with contact (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor |
 | Sensors | CO2 sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor |
 | Sensors | Weather station (FWS61, FWG14) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
 | Meters | Energy meter (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor |

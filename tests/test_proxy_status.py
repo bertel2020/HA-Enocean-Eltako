@@ -2,9 +2,11 @@
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 
+from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.protocol.models import Protocol
-from custom_components.enocean_eltako.proxy_status import summarize
+from custom_components.enocean_eltako.proxy_status import outdated, summarize
 
 from .fake_gateway import FakeGateway
 from .test_init import _entry
@@ -62,6 +64,19 @@ async def test_panel_status_includes_the_proxy(
     (gateway,) = (await client.receive_json())["result"]
     assert gateway["via_proxy"] is True
     assert gateway["proxy"]["duty_of_limit"] == 3.2
+    # 0.4.0 announces one gateway only: update the app
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, f"proxy_outdated_{entry.entry_id}")
+    assert issue.translation_placeholders["version"] == "0.4.0"
 
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+def test_outdated() -> None:
+    assert outdated("0.4.0")
+    assert outdated("0.5.1")
+    assert not outdated("0.5.2")
+    assert not outdated("0.10.0")
+    assert not outdated("1.0")
+    assert not outdated("dev")  # local build
+    assert not outdated(None)

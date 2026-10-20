@@ -128,8 +128,14 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 | Buttons and contacts | Door / window contact (FTK, FTKB …) | Eltako | `D5-00-01:std` | - | binary_sensor |
 | Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event |
 | Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor |
+| Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor |
+| Buttons and contacts | Four digital inputs and temperature (FHMB, FRWB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor |
 | Sensors | Temperature and humidity (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor |
 | Sensors | Motion and brightness sensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor |
+| Sensors | VOC sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor |
+| Sensors | TVOC sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor |
+| Sensors | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor |
+| Sensors | Multisensor with contact (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor |
 | Sensors | CO2 sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor |
 | Sensors | Weather station (FWS61, FWG14) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
 | Meters | Energy meter (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor |
@@ -212,7 +218,10 @@ discovered (**EnOcean Proxy**); pick the model and the gateway is set up with **
 EnOcean Proxy** switched on. After a Home Assistant restart the app delivers the telegrams
 that arrived meanwhile (radio telegrams only, up to 15 minutes old) with their reception
 time, so cover positions, meter readings and "last seen" stay right. Its status page also
-records captures (e.g. PCT14 with a FAM14) and shows the air time against the 1 % limit. The app is reachable from Home Assistant only, unless you open
+records captures (e.g. PCT14 with a FAM14) and shows the air time against the 1 % limit.
+If the app is older than this integration needs (0.5.2), a repair issue asks to update it.
+A gateway the app moves to another port is found again by its base ID and updated by
+itself; the same goes for an MGW-ETH that gets a new IP address. The app is reachable from Home Assistant only, unless you open
 its ports.
 
 ## Known limitations
@@ -227,6 +236,8 @@ its ports.
 - **Generic profiles:** devices added by EEP decode every standard profile, but profiles
   outside the catalog are not checked against hardware; some official test containers
   disagree (see [docs/quality_scale.md](docs/quality_scale.md)).
+- **Multisensors D2-14-40/41** (FMS55SB, FMMS44SB) are decoded from the profile but not
+  checked against hardware yet.
 - **Cover positions** of Eltako actuators are calculated from run times, the actuator
   never reports where it stopped.
 

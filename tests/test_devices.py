@@ -955,6 +955,8 @@ async def test_add_device_menus(hass: HomeAssistant, gateway) -> None:
         "model_contact",
         "model_rocker",
         "model_rocker_contact",
+        "model_digital_input",
+        "model_digital_inputs",
         "eltako",
     ]
 

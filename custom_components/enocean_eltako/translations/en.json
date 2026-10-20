@@ -220,7 +220,13 @@
         "virtual_motion": "Virtual motion sensor",
         "virtual_rocker": "Virtual rocker",
         "vld_switch": "Switch or dimmer actuator (VLD D2-01)",
-        "vld_cover": "Shutter actuator (VLD D2-05)"
+        "vld_cover": "Shutter actuator (VLD D2-05)",
+        "voc": "VOC sensor (FLT58)",
+        "tvoc": "TVOC sensor (FLGTF)",
+        "multisensor": "Multisensor (VLD D2-14-40) (FMS55SB)",
+        "multisensor_contact": "Multisensor with contact (VLD D2-14-41) (FMMS44SB)",
+        "digital_input": "Digital input (FSM60B)",
+        "digital_inputs": "Four digital inputs and temperature (FHMB, FRWB)"
       }
     },
     "routing": {
@@ -483,7 +489,13 @@
             "model_virtual_rocker": "Virtual rocker",
             "user": "Back",
             "model_vld_switch": "Switch or dimmer actuator (VLD D2-01)",
-            "model_vld_cover": "Shutter actuator (VLD D2-05)"
+            "model_vld_cover": "Shutter actuator (VLD D2-05)",
+            "model_voc": "VOC sensor",
+            "model_tvoc": "TVOC sensor",
+            "model_multisensor": "Multisensor (VLD D2-14-40)",
+            "model_multisensor_contact": "Multisensor with contact (VLD D2-14-41)",
+            "model_digital_input": "Digital input",
+            "model_digital_inputs": "Four digital inputs and temperature"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -510,7 +522,13 @@
             "model_virtual_motion": "Follows a binary sensor; sends A5-07-01",
             "model_virtual_rocker": "Four buttons in HA that send like an FT55 (F6-02-01)",
             "model_vld_switch": "NodOn SIN-2-1-01 and other D2-01 actuators",
-            "model_vld_cover": "NodOn SIN-2-RS-01 and other D2-05 actuators"
+            "model_vld_cover": "NodOn SIN-2-RS-01 and other D2-05 actuators",
+            "model_voc": "FLT58",
+            "model_tvoc": "FLGTF",
+            "model_multisensor": "FMS55SB",
+            "model_multisensor_contact": "FMMS44SB",
+            "model_digital_input": "FSM60B",
+            "model_digital_inputs": "FHMB, FRWB"
           }
         },
         "learned": {
@@ -868,6 +886,15 @@
       },
       "raw_data": {
         "name": "Raw data"
+      },
+      "acceleration_x": {
+        "name": "Acceleration X"
+      },
+      "acceleration_y": {
+        "name": "Acceleration Y"
+      },
+      "acceleration_z": {
+        "name": "Acceleration Z"
       }
     },
     "binary_sensor": {
@@ -876,6 +903,24 @@
       },
       "gateway_connection": {
         "name": "Connection"
+      },
+      "contact": {
+        "name": "Contact"
+      },
+      "input_0": {
+        "name": "Input 0"
+      },
+      "input_1": {
+        "name": "Input 1"
+      },
+      "input_2": {
+        "name": "Input 2"
+      },
+      "input_3": {
+        "name": "Input 3"
+      },
+      "wake": {
+        "name": "Wake input"
       }
     },
     "event": {
@@ -970,6 +1015,10 @@
     "custom_devices_invalid": {
       "title": "Errors in the EnOcean device definitions",
       "description": "Some definitions in `{path}` were left out:\n\n{errors}\n\nFix the file and reload the gateway entry. Devices whose definition is missing keep working as generic EEP devices."
+    },
+    "proxy_outdated": {
+      "title": "Update the EnOcean Proxy app",
+      "description": "The gateway {gateway} runs through EnOcean Proxy {version}. This integration needs version {minimum} or newer (older versions announce only one of several gateways to Home Assistant). Update the app under Settings → Apps."
     }
   },
   "device_automation": {

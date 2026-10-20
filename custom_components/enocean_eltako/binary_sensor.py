@@ -11,7 +11,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import Platform
+from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -57,6 +57,44 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
             name=None,
             # CO: 0 = open, 1 = closed; "on" means open for door/window classes
             value_fn=lambda v: None if "CO" not in v else v["CO"] == 0,
+        ),
+    ),
+    "multisensor_contact": (
+        EnOceanBinarySensorDescription(
+            key="contact",
+            translation_key="contact",
+            # D2-14-41 contact: 0 = open, 1 = closed; "on" means open
+            value_fn=lambda v: None if "Contact" not in v else v["Contact"] == 0,
+        ),
+    ),
+    "digital_input": (
+        EnOceanBinarySensorDescription(
+            key="contact",
+            name=None,
+            # A5-30-01 input state: 0...195 contact closed, 196...255 open; "on" means open
+            value_fn=lambda v: None if "IPS" not in v else v["IPS"] > 195,
+        ),
+        EnOceanBinarySensorDescription(
+            key="battery",
+            device_class=BinarySensorDeviceClass.BATTERY,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            # supply voltage 0...120 battery low
+            value_fn=lambda v: None if "SVC" not in v else v["SVC"] <= 120,
+        ),
+    ),
+    "digital_inputs": (
+        *(
+            EnOceanBinarySensorDescription(
+                key=f"input_{n}",
+                translation_key=f"input_{n}",
+                value_fn=(lambda f: lambda v: None if f not in v else v[f] == 1)(f"DI{n}"),
+            )
+            for n in range(4)
+        ),
+        EnOceanBinarySensorDescription(
+            key="wake",
+            translation_key="wake",
+            value_fn=lambda v: None if "WA0" not in v else v["WA0"] == 1,
         ),
     ),
     "fbh": (
@@ -161,8 +199,10 @@ class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
     def __init__(self, device: EnOceanDevice, description: EnOceanBinarySensorDescription) -> None:
         super().__init__(device, description.key)
         self.entity_description = description
-        self._invert = bool(device.options.get(OPT_INVERT))
-        if device_class := device.options.get(OPT_DEVICE_CLASS):
+        # the options describe the device's contact, not its battery or other inputs
+        configurable = description.key not in ("battery",)
+        self._invert = configurable and bool(device.options.get(OPT_INVERT))
+        if configurable and (device_class := device.options.get(OPT_DEVICE_CLASS)):
             self._attr_device_class = BinarySensorDeviceClass(device_class)
 
     async def async_added_to_hass(self) -> None:

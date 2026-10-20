@@ -12,6 +12,24 @@
         "state": {
           "on": "mdi:weather-pouring"
         }
+      },
+      "contact": {
+        "default": "mdi:electric-switch"
+      },
+      "input_0": {
+        "default": "mdi:import"
+      },
+      "input_1": {
+        "default": "mdi:import"
+      },
+      "input_2": {
+        "default": "mdi:import"
+      },
+      "input_3": {
+        "default": "mdi:import"
+      },
+      "wake": {
+        "default": "mdi:alarm-light-outline"
       }
     },
     "button": {
@@ -205,6 +223,15 @@
       },
       "raw_data": {
         "default": "mdi:hexadecimal"
+      },
+      "acceleration_x": {
+        "default": "mdi:axis-x-arrow"
+      },
+      "acceleration_y": {
+        "default": "mdi:axis-y-arrow"
+      },
+      "acceleration_z": {
+        "default": "mdi:axis-z-arrow"
       }
     }
   },

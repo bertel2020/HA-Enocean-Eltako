@@ -220,7 +220,13 @@
         "virtual_motion": "Virtueller Bewegungsmelder",
         "virtual_rocker": "Virtueller Taster",
         "vld_switch": "Schalt- oder Dimmaktor (VLD D2-01)",
-        "vld_cover": "Rollladenaktor (VLD D2-05)"
+        "vld_cover": "Rollladenaktor (VLD D2-05)",
+        "voc": "VOC-Sensor (FLT58)",
+        "tvoc": "TVOC-Sensor (FLGTF)",
+        "multisensor": "Multisensor (VLD D2-14-40) (FMS55SB)",
+        "multisensor_contact": "Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB)",
+        "digital_input": "Digitaleingang (FSM60B)",
+        "digital_inputs": "Vier Digitaleingänge und Temperatur (FHMB, FRWB)"
       }
     },
     "routing": {
@@ -483,7 +489,13 @@
             "model_virtual_rocker": "Virtueller Taster",
             "user": "Zurück",
             "model_vld_switch": "Schalt- oder Dimmaktor (VLD D2-01)",
-            "model_vld_cover": "Rollladenaktor (VLD D2-05)"
+            "model_vld_cover": "Rollladenaktor (VLD D2-05)",
+            "model_voc": "VOC-Sensor",
+            "model_tvoc": "TVOC-Sensor",
+            "model_multisensor": "Multisensor (VLD D2-14-40)",
+            "model_multisensor_contact": "Multisensor mit Kontakt (VLD D2-14-41)",
+            "model_digital_input": "Digitaleingang",
+            "model_digital_inputs": "Vier Digitaleingänge und Temperatur"
           },
           "menu_option_descriptions": {
             "model_switch": "FSR61, FSR14, FL62",
@@ -510,7 +522,13 @@
             "model_virtual_motion": "Folgt einem Binärsensor; sendet A5-07-01",
             "model_virtual_rocker": "Vier Tasten in HA, die wie ein FT55 senden (F6-02-01)",
             "model_vld_switch": "NodOn SIN-2-1-01 und andere D2-01-Aktoren",
-            "model_vld_cover": "NodOn SIN-2-RS-01 und andere D2-05-Aktoren"
+            "model_vld_cover": "NodOn SIN-2-RS-01 und andere D2-05-Aktoren",
+            "model_voc": "FLT58",
+            "model_tvoc": "FLGTF",
+            "model_multisensor": "FMS55SB",
+            "model_multisensor_contact": "FMMS44SB",
+            "model_digital_input": "FSM60B",
+            "model_digital_inputs": "FHMB, FRWB"
           }
         },
         "learned": {
@@ -868,6 +886,15 @@
       },
       "raw_data": {
         "name": "Rohdaten"
+      },
+      "acceleration_x": {
+        "name": "Beschleunigung X"
+      },
+      "acceleration_y": {
+        "name": "Beschleunigung Y"
+      },
+      "acceleration_z": {
+        "name": "Beschleunigung Z"
       }
     },
     "binary_sensor": {
@@ -876,6 +903,24 @@
       },
       "gateway_connection": {
         "name": "Verbindung"
+      },
+      "contact": {
+        "name": "Kontakt"
+      },
+      "input_0": {
+        "name": "Eingang 0"
+      },
+      "input_1": {
+        "name": "Eingang 1"
+      },
+      "input_2": {
+        "name": "Eingang 2"
+      },
+      "input_3": {
+        "name": "Eingang 3"
+      },
+      "wake": {
+        "name": "Weckeingang"
       }
     },
     "event": {
@@ -970,6 +1015,10 @@
     "custom_devices_invalid": {
       "title": "Fehler in den EnOcean-Gerätedefinitionen",
       "description": "Einige Definitionen in `{path}` wurden ausgelassen:\n\n{errors}\n\nDatei korrigieren und den Gateway-Eintrag neu laden. Geräte, deren Definition fehlt, laufen als generische EEP-Geräte weiter."
+    },
+    "proxy_outdated": {
+      "title": "App EnOcean Proxy aktualisieren",
+      "description": "Das Gateway {gateway} läuft über EnOcean Proxy {version}. Diese Integration braucht Version {minimum} oder neuer (ältere Versionen melden von mehreren Gateways nur eines an Home Assistant). Die App unter Einstellungen → Apps aktualisieren."
     }
   },
   "device_automation": {

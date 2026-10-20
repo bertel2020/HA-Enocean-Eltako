@@ -404,6 +404,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
 
 async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """Delete the stored sender pools (the bus pool with the last member of its group)."""
+    ir.async_delete_issue(hass, DOMAIN, f"proxy_outdated_{entry.entry_id}")
     await async_remove_store(hass, radio_key(entry.entry_id))
     if group := entry.data.get(CONF_BUS_GROUP):
         others = [

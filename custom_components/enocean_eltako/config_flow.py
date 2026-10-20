@@ -162,10 +162,44 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         # until the base ID is known, the host identifies the discovery (and its "ignore")
         await self.async_set_unique_id(f"zeroconf_{host}")
         self._abort_if_unique_id_configured()
+        connection = TcpConnection(host, port)
+        known = [
+            e
+            for e in self._async_current_entries(include_ignore=False)
+            if e.data.get(CONF_MODEL) == model.key
+        ]
+        if (moved := await self._async_moved_gateway(model, connection, known)) is not None:
+            return moved
         self._model = model
-        self._connection = TcpConnection(host, port)
+        self._connection = connection
         self.context["title_placeholders"] = {"name": f"{model.name} ({host})"}
         return await self.async_step_zeroconf_confirm()
+
+    async def _async_moved_gateway(
+        self, model: GatewayModel, connection: TcpConnection, candidates: list[ConfigEntry]
+    ) -> ConfigFlowResult | None:
+        """discovery-update-info: a known gateway at a new address updates its entry.
+
+        Reads the base ID at the announced address; when it is a configured gateway's, that
+        entry gets the new address and reloads, no confirmation needed.
+        """
+        if not candidates or not model.reads_base_id:
+            return None
+        try:
+            base_id = await probe_gateway(model, connection)
+        except (CannotConnect, TimeoutError):
+            return None
+        if base_id is None or not is_valid_base_id(base_id):
+            return None
+        for entry in candidates:
+            if entry.unique_id == format_id(base_id):
+                _LOGGER.info("%s moved to %s", entry.title, connection)
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates={CONF_DEVICE: connection.as_dict()},
+                    reason="already_configured",
+                )
+        return None
 
     async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
         """The EnOcean Proxy app announced its gateways.
@@ -206,6 +240,20 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         port = int(gateway["port"])
         await self.async_set_unique_id(f"proxy_{host}_{port}")
         self._abort_if_unique_id_configured()
+        # a gateway of the app on another port (the app's port options changed)
+        through_app = [
+            e
+            for e in self._async_current_entries(include_ignore=False)
+            if e.data.get(CONF_DEVICE, {}).get(CONF_HOST) == host
+        ]
+        probe = next(
+            m
+            for m in MODELS.values()
+            if m.reads_base_id and m.protocol == (gateway.get("protocol") or "esp2")
+        )
+        connection = TcpConnection(host, port)
+        if (moved := await self._async_moved_gateway(probe, connection, through_app)) is not None:
+            return moved
         self._proxy = {**config, **gateway}
         self._connection = TcpConnection(host, port)
         self.context["title_placeholders"] = {

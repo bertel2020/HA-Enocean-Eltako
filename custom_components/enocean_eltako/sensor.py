@@ -16,6 +16,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    CONCENTRATION_PARTS_PER_BILLION,
     LIGHT_LUX,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -258,6 +260,84 @@ def _volume_sensors(device_class: SensorDeviceClass) -> tuple[EnOceanSensorDescr
         ),
     )
 
+
+# A5-09-05/0C scale multiplier SCM: 0 = x0.01, 1 = x0.1, 2 = x1, 3 = x10
+VOC_SCALE = {0: 0.01, 1: 0.1, 2: 1.0, 3: 10.0}
+
+
+def _voc(unit: int) -> Callable[[dict[str, Any]], float | None]:
+    """VOC concentration in ppb (unit 0) or ug/m3 (unit 1, A5-09-0C only)."""
+
+    def get(values: dict[str, Any]) -> float | None:
+        if "Conc" not in values or values.get("Unit", 0) != unit:
+            return None
+        return round(float(values["Conc"]) * VOC_SCALE.get(values.get("SCM", 2), 1.0), 2)
+
+    return get
+
+
+VOC_PPB = EnOceanSensorDescription(
+    key="voc",
+    device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+    native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
+    state_class=SensorStateClass.MEASUREMENT,
+    value_fn=_voc(0),
+)
+SENSORS["voc"] = (VOC_PPB,)
+SENSORS["tvoc"] = (
+    VOC_PPB,
+    EnOceanSensorDescription(
+        key="voc_mass",
+        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_voc(1),
+    ),
+)
+
+
+def _d2_14(
+    keys: tuple[str, str], limit: int, scale: Callable[[int], float]
+) -> Callable[[dict[str, Any]], float | None]:
+    """D2-14-40/41 value (the two profiles name their fields differently); None if invalid."""
+
+    def get(values: dict[str, Any]) -> float | None:
+        raw = next((values[k] for k in keys if k in values), None)
+        return None if raw is None or raw > limit else round(scale(raw), 2)
+
+    return get
+
+
+def _acceleration(axis: str) -> EnOceanSensorDescription:
+    return EnOceanSensorDescription(
+        key=f"acceleration_{axis.lower()}",
+        translation_key=f"acceleration_{axis.lower()}",
+        native_unit_of_measurement="g",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        value_fn=_d2_14((f"ACC_{axis}", f"Acceleration {axis}"), 1000, lambda r: r / 200 - 2.5),
+    )
+
+
+SENSORS["multisensor"] = SENSORS["multisensor_contact"] = (
+    EnOceanSensorDescription(
+        key="temperature",
+        **TEMPERATURE,
+        value_fn=_d2_14(("TMP10", "temperature"), 1000, lambda r: r / 10 - 40),
+    ),
+    EnOceanSensorDescription(
+        key="humidity", **HUMIDITY, value_fn=_d2_14(("HUM", "humidity"), 200, lambda r: r / 2)
+    ),
+    EnOceanSensorDescription(
+        key="illuminance",
+        **ILLUMINANCE,
+        value_fn=_d2_14(("ILL", "Illumination"), 100000, float),
+    ),
+    *(_acceleration(axis) for axis in ("X", "Y", "Z")),
+)
+SENSORS["digital_inputs"] = (
+    EnOceanSensorDescription(key="temperature", **TEMPERATURE, value_fn=_field("TMP")),
+)
 
 SENSORS["gas_meter"] = _volume_sensors(SensorDeviceClass.GAS)
 SENSORS["water_meter"] = _volume_sensors(SensorDeviceClass.WATER)
