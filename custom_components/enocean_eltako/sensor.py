@@ -16,13 +16,12 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
-    CONCENTRATION_PARTS_PER_BILLION,
     LIGHT_LUX,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     Platform,
+    UnitOfDensity,
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
@@ -279,7 +278,7 @@ def _voc(unit: int) -> Callable[[dict[str, Any]], float | None]:
 VOC_PPB = EnOceanSensorDescription(
     key="voc",
     device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
-    native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,
+    native_unit_of_measurement=UnitOfRatio.PARTS_PER_BILLION,
     state_class=SensorStateClass.MEASUREMENT,
     value_fn=_voc(0),
 )
@@ -289,7 +288,7 @@ SENSORS["tvoc"] = (
     EnOceanSensorDescription(
         key="voc_mass",
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
-        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        native_unit_of_measurement=UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=_voc(1),
     ),
