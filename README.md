@@ -109,17 +109,21 @@ Generated from the catalog; details in [docs/devices.md](docs/devices.md).
 ## EnOcean panel
 
 The **EnOcean** sidebar panel (admins only) starts with a card per gateway: connected,
-disconnected (and for how long) or on demand, telegrams per minute, last telegram, send
-queue, unconfirmed commands, devices and free sender IDs. Click a card to show only that
-gateway's telegrams.
+disconnected (and for how long) or on demand, telegrams per minute, last telegram, devices,
+free sender IDs, send queue and unconfirmed commands. Click a card to show only that
+gateway's telegrams; on a phone the cards scroll sideways.
 
-Below it, the telegram monitor lists every received and sent telegram live: time, gateway,
-direction, sender ID with the device name, telegram type, data, status, signal strength and
-the decoded values. Sent telegrams name the device and sender profile; a teach-in telegram of
-an unknown sender shows its EEP, and **Add** next to an unknown sender opens its discovered
-card on the integration page (also with discovery switched off). Filter by gateway, direction or text (click an ID to filter
-by it), hide repetitions, show unknown senders only, pause, and export the visible telegrams
-as JSON lines. It shows the last 200 telegrams of the running session and keeps up to 1,000.
+Below, every received and sent telegram appears live, newest first: device name (or
+"unknown sender" with an **Add** button that opens its discovered card), sender ID, gateway,
+telegram type, the decoded values and the signal strength. Sent telegrams name the device and
+sender profile; a teach-in of an unknown sender shows its EEP. Click a telegram for its raw
+data, status, destination and signal in dBm, or to show only that sender.
+
+Search by device, ID (with or without dashes) or data (key `/`), choose received or sent,
+show unknown senders only or include repetitions; **Reset filters** clears them. Pause keeps
+collecting and shows how many telegrams wait; export saves the visible ones as JSON lines.
+The panel loads the last 200 telegrams of the running session and keeps up to 1,000. It
+follows the Home Assistant theme, light and dark.
 
 ## Gateway options and repairs
 

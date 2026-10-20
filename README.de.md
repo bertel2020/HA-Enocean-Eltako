@@ -114,17 +114,22 @@ Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
 
 Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine Karte je
 Gateway: verbunden, getrennt (und seit wann) oder bei Bedarf, Telegramme pro Minute, letztes
-Telegramm, Sendewarteschlange, unbestätigte Befehle, Geräte und freie Sender-IDs. Ein Klick
-auf eine Karte zeigt nur die Telegramme dieses Gateways.
+Telegramm, Geräte, freie Sender-IDs, Sendewarteschlange und unbestätigte Befehle. Ein Klick
+auf eine Karte zeigt nur die Telegramme dieses Gateways; auf dem Handy lassen sich die Karten
+seitlich wischen.
 
-Darunter steht der Telegramm-Monitor mit jedem empfangenen und gesendeten Telegramm live:
-Zeit, Gateway, Richtung, Sender-ID mit Gerätenamen, Telegrammtyp, Daten, Status,
-Signalstärke und die entschlüsselten Werte. Gesendete Telegramme nennen Gerät und
-Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei, und **Anlegen** neben einem unbekannten Sender öffnet
-seine Entdeckt-Karte auf der Integrationsseite (auch bei abgeschalteter Discovery). Filtern nach
-Gateway, Richtung oder Text (Klick auf eine ID filtert danach), Wiederholungen ausblenden, nur
-unbekannte Sender zeigen, anhalten und die sichtbaren Telegramme als JSON-Zeilen exportieren.
-Es zeigt die letzten 200 Telegramme der laufenden Sitzung und hält bis zu 1.000.
+Darunter erscheint jedes empfangene und gesendete Telegramm live, das neueste oben:
+Gerätename (oder „Unbekannter Sender“ mit dem Knopf **Anlegen**, der seine Entdeckt-Karte
+öffnet), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte und die Signalstärke.
+Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
+Senders steht die EEP dabei. Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und
+Signal in dBm oder filtert auf diesen Sender.
+
+Suchen nach Gerät, ID (mit oder ohne Bindestriche) oder Daten (Taste `/`), nur Empfangenes
+oder Gesendetes, nur unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt
+alles auf. Anhalten sammelt weiter und zeigt, wie viele Telegramme warten; Exportieren
+speichert die sichtbaren als JSON-Zeilen. Das Panel lädt die letzten 200 Telegramme der
+laufenden Sitzung und hält bis zu 1.000. Es folgt dem Home-Assistant-Design, hell und dunkel.
 
 ## Gateway-Optionen und Reparaturen
 
