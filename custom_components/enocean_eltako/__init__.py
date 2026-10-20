@@ -178,6 +178,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
                     "error": str(err),
                 },
             ) from err
+    # also when a later step of this setup fails: HA then runs the unload callbacks but not
+    # async_unload_entry, and an open serial port would block the next attempt
+    entry.async_on_unload(gateway.close)
     queue = SendQueue(
         gateway.send,
         is_connected=lambda: gateway.connected,

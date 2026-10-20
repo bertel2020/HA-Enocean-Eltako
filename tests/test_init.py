@@ -55,6 +55,33 @@ async def test_setup_retries_when_gateway_is_offline(hass: HomeAssistant) -> Non
     assert entry.state is ConfigEntryState.SETUP_RETRY
 
 
+async def test_failed_setup_closes_the_gateway(hass: HomeAssistant, monkeypatch) -> None:
+    """A step after connecting fails: the connection does not stay open."""
+    import custom_components.enocean_eltako as integration
+
+    gateways: list[integration.Gateway] = []
+
+    class Recording(integration.Gateway):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            gateways.append(self)
+
+    async def broken(self) -> None:
+        raise RuntimeError("storage broken")
+
+    monkeypatch.setattr(integration, "Gateway", Recording)
+    monkeypatch.setattr(integration.SenderStore, "async_load", broken)
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    (gateway,) = gateways
+    assert not gateway.connected
+    await server.stop()
+
+
 async def test_usb_integration_attributes_serial_port(hass: HomeAssistant) -> None:
     """HA's usb integration shows which entry uses a port; it looks at ("device", "path")."""
     from homeassistant.components.usb.consumers import _async_get_config_entry_consumers
