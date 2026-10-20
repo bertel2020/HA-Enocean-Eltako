@@ -47,6 +47,15 @@ const TEXT = {
     ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
     since: (s) => `for ${s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`}`,
     cardHint: "Click to show only this gateway's telegrams",
+    add: "Add",
+    addHint: "Add this sender as a device (opens its discovered card)",
+    addResult: {
+      already_configured: "This sender is already set up or ignored (see ignored integrations).",
+      no_matching_kind: "No device kind fits this telegram. Add it on the gateway with Add device → By EEP.",
+      gateway_not_loaded: "The gateway that heard it is not loaded.",
+      not_found: "No telegram from this sender in the monitor any more.",
+      failed: "Could not add the device.",
+    },
   },
   de: {
     title: "EnOcean",
@@ -88,6 +97,15 @@ const TEXT = {
     ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
     since: (s) => `seit ${s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`}`,
     cardHint: "Klicken, um nur die Telegramme dieses Gateways zu zeigen",
+    add: "Anlegen",
+    addHint: "Diesen Sender als Gerät anlegen (öffnet seine Entdeckt-Karte)",
+    addResult: {
+      already_configured: "Dieser Sender ist schon eingerichtet oder ignoriert (siehe ignorierte Integrationen).",
+      no_matching_kind: "Zu diesem Telegramm passt keine Geräteart. Am Gateway über Gerät hinzufügen → Per EEP anlegen.",
+      gateway_not_loaded: "Das Gateway, das ihn gehört hat, ist nicht geladen.",
+      not_found: "Kein Telegramm dieses Senders mehr im Monitor.",
+      failed: "Das Gerät ließ sich nicht anlegen.",
+    },
   },
 };
 
@@ -143,6 +161,11 @@ const STYLE = `
     white-space: nowrap; }
   .metrics b { font-weight: 500; white-space: nowrap; }
   .metrics b.warn { color: var(--error-color, #db4437); }
+  button.add { min-height: 0; padding: 1px 8px; margin-left: 6px; font-size: 12px; border-radius: 10px;
+    color: var(--primary-color); border-color: var(--primary-color); }
+  .notice { margin: 0 16px 8px; padding: 8px 12px; border-radius: 8px; font-size: 13px;
+    background: var(--secondary-background-color); }
+  .notice:empty { display: none; }
   .empty { padding: 32px 16px; text-align: center; color: var(--secondary-text-color); }
 `;
 
@@ -215,6 +238,7 @@ class EnOceanEltakoMonitor extends HTMLElement {
         <button id="export">${esc(t.export)}</button>
       </div>
       <div class="count" id="count"></div>
+      <div class="notice" id="notice"></div>
       <div class="wrap" id="wrap"></div>`;
     const $ = (id) => this.shadowRoot.getElementById(id);
     this._menu = this.shadowRoot.querySelector("ha-menu-button");
@@ -241,6 +265,11 @@ class EnOceanEltakoMonitor extends HTMLElement {
       this._renderCards();
     });
     $("wrap").addEventListener("click", (e) => {
+      const add = e.target.closest("button.add");
+      if (add) {
+        this._addDevice(add.dataset.id);
+        return;
+      }
       const id = e.target.closest(".id");
       if (!id) return;
       $("text").value = id.dataset.id;
@@ -332,6 +361,25 @@ class EnOceanEltakoMonitor extends HTMLElement {
         </div>`;
       })
       .join("");
+  }
+
+  async _addDevice(sender) {
+    const notice = this.shadowRoot.getElementById("notice");
+    notice.textContent = "";
+    let result;
+    try {
+      result = await this._hass.callWS({ type: "enocean_eltako/discover", sender });
+    } catch (err) {
+      notice.textContent = this._t.addResult[err.code] || this._t.addResult.failed;
+      return;
+    }
+    if (result.flow_id || result.reason === "already_in_progress") {
+      // the discovered card waits on the integration page
+      history.pushState(null, "", "/config/integrations/integration/enocean_eltako");
+      window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+      return;
+    }
+    notice.textContent = this._t.addResult[result.reason] || this._t.addResult.failed;
   }
 
   _add(row) {
@@ -427,7 +475,11 @@ class EnOceanEltakoMonitor extends HTMLElement {
           <td class="mono">${clock}</td>
           ${showGateway ? `<td>${esc(r.gateway_name)}</td>` : ""}
           <td class="dir" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${r.dir === "rx" ? "↓" : "↑"}</td>
-          <td><span class="id" data-id="${esc(r.sender)}">${esc(r.sender)}</span><div class="device">${name}</div></td>
+          <td><span class="id" data-id="${esc(r.sender)}">${esc(r.sender)}</span>${
+            r.dir === "rx" && !r.device
+              ? `<button class="add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${esc(t.add)}</button>`
+              : ""
+          }<div class="device">${name}</div></td>
           <td>${esc(RORG[r.rorg] || r.rorg)}${badges}</td>
           <td class="mono">${esc(r.data)}</td>
           <td class="mono">${esc(r.status)}</td>

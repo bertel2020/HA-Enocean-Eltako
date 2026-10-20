@@ -18,6 +18,7 @@ from homeassistant.helpers import discovery_flow
 from .const import CONF_DISCOVERY, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.ids import format_id
+from .protocol.telegram import RadioTelegram
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
@@ -27,6 +28,17 @@ DISCOVERY_PREFIX = "device_"
 
 def discovery_unique_id(device_id: int) -> str:
     return f"{DISCOVERY_PREFIX}{format_id(device_id)}"
+
+
+def discovery_data(gateway: str, sender: int, telegram: RadioTelegram) -> dict[str, Any]:
+    """What the discovery flow needs: the receiving gateway, the ID and the telegram."""
+    return {
+        "gateway": gateway,
+        "device_id": format_id(sender),
+        "rorg": telegram.rorg,
+        "data": telegram.data.hex(),
+        "dbm": telegram.dbm,
+    }
 
 
 @callback
@@ -47,16 +59,11 @@ def async_setup_discovery(
         ):
             return
         hub.discovered.add(sender)
-        telegram = received.telegram
-        data: dict[str, Any] = {
-            "gateway": entry.entry_id,
-            "device_id": format_id(sender),
-            "rorg": telegram.rorg,
-            "data": telegram.data.hex(),
-            "dbm": telegram.dbm,
-        }
         discovery_flow.async_create_flow(
-            hass, DOMAIN, {"source": SOURCE_INTEGRATION_DISCOVERY}, data
+            hass,
+            DOMAIN,
+            {"source": SOURCE_INTEGRATION_DISCOVERY},
+            discovery_data(entry.entry_id, sender, received.telegram),
         )
 
     return hub.dispatcher.add_unknown_listener(heard)

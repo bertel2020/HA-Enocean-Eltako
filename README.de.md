@@ -120,7 +120,8 @@ auf eine Karte zeigt nur die Telegramme dieses Gateways.
 Darunter steht der Telegramm-Monitor mit jedem empfangenen und gesendeten Telegramm live:
 Zeit, Gateway, Richtung, Sender-ID mit Gerätenamen, Telegrammtyp, Daten, Status,
 Signalstärke und die entschlüsselten Werte. Gesendete Telegramme nennen Gerät und
-Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei. Filtern nach
+Sender-Profil; beim Lerntelegramm eines unbekannten Senders steht die EEP dabei, und **Anlegen** neben einem unbekannten Sender öffnet
+seine Entdeckt-Karte auf der Integrationsseite (auch bei abgeschalteter Discovery). Filtern nach
 Gateway, Richtung oder Text (Klick auf eine ID filtert danach), Wiederholungen ausblenden, nur
 unbekannte Sender zeigen, anhalten und die sichtbaren Telegramme als JSON-Zeilen exportieren.
 Es zeigt die letzten 200 Telegramme der laufenden Sitzung und hält bis zu 1.000.

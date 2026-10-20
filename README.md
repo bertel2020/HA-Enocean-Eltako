@@ -116,7 +116,8 @@ gateway's telegrams.
 Below it, the telegram monitor lists every received and sent telegram live: time, gateway,
 direction, sender ID with the device name, telegram type, data, status, signal strength and
 the decoded values. Sent telegrams name the device and sender profile; a teach-in telegram of
-an unknown sender shows its EEP. Filter by gateway, direction or text (click an ID to filter
+an unknown sender shows its EEP, and **Add** next to an unknown sender opens its discovered
+card on the integration page (also with discovery switched off). Filter by gateway, direction or text (click an ID to filter
 by it), hide repetitions, show unknown senders only, pause, and export the visible telegrams
 as JSON lines. It shows the last 200 telegrams of the running session and keeps up to 1,000.
 

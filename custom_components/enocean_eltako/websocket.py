@@ -11,13 +11,20 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import (
+    SOURCE_INTEGRATION_DISCOVERY,
+    ConfigEntry,
+    ConfigEntryState,
+)
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.data_entry_flow import FlowResultType
 
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
+from .discovery import discovery_data
 from .hub import async_get_hub
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
+from .protocol.ids import parse_id
 from .protocol.models import MODELS
 from .protocol.monitor import MonitorEntry
 from .protocol.telegram import Rorg
@@ -27,6 +34,7 @@ from .protocol.telegram import Rorg
 def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe_telegrams)
     websocket_api.async_register_command(hass, ws_gateways)
+    websocket_api.async_register_command(hass, ws_discover)
 
 
 def _json_value(value: Any) -> Any:
@@ -126,3 +134,46 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "disconnected_since": runtime.disconnected_since,
         }
     return status
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "enocean_eltako/discover", vol.Required("sender"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_discover(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel "add as device": a discovered-device card for a sender from the monitor.
+
+    Uses the sender's last received telegram (gateway, type, teach-in); works also with
+    discovery switched off. The result names the flow, or why there is none (already set
+    up, ignored, card already there).
+    """
+    try:
+        sender = parse_id(msg["sender"])
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    hub = async_get_hub(hass)
+    last = next(
+        (
+            e
+            for e in reversed(hub.monitor.history())
+            if e.direction == "rx" and e.telegram.sender == sender
+        ),
+        None,
+    )
+    if last is None:
+        connection.send_error(msg["id"], "not_found", "no telegram from this sender")
+        return
+    hub.discovered.add(sender)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_INTEGRATION_DISCOVERY},
+        data=discovery_data(last.gateway, sender, last.telegram),
+    )
+    if result["type"] is FlowResultType.ABORT:
+        connection.send_result(msg["id"], {"reason": result["reason"]})
+        return
+    connection.send_result(msg["id"], {"flow_id": result["flow_id"]})

@@ -110,3 +110,24 @@ async def test_card_disappears_when_device_added(hass: HomeAssistant, gateway) -
     )
     await hass.async_block_till_done()
     assert _discovered(hass) == {}
+
+
+async def test_panel_adds_sender_as_device(hass: HomeAssistant, gateway, hass_ws_client) -> None:  # noqa: F811
+    entry, server = gateway
+    hass.config_entries.async_update_entry(entry, options={**entry.options, "discovery": False})
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    _push(server, 0x06, b"\x08", 0x01000077)
+    await _settle(hass)
+    assert _discovered(hass) == {}  # discovery off: no card by itself
+
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/discover", "sender": "01-00-00-77"})
+    result = (await client.receive_json())["result"]
+    flow = _discovered(hass)["device_01-00-00-77"]
+    assert result == {"flow_id": flow["flow_id"]}
+
+    await client.send_json({"id": 2, "type": "enocean_eltako/discover", "sender": "01000077"})
+    assert (await client.receive_json())["result"] == {"reason": "already_in_progress"}
+    await client.send_json({"id": 3, "type": "enocean_eltako/discover", "sender": "01-99-99-99"})
+    assert (await client.receive_json())["error"]["code"] == "not_found"
