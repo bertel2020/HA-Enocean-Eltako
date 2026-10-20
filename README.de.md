@@ -183,9 +183,13 @@ Signal in dBm oder filtert auf diesen Sender. Bei unbekannten Sendern öffnet do
 
 Suchen nach Gerät, ID (mit oder ohne Bindestriche) oder Daten (Taste `/`), nur Empfangenes
 oder Gesendetes, nur unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt
-alles auf. Anhalten sammelt weiter und zeigt, wie viele Telegramme warten; Exportieren
-speichert die sichtbaren als JSON-Zeilen. Das Panel lädt die letzten 200 Telegramme der
-laufenden Sitzung und hält bis zu 1.000. Es folgt dem Home-Assistant-Design, hell und dunkel.
+alles auf. Anhalten sammelt weiter (bis zu 1.000) und zeigt, wie viele Telegramme
+eingetroffen sind; Exportieren speichert die sichtbaren als JSON-Zeilen. Solange in der Liste
+Text markiert ist, etwa um eine ID zu kopieren, warten neue Telegramme, bis die Markierung
+endet. Das Panel lädt die letzten 200 Telegramme der laufenden Sitzung und hält bis zu
+1.000; nach einem Verbindungsabbruch oder langer Zeit im Hintergrund-Tab ergänzt es nur, was
+fehlt. Anzeige leeren setzt die Telegramme pro Minute nicht zurück, sie kommen vom Gateway.
+Es folgt dem Home-Assistant-Design, hell und dunkel.
 
 ## Gateway-Optionen und Reparaturen
 

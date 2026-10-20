@@ -178,9 +178,12 @@ also offer **Add device** in these details to open their discovered card.
 
 Search by device, ID (with or without dashes) or data (key `/`), choose received or sent,
 show unknown senders only or include repetitions; **Reset filters** clears them. Pause keeps
-collecting and shows how many telegrams wait; export saves the visible ones as JSON lines.
-The panel loads the last 200 telegrams of the running session and keeps up to 1,000. It
-follows the Home Assistant theme, light and dark.
+collecting (up to 1,000) and shows how many telegrams arrived; export saves the visible ones
+as JSON lines. While text in the list is selected, for example to copy an ID, new telegrams
+wait until the selection ends. The panel loads the last 200 telegrams of the running session
+and keeps up to 1,000; after a lost connection or a long time in a background tab it adds
+only what it missed. Clearing the display does not reset telegrams per minute, which come
+from the gateway. It follows the Home Assistant theme, light and dark.
 
 ## Gateway options and repairs
 
