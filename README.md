@@ -260,10 +260,14 @@ its ports.
 ## Troubleshooting
 
 1. Open the **EnOcean** panel: is the gateway connected, and do telegrams arrive when you
-   press a button? Unknown senders show up there with **Add**.
+   press a button? Unknown senders show up there; their details offer **Add device**.
 2. Check **Settings → Repairs** for disconnected gateways, silent devices, a changed base ID
    or slow bus confirmations.
-3. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
+3. "Connection … lost: device disconnected or in use by another process" in the log, again
+   and again: another program uses the same serial port, for example a second EnOcean
+   integration or an app. Only one may open a port; to share a gateway, use the EnOcean
+   Proxy app and connect everything to it.
+4. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
    the panel's export or the action `enocean_eltako.capture`. Debug logging:
    ```yaml
    logger:

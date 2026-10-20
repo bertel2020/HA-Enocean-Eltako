@@ -269,10 +269,15 @@ solange ihre Ports nicht freigegeben sind.
 ## Fehlersuche
 
 1. Panel **EnOcean** öffnen: Ist das Gateway verbunden, und kommen Telegramme an, wenn eine
-   Taste gedrückt wird? Unbekannte Sender erscheinen dort mit **Anlegen**.
+   Taste gedrückt wird? Unbekannte Sender erscheinen dort; ihre Details bieten
+   **Gerät hinzufügen**.
 2. Unter **Einstellungen → Reparaturen** nachsehen: getrennte Gateways, stumme Geräte,
    geänderte Base-ID, langsame Bus-Bestätigungen.
-3. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme
+3. „Connection … lost: device disconnected or in use by another process“ immer wieder im
+   Protokoll: Ein anderes Programm nutzt denselben seriellen Port, etwa eine zweite
+   EnOcean-Integration oder eine App. Einen Port darf nur eines öffnen; zum Teilen eines
+   Gateways die App EnOcean Proxy nutzen und alles mit ihr verbinden.
+4. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme
    mit dem Export im Panel oder der Aktion `enocean_eltako.capture` mitschneiden.
    Debug-Protokoll:
    ```yaml
