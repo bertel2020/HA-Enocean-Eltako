@@ -207,9 +207,20 @@ welchem Gerät und Profil gehört, wie viele frei sind und welche gesperrt sind.
 entfernten Geräts bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist; danach lässt sie
 sich dort freigeben.
 
+**Aus eltako übernehmen** liest die Geräte der alten Integration `eltako` aus der
+`configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
+IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. `left`/`right` eines
+Taster-Senders und `invert_signal` eines Schalters werden zu den Tasten, die er drückt;
+Fahrzeiten von Rollläden werden übernommen. Buttons der alten Integration werden nicht
+übernommen (dafür einen virtuellen Taster anlegen), Heizungsaktoren brauchen danach ihre
+Raumtemperatur-Entität. Die alte Integration abschalten, sobald ihre Geräte hier laufen: beide
+dürfen nicht denselben Port öffnen.
+
 Reparaturen weisen darauf hin, wo etwas zu tun ist:
 
 - ein Gateway bleibt getrennt oder ein Gerät meldet sich nicht mehr
+- eine Verbindung bricht immer wieder ab (3-mal in 10 Minuten), meist weil eine andere
+  Integration denselben Port öffnet; geladene Integrationen am selben Port werden genannt
 - ein Gateway meldet eine andere Base-ID als eingerichtet (Gateway oder Funkmodul getauscht):
   die Aktoren kennen die alten Sender-IDs, Befehle kämen nicht an
 - Bus-Aktoren bestätigen Befehle im Mittel erst nach mehr als 3 s: der FAM14 gibt
@@ -273,8 +284,8 @@ solange ihre Ports nicht freigegeben sind.
 1. Panel **EnOcean** öffnen: Ist das Gateway verbunden, und kommen Telegramme an, wenn eine
    Taste gedrückt wird? Unbekannte Sender erscheinen dort; ihre Details bieten
    **Gerät hinzufügen**.
-2. Unter **Einstellungen → Reparaturen** nachsehen: getrennte Gateways, stumme Geräte,
-   geänderte Base-ID, langsame Bus-Bestätigungen.
+2. Unter **Einstellungen → Reparaturen** nachsehen: getrennte oder instabile Gateways, stumme
+   Geräte, geänderte Base-ID, langsame Bus-Bestätigungen.
 3. „Connection … lost: device disconnected or in use by another process“ immer wieder im
    Protokoll: Ein anderes Programm nutzt denselben seriellen Port, etwa eine zweite
    EnOcean-Integration oder eine App. Einen Port darf nur eines öffnen; zum Teilen eines

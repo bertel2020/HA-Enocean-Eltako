@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -101,6 +102,15 @@ class GatewayRuntime:
     connection_listeners: list[Callable[[], None]] = field(default_factory=list)
     gateway_device_id: str | None = None  # device registry ID, parent of all devices
     proxy: dict[str, Any] | None = None  # EnOcean Proxy app status (proxy_status.py)
+    remove_reload_listener: Callable[[], None] | None = None
+    drops: deque[float] = field(default_factory=lambda: deque(maxlen=20))  # time.time()
+
+    @callback
+    def suspend_reload(self) -> None:
+        """No reload per entry change until the next setup (many subentries at once)."""
+        if self.remove_reload_listener is not None:
+            self.remove_reload_listener()
+            self.remove_reload_listener = None
 
     def add_connection_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self.connection_listeners.append(listener)
@@ -174,6 +184,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     def on_connection_change(connected: bool) -> None:
         if hasattr(entry, "runtime_data"):
             entry.runtime_data.disconnected_since = None if connected else time.time()
+            if not connected:
+                entry.runtime_data.drops.append(time.time())
             for listener in list(entry.runtime_data.connection_listeners):
                 listener()
             if connected:
@@ -257,7 +269,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     entry.runtime_data.health_check = async_setup_health(hass, entry)
     _async_request_states(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_reload_on_change))
+    entry.runtime_data.remove_reload_listener = entry.add_update_listener(_async_reload_on_change)
+    entry.async_on_unload(entry.runtime_data.suspend_reload)
     if not on_demand:
         entry.async_create_background_task(hass, gateway.run(), f"{DOMAIN} {entry.title}")
     entry.async_create_background_task(hass, queue.run(), f"{DOMAIN} {entry.title} queue")

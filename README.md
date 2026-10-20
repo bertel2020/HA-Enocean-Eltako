@@ -198,9 +198,19 @@ connection, ESP3 repeater) and **Sender IDs**: which of the 128 sender IDs belon
 device and profile, how many are free, and which are blocked. An ID of a removed device stays
 blocked until it is taught out of every actuator; free it there once that is done.
 
+**Take over from eltako** reads the devices of the old `eltako` integration from
+`configuration.yaml` (the gateway with the same base ID) and sets up the chosen ones with
+their IDs, names and sender IDs, so the actuators need no new teach-in. A rocker sender's
+`left`/`right` and a switch's `invert_signal` become the rocker buttons it presses; cover
+times are carried over. Buttons of the old integration are not taken over (use a virtual
+rocker), heating actuators need their room temperature entity afterwards. Turn the old
+integration off once its devices run here: both must not open the same port.
+
 Repairs point out what needs a hand:
 
 - a gateway that stays disconnected, or a device that has gone silent
+- a connection that drops again and again (3 times in 10 minutes), usually a port another
+  integration opens as well; loaded integrations on the same port are named
 - a gateway that reports a different base ID than the one set up (gateway or radio module
   replaced): the actuators know the old sender IDs, so commands would not arrive
 - bus actuators that confirm commands after more than 3 s on average: the FAM14 passes
@@ -263,8 +273,8 @@ its ports.
 
 1. Open the **EnOcean** panel: is the gateway connected, and do telegrams arrive when you
    press a button? Unknown senders show up there; their details offer **Add device**.
-2. Check **Settings → Repairs** for disconnected gateways, silent devices, a changed base ID
-   or slow bus confirmations.
+2. Check **Settings → Repairs** for disconnected or unstable gateways, silent devices, a
+   changed base ID or slow bus confirmations.
 3. "Connection … lost: device disconnected or in use by another process" in the log, again
    and again: another program uses the same serial port, for example a second EnOcean
    integration or an app. Only one may open a port; to share a gateway, use the EnOcean

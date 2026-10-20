@@ -1628,3 +1628,44 @@ async def test_device_form_shows_teach_in_hint(hass: HomeAssistant, gateway) -> 
     result = await _choose_model(hass, result["flow_id"], "contact")
     result = await configure(result["flow_id"], {"next_step_id": "device"})
     assert result["description_placeholders"]["hint"] == ""  # sensors need no teach-in
+
+
+async def test_unstable_connection_repair(hass: HomeAssistant, gateway, monkeypatch) -> None:
+    """A connection that keeps dropping (a port in use twice) raises a repair issue."""
+    import time as time_module
+
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.enocean_eltako import health
+
+    entry, server = gateway
+    runtime = entry.runtime_data
+    server.drop_clients()
+    for _ in range(50):
+        if runtime.drops:
+            break
+        await asyncio.sleep(0.01)
+    assert len(runtime.drops) == 1
+    issue_id = f"connection_unstable_{entry.entry_id}"
+    registry = ir.async_get(hass)
+    runtime.health_check()
+    assert registry.async_get_issue(DOMAIN, issue_id) is None  # one drop is no pattern
+
+    runtime.drops.extend([time_module.time()] * 2)
+    runtime.health_check()
+    issue = registry.async_get_issue(DOMAIN, issue_id)
+    assert issue.translation_key == "connection_unstable"
+    assert issue.translation_placeholders["drops"] == "3"
+
+    MockConfigEntry(domain="eltako", title="Eltako", state=ConfigEntryState.LOADED).add_to_hass(
+        hass
+    )
+    runtime.health_check()
+    issue = registry.async_get_issue(DOMAIN, issue_id)
+    assert issue.translation_key == "connection_unstable_users"
+    assert issue.translation_placeholders["users"] == "Eltako (eltako)"
+
+    later = time_module.time() + health.UNSTABLE_WINDOW + 1
+    monkeypatch.setattr(health.time, "time", lambda: later)
+    runtime.health_check()
+    assert registry.async_get_issue(DOMAIN, issue_id) is None

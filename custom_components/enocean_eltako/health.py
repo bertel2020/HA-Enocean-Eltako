@@ -1,4 +1,5 @@
-"""E5: repair issues for silent devices and gateways that stay disconnected;
+"""E5: repair issues for silent devices and gateways that stay disconnected or keep
+dropping (a port another integration or program uses as well);
 E11: bus actors that confirm slowly (FAM14 not in operating mode 5)."""
 
 from __future__ import annotations
@@ -9,11 +10,12 @@ from collections.abc import Callable
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN
+from .const import CONF_DEVICE, CONF_PATH, DOMAIN
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
@@ -22,6 +24,9 @@ CHECK_INTERVAL = timedelta(minutes=1)
 GATEWAY_REPAIR_AFTER = 5 * 60  # seconds
 SLOW_CONFIRMATION = 3.0  # E11: median seconds from command to the bus actor's answer
 SLOW_MIN_SAMPLES = 5
+UNSTABLE_WINDOW = 10 * 60  # seconds: this many connection losses within it ...
+UNSTABLE_DROPS = 3  # ... make the connection unstable
+OLD_DOMAIN = "eltako"  # the old integration: its serial port is in YAML, not in its entry
 
 
 def device_issue_id(unique_prefix: str) -> str:
@@ -34,6 +39,23 @@ def gateway_issue_id(entry_id: str) -> str:
 
 def slow_bus_issue_id(entry_id: str) -> str:
     return f"bus_slow_confirmations_{entry_id}"
+
+
+def unstable_issue_id(entry_id: str) -> str:
+    return f"connection_unstable_{entry_id}"
+
+
+@callback
+def port_users(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> list[str]:
+    """Other loaded config entries that name the same port, and the old eltako integration."""
+    path = entry.data.get(CONF_DEVICE, {}).get(CONF_PATH)
+    return [
+        f"{other.title} ({other.domain})"
+        for other in hass.config_entries.async_entries()
+        if other.entry_id != entry.entry_id
+        and other.state is ConfigEntryState.LOADED
+        and (other.domain == OLD_DOMAIN or (path is not None and path in str(other.data)))
+    ]
 
 
 def confirmation_median(entry: EnOceanEltakoConfigEntry) -> float | None:
@@ -87,6 +109,7 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
             )
         else:
             ir.async_delete_issue(hass, DOMAIN, issue_id)
+        _check_unstable(hass, entry, now)
         if runtime.bus is not None:
             _check_bus_confirmations(hass, entry)
 
@@ -95,11 +118,39 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
     def clear() -> None:
         ir.async_delete_issue(hass, DOMAIN, gateway_issue_id(entry.entry_id))
         ir.async_delete_issue(hass, DOMAIN, slow_bus_issue_id(entry.entry_id))
+        ir.async_delete_issue(hass, DOMAIN, unstable_issue_id(entry.entry_id))
         for device in entry.runtime_data.devices.values():
             ir.async_delete_issue(hass, DOMAIN, device_issue_id(device.unique_prefix))
 
     entry.async_on_unload(clear)
     return check
+
+
+@callback
+def _check_unstable(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, now: float) -> None:
+    """A connection that keeps dropping, typically a port another program opens as well;
+    the outage issue never comes since every reconnect succeeds for a while."""
+    issue_id = unstable_issue_id(entry.entry_id)
+    drops = [t for t in entry.runtime_data.drops if now - t < UNSTABLE_WINDOW]
+    if len(drops) < UNSTABLE_DROPS:
+        ir.async_delete_issue(hass, DOMAIN, issue_id)
+        return
+    users = port_users(hass, entry)
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key="connection_unstable_users" if users else "connection_unstable",
+        translation_placeholders={
+            "name": entry.title,
+            "connection": str(entry.runtime_data.gateway.connection),
+            "drops": str(len(drops)),
+            "minutes": str(UNSTABLE_WINDOW // 60),
+            "users": ", ".join(users),
+        },
+    )
 
 
 @callback

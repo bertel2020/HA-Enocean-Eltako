@@ -349,6 +349,15 @@
         "assigned": "assigned",
         "blocked": "blocked"
       }
+    },
+    "takeover_reason": {
+      "options": {
+        "takeover_unsupported": "Not supported",
+        "takeover_no_sender": "No sender",
+        "takeover_bad_sender": "Sender not usable",
+        "takeover_duplicate": "ID listed twice",
+        "takeover_exists": "Already set up"
+      }
     }
   },
   "exceptions": {
@@ -391,11 +400,13 @@
         "title": "Gateway options",
         "menu_options": {
           "settings": "Settings",
-          "senders": "Sender IDs"
+          "senders": "Sender IDs",
+          "takeover": "Take over from eltako"
         },
         "menu_option_descriptions": {
           "settings": "Pause between telegrams, discovery, connection, repeater.",
-          "senders": "Which sender ID belongs to which device; free blocked IDs."
+          "senders": "Which sender ID belongs to which device; free blocked IDs.",
+          "takeover": "Devices of the old eltako integration (configuration.yaml) with their IDs and sender IDs."
         }
       },
       "settings": {
@@ -424,12 +435,25 @@
         "data_description": {
           "free": "Only select an ID that is no longer taught into any actuator."
         }
+      },
+      "takeover": {
+        "title": "Take over from the old eltako integration",
+        "description": "Devices of the old gateway with base ID {base_id}. They keep their IDs and sender IDs, so the actuators go on reacting without a new teach-in. Turn the old integration off afterwards; it must not use the same port.\n\n| ID | Name | Old | New | Note |\n|---|---|---|---|---|\n{rows}",
+        "data": {
+          "devices": "Devices to take over"
+        },
+        "data_description": {
+          "devices": "The gateway reloads once at the end."
+        }
       }
     },
     "abort": {
       "senders_freed": "The selected sender IDs are free again.",
       "senders_unchanged": "Nothing changed.",
-      "gateway_not_loaded": "The gateway is not loaded."
+      "gateway_not_loaded": "The gateway is not loaded.",
+      "takeover_no_config": "No `eltako:` section found in configuration.yaml.",
+      "takeover_no_gateway": "The old configuration has no gateway with this base ID. Found: {found}",
+      "takeover_done": "{count} devices taken over. Sender IDs not taken over:\n{skipped}"
     }
   },
   "config_subentries": {
@@ -1145,6 +1169,14 @@
     "proxy_outdated": {
       "title": "Update the EnOcean Proxy app",
       "description": "The gateway {gateway} runs through EnOcean Proxy {version}. This integration needs version {minimum} or newer (older versions announce only one of several gateways to Home Assistant). Update the app under Settings → Apps."
+    },
+    "connection_unstable": {
+      "title": "{name} keeps losing its connection",
+      "description": "The connection to {name} ({connection}) dropped {drops} times within {minutes} minutes. Usually another program or integration opens the same port and the two take it from each other. Stop the other one or give it its own gateway; with ser2net, allow only one client."
+    },
+    "connection_unstable_users": {
+      "title": "{name} keeps losing its connection",
+      "description": "The connection to {name} ({connection}) dropped {drops} times within {minutes} minutes. These integrations may use the same port: {users}. Disable them or give them their own gateway; two integrations on one port take it from each other."
     }
   },
   "device_automation": {

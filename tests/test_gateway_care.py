@@ -49,7 +49,7 @@ async def test_sender_page_lists_and_frees(hass: HomeAssistant, gateway) -> None
 
     options = hass.config_entries.options
     result = await options.async_init(entry.entry_id)
-    assert result["menu_options"] == ["settings", "senders"]
+    assert result["menu_options"] == ["settings", "senders", "takeover"]
     result = await options.async_configure(result["flow_id"], {"next_step_id": "senders"})
     rows = result["description_placeholders"]["rows"]
     assert "| FF-B7-44-81 | Licht Diele | central |" in rows
