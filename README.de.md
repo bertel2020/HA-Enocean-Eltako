@@ -49,6 +49,8 @@ andere EnOcean-Geräte. Ziele:
   Definitionen der EnOcean Alliance; Eltako-Varianten streng getrennt
 - **Rollläden** (FSB14/61/71) mit Controller- und Richtungstaster-Sender
   parallel, Positionsverfolgung und Kalibrierung an den Endlagen
+- **Taster-Sender** drücken die gewählten Tasten (linke oder rechte Wippe, oben
+  und unten vertauscht), passend dazu, wie die ID im Aktor eingelernt ist
 - **Virtuelle Sensoren:** HA-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur
   oder -Taster senden
 - **Anlernen, Discovery, Telegramm-Monitor**, Import aus dem Bus-Speicher des

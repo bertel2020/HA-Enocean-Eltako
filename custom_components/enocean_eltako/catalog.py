@@ -55,6 +55,8 @@ OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on
 OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
 OPT_WALL_OFF = "wall_off_button"  # I4: its button that switches off (same button = toggle)
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
+OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up
+OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +83,8 @@ def _std_switch(on: bool) -> bytes:
 STATUS_REQUEST = bytes.fromhex("00000008")
 ROCKER_PRESS_UP = bytes([0x70])  # B0: on / up
 ROCKER_PRESS_DOWN = bytes([0x50])  # BI: off / down
+# F6-02-01 R1 << 5 with the energy bow: A = left rocker, B = right; 0 = top, 1 = bottom
+ROCKER_CODES = {"a1": 0x10, "a0": 0x30, "b1": 0x50, "b0": 0x70}
 ROCKER_STATUS_PRESSED = 0x30
 ROCKER_STATUS_RELEASED = 0x20
 
@@ -150,6 +154,7 @@ class DeviceModel:
     group: str = GROUP_ELTAKO
     base: str | None = None  # catalog entry whose behaviour this one shares
     senders: tuple[SenderProfile, ...] = ()  # first is the primary (required) profile
+    any_sender: bool = False  # every profile commands alone: none required, at least one
     receive_extra: tuple[EEPRef, ...] = ()  # further profiles sent under the same ID
     interval: int | None = None  # expected seconds between telegrams; None = only on change
     manufacturer: str = "Eltako"
@@ -187,7 +192,8 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.LIGHT, Platform.SWITCH),
             category="lighting",
             senders=(CENTRAL, ROCKER),
-            options=(OPT_STATUS_REQUEST, OPT_WALL_SWITCH),
+            any_sender=True,
+            options=(OPT_STATUS_REQUEST, OPT_WALL_SWITCH, OPT_ROCKER_ON),
             examples="FSR61, FSR14, FL62, FSR71",
         ),
         DeviceModel(
@@ -196,7 +202,8 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.LIGHT,),
             category="lighting",
             senders=(CENTRAL, ROCKER),
-            options=(OPT_STATUS_REQUEST,),
+            any_sender=True,
+            options=(OPT_STATUS_REQUEST, OPT_ROCKER_ON),
             examples="FUD14, FUD61, FD62",
         ),
         DeviceModel(
@@ -212,6 +219,7 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_TILT_TIME,
                 OPT_ROUTING,
                 OPT_CALIBRATION,
+                OPT_ROCKER_ON,
             ),
             examples="FSB14, FSB61, FSB71, FJ62",
         ),

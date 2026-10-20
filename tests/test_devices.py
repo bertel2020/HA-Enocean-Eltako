@@ -96,7 +96,7 @@ async def test_add_switch_actuator_via_flow(hass: HomeAssistant, gateway) -> Non
     assert result["step_id"] == "device"
     schema = result["data_schema"].schema
     sender_key = next(k for k in schema if k == "sender_central")
-    assert sender_key.default() == "FF-B7-44-80"
+    assert sender_key.description["suggested_value"] == "FF-B7-44-80"
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
         {
@@ -122,6 +122,145 @@ async def test_add_switch_actuator_via_flow(hass: HomeAssistant, gateway) -> Non
     assert sent in bytes(server.received)
     pool = entry.runtime_data.senders.pool
     assert pool.get(0xFFB74481).owner == "device:05-10-A2-B3:central"
+
+
+async def test_switch_actuator_with_rocker_only(hass: HomeAssistant, gateway) -> None:
+    """The central command is optional: without it the actuator switches by rocker presses."""
+    entry, server = gateway
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "switch")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {"name": "Licht Flur", "device_id": "05-10-A2-B4", "platform": "light"},
+    )
+    assert result["errors"] == {"base": "sender_none"}
+    schema = result["data_schema"].schema
+    sender_key = next(k for k in schema if k == "sender_central")
+    assert sender_key.description["suggested_value"] == ""  # stays cleared
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Licht Flur",
+            "device_id": "05-10-A2-B4",
+            "sender_rocker": "FF-B7-44-8F",
+            "platform": "light",
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["senders"] == [{"profile": "rocker", "sender_id": "FF-B7-44-8F"}]
+    assert result["data"]["rocker_on_button"] == "b0"
+    assert result["data"]["rocker_off_button"] == "b1"
+    await hass.async_block_till_done()
+    await server.connected.wait()
+
+    entity_id = _entity(hass, "light", f"{BASE}_05-10-A2-B4_1_light")
+    await hass.services.async_call("light", "turn_on", {"entity_id": entity_id})
+    await _settle(hass)
+    press = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x70", 0xFFB7448F, 0x30))
+    assert press in bytes(server.received)
+    assert entry.runtime_data.senders.pool.get(0xFFB74480) is None
+    assert _entity(hass, "button", f"{BASE}_05-10-A2-B4_1_teach_in_central") is None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B5",
+                "Licht Büro",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-81"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-8F"},
+                ],
+                platform="light",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_reconfigure_drops_central_command(hass: HomeAssistant, gateway) -> None:
+    entry, _ = gateway
+    pool = entry.runtime_data.senders.pool
+    pool.assign(0xFFB74481, "device:05-10-A2-B5:central")
+    pool.assign(0xFFB7448F, "device:05-10-A2-B5:rocker")
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    assert result["step_id"] == "reconfigure"
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {"name": "Licht Büro", "sender_rocker": "FF-B7-44-8F", "platform": "light"},
+    )
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    assert entry.subentries[subentry_id].data["senders"] == [
+        {"profile": "rocker", "sender_id": "FF-B7-44-8F"}
+    ]
+    assert entry.runtime_data.senders.pool.get(0xFFB74481).state == "blocked"
+
+    # a device without the central command is not offered a new one from the pool
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    sender_key = next(k for k in result["data_schema"].schema if k == "sender_central")
+    assert sender_key.description is None or not sender_key.description.get("suggested_value")
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B6",
+                "Licht Bad",
+                senders=[{"profile": "rocker", "sender_id": "FF-B7-44-8E"}],
+                platform="light",
+                rocker_on_button="a0",
+                rocker_off_button="a1",
+            ),
+            _subentry(
+                "cover",
+                "05-00-00-24",
+                "Rollladen Bad",
+                senders=[{"profile": "direction_rocker", "sender_id": "FF-B7-44-8D"}],
+                routing="direction_rocker",
+                time_opens=20,
+                time_closes=20,
+                rocker_on_button="b1",
+                rocker_off_button="b0",
+            ),
+        ]
+    ],
+    indirect=True,
+)
+async def test_rocker_sender_buttons(hass: HomeAssistant, gateway) -> None:
+    """The rocker sender presses the chosen buttons: left rocker, or up and down swapped."""
+    _entry, server = gateway
+
+    def press(code: int, sender: int) -> bytes:
+        return esp2.encode_radio(RadioTelegram(Rorg.RPS, bytes([code]), sender, 0x30))
+
+    light = _entity(hass, "light", f"{BASE}_05-10-A2-B6_1_light")
+    await hass.services.async_call("light", "turn_on", {"entity_id": light})
+    await hass.services.async_call("light", "turn_off", {"entity_id": light})
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_05-10-A2-B6_1_teach_in_rocker")},
+    )
+    cover = _entity(hass, "cover", f"{BASE}_05-00-00-24_1_cover")
+    await hass.services.async_call("cover", "open_cover", {"entity_id": cover})
+    await _settle(hass)
+    received = bytes(server.received)
+    assert received.count(press(0x30, 0xFFB7448E)) == 2  # on and the teach-in
+    assert press(0x10, 0xFFB7448E) in received
+    assert press(0x70, 0xFFB7448E) not in received
+    assert press(0x50, 0xFFB7448D) in received  # B1 opens
 
 
 async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:

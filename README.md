@@ -47,6 +47,8 @@ devices, written from scratch. Goals:
   EnOcean Alliance definitions; Eltako variants kept strictly separate
 - **Covers** (FSB14/61/71) with controller and direction-rocker senders in
   parallel, position tracking and calibration at the end positions
+- **Rocker senders** press the buttons you choose (left or right rocker, top and
+  bottom swapped), matching how the ID was taught into the actuator
 - **Virtual sensors:** HA entities sent as EnOcean contact, motion, temperature or rocker
 - **Teach-in, discovery, telegram monitor**, import from the FAM14 bus memory
   and a takeover assistant for the old `eltako` integration

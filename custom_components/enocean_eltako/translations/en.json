@@ -111,7 +111,9 @@
           "sender_vld": "Sender ID: VLD commands",
           "wall_switch": "Wall switch ID (optional)",
           "wall_on_button": "Wall switch: button for on",
-          "wall_off_button": "Wall switch: button for off"
+          "wall_off_button": "Wall switch: button for off",
+          "rocker_on_button": "Rocker sender: button for on / up",
+          "rocker_off_button": "Rocker sender: button for off / down"
         },
         "data_description": {
           "time_opens": "Full travel time from closed to open.",
@@ -123,6 +125,7 @@
           "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
           "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
           "fields": "Values of the profile that become sensors.",
+          "sender_central": "Optional when the rocker sender is set: without it Home Assistant switches with rocker presses (dimmers then without brightness, no state request at startup).",
           "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
           "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
           "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
@@ -130,7 +133,9 @@
           "sender_vld": "Reported to the actuator during the UTE teach-in.",
           "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
           "wall_on_button": "Same button for on and off: every press toggles.",
-          "wall_off_button": "Same button for on and off: every press toggles."
+          "wall_off_button": "Same button for on and off: every press toggles.",
+          "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
+          "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
         }
       },
       "proxy_confirm": {
@@ -144,7 +149,14 @@
     "error": {
       "cannot_connect": "Cannot open the connection. Check the port, host and baud rate.",
       "invalid_base_id": "Not a valid base ID. It lies between FF-80-00-00 and FF-FF-FF-80 and ends in 00 or 80.",
-      "invalid_id": "Not a valid ID. Four hex bytes, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3."
+      "invalid_id": "Not a valid ID. Four hex bytes, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3.",
+      "sender_invalid_id": "Not a valid ID. Four hex bytes, for example FF-B7-44-81 or FFB74481.",
+      "sender_out_of_range": "Outside this gateway's range (base ID + 0…127).",
+      "sender_in_use": "Already used by another device.",
+      "sender_none": "Enter at least one sender ID.",
+      "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
+      "sender_pool_exhausted": "No free sender ID left.",
+      "weather_no_source": "Choose at least one entity for the weather station."
     },
     "abort": {
       "already_configured": "A gateway with this base ID is already set up.",
@@ -599,7 +611,9 @@
             "weather_temperature": "Temperature",
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
-            "weather_brightness": "Brightness"
+            "weather_brightness": "Brightness",
+            "rocker_on_button": "Rocker sender: button for on / up",
+            "rocker_off_button": "Rocker sender: button for off / down"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -612,6 +626,7 @@
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
+            "sender_central": "Optional when the rocker sender is set: without it Home Assistant switches with rocker presses (dimmers then without brightness, no state request at startup).",
             "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
             "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
             "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
@@ -628,7 +643,9 @@
             "weather_temperature": "Optional. Without it 20 °C is sent.",
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
-            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
+            "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
+            "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
           }
         },
         "reconfigure": {
@@ -669,7 +686,9 @@
             "weather_temperature": "Temperature",
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
-            "weather_brightness": "Brightness"
+            "weather_brightness": "Brightness",
+            "rocker_on_button": "Rocker sender: button for on / up",
+            "rocker_off_button": "Rocker sender: button for off / down"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -681,6 +700,7 @@
             "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
             "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
             "fields": "Values of the profile that become sensors.",
+            "sender_central": "Optional when the rocker sender is set: without it Home Assistant switches with rocker presses (dimmers then without brightness, no state request at startup).",
             "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
             "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
             "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
@@ -694,7 +714,9 @@
             "weather_temperature": "Optional. Without it 20 °C is sent.",
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
-            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx)."
+            "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
+            "rocker_on_button": "Which of the four rocker buttons Home Assistant presses with the rocker sender ID (A = left, B = right; 0 = top, 1 = bottom). It has to match how the ID was taught into the actuator; the teach-in button presses this one.",
+            "rocker_off_button": "The button for off / down, usually the other half of the same rocker."
           }
         },
         "address": {
@@ -761,6 +783,7 @@
         "sender_invalid_id": "Not a valid ID. Four hex bytes, for example FF-B7-44-81 or FFB74481.",
         "sender_out_of_range": "Outside this gateway's range (base ID + 0…127).",
         "sender_in_use": "Already used by another device.",
+        "sender_none": "Enter at least one sender ID.",
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
         "sender_pool_exhausted": "No free sender ID left.",
         "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02.",

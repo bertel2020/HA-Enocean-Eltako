@@ -111,7 +111,9 @@
           "sender_vld": "Sender-ID: VLD-Befehle",
           "wall_switch": "ID des Wandtasters (optional)",
           "wall_on_button": "Wandtaster: Taste für Ein",
-          "wall_off_button": "Wandtaster: Taste für Aus"
+          "wall_off_button": "Wandtaster: Taste für Aus",
+          "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
+          "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
         },
         "data_description": {
           "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -123,6 +125,7 @@
           "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
           "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
           "fields": "Werte des Profils, die als Sensor erscheinen.",
+          "sender_central": "Optional, wenn der Taster-Sender gesetzt ist: ohne ihn schaltet Home Assistant per Tastendruck (Dimmer dann ohne Helligkeit, keine Zustandsabfrage beim Start).",
           "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
           "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
           "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
@@ -130,7 +133,9 @@
           "sender_vld": "Wird beim Anlernen per UTE an den Aktor gemeldet.",
           "wall_switch": "Für Aktoren, die ihren Zustand nicht melden: die ID eines im Aktor eingelernten Tasters. Seine Tastendrücke setzen dann den Zustand (als angenommen markiert, bis der Aktor sich meldet).",
           "wall_on_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
-          "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um."
+          "wall_off_button": "Gleiche Taste für Ein und Aus: jeder Druck schaltet um.",
+          "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
+          "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
         }
       },
       "proxy_confirm": {
@@ -144,7 +149,14 @@
     "error": {
       "cannot_connect": "Die Verbindung lässt sich nicht öffnen. Prüfe Schnittstelle, Host und Baudrate.",
       "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80.",
-      "invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3."
+      "invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3.",
+      "sender_invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel FF-B7-44-81 oder FFB74481.",
+      "sender_out_of_range": "Außerhalb des Bereichs dieses Gateways (Base-ID + 0…127).",
+      "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
+      "sender_none": "Mindestens eine Sender-ID eintragen.",
+      "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
+      "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
+      "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen."
     },
     "abort": {
       "already_configured": "Ein Gateway mit dieser Base-ID ist schon eingerichtet.",
@@ -599,7 +611,9 @@
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit"
+            "weather_brightness": "Helligkeit",
+            "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
+            "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -612,6 +626,7 @@
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
+            "sender_central": "Optional, wenn der Taster-Sender gesetzt ist: ohne ihn schaltet Home Assistant per Tastendruck (Dimmer dann ohne Helligkeit, keine Zustandsabfrage beim Start).",
             "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
             "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
             "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
@@ -628,7 +643,9 @@
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
+            "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
           }
         },
         "reconfigure": {
@@ -669,7 +686,9 @@
             "weather_temperature": "Temperatur",
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
-            "weather_brightness": "Helligkeit"
+            "weather_brightness": "Helligkeit",
+            "rocker_on_button": "Taster-Sender: Taste für Ein / Auf",
+            "rocker_off_button": "Taster-Sender: Taste für Aus / Ab"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -681,6 +700,7 @@
             "status_request": "Nur für Aktoren, die eine Bestätigungsanforderung beantworten (FL62, FR62, FD62). Andere behalten ihren letzten Zustand, als angenommen markiert, bis sie sich melden.",
             "calibration": "Vor einer unsicheren Fahrt fährt der Rollladen zuerst in die nähere Endlage, wenn seine Position um mehr als 10 Punkte abweichen kann.",
             "fields": "Werte des Profils, die als Sensor erscheinen.",
+            "sender_central": "Optional, wenn der Taster-Sender gesetzt ist: ohne ihn schaltet Home Assistant per Tastendruck (Dimmer dann ohne Helligkeit, keine Zustandsabfrage beim Start).",
             "sender_cooling": "Optional. Heizungsaktoren schalten bei einem eingelernten Tastendruck (0x50) auf Kühlen; Home Assistant wiederholt ihn alle 10 min, solange der Modus Kühlen ist.",
             "vent_time": "Rollläden mit Lüftungsschlitzen: Sekunden am Ende der Ab-Fahrt, in denen nur noch die Schlitze schließen. Position 1 % ist dann „unten, Schlitze offen“. 0 = keine.",
             "tilt_time": "Jalousien: Sekunden für eine volle Lamellendrehung. Über 0 wird der Rollladen zur Jalousie mit Lamellenstellung; jede Fahrt dreht zuerst die Lamellen.",
@@ -694,7 +714,9 @@
             "weather_temperature": "Optional. Ohne Angabe werden 20 °C gesendet.",
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
-            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx)."
+            "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "rocker_on_button": "Welche der vier Tasten Home Assistant mit der Taster-Sender-ID drückt (A = linke Wippe, B = rechte; 0 = oben, 1 = unten). Muss dazu passen, wie die ID im Aktor eingelernt ist; der Einlern-Button drückt diese Taste.",
+            "rocker_off_button": "Die Taste für Aus / Ab, meist die andere Hälfte derselben Wippe."
           }
         },
         "address": {
@@ -761,6 +783,7 @@
         "sender_invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel FF-B7-44-81 oder FFB74481.",
         "sender_out_of_range": "Außerhalb des Bereichs dieses Gateways (Base-ID + 0…127).",
         "sender_in_use": "Wird schon von einem anderen Gerät benutzt.",
+        "sender_none": "Mindestens eine Sender-ID eintragen.",
         "sender_blocked": "Gesperrt, bis das Auslernen des entfernten Geräts bestätigt ist.",
         "sender_pool_exhausted": "Keine freie Sender-ID mehr.",
         "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben.",

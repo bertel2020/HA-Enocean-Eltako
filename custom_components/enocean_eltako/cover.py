@@ -52,8 +52,6 @@ from .catalog import (
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
     OPT_VENT_TIME,
-    ROCKER_PRESS_DOWN,
-    ROCKER_PRESS_UP,
 )
 from .const import DOMAIN
 from .cover_position import CoverPosition
@@ -252,9 +250,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
                     key="move",
                 )
             else:
-                self._rocker_direction = (
-                    ROCKER_PRESS_UP if command == shutter.UP else ROCKER_PRESS_DOWN
-                )
+                self._rocker_direction = self._device.rocker_button(command == shutter.UP)
                 self._device.press(profile, self._rocker_direction)
                 if not full:
                     self._cancel_stop = async_call_later(self.hass, seconds, self._timed_stop)

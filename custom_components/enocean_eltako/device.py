@@ -15,10 +15,15 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .catalog import (
+    DIRECTION_ROCKER,
     GROUP_VIRTUAL,
+    OPT_ROCKER_OFF,
+    OPT_ROCKER_ON,
     OPT_WALL_OFF,
     OPT_WALL_ON,
     OPT_WALL_SWITCH,
+    ROCKER,
+    ROCKER_CODES,
     ROCKER_STATUS_PRESSED,
     ROCKER_STATUS_RELEASED,
     DeviceModel,
@@ -292,6 +297,12 @@ class EnOceanDevice:
         self.send(button, profile=profile, status=ROCKER_STATUS_PRESSED, confirm=confirm)
         self.send(bytes(1), profile=profile, status=ROCKER_STATUS_RELEASED, confirm=False)
 
+    def rocker_button(self, on: bool) -> bytes:
+        """The rocker sender's press for on / up or off / down (the chosen buttons)."""
+        if on:
+            return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_ON, "b0")]])
+        return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_OFF, "b1")]])
+
     def _log_result(self, result: SendResult, started: float) -> None:
         if result == SendResult.CONFIRMED:
             self.stats.confirmed += 1
@@ -312,7 +323,9 @@ class EnOceanDevice:
                 UTE_WINDOW,
             )
             return
-        if sender.rorg == Rorg.RPS:
+        if profile in (ROCKER.id, DIRECTION_ROCKER.id):  # taught in with its "on" button
+            self.press(profile, self.rocker_button(True), confirm=False)
+        elif sender.rorg == Rorg.RPS:
             self.press(profile, sender.teach_in, confirm=False)
         else:
             self.send(sender.teach_in, profile=profile, priority=Priority.BACKGROUND, confirm=False)

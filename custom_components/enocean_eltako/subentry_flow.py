@@ -47,6 +47,8 @@ from .catalog import (
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
     OPT_PLATFORM,
+    OPT_ROCKER_OFF,
+    OPT_ROCKER_ON,
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
     OPT_SOURCE,
@@ -193,6 +195,8 @@ OPTION_KEYS = (
     OPT_WALL_SWITCH,
     OPT_WALL_ON,
     OPT_WALL_OFF,
+    OPT_ROCKER_ON,
+    OPT_ROCKER_OFF,
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
@@ -240,6 +244,8 @@ class DeviceForm:
     ) -> Any:
         assert self._device_model is not None
         model = self._device_model
+        if errors and values is not None and model.any_sender:  # a cleared sender stays empty
+            values = {**{sender_field(p.id): "" for p in model.senders}, **values}
         return self.async_show_form(  # type: ignore[attr-defined]
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(  # type: ignore[attr-defined]
@@ -258,18 +264,22 @@ class DeviceForm:
         return cast(SenderPool, self._get_entry().runtime_data.senders.pool)
 
     def _fields(self, model: DeviceModel, current: dict[str, str]) -> dict[Any, Any]:
-        """Sender IDs (first profile required, suggested from the pool) and model options."""
+        """Sender IDs (first suggested from the pool, required unless any one will do), options."""
         schema: dict[Any, Any] = {}
         virtual_fixed = model.group == GROUP_VIRTUAL and bool(current)
         for index, profile in enumerate(() if virtual_fixed else model.senders):
             field = sender_field(profile.id)
             if index == 0:
                 suggested = current.get(profile.id)
-                if suggested is None and (free := self._pool().next_free()) is not None:
+                if not current and (free := self._pool().next_free()) is not None:
                     suggested = format_id(free)
-                key: vol.Required | vol.Optional = (
-                    vol.Required(field, default=suggested) if suggested else vol.Required(field)
-                )
+                key: vol.Required | vol.Optional
+                if model.any_sender:  # suggested only, so it can be left empty
+                    key = vol.Optional(field, description={"suggested_value": suggested})
+                elif suggested:
+                    key = vol.Required(field, default=suggested)
+                else:
+                    key = vol.Required(field)
             else:
                 key = vol.Optional(field)
             schema[key] = TextSelector()
@@ -368,6 +378,11 @@ class DeviceForm:
                 schema[vol.Required(opt, default=default)] = SelectSelector(
                     SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
                 )
+        if OPT_ROCKER_ON in model.options:
+            for opt, default in ((OPT_ROCKER_ON, "b0"), (OPT_ROCKER_OFF, "b1")):
+                schema[vol.Required(opt, default=default)] = SelectSelector(
+                    SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
+                )
         if OPT_CALIBRATION in model.options:
             schema[vol.Required(OPT_CALIBRATION, default="passive")] = SelectSelector(
                 SelectSelectorConfig(
@@ -423,6 +438,8 @@ class DeviceForm:
                 errors[field] = "sender_in_use"
                 continue
             wanted[sender_profile.id] = sender
+        if model.any_sender and not wanted and not errors:
+            errors["base"] = "sender_none"
         if OPT_WEATHER_TEMPERATURE in model.options and not any(
             user_input.get(key) for key in WEATHER_SOURCES
         ):

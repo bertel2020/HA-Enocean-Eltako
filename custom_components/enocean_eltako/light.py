@@ -16,8 +16,6 @@ from .catalog import (
     OPT_CHANNEL,
     OPT_PLATFORM,
     ROCKER,
-    ROCKER_PRESS_DOWN,
-    ROCKER_PRESS_UP,
 )
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
@@ -28,13 +26,13 @@ PARALLEL_UPDATES = 0
 
 
 def switch_actuator(device: EnOceanDevice, on: bool) -> None:
-    """A profile with an on/off command when configured, otherwise the rocker (0x70/0x50)."""
+    """A profile with an on/off command when configured, otherwise the rocker's buttons."""
     for profile_id in device.senders:
         profile = device.model.sender_profile(profile_id)
         if profile.switch_fn is not None:
             device.send(profile.switch_fn(on), profile=profile_id, key="switch")
             return
-    device.press(ROCKER.id, ROCKER_PRESS_UP if on else ROCKER_PRESS_DOWN)
+    device.press(ROCKER.id, device.rocker_button(on))
 
 
 def on_state(values: dict[str, Any]) -> bool | None:
