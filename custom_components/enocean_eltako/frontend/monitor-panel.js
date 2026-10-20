@@ -268,8 +268,8 @@ const STYLE = `
 
   /* telegram rows */
   .list { display: block; }
-  .row { display: grid; grid-template-columns: 96px 32px minmax(0, 1fr) minmax(0, auto) 64px; align-items: center;
-    gap: 10px; padding: 10px 12px 10px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+  .row { display: grid; grid-template-columns: 92px 28px minmax(160px, 300px) minmax(0, 1fr) 56px; align-items: center;
+    gap: 12px; padding: 7px 12px 7px 16px; border-top: 1px solid var(--line); cursor: pointer; }
   .row:first-child { border-top: 0; }
   .row:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .row.fresh { animation: fresh 1.2s ease-out; }
@@ -277,12 +277,12 @@ const STYLE = `
   .row.dup { opacity: .6; }
   .time { font-family: var(--code-font-family, ui-monospace, monospace); font-size: 13px; }
   .time small { color: var(--muted); }
-  .dir { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--soft); }
-  .dir svg { width: 18px; height: 18px; }
+  .dir { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--soft); }
+  .dir svg { width: 16px; height: 16px; }
   .dir.tx { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .who { min-width: 0; }
   .who .line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .who .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who .name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who .name.unknown { font-weight: 400; font-style: italic; color: var(--muted); }
   .who .line2 { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
   .mono { font-family: var(--code-font-family, ui-monospace, monospace); }
@@ -291,9 +291,10 @@ const STYLE = `
   .add { flex: none; display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 10px 0 6px; border-radius: 999px;
     font-size: 12px; font-weight: 500; color: var(--text-primary-color, #fff); background: var(--accent); }
   .add svg { width: 16px; height: 16px; }
-  .values { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; min-width: 0; }
-  .value { font-size: 12px; padding: 3px 8px; border-radius: 8px; background: var(--soft); white-space: nowrap; }
+  .values { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+  .value { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--soft); white-space: nowrap; }
   .value span { color: var(--muted); }
+  .value b { font-weight: 500; }
   .raw { font-size: 12px; color: var(--muted); }
   .end { display: flex; align-items: center; justify-content: flex-end; gap: 6px; color: var(--muted); }
   .end .chev { transition: transform .15s; }
@@ -302,7 +303,7 @@ const STYLE = `
   .bars rect { fill: var(--line); }
   .bars rect.on { fill: var(--muted); }
   .details { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px 16px; margin: 4px 0 2px 138px; padding: 12px; border-radius: 8px; background: var(--soft); cursor: default; }
+    gap: 10px 16px; margin: 4px 0 4px 132px; padding: 12px; border-radius: 8px; background: var(--soft); cursor: default; }
   .details div { min-width: 0; }
   .details dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
   .details dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
@@ -315,7 +316,7 @@ const STYLE = `
 
   @media (max-width: 760px) {
     main { padding: 12px 8px; gap: 16px; }
-    .row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 12px; }
+    .row { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 10px; padding: 9px 12px; }
     .row .time { grid-column: 3; grid-row: 1; font-size: 12px; text-align: right; }
     .row .dir { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
     .row .who { grid-column: 2; grid-row: 1; }
@@ -364,7 +365,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._paused = false;
     this._filter = { gateway: "", text: "", dir: "", repeats: false, unknown: false };
     this._gateways = [];
-    this._rates = {};
     this._expanded = new Set();
     this._fresh = new Set();
     this._unsub = null;
@@ -520,18 +520,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       gateways = await this._hass.callWS({ type: "enocean_eltako/gateways" });
     } catch (err) {
       return;
-    }
-    const now = Date.now();
-    for (const gw of gateways) {
-      // telegrams per minute over the last minute of samples
-      if (gw.telegrams == null) continue;
-      const samples = (this._rates[gw.entry_id] || []).filter(
-        (s) => now - s.at <= 65000 && s.count <= gw.telegrams
-      );
-      samples.push({ at: now, count: gw.telegrams });
-      this._rates[gw.entry_id] = samples;
-      const first = samples[0];
-      if (now - first.at >= 4000) gw.rate = ((gw.telegrams - first.count) * 60000) / (now - first.at);
     }
     this._gateways = gateways;
     this._renderCards();
@@ -716,7 +704,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           else pill = ["bad", gw.disconnected_since ? `${t.disconnected} ${t.since(Math.round(now - gw.disconnected_since))}` : t.disconnected];
         }
         const last = gw.last_telegram != null ? `${t.lastHeard} ${t.ago(Math.max(0, Math.round(now - gw.last_telegram)))}` : t.never;
-        const rate = gw.rate != null ? gw.rate.toFixed(gw.rate < 10 ? 1 : 0) : "–";
+        const perMinute = this._perMinute(gw.entry_id);
+        const rate = perMinute < 10 ? perMinute.toFixed(1).replace(/\.0$/, "") : String(Math.round(perMinute));
         const stat = (label, value, warn) => `<span>${esc(label)} <b class="${warn ? "warn" : ""}">${esc(value)}</b></span>`;
         const body = gw.loaded
           ? `<div class="rate"><b>${esc(rate)}</b><span>${esc(t.perMinute)}</span><span class="last">${esc(last)}</span></div>
@@ -725,11 +714,23 @@ class EnOceanEltakoPanel extends HTMLElement {
         const selected = this._filter.gateway === gw.entry_id;
         return `<button class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}" title="${esc(t.cardHint)}" aria-pressed="${selected}">
           <div class="top"><span class="name">${esc(gw.title)}</span><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span></div>
-          <div class="sub">${esc([gw.model, gw.base_id, gw.connection].filter(Boolean).join(" · "))}</div>
+          <div class="sub">${esc([gw.model !== gw.title ? gw.model : "", gw.base_id, gw.connection].filter(Boolean).join(" · "))}</div>
           ${body}
         </button>`;
       })
       .join("");
+  }
+
+  _perMinute(gateway) {
+    // received telegrams of the last minute, from the list itself (repetitions included)
+    const since = Date.now() - 60000;
+    let count = 0;
+    for (const r of [...this._pending.slice().reverse(), ...this._rows]) {
+      if (r.gateway !== gateway || r.dir !== "rx") continue;
+      if (Date.parse(r.time) < since) break;
+      count += 1;
+    }
+    return count;
   }
 
   _value(value) {
@@ -750,10 +751,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const name = r.device
       ? `<span class="name">${esc(r.device)}</span>`
       : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
-    const tags =
-      (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "") +
-      (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
-      (unknown ? `<button class="add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : "");
+    const tags = r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "";
+    const extra =
+      (unknown ? `<button class="add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : "") +
+      (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
     const line2 = [
       `<span class="mono">${esc(r.sender)}</span>`,
@@ -761,12 +762,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._gateways.length > 1 ? esc(r.gateway_name) : "",
       esc(type),
     ].filter(Boolean).join(" · ");
-    const values = r.values
-      ? Object.entries(r.values)
-          .map(([k, v]) =>
-            k === "on" || k === "state"
-              ? `<span class="value">${esc(this._value(v))}</span>`
-              : `<span class="value"><span>${esc(t.fields[k] || k.replace(/_/g, " "))}</span> ${esc(this._value(v))}</span>`
+    const fields = r.fields || (r.values ? Object.entries(r.values).map(([label, value]) => ({ label, value })) : null);
+    const values = fields && fields.length
+      ? fields
+          .map((f) =>
+            f.label === "on" || f.label === "state"
+              ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>`
+              : `<span class="value"><span>${esc(t.fields[f.label] || f.label.replace(/_/g, " "))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
@@ -788,7 +790,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <span class="time">${esc(clock)}<small>.${ms}</small></span>
       <span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span>
       <div class="who"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></div>
-      <div class="values">${values}</div>
+      <div class="values">${extra}${values}</div>
       <div class="end">${bars(r.dbm)}${svg(ICON.chevron, "chev")}</div>
       ${details}
     </div>`;

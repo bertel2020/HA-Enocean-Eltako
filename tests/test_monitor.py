@@ -136,7 +136,13 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
                 subentry_type="device",
                 title="Licht Diele",
                 unique_id="05-10-A2-B3",
-            )
+            ),
+            ConfigSubentryData(
+                data={"schema": 2, "model": "temp_humidity", "device_id": "01-82-0A-11"},
+                subentry_type="device",
+                title="Bad",
+                unique_id="01-82-0A-11",
+            ),
         ],
     )
     entry.add_to_hass(hass)
@@ -153,6 +159,15 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     assert event["gateway_name"] == "FAM-USB Keller"
     assert event["device"] == "Licht Diele"
     assert event["values"] == {"on": True}
+    assert event["fields"] == [{"label": "on", "value": True, "unit": None}]  # no sensors
+
+    climate = esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, bytes.fromhex("007D7D08"), 0x01820A11)
+    server.push(climate.encode())
+    event = (await client.receive_json())["event"]
+    assert event["fields"] == [
+        {"label": "Temperature", "value": 20.0, "unit": "°C"},
+        {"label": "Humidity", "value": 50.0, "unit": "%"},
+    ]
 
     server.push(
         esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, encode_teach_in_4bs("A5-02-05"), 0x01A0B0C0).encode()
@@ -174,7 +189,7 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
         "FF-B7-44-80",
     )
     assert status["loaded"] and status["connected"]
-    assert (status["telegrams"], status["devices"], status["queue"]) == (2, 1, 0)
+    assert (status["telegrams"], status["devices"], status["queue"]) == (3, 2, 0)
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 

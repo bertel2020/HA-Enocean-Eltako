@@ -120,7 +120,9 @@ seitlich wischen.
 
 Darunter erscheint jedes empfangene und gesendete Telegramm live, das neueste oben:
 Gerätename (oder „Unbekannter Sender“ mit dem Knopf **Anlegen**, der seine Entdeckt-Karte
-öffnet), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte und die Signalstärke.
+öffnet), Sender-ID, Gateway, Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie
+bei den Entitäten („Leistung 15 W“) und die Signalstärke. Telegramme pro Minute zählen die
+empfangenen Telegramme der letzten Minute.
 Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
 Senders steht die EEP dabei. Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und
 Signal in dBm oder filtert auf diesen Sender.

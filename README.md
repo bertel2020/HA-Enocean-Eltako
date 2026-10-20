@@ -115,7 +115,9 @@ gateway's telegrams; on a phone the cards scroll sideways.
 
 Below, every received and sent telegram appears live, newest first: device name (or
 "unknown sender" with an **Add** button that opens its discovered card), sender ID, gateway,
-telegram type, the decoded values and the signal strength. Sent telegrams name the device and
+telegram type, the decoded values with name and unit as the entities show them ("Power
+15 W") and the signal strength. Telegrams per minute count the received telegrams of the
+last minute. Sent telegrams name the device and
 sender profile; a teach-in of an unknown sender shows its EEP. Click a telegram for its raw
 data, status, destination and signal in dBm, or to show only that sender.
 

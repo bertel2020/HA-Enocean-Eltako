@@ -18,7 +18,10 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.translation import async_get_translations
+from homeassistant.util.hass_dict import HassKey
 
+from .catalog import GENERIC_EEP
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .discovery import discovery_data
 from .hub import async_get_hub
@@ -35,6 +38,73 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe_telegrams)
     websocket_api.async_register_command(hass, ws_gateways)
     websocket_api.async_register_command(hass, ws_discover)
+
+
+LABELS: HassKey[dict[str, dict[str, str]]] = HassKey(f"{DOMAIN}_monitor_labels")
+
+
+async def async_load_labels(hass: HomeAssistant) -> dict[str, str]:
+    """Entity names in the server language: ours, and HA's device class names."""
+    cache = hass.data.setdefault(LABELS, {})
+    language = hass.config.language
+    if language not in cache:
+        own = await async_get_translations(hass, language, "entity", [DOMAIN])
+        classes = await async_get_translations(
+            hass, language, "entity_component", ["sensor", "binary_sensor"]
+        )
+        cache[language] = {**classes, **own}
+    return cache[language]
+
+
+def readable_fields(device: Any, values: dict[str, Any], labels: dict[str, str]) -> list[dict]:
+    """Decoded values as the device's entities show them: name, value, unit.
+
+    Uses the platforms' entity descriptions, so "MR 15, DT 1, DIV 0" reads "Power 15 W".
+    Kinds without sensors (switches, rockers, covers) keep their raw keys, minus LRN bits.
+    """
+    from .binary_sensor import BINARY_SENSORS  # noqa: PLC0415 - platforms import this module
+    from .sensor import SENSORS, generic_descriptions  # noqa: PLC0415
+
+    model = device.model
+    sensors = SENSORS.get(model.kind, ())
+    if model.kind == GENERIC_EEP and model.receive is not None:
+        sensors = generic_descriptions(model.receive.eep)
+    fields: list[dict] = []
+    for platform, descriptions in (
+        ("sensor", sensors),
+        ("binary_sensor", BINARY_SENSORS.get(model.kind, ())),
+    ):
+        for description in descriptions:
+            if description.entity_registry_enabled_default is False:
+                continue
+            try:
+                value = description.value_fn(values)
+            except (KeyError, TypeError, ValueError, ZeroDivisionError):
+                continue
+            if value is None:
+                continue
+            key = description.translation_key
+            device_class = description.device_class
+            prefix = (
+                f"component.{DOMAIN}.entity.{platform}.{key}"
+                if key
+                else f"component.{platform}.entity_component.{device_class}"
+            )
+            name = description.name if isinstance(description.name, str) else None
+            label = labels.get(f"{prefix}.name") or name or description.key
+            if isinstance(value, bool):
+                value = labels.get(f"{prefix}.state.{'on' if value else 'off'}", value)
+            elif isinstance(value, str):
+                value = labels.get(f"{prefix}.state.{value}", value)
+            unit = getattr(description, "native_unit_of_measurement", None)
+            fields.append({"label": label, "value": _json_value(value), "unit": unit})
+    if fields:
+        return fields
+    return [
+        {"label": k, "value": _json_value(v), "unit": None}
+        for k, v in values.items()
+        if not k.upper().startswith("LRN")
+    ]
 
 
 def _json_value(value: Any) -> Any:
@@ -63,6 +133,9 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                 for ref in (device.model.receive, *device.model.receive_extra):
                     if ref is not None and (values := decode_telegram(ref, telegram)):
                         data["values"] = {k: _json_value(v) for k, v in values.items()}
+                        data["fields"] = readable_fields(
+                            device, values, hass.data.get(LABELS, {}).get(hass.config.language, {})
+                        )
                         break
                 return data
     if telegram.rorg == Rorg.BS4 and (teach_in := decode_teach_in_4bs(telegram.data)):
@@ -78,11 +151,12 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
     }
 )
 @websocket_api.require_admin
-@callback
-def ws_subscribe_telegrams(
+@websocket_api.async_response
+async def ws_subscribe_telegrams(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Stream telegrams live; with history > 0 the last N buffered ones first."""
+    await async_load_labels(hass)
     monitor = async_get_hub(hass).monitor
     entry_id = msg.get("entry_id")
 
