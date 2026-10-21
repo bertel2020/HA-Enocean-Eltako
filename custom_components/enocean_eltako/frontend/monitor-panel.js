@@ -153,6 +153,7 @@ const TEXT = {
     weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
     trend: (n, lo, hi) => `Signal of the last ${n} telegrams: ${lo} to ${hi} dBm`,
     noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
+    devSort: "Sort senders", devSorts: { name: "Name A–Z", recent: "Last heard", weak: "Weakest signal", busy: "Most telegrams" },
     maybe: "Could be", maybeHint: "These profiles decode the telegram; a single telegram cannot tell for sure",
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
@@ -303,6 +304,7 @@ const TEXT = {
     weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
     trend: (n, lo, hi) => `Signal der letzten ${n} Telegramme: ${lo} bis ${hi} dBm`,
     noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
+    devSort: "Sender sortieren", devSorts: { name: "Name A–Z", recent: "Zuletzt gehört", weak: "Schwächstes Signal", busy: "Meiste Telegramme" },
     maybe: "Könnte sein", maybeHint: "Diese Profile dekodieren das Telegramm; ein einzelnes Telegramm sagt es nicht sicher",
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
@@ -615,8 +617,14 @@ const STYLE = `
   .senders .confirm p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
   .senders .confirm .buttons { display: flex; justify-content: flex-end; gap: 8px; }
   .senders .pick { padding: 12px 16px 0; }
-  .devices .dev { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: 4px 16px; align-items: center;
-    padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+  /* one grid for all senders (subgrid): names, values and numbers line up in columns */
+  .panel:not([data-view="devices"]) .dev-only { display: none !important; }
+  .devices { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto auto; column-gap: 16px; }
+  .devices > .empty { grid-column: 1 / -1; }
+  .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto auto;
+    grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+  .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .devices .dev .acts .chip { height: 30px; padding: 0 10px; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
   .spark { display: block; }
@@ -624,8 +632,13 @@ const STYLE = `
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; }
   @media (max-width: 760px) {
-    .devices .dev { grid-template-columns: minmax(0, 1fr) auto; }
-    .devices .dev .values { grid-column: 1 / -1; grid-row: 2; }
+    .devices { grid-template-columns: minmax(0, 1fr) auto; }
+    .devices .dev { grid-template-columns: minmax(0, 1fr) auto; grid-template-columns: subgrid; }
+    .devices .dev .values { grid-column: 1; grid-row: 2; }
+    /* phones: the buttons shrink to their icons, next to the values */
+    .devices .dev .acts { grid-column: 2; grid-row: 2; flex-wrap: nowrap; }
+    .devices .dev .acts .chip { width: 34px; padding: 0; justify-content: center; }
+    .devices .dev .acts .lbl { display: none; }
   }
 
   .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 12px;
@@ -725,11 +738,19 @@ const SORTERS = {
   gateway: (a, b) => collator.compare(a.gateway_name || "", b.gateway_name || ""),
 };
 const DESC_FIRST = new Set(["time", "dbm"]); // first click: newest, strongest
+// order of the Devices view; senders without a signal (bus) sort last by signal
+const byName = (a, b) => collator.compare(a.last.device || `\uffff${a.last.sender}`, b.last.device || `\uffff${b.last.sender}`);
+const DEV_SORTERS = {
+  name: byName,
+  recent: (a, b) => SORTERS.time(b.last, a.last) || byName(a, b),
+  weak: (a, b) => (a.last.dbm == null) - (b.last.dbm == null) || (a.last.dbm ?? 0) - (b.last.dbm ?? 0) || byName(a, b),
+  busy: (a, b) => b.count - a.count || byName(a, b),
+};
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
 
 function loadView() {
-  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, filter: { ...NO_FILTER } };
+  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, devSort: "name", filter: { ...NO_FILTER } };
   try {
     const view = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const saved = view.filter || {};
@@ -737,6 +758,7 @@ function loadView() {
     return {
       pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
       sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : fallback.sort,
+      devSort: DEV_SORTERS[view.devSort] ? view.devSort : "name",
       filter: {
         gateway: text(saved.gateway),
         text: text(saved.text),
@@ -771,6 +793,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const view = loadView();
     this._filter = view.filter;
     this._sort = view.sort;
+    this._devSort = view.devSort;
     this._pageSize = view.pageSize;
     this._offset = 0; // first row of the page within the sorted, filtered rows
     this._pageFirst = null; // that row: new rows sorting before it keep the page in place
@@ -871,6 +894,9 @@ class EnOceanEltakoPanel extends HTMLElement {
             <button class="chip" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
             <button class="chip tg-only" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
+            <select class="select dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}">${Object.entries(t.devSorts)
+              .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
+              .join("")}</select>
           </div>
           <form class="sendform list-only" id="sendForm" hidden>
             <h3>${esc(t.sendTitle)}</h3>
@@ -935,6 +961,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderSenderIds();
     });
     $("devices").addEventListener("click", (e) => {
+      const add = e.target.closest(".add");
+      if (add) {
+        this._addDevice(add.dataset.id);
+        return;
+      }
       const dev = e.target.closest(".dev");
       if (!dev || this._selecting($("devices"))) return;
       this._setText(dev.dataset.only);
@@ -950,6 +981,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (!button) return;
       const key = button.dataset.sort;
       this._setSort(key, this._sort.key === key ? !this._sort.desc : DESC_FIRST.has(key));
+    });
+    $("devSort").addEventListener("change", (e) => {
+      this._devSort = e.target.value;
+      this._saveView();
+      this._render();
     });
     $("sortSelect").addEventListener("change", (e) => {
       const [key, dir] = e.target.value.split(":");
@@ -1014,6 +1050,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
     $("pageSize").value = String(this._pageSize);
+    $("devSort").value = this._devSort;
     $("text").value = this._filter.text;
     $("clearText").hidden = !this._filter.text;
     this._renderHead();
@@ -1140,7 +1177,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _saveView() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort, filter: this._filter }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort, devSort: this._devSort, filter: this._filter }));
     } catch (err) {
       // private window or blocked storage: the view just is not remembered
     }
@@ -2080,11 +2117,14 @@ class EnOceanEltakoPanel extends HTMLElement {
       const key = `${r.gateway}|${r.sender}`;
       let d = senders.get(key);
       if (!d) {
-        d = { last: r, fields: null, count: 0, perMinute: 0, dbm: [] };
+        d = { last: r, fields: null, teach: null, candidates: null, count: 0, perMinute: 0, dbm: [] };
         senders.set(key, d);
       }
       d.count += 1;
       if (!d.fields && (r.fields || r.values)) d.fields = r.fields || Object.entries(r.values).map(([label, value]) => ({ label, value }));
+      // an unknown sender: what its telegrams tell about it, newest first
+      d.teach ||= r.teach_in || null;
+      d.candidates ||= r.candidates || null;
       if (Date.parse(r.time) >= since) d.perMinute += 1;
       if (r.dbm != null && d.dbm.length < TREND_POINTS) d.dbm.unshift(r.dbm); // oldest first
     }
@@ -2096,7 +2136,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact))
         );
       })
-      .sort((a, b) => collator.compare(a.last.device || `\uffff${a.last.sender}`, b.last.device || `\uffff${b.last.sender}`));
+      .sort(DEV_SORTERS[this._devSort]);
   }
 
   _renderDevices(background) {
@@ -2122,11 +2162,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><polyline points="${points}"/></svg>`;
   }
 
-  _deviceRow({ last: r, fields, count, perMinute, dbm }, now) {
+  _deviceRow({ last: r, fields, teach, candidates, count, perMinute, dbm }, now) {
     const t = this._t;
     const unknown = !r.device;
     const name = unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(r.device)}</span>`;
-    const sub = [`<span class="mono">${esc(r.sender)}</span>`, r.eep ? esc(r.eep) : r.teach_in ? esc(r.teach_in) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : "", this._multi ? esc(r.gateway_name) : ""]
+    // without a profile the telegram type says what kind of sender it is
+    const sub = [`<span class="mono">${esc(r.sender)}</span>`, esc(r.eep || RORG[r.rorg] || r.rorg), r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : "", this._multi ? esc(r.gateway_name) : ""]
       .filter(Boolean)
       .join(" · ");
     const values = fields && fields.length
@@ -2138,13 +2179,20 @@ class EnOceanEltakoPanel extends HTMLElement {
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
+    const hints = unknown
+      ? (teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(teach)}</span>` : "") +
+        (candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(candidates.join(", "))}</span>` : "")
+      : "";
     const weak = r.dbm != null && r.dbm < WEAK_DBM;
     const heard = t.ago(Math.max(0, Math.round((now - Date.parse(r.time)) / 1000)));
-    return `<div class="dev" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}">
+    return `<div class="dev" data-key="${esc(`${r.gateway}|${r.sender}`)}" data-only="${esc(r.device || r.sender)}">
       <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div></div>
-      <div class="values">${values}</div>
+      <div class="values">${hints}${values}</div>
       <div class="stats"><span>${esc(heard)}</span><span>${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span>
         <span class="signal">${this._sparkline(dbm)}${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span></div>
+      <div class="acts"><button class="chip" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
+        unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
+      }</div>
     </div>`;
   }
 

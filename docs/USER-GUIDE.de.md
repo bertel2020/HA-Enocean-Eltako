@@ -243,8 +243,11 @@ Home-Assistant-Design, hell und dunkel.
 Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Sender: die letzten Werte,
 wann er zuletzt gehört wurde, Telegramme in der Liste und pro Minute sowie eine Kurve der
 Signalstärke seiner letzten Telegramme, mit einem Hinweis bei schwachem Empfang (unter -85 dBm),
-dem ein Repeater oder ein besserer Gateway-Standort hilft. Ein Klick öffnet die Telegramme
-dieses Senders.
+dem ein Repeater oder ein besserer Gateway-Standort hilft. Bei einem unbekannten Sender kommen
+der Telegrammtyp dazu und was seine Telegramme verraten: ein Lerntelegramm-Profil oder die
+Profile, die passen könnten. **Telegramme** öffnet die Telegramme dieses Senders, **Gerät
+hinzufügen** richtet einen unbekannten Sender ein. Die Liste sortiert nach Name, nach dem
+letzten Empfang, nach dem schwächsten Signal oder nach den meisten Telegrammen.
 
 ### Telegramm senden
 

@@ -232,7 +232,10 @@ the Home Assistant theme, light and dark.
 The **Devices** switch shows one line per sender instead of the telegram list: the latest
 values, when it was last heard, telegrams in the list and per minute, and a curve of the
 signal of its last telegrams with a note for weak reception (below -85 dBm), which a repeater
-or a better gateway position helps. A click opens that sender's telegrams.
+or a better gateway position helps. For an unknown sender it adds the telegram type and what
+its telegrams tell: a teach-in profile or the profiles that could fit. **Telegrams** opens that
+sender's telegrams, **Add device** sets up an unknown sender. The list sorts by name, by when
+a sender was last heard, by the weakest signal or by the most telegrams.
 
 ### Send a telegram
 
