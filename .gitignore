@@ -18,3 +18,4 @@ CLAUDE.md
 /packaging/
 /scripts/build_protocol_package.py
 /docs/assets/
+/CHANGELOG.internal.md
