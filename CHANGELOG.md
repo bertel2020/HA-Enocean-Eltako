@@ -6,6 +6,19 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [0.1.1] - 2026-10-21
+
+#### Changed
+
+- **Panel:**
+  - Devices: values in one column, buttons for a sender's telegrams and for adding an unknown
+    sender, sorting by name, last heard, weakest signal or most telegrams, more about unknown
+    senders (telegram type, teach-in or possible profiles)
+  - Sender IDs: grouped by device, blocked IDs first with their note, readable profile names
+  - Takeover: after taking devices over the view moves on to checking the old IDs that are still
+    in use, the mapping is shorter per device
+  - the heading names the view, layouts for phones
+
 ### [0.1.0] - 2026-10-21
 
 First version of the integration.
@@ -35,13 +48,10 @@ First version of the integration.
   protection), temperature, motion and brightness sensor, weather station, scene button or
   rocker with selectable buttons.
 - **Telegram monitor panel:** live telegram list with details, filters, sorting, exports,
-  signal quality per sender, gateway cards, sending a telegram and adding unknown senders as
-  devices. Also:
-  - a device view with one line per sender, sortable
-  - the sender IDs of each device, blocked ones first
-  - a layout for phones
-- **Takeover from the old `eltako` integration** in the panel, in guided steps: preview,
-  selection, area and label carry-over and a mapping of old to new entity IDs with their usage.
+  signal quality per sender, gateway cards, sender ID table, sending a telegram and adding
+  unknown senders as devices.
+- **Takeover from the old `eltako` integration** in the panel: preview, selection, area and
+  label carry-over and a mapping of old to new entity IDs with their usage.
 - **Gateway care:** last-seen monitoring, state reconciliation at startup, repairs for an
   unstable or silent connection, diagnostic sensors and diagnostics download.
 - **EnOcean Proxy** gateways are set up through Supervisor discovery.
@@ -57,6 +67,21 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [0.1.1] - 2026-10-21
+
+#### Geändert
+
+- **Panel:**
+  - Geräte: Werte in einer Spalte, Knöpfe für die Telegramme eines Senders und zum Hinzufügen
+    eines unbekannten Senders, Sortierung nach Name, letztem Empfang, schwächstem Signal oder
+    meisten Telegrammen, mehr Angaben zu unbekannten Sendern (Telegrammtyp, Lerntelegramm oder
+    mögliche Profile)
+  - Sender-IDs: nach Gerät gruppiert, gesperrte IDs zuerst mit ihrem Hinweis, lesbare
+    Profilnamen
+  - Übernahme: nach dem Übernehmen geht es gleich zur Prüfung der alten IDs, die noch verwendet
+    werden, die Zuordnung ist je Gerät kürzer
+  - die Überschrift nennt die Ansicht, Darstellung für das Handy
 
 ### [0.1.0] - 2026-10-21
 
@@ -89,14 +114,10 @@ Erste Version der Integration.
   Aussperrschutz), Temperatur-, Bewegungs- und Helligkeitssensor, Wetterstation,
   Szenentaster oder Wippe mit wählbaren Tasten.
 - **Telegramm-Monitor im Panel:** Live-Liste mit Details, Filtern, Sortierung, Export,
-  Signalqualität pro Sender, Gateway-Karten, Telegramm senden und unbekannte Sender als Gerät
-  hinzufügen. Dazu:
-  - eine Geräteansicht mit einer Zeile je Sender, sortierbar
-  - die Sender-IDs jedes Geräts, gesperrte zuerst
-  - eine Darstellung für das Handy
-- **Übernahme aus der alten `eltako`-Integration** im Panel, in geführten Schritten: Vorschau,
-  Auswahl, Übernahme von Bereich und Labels sowie eine Zuordnung alter zu neuen Entitäts-IDs mit
-  ihrer Verwendung.
+  Signalqualität pro Sender, Gateway-Karten, Sender-ID-Tabelle, Telegramm senden und
+  unbekannte Sender als Gerät hinzufügen.
+- **Übernahme aus der alten `eltako`-Integration** im Panel: Vorschau, Auswahl, Übernahme von
+  Bereich und Labels sowie eine Zuordnung alter zu neuen Entitäts-IDs mit ihrer Verwendung.
 - **Gateway-Pflege:** Überwachung der letzten Meldung, Zustandsabgleich beim Start, Reparaturen
   bei instabiler oder stummer Verbindung, Diagnosesensoren und Diagnose-Download.
 - **EnOcean-Proxy-Gateways** werden über die Supervisor-Erkennung eingerichtet.
