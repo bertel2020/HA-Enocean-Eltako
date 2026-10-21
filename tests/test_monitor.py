@@ -276,6 +276,96 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     await server.stop()
 
 
+async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws_client):
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 2,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    pool = entry.runtime_data.senders.pool
+    pool.assign(0xFFB74481, "device:05-10-A2-B3:central")
+    pool.assign(0xFFB74482, "device:gone:controller")
+    pool.release(0xFFB74482)
+    client = await hass_ws_client(hass)
+
+    await client.send_json({"id": 1, "type": "enocean_eltako/sender_pools"})
+    (result,) = (await client.receive_json())["result"]
+    assert (result["id"], result["kind"], result["title"]) == (
+        f"radio:{entry.entry_id}",
+        "radio",
+        "FAM-USB",
+    )
+    assert (result["start"], result["end"], result["size"]) == ("FF-B7-44-80", "FF-B7-44-FF", 128)
+    assert result["free"] == 126
+    assert result["rows"] == [
+        {
+            "id": "FF-B7-44-81",
+            "device": "Licht Diele",
+            "ref": "05-10-A2-B3",
+            "profile": "central",
+            "state": "assigned",
+        },
+        {
+            "id": "FF-B7-44-82",
+            "device": None,
+            "ref": "gone",
+            "profile": "controller",
+            "state": "blocked",
+        },
+    ]
+
+    async def free(msg_id: int, sender: str, pool_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/sender_pools/free",
+                "pool": pool_id or result["id"],
+                "sender": sender,
+            }
+        )
+        return await client.receive_json()
+
+    # an assigned ID, an unused one, bad input and an unknown pool are refused
+    for msg_id, sender, pool_id, code in (
+        (2, "FF-B7-44-81", None, "not_blocked"),
+        (3, "FF-B7-44-90", None, "not_blocked"),
+        (4, "nope", None, "invalid_id"),
+        (5, "FF-B7-44-82", "radio:unknown", "not_found"),
+    ):
+        reply = await free(msg_id, sender, pool_id)
+        assert not reply["success"] and reply["error"]["code"] == code
+    assert pool.get(0xFFB74482) is not None
+
+    assert (await free(6, "FF-B7-44-82"))["success"]
+    assert pool.get(0xFFB74482) is None and pool.get(0xFFB74481) is not None
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
 async def test_panel_registered_with_frontend(hass: HomeAssistant):
     from unittest.mock import AsyncMock, MagicMock, patch
 

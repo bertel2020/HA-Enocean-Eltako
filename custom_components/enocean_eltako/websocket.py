@@ -23,7 +23,7 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
 from .catalog import CATALOG, GENERIC_EEP
-from .const import CONF_BASE_ID, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
+from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
 from .discovery import discovery_data
 from .hub import async_get_hub
 from .protocol.eep import EEPRef
@@ -47,6 +47,8 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_gateways)
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_send)
+    websocket_api.async_register_command(hass, ws_sender_pools)
+    websocket_api.async_register_command(hass, ws_free_sender)
 
 
 LABELS: HassKey[dict[str, dict[str, str]]] = HassKey(f"{DOMAIN}_monitor_labels")
@@ -358,3 +360,94 @@ async def ws_send(
         RadioTelegram(rorg, data, sender, status[0]), Priority.USER
     )
     connection.send_result(msg["id"], {"result": result.value})
+
+
+def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:
+    """The sender pools of the loaded gateways by panel ID: radio per gateway, one per bus group."""
+    pools: dict[str, tuple[str, ConfigEntry, Any]] = {}
+    for entry in hass.config_entries.async_loaded_entries(DOMAIN):
+        runtime = entry.runtime_data
+        pools[f"radio:{entry.entry_id}"] = ("radio", entry, runtime.senders)
+        if runtime.bus is not None:
+            # the members of a bus group share one pool: listed once, under the first member
+            pools.setdefault(f"bus:{entry.data[CONF_BUS_GROUP]}", ("bus", entry, runtime.bus.senders))
+    return pools
+
+
+def _pool_rows(hass: HomeAssistant, store: Any) -> list[dict[str, Any]]:
+    titles = {
+        s.unique_id: s.title
+        for e in hass.config_entries.async_entries(DOMAIN, include_ignore=False)
+        for s in e.subentries.values()
+    }
+    rows = []
+    for sender, allocation in store.pool.allocations():
+        _kind, _sep, rest = allocation.owner.partition(":")
+        device, _sep, profile = rest.rpartition(":")
+        rows.append(
+            {
+                "id": format_id(sender),
+                "device": titles.get(device),  # None: the device was deleted, the ID is blocked
+                "ref": device,
+                "profile": profile,
+                "state": allocation.state.value,
+            }
+        )
+    return rows
+
+
+@websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/sender_pools"})
+@websocket_api.require_admin
+@callback
+def ws_sender_pools(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Who uses which sender ID, per pool: the panel's sender ID table."""
+    result = []
+    for pool_id, (kind, entry, store) in _pools(hass).items():
+        pool = store.pool
+        result.append(
+            {
+                "id": pool_id,
+                "kind": kind,
+                "title": entry.title,
+                "start": format_id(pool.start),
+                "end": format_id(pool.start + pool.size - 1),
+                "size": pool.size,
+                "free": pool.free_count(),
+                "rows": _pool_rows(hass, store),
+            }
+        )
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/sender_pools/free",
+        vol.Required("pool"): str,
+        vol.Required("sender"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_free_sender(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Free a blocked sender ID once the actuator has forgotten it (teach-out done)."""
+    found = _pools(hass).get(msg["pool"])
+    if found is None:
+        connection.send_error(msg["id"], "not_found", "pool not found")
+        return
+    store = found[2]
+    try:
+        sender = parse_id(msg["sender"])
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    allocation = store.pool.get(sender)
+    if allocation is None or allocation.state is not SenderState.BLOCKED:
+        connection.send_error(msg["id"], "not_blocked", "only a blocked sender ID can be freed")
+        return
+    store.pool.confirm_teach_out(sender)
+    await store.async_save()
+    connection.send_result(msg["id"])
