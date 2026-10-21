@@ -348,8 +348,9 @@ def carried_from(hass: HomeAssistant, entries: list[er.RegistryEntry]) -> Carrie
     if (main := primary_entity(entries)) is not None:
         carried.area_id = carried.area_id or main.area_id
         carried.entity_labels = set(main.labels)
+        options: Mapping[str, Any] = main.options  # typed by integration, assistants are no domains
         for assistant in ASSISTANTS:
-            should = (main.options.get(assistant) or {}).get("should_expose")
+            should = (options.get(assistant) or {}).get("should_expose")
             if isinstance(should, bool):
                 carried.exposed[assistant] = should
     return carried
