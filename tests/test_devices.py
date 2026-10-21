@@ -1266,13 +1266,77 @@ async def test_travel_time_assistant(hass: HomeAssistant, gateway) -> None:
     result = await click_and_report("00E6020A")  # drove 23.0 s down
     assert result["step_id"] == "measure_up"
     result = await click_and_report("00FA010A")  # drove 25.0 s up
+    assert result["step_id"] == "measure_extra"
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"measure_extra": "none"}
+    )
     assert result["step_id"] == "measure_result"
-    assert result["description_placeholders"] == {"time_opens": "25.0", "time_closes": "23.0"}
+    assert result["description_placeholders"] == {
+        "time_opens": "25.0",
+        "time_closes": "23.0",
+        "vent_time": "–",
+        "tilt_time": "–",
+    }
     result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
     data = entry.subentries[subentry_id].data
     assert (data["time_opens"], data["time_closes"]) == (25.0, 23.0)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-26",
+                "Rollladen Küche",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-95"}],
+                time_opens=30,
+                time_closes=30,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_travel_time_assistant_measures_vent_slots(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    actuator = 0x05000026
+    subentry_id = next(iter(entry.subentries))
+    configure = hass.config_entries.subentries.async_configure
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    result = await configure(result["flow_id"], {"next_step_id": "measure"})
+    result = await configure(result["flow_id"], {})
+    await asyncio.sleep(0.05)
+    _push(server, 0x05, b"\x70", actuator, 0x30)  # upper end reached
+    await asyncio.sleep(0.05)
+    result = await configure(result["flow_id"])
+    assert result["step_id"] == "measure_down"
+
+    async def click_and_report(report: str):
+        flow = hass.async_create_task(configure(result["flow_id"], {}))
+        await asyncio.sleep(0.05)
+        _push(server, 0x07, bytes.fromhex(report), actuator)
+        return await flow
+
+    result = await click_and_report("00E6020A")  # 23.0 s down
+    result = await click_and_report("00FA010A")  # 25.0 s up
+    assert result["step_id"] == "measure_extra"
+    result = await configure(result["flow_id"], {"measure_extra": "vent_time"})
+    assert result["type"] is FlowResultType.SHOW_PROGRESS  # closing fully
+    await asyncio.sleep(0.05)
+    _push(server, 0x05, b"\x50", actuator, 0x30)  # lower end reached
+    await asyncio.sleep(0.05)
+    result = await configure(result["flow_id"])
+    assert result["step_id"] == "measure_vent"
+    result = await click_and_report("0028010A")  # 4.0 s up: slots open
+    assert result["step_id"] == "measure_result"
+    assert result["description_placeholders"]["vent_time"] == "4.0 s"
+    result = await configure(result["flow_id"], {})
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    assert entry.subentries[subentry_id].data["vent_time"] == 4.0
 
 
 async def _init_flow(hass: HomeAssistant, entry):

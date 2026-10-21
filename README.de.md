@@ -48,7 +48,8 @@ andere EnOcean-Geräte. Ziele:
 - **Alle EEPs inkl. VLD**, Standardprofile erzeugt aus den offiziellen
   Definitionen der EnOcean Alliance; Eltako-Varianten streng getrennt
 - **Rollläden** (FSB14/61/71) mit Controller- und Richtungstaster-Sender
-  parallel, Positionsverfolgung und Kalibrierung an den Endlagen
+  parallel, Positionsverfolgung und Kalibrierung an den Endlagen, Lüftungsschlitze und
+  Lamellenstellung; der Laufzeit-Assistent (Geräteeinstellungen) misst alle Zeiten per Klick
 - **Taster-Sender** drücken die gewählten Tasten (linke oder rechte Wippe, oben
   und unten vertauscht), passend dazu, wie die ID im Aktor eingelernt ist
 - **Zweikanal-Aktoren** mit einer ID (z. B. FSR71NP-2x): jeder Kanal ist ein eigenes Gerät;

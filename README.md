@@ -46,7 +46,8 @@ devices, written from scratch. Goals:
 - **All EEPs incl. VLD**, standard profiles generated from the official
   EnOcean Alliance definitions; Eltako variants kept strictly separate
 - **Covers** (FSB14/61/71) with controller and direction-rocker senders in
-  parallel, position tracking and calibration at the end positions
+  parallel, position tracking and calibration at the end positions, vent slots and slat
+  tilt; the travel time assistant (device settings) measures all times with a click
 - **Rocker senders** press the buttons you choose (left or right rocker, top and
   bottom swapped), matching how the ID was taught into the actuator
 - **Two-channel actuators** with one ID (e.g. FSR71NP-2x): each channel is a device of its

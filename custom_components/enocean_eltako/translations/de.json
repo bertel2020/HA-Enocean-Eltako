@@ -377,6 +377,13 @@
         "1": "Kanal 1 oder einkanalig (0x70/0x50)",
         "2": "Kanal 2 (0x30/0x10)"
       }
+    },
+    "measure_extra": {
+      "options": {
+        "none": "Nichts",
+        "vent_time": "Lüftungsschlitz-Zeit (Rollladen)",
+        "tilt_time": "Wendezeit Lamellen (Jalousie)"
+      }
     }
   },
   "exceptions": {
@@ -883,7 +890,7 @@
         },
         "measure": {
           "title": "Laufzeiten messen",
-          "description": "Home Assistant öffnet den Rollladen zuerst ganz. Dann fährt er ab: Absenden klicken, sobald er ganz geschlossen ist (Schlitze zu). Dann fährt er auf: Absenden klicken, sobald er ganz offen ist. Der Aktor meldet die gefahrene Zeit auf 0,1 s genau. Danach die Rückfallverzögerung (RV) am Aktor mindestens auf die gemessene Zeit plus Zuschlag stellen, sonst sind seine Endlagenmeldungen keine echten Endlagen."
+          "description": "Home Assistant öffnet den Rollladen zuerst ganz. Dann fährt er ab: Absenden klicken, sobald er ganz geschlossen ist (Schlitze zu). Dann fährt er auf: Absenden klicken, sobald er ganz offen ist. Der Aktor meldet die gefahrene Zeit auf 0,1 s genau. Danach lässt sich auch die Lüftungsschlitz- oder Wendezeit messen. Die Rückfallverzögerung (RV) am Aktor mindestens auf die gemessene Zeit plus Zuschlag stellen, sonst sind seine Endlagenmeldungen keine echten Endlagen."
         },
         "measure_down": {
           "title": "Fährt ab",
@@ -895,7 +902,7 @@
         },
         "measure_result": {
           "title": "Gemessen",
-          "description": "Auf: {time_opens} s, ab: {time_closes} s. Absenden speichert diese Laufzeiten."
+          "description": "Auf: {time_opens} s, ab: {time_closes} s, Lüftungsschlitze: {vent_time}, Lamellen: {tilt_time}. Absenden speichert diese Zeiten. Danach steht der Rollladen irgendwo in der Mitte; einmal an eine Endlage fahren, damit seine Position wieder exakt ist."
         },
         "custom": {
           "title": "Eigene Gerätedefinition",
@@ -903,6 +910,21 @@
           "data": {
             "custom": "Definition"
           }
+        },
+        "measure_extra": {
+          "title": "Lüftungsschlitze oder Lamellen",
+          "description": "Optional eine weitere Zeit messen. Home Assistant schließt den Rollladen dann ganz und fährt noch einmal auf. Rollläden mit Lüftungsschlitzen: die Schlitzzeit. Jalousien: die Wendezeit der Lamellen.",
+          "data": {
+            "measure_extra": "Zusätzlich messen"
+          }
+        },
+        "measure_vent": {
+          "title": "Lüftungsschlitz-Zeit",
+          "description": "Absenden klicken, sobald die Schlitze ganz offen sind, der Rollladen also gerade anfängt zu steigen."
+        },
+        "measure_tilt": {
+          "title": "Wendezeit Lamellen",
+          "description": "Absenden klicken, sobald die Lamellen ganz geöffnet gedreht sind, bevor die Jalousie anfängt zu steigen."
         }
       },
       "error": {
@@ -926,7 +948,8 @@
       },
       "progress": {
         "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten.",
-        "measure_open": "Rollladen wird ganz geöffnet …"
+        "measure_open": "Rollladen wird ganz geöffnet …",
+        "measure_close": "Rollladen wird ganz geschlossen …"
       }
     }
   },

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 import probatio as vol
@@ -132,6 +133,9 @@ WEATHER_SELECTORS = {
 WHEN_UNAVAILABLE = ["skip", "safe"]
 DEFAULT_VIRTUAL_INTERVAL = 900  # seconds, as Eltako sensors repeat their state
 LEARN_TIMEOUT = 60.0
+MEASURE_EXTRA = "measure_extra"
+MEASURE_EXTRA_MAX = 10.0  # the vent slot and slat time fields stop at 10 s
+EXTRA_KEYS = (OPT_VENT_TIME, OPT_TILT_TIME)
 MEASURE_MAX_RUN = 120  # seconds a measuring run may last (the click stops it earlier)
 DRIVEN_TIME_WAIT = 3.0  # seconds to wait for the actuator's driven-time report
 
@@ -574,6 +578,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         self._settings_chosen = False
         self._measure_task: asyncio.Task[bool] | None = None
         self._measured: dict[str, float] = {}
+        self._extra = ""
         self._run_started = 0.0
         self._learn_task: asyncio.Task[ReceivedTelegram | None] | None = None
         self._learned: ReceivedTelegram | None = None
@@ -928,15 +933,92 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     async def async_step_measure_down(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        return await self._async_measure_run("measure_down", down=True, user_input=user_input)
+        return await self._async_measure_run(
+            "measure_down", True, user_input, "time_closes", self.async_step_measure_up
+        )
 
     async def async_step_measure_up(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        return await self._async_measure_run("measure_up", down=False, user_input=user_input)
+        return await self._async_measure_run(
+            "measure_up", False, user_input, "time_opens", self.async_step_measure_extra
+        )
+
+    async def async_step_measure_extra(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Optionally measure the vent slot or slat turning time as well."""
+        if user_input is not None:
+            if user_input[MEASURE_EXTRA] == "none":
+                return await self.async_step_measure_result()
+            self._extra = user_input[MEASURE_EXTRA]
+            return await self.async_step_measure_close()
+        data = self._get_reconfigure_subentry().data
+        default = (
+            OPT_TILT_TIME
+            if float(data.get(OPT_TILT_TIME) or 0) > 0
+            else OPT_VENT_TIME
+            if float(data.get(OPT_VENT_TIME) or 0) > 0
+            else "none"
+        )
+        return self.async_show_form(
+            step_id="measure_extra",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(MEASURE_EXTRA, default=default): SelectSelector(
+                        SelectSelectorConfig(
+                            options=["none", OPT_VENT_TIME, OPT_TILT_TIME],
+                            translation_key=MEASURE_EXTRA,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_measure_close(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Close the cover fully, so the next run starts from the lower end."""
+        device = self._cover_device()
+        if self._measure_task is None:
+            self._measure_task = self.hass.async_create_task(
+                self._async_drive_to_end(device, up=False)
+            )
+        if not self._measure_task.done():
+            return self.async_show_progress(
+                step_id="measure_close",
+                progress_action="measure_close",
+                progress_task=self._measure_task,
+            )
+        ok = self._measure_task.result()
+        self._measure_task = None
+        if not ok:
+            return self.async_show_progress_done(next_step_id="measure_failed")
+        return self.async_show_progress_done(
+            next_step_id="measure_vent" if self._extra == OPT_VENT_TIME else "measure_tilt"
+        )
+
+    async def async_step_measure_vent(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_measure_run(
+            "measure_vent", False, user_input, OPT_VENT_TIME, self.async_step_measure_result
+        )
+
+    async def async_step_measure_tilt(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_measure_run(
+            "measure_tilt", False, user_input, OPT_TILT_TIME, self.async_step_measure_result
+        )
 
     async def _async_measure_run(
-        self, step_id: str, down: bool, user_input: dict[str, Any] | None
+        self,
+        step_id: str,
+        down: bool,
+        user_input: dict[str, Any] | None,
+        key: str,
+        next_step: Callable[[], Awaitable[SubentryFlowResult]],
     ) -> SubentryFlowResult:
         """Start the run when the form shows; the click stops it and takes the driven time."""
         device = self._cover_device()
@@ -957,10 +1039,9 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 driven = (await waiter)["driven_time"]
         except TimeoutError:
             driven = round(wall, 1)  # no report: the click time is still within ~0.3 s
-        self._measured["time_closes" if down else "time_opens"] = driven
-        if down:
-            return await self.async_step_measure_up()
-        return await self.async_step_measure_result()
+        # the number fields stop at MEASURE_EXTRA_MAX: a slower run was not the slats or slots
+        self._measured[key] = min(driven, MEASURE_EXTRA_MAX) if key in EXTRA_KEYS else driven
+        return await next_step()
 
     async def async_step_measure_result(
         self, user_input: dict[str, Any] | None = None
@@ -976,18 +1057,27 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             description_placeholders={
                 "time_opens": f"{self._measured.get('time_opens', 0):.1f}",
                 "time_closes": f"{self._measured.get('time_closes', 0):.1f}",
+                "vent_time": self._measured_text(OPT_VENT_TIME),
+                "tilt_time": self._measured_text(OPT_TILT_TIME),
             },
         )
 
+    def _measured_text(self, key: str) -> str:
+        return f"{self._measured[key]:.1f} s" if key in self._measured else "–"
+
     async def _async_open_fully(self, device: Any) -> bool:
+        return await self._async_drive_to_end(device, up=True)
+
+    async def _async_drive_to_end(self, device: Any, up: bool) -> bool:
+        end, direction = ("open", "up") if up else ("closed", "down")
         waiter = self._wait_for(
             device,
             lambda v: (
-                v.get("state") == "open" or (v.get("direction") == "up" and "driven_time" in v)
+                v.get("state") == end or (v.get("direction") == direction and "driven_time" in v)
             ),
         )
         device.send(
-            shutter.encode_command(shutter.UP, MEASURE_MAX_RUN),
+            shutter.encode_command(shutter.UP if up else shutter.DOWN, MEASURE_MAX_RUN),
             profile=CONTROLLER.id,
             key="move",
             confirm=False,

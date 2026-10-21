@@ -377,6 +377,13 @@
         "1": "Channel 1 or single channel (0x70/0x50)",
         "2": "Channel 2 (0x30/0x10)"
       }
+    },
+    "measure_extra": {
+      "options": {
+        "none": "Nothing",
+        "vent_time": "Vent slot time (shutter)",
+        "tilt_time": "Slat turning time (blind)"
+      }
     }
   },
   "exceptions": {
@@ -883,7 +890,7 @@
         },
         "measure": {
           "title": "Measure travel times",
-          "description": "Home Assistant first opens the cover fully. Then it drives down: click Submit the moment the cover is fully closed (slats shut). Then it drives up: click Submit the moment it is fully open. The actuator reports the driven time to 0.1 s. Afterwards set the actuator's delay time (RV) at least to the measured time plus a margin, otherwise its end-position reports are not real end positions."
+          "description": "Home Assistant first opens the cover fully. Then it drives down: click Submit the moment the cover is fully closed (slats shut). Then it drives up: click Submit the moment it is fully open. The actuator reports the driven time to 0.1 s. Afterwards you can also measure the vent slot or slat turning time. Set the actuator's delay time (RV) at least to the measured time plus a margin, otherwise its end-position reports are not real end positions."
         },
         "measure_down": {
           "title": "Driving down",
@@ -895,7 +902,7 @@
         },
         "measure_result": {
           "title": "Measured",
-          "description": "Up: {time_opens} s, down: {time_closes} s. Submit to save these travel times."
+          "description": "Up: {time_opens} s, down: {time_closes} s, vent slots: {vent_time}, slats: {tilt_time}. Submit to save these times. The cover stands somewhere in the middle afterwards; drive it to an end once so its position is exact again."
         },
         "custom": {
           "title": "Own device definition",
@@ -903,6 +910,21 @@
           "data": {
             "custom": "Definition"
           }
+        },
+        "measure_extra": {
+          "title": "Vent slots or slats",
+          "description": "Optionally measure one more time. Home Assistant then closes the cover fully and drives up once more. Shutters with vent slots: the slots time. Blinds: the slat turning time.",
+          "data": {
+            "measure_extra": "Also measure"
+          }
+        },
+        "measure_vent": {
+          "title": "Vent slot time",
+          "description": "Click Submit the moment the slots are fully open, i.e. the shutter just starts to rise."
+        },
+        "measure_tilt": {
+          "title": "Slat turning time",
+          "description": "Click Submit the moment the slats are fully turned open, before the blind starts to rise."
         }
       },
       "error": {
@@ -926,7 +948,8 @@
       },
       "progress": {
         "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now.",
-        "measure_open": "Opening the cover fully …"
+        "measure_open": "Opening the cover fully …",
+        "measure_close": "Closing the cover fully …"
       }
     }
   },
