@@ -278,6 +278,14 @@ solange ihre Ports nicht freigegeben sind.
 
 - **Bus-Speicher:** Lesen und Schreiben des FAM14-Bus-Speichers (Import, Verknüpfungsansicht,
   Aktor-Konfiguration) ist noch nicht gebaut; dafür fehlen Mitschnitte zwischen PCT14 und FAM14.
+- **Netzwerk-Gateways bedienen eine Verbindung:** Das PioTek MGW-ETH nimmt weitere
+  Verbindungen an, antwortet ihnen aber nicht; eine hängende Verbindung bleibt, bis das Gateway
+  neu gestartet wird. HA zeigt dann die Reparatur „… antwortet nicht“. Zum Teilen eines Gateways
+  die App EnOcean Proxy nutzen.
+- **PSC-Energie und -Leistung:** Das Permundo PSC meldet sie als D2-01 (Wh, W) und als
+  A5-12-01. Das volle D2-01-Telegramm braucht ein ESP3-Gateway (MGW-ETH, Symcon, USB300);
+  ESP2-Gateways (FAM-USB) kürzen es, dann kommt die Energie aus dem A5-12-01-Zähler, der nur
+  alle 10 Minuten gesendet wird.
 - **Ein Programm pro Port:** Ein serielles Gateway kann nur von einer Integration genutzt
   werden. Vorher aus der alten Integration `eltako` entfernen oder über die App EnOcean Proxy
   teilen.

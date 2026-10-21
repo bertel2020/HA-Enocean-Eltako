@@ -269,6 +269,12 @@ its ports.
 
 - **Bus memory:** reading or writing the FAM14 bus memory (import, link view, actuator
   configuration) is not built yet; it needs captures of the PCT14 ↔ FAM14 exchange.
+- **Network gateways serve one connection:** the PioTek MGW-ETH accepts further connections
+  but does not answer them; a stuck connection stays until the gateway is restarted. HA then
+  raises the repair "… does not answer". Use the EnOcean Proxy app to share one gateway.
+- **PSC energy and power:** the Permundo PSC reports them as D2-01 (Wh, W) and A5-12-01. The
+  full D2-01 telegram needs an ESP3 gateway (MGW-ETH, Symcon, USB300); ESP2 gateways (FAM-USB)
+  cut it, so energy then comes from the A5-12-01 counter, which is sent every 10 minutes.
 - **One program per port:** a serial gateway can only be used by one integration at a time.
   Remove it from the old `eltako` integration before adding it here, or share it through the
   EnOcean Proxy app.

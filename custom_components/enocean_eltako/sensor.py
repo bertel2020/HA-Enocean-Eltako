@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, TypedDict
 
@@ -66,6 +66,9 @@ HANDLE_POSITIONS = {0xF0: "closed", 0xC0: "open", 0xE0: "open", 0xD0: "tilted"}
 class EnOceanSensorDescription(SensorEntityDescription):
     value_fn: Callable[[dict[str, Any]], Any]
     monotonic: bool = False  # meter readings: a step backwards is dropped, not a reset
+    # a second source of the same value (e.g. D2-01 next to A5-12-01); used only as long as
+    # value_fn never produced a value, so two sources do not fight over the state
+    fallback_value_fn: Callable[[dict[str, Any]], Any] | None = None
 
 
 def _field(name: str, ndigits: int | None = 1) -> Callable[[dict[str, Any]], Any]:
@@ -85,6 +88,21 @@ def _meter(data_type: int, tariff: int) -> Callable[[dict[str, Any]], Any]:
         return round(values["MR"], 3)
 
     return get
+
+
+# D2-01 measurement (command 7): unit UN 0 Ws, 1 Wh, 2 kWh, 3 W, 4 kW, value MV
+_VLD_TO_KWH = {0: 1 / 3_600_000, 1: 1 / 1000, 2: 1.0}
+_VLD_TO_WATT = {3: 1.0, 4: 1000.0}
+
+
+def _vld_energy(values: dict[str, Any]) -> Any:
+    factor = _VLD_TO_KWH.get(values.get("UN", -1)) if values.get("CMD") == 7 else None
+    return None if factor is None else round(values["MV"] * factor, 3)
+
+
+def _vld_power(values: dict[str, Any]) -> Any:
+    factor = _VLD_TO_WATT.get(values.get("UN", -1)) if values.get("CMD") == 7 else None
+    return None if factor is None else round(values["MV"] * factor, 1)
 
 
 def _any_tariff_power(values: dict[str, Any]) -> Any:
@@ -341,8 +359,18 @@ SENSORS["digital_inputs"] = (
 SENSORS["gas_meter"] = _volume_sensors(SensorDeviceClass.GAS)
 SENSORS["water_meter"] = _volume_sensors(SensorDeviceClass.WATER)
 
+
+def _psc_sensor(description: EnOceanSensorDescription) -> EnOceanSensorDescription:
+    """The PSC reports energy and power twice: D2-01 (full resolution, ESP3 gateways only: ESP2
+    cuts the telegram) and A5-12-01. Energy comes preferably from D2-01 (every few seconds,
+    in Wh; the A5 counter only every 10 minutes), power from A5-12-01 (every ~3 s)."""
+    if description.key == "energy":
+        return replace(description, value_fn=_vld_energy, fallback_value_fn=description.value_fn)
+    return replace(description, fallback_value_fn=_vld_power)
+
+
 SENSORS["psc"] = tuple(
-    d for d in SENSORS["meter"] if d.key not in ("energy_tariff_1", "active_tariff")
+    _psc_sensor(d) for d in SENSORS["meter"] if d.key not in ("energy_tariff_1", "active_tariff")
 )
 
 
@@ -458,6 +486,7 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
     def __init__(self, device: EnOceanDevice, description: EnOceanSensorDescription) -> None:
         super().__init__(device, description.key)
         self.entity_description = description
+        self._primary_seen = False
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -466,6 +495,10 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
 
     def _apply(self, values: dict[str, Any]) -> bool:
         value = self.entity_description.value_fn(values)
+        if value is not None:
+            self._primary_seen = True
+        elif self.entity_description.fallback_value_fn is not None and not self._primary_seen:
+            value = self.entity_description.fallback_value_fn(values)
         if value is None or value == self._attr_native_value:
             return False
         if self.entity_description.monotonic and _decreases(self._attr_native_value, value):

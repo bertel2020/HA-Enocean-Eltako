@@ -830,6 +830,46 @@ async def test_psc_switch_status_and_meter(hass: HomeAssistant, esp3_gateway) ->
 
 
 @pytest.mark.parametrize(
+    "esp3_gateway",
+    [[_subentry("psc", "01-90-8C-14", "Zwischenstecker", platform="switch")]],
+    indirect=True,
+)
+async def test_psc_meter_from_vld_measurement(hass: HomeAssistant, esp3_gateway) -> None:
+    """Telegrams recorded from a PSC234 at a MGW-ETH: D2-01 energy (Wh) and power (W) next to
+    the A5-12-01 power telegram."""
+    from custom_components.enocean_eltako.protocol import esp3
+
+    _entry, server = esp3_gateway
+    psc = 0x01908C14
+    prefix = "FF-8A-1B-00_01-90-8C-14_1"
+
+    def push(rorg: int, data: str) -> None:
+        server.push(esp3.encode_radio(RadioTelegram(rorg, bytes.fromhex(data), psc)))
+
+    # only the D2-01 power so far: it is the fallback for the power sensor
+    push(0xD2, "07600000004C")
+    await _settle(hass)
+    power = _entity(hass, "sensor", f"{prefix}_power")
+    energy = _entity(hass, "sensor", f"{prefix}_energy")
+    assert float(hass.states.get(power).state) == 76
+
+    push(0xD2, "0720000DE14D")  # 909 645 Wh
+    push(Rorg.BS4, "0000470C")  # A5-12-01: 71 W
+    await _settle(hass)
+    assert float(hass.states.get(energy).state) == pytest.approx(909.645)
+    assert float(hass.states.get(power).state) == 71
+
+    # the A5-12-01 power wins now; a later D2-01 power does not make the state flap
+    push(0xD2, "07600000004C")
+    await _settle(hass)
+    assert float(hass.states.get(power).state) == 71
+    # the 10-minute A5 counter (0.1 kWh steps) does not override the finer D2-01 energy
+    push(Rorg.BS4, "00238609")  # 9094 / 10 = 909.4 kWh
+    await _settle(hass)
+    assert float(hass.states.get(energy).state) == pytest.approx(909.645)
+
+
+@pytest.mark.parametrize(
     "gateway",
     [[_subentry("room_controller", "05-00-00-41", "FUTH Bad")]],
     indirect=True,
