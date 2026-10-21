@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The test requirements are pinned to what Home Assistant needs (see requirements_test.txt),
+  # so they come as one pull request that is checked against CI before it is merged.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      test-requirements:
+        patterns: ["*"]
