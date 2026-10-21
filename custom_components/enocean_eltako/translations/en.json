@@ -1265,6 +1265,10 @@
     "connection_unstable_users": {
       "title": "{name} keeps losing its connection",
       "description": "The connection to {name} ({connection}) dropped {drops} times within {minutes} minutes. These integrations may use the same port: {users}. Disable them or give them their own gateway; two integrations on one port take it from each other."
+    },
+    "gateway_silent": {
+      "title": "{name} does not answer",
+      "description": "{name} is connected ({connection}) but does not answer, so no telegrams arrive. Many network gateways such as the MGW-ETH serve only one connection: close the other programs that use it (for example Symcon or another Home Assistant), or restart the gateway. The repair goes away by itself once it answers."
     }
   },
   "device_automation": {

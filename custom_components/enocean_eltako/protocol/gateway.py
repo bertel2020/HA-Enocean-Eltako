@@ -110,6 +110,11 @@ class Gateway:
         self._stable_timer: asyncio.TimerHandle | None = None
 
     @property
+    def connected_at(self) -> float:
+        """time.monotonic() of the last successful connect; identifies the connection."""
+        return self._connected_at
+
+    @property
     def bytes_unparsed(self) -> int:
         """Bytes the frame decoder skipped (no sync byte, bad CRC)."""
         return int(self._codec.decoder.dropped)

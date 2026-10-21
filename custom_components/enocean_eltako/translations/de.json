@@ -1265,6 +1265,10 @@
     "connection_unstable_users": {
       "title": "{name} verliert ständig die Verbindung",
       "description": "Die Verbindung zu {name} ({connection}) ist in {minutes} Minuten {drops}-mal abgebrochen. Diese Integrationen benutzen womöglich denselben Port: {users}. Sie deaktivieren oder ihnen ein eigenes Gateway geben; zwei Integrationen an einem Port nehmen ihn sich gegenseitig weg."
+    },
+    "gateway_silent": {
+      "title": "{name} antwortet nicht",
+      "description": "{name} ist verbunden ({connection}), antwortet aber nicht, deshalb kommen keine Telegramme an. Viele Netzwerk-Gateways wie das MGW-ETH bedienen nur eine Verbindung: andere Programme, die es nutzen (z. B. Symcon oder ein weiteres Home Assistant), beenden oder das Gateway neu starten. Die Reparatur verschwindet von selbst, sobald es antwortet."
     }
   },
   "device_automation": {

@@ -78,3 +78,39 @@ async def test_slow_bus_confirmations_raise_repair(hass: HomeAssistant, gateway)
     device.stats.latencies.extend([0.3] * 10)
     _check_bus_confirmations(hass, entry)
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_silent_gateway_repair(hass: HomeAssistant, monkeypatch) -> None:
+    """A gateway that accepts the connection but never answers raises a repair; it clears itself."""
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.enocean_eltako import health
+
+    monkeypatch.setattr(health, "PROBE_AFTER", 0)
+    monkeypatch.setattr(health, "PROBE_TIMEOUT", 0.2)
+    server = await FakeGateway(Protocol.ESP2, base_id=None).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    await hass.async_block_till_done()
+    issue_id = health.silent_issue_id(entry.entry_id)
+    registry = ir.async_get(hass)
+    try:
+        for _ in range(150):  # the check after connecting waits 3 s for the answer
+            if registry.async_get_issue(DOMAIN, issue_id):
+                break
+            await asyncio.sleep(0.05)
+        issue = registry.async_get_issue(DOMAIN, issue_id)
+        assert issue.translation_key == "gateway_silent"
+
+        server.base_id = 0xFFB74480  # it answers now: the next check clears the repair
+        entry.runtime_data.health_check()
+        for _ in range(100):
+            if registry.async_get_issue(DOMAIN, issue_id) is None:
+                break
+            await asyncio.sleep(0.02)
+        assert registry.async_get_issue(DOMAIN, issue_id) is None
+    finally:
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await server.stop()

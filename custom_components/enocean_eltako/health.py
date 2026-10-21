@@ -15,7 +15,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import CONF_DEVICE, CONF_PATH, DOMAIN
+from .const import CONF_DEVICE, CONF_MODEL, CONF_PATH, DOMAIN
+from .protocol.models import MODELS
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
@@ -26,6 +27,8 @@ SLOW_CONFIRMATION = 3.0  # E11: median seconds from command to the bus actor's a
 SLOW_MIN_SAMPLES = 5
 UNSTABLE_WINDOW = 10 * 60  # seconds: this many connection losses within it ...
 UNSTABLE_DROPS = 3  # ... make the connection unstable
+PROBE_AFTER = 10  # seconds a connection must hold before the gateway is asked for its base ID
+PROBE_TIMEOUT = 5.0
 OLD_DOMAIN = "eltako"  # the old integration: its serial port is in YAML, not in its entry
 
 
@@ -43,6 +46,10 @@ def slow_bus_issue_id(entry_id: str) -> str:
 
 def unstable_issue_id(entry_id: str) -> str:
     return f"connection_unstable_{entry_id}"
+
+
+def silent_issue_id(entry_id: str) -> str:
+    return f"gateway_silent_{entry_id}"
 
 
 @callback
@@ -110,6 +117,7 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
         else:
             ir.async_delete_issue(hass, DOMAIN, issue_id)
         _check_unstable(hass, entry, now)
+        _check_silent(hass, entry)
         if runtime.bus is not None:
             _check_bus_confirmations(hass, entry)
 
@@ -119,11 +127,69 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
         ir.async_delete_issue(hass, DOMAIN, gateway_issue_id(entry.entry_id))
         ir.async_delete_issue(hass, DOMAIN, slow_bus_issue_id(entry.entry_id))
         ir.async_delete_issue(hass, DOMAIN, unstable_issue_id(entry.entry_id))
+        ir.async_delete_issue(hass, DOMAIN, silent_issue_id(entry.entry_id))
         for device in entry.runtime_data.devices.values():
             ir.async_delete_issue(hass, DOMAIN, device_issue_id(device.unique_prefix))
 
     entry.async_on_unload(clear)
     return check
+
+
+@callback
+def _check_silent(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """A connected gateway that does not answer: many network gateways (MGW-ETH) serve only
+    one client and accept further connections without ever answering them. Asks for the
+    base ID once per connection, and again while the issue stands, so it clears itself."""
+    runtime = entry.runtime_data
+    gateway = runtime.gateway
+    issue_id = silent_issue_id(entry.entry_id)
+    if not MODELS[entry.data[CONF_MODEL]].reads_base_id or runtime.on_demand:
+        return
+    if not gateway.connected:
+        ir.async_delete_issue(hass, DOMAIN, issue_id)  # the outage repair applies
+        return
+    if runtime.probing or time.monotonic() - gateway.connected_at < PROBE_AFTER:
+        return
+    stands = ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+    if runtime.probed_connection == gateway.connected_at and not stands:
+        return
+    runtime.probing = True
+    entry.async_create_background_task(
+        hass, _probe(hass, entry, gateway.connected_at), f"{DOMAIN} gateway probe"
+    )
+
+
+async def _probe(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, connection: float) -> None:
+    runtime = entry.runtime_data
+    try:
+        answer = await runtime.gateway.read_base_id(PROBE_TIMEOUT)
+    except (ConnectionError, OSError):
+        return  # dropped meanwhile: the connection checks take over
+    finally:
+        runtime.probing = False
+    runtime.probed_connection = connection
+    async_set_silent(hass, entry, answer is None)
+
+
+@callback
+def async_set_silent(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, silent: bool) -> None:
+    """Raise or clear the "connected but does not answer" repair."""
+    issue_id = silent_issue_id(entry.entry_id)
+    if not silent:
+        ir.async_delete_issue(hass, DOMAIN, issue_id)
+        return
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        severity=ir.IssueSeverity.ERROR,
+        translation_key="gateway_silent",
+        translation_placeholders={
+            "name": entry.title,
+            "connection": str(entry.runtime_data.gateway.connection),
+        },
+    )
 
 
 @callback

@@ -61,7 +61,7 @@ from .const import (
 from .custom_devices import async_load as async_load_custom_devices
 from .device import EnOceanDevice
 from .discovery import async_abort_configured, async_setup_discovery
-from .health import async_setup_health
+from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .panel import async_register_panel
 from .protocol.bus_group import BusMember
@@ -104,6 +104,8 @@ class GatewayRuntime:
     proxy: dict[str, Any] | None = None  # EnOcean Proxy app status (proxy_status.py)
     remove_reload_listener: Callable[[], None] | None = None
     drops: deque[float] = field(default_factory=lambda: deque(maxlen=20))  # time.time()
+    probed_connection: float = 0.0  # Gateway.connected_at of the connection asked for its base ID
+    probing: bool = False
 
     @callback
     def suspend_reload(self) -> None:
@@ -311,10 +313,14 @@ def _async_check_base_id(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
     configured = parse_id(entry.data[CONF_BASE_ID])
 
     async def check() -> None:
+        gateway = entry.runtime_data.gateway
+        connection = gateway.connected_at
         try:
-            reported = await entry.runtime_data.gateway.read_base_id()
+            reported = await gateway.read_base_id()
         except ConnectionError:
             return
+        entry.runtime_data.probed_connection = connection
+        async_set_silent(hass, entry, reported is None)
         if reported is None:
             return
         issue_id = base_id_issue_id(entry.entry_id)
