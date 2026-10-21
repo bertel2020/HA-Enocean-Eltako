@@ -11,7 +11,6 @@ import probatio as vol
 from homeassistant.config_entries import (
     SOURCE_HASSIO,
     SOURCE_RECONFIGURE,
-    SOURCE_ZEROCONF,
     ConfigEntry,
     ConfigEntryState,
     ConfigFlow,
