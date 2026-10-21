@@ -1,0 +1,46 @@
+name: Bug report / Fehlerbericht
+description: Something does not work as expected / Etwas funktioniert nicht wie erwartet
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Integration version / Version
+      placeholder: "0.1.1"
+    validations:
+      required: true
+  - type: input
+    id: ha
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: input
+    id: gateway
+    attributes:
+      label: Gateway and connection / Gateway und Anbindung
+      placeholder: "FAM14 via FGW14-USB, MGW-ETH, ser2net ..."
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and profile / Gerät und Profil
+      placeholder: "FSB14, A5-08-01 (eltako) ..."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, what did you expect? / Was passiert, was erwartest du?
+    validations:
+      required: true
+  - type: textarea
+    id: telegrams
+    attributes:
+      label: Telegrams (hex) / Telegramme
+      description: From the panel's telegram list (export), if the problem is a device. Leave out anything private.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log / Protokoll
+      description: Entries of `custom_components.enocean_eltako`, and attach the diagnostics download of the gateway entry.
+      render: text

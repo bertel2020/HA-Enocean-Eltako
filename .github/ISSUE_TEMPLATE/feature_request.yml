@@ -1,0 +1,16 @@
+name: Feature or device request / Funktions- oder Geräte-Wunsch
+description: A new device, profile or function / Ein neues Gerät, Profil oder eine Funktion
+labels: [enhancement]
+body:
+  - type: textarea
+    id: wish
+    attributes:
+      label: What do you need? / Was brauchst du?
+      description: Device (maker, type), EEP if known, and what it should do in Home Assistant.
+    validations:
+      required: true
+  - type: textarea
+    id: telegrams
+    attributes:
+      label: Telegrams (hex) / Telegramme
+      description: A teach-in and a state change of the device help most.
