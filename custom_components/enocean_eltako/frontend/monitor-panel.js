@@ -140,10 +140,12 @@ const TEXT = {
     viewTelegrams: "Telegrams", viewDevices: "Devices", viewSenders: "Sender IDs",
     pools: "Sender ID pool", poolBus: (t) => `${t} (bus)`, poolFree: "Free", poolOf: (n) => `of ${n}`,
     poolSummary: (a, b) => `${a} assigned · ${b} blocked`,
-    colId: "Sender ID", colDevice: "Device", colProfile: "Profile", colState: "Status",
     stateAssigned: "assigned", stateBlocked: "blocked", deletedDevice: "deleted device",
     freeAction: "Free", noSenderIds: "No sender IDs in use yet.",
-    blockedWarning: (id) => `${id}: free the ID only once the actuator no longer knows it (teach-out). Otherwise a new device with this ID would control the old actuator.`,
+    blockedHint: "Free an ID only once the actuator no longer knows it (teach-out). Otherwise a new device with this ID would control the old actuator too.",
+    idCount: (n) => (n === 1 ? "1 ID" : `${n} IDs`),
+    profiles: { central: "Central command", controller: "Controller", rocker: "Rocker", cooling: "Cooling switch", direction_rocker: "Direction rocker",
+      vld: "VLD commands", contact: "Window contact", temperature: "Temperature", motion: "Motion", brightness: "Brightness", weather: "Weather" },
     freeConfirmTitle: (id) => `Free ${id}?`,
     freeConfirmText: "The actuator has forgotten this ID in its teach-out. After that a new device can get it.",
     freeConfirm: "Yes, free it", freed: "Sender ID freed",
@@ -291,10 +293,12 @@ const TEXT = {
     viewTelegrams: "Telegramme", viewDevices: "Geräte", viewSenders: "Sender-IDs",
     pools: "Sender-ID-Pool", poolBus: (t) => `${t} (Bus)`, poolFree: "Frei", poolOf: (n) => `von ${n}`,
     poolSummary: (a, b) => `${a} zugewiesen · ${b} gesperrt`,
-    colId: "Sender-ID", colDevice: "Gerät", colProfile: "Profil", colState: "Status",
     stateAssigned: "zugewiesen", stateBlocked: "gesperrt", deletedDevice: "gelöschtes Gerät",
     freeAction: "Freigeben", noSenderIds: "Noch keine Sender-IDs vergeben.",
-    blockedWarning: (id) => `${id}: Gib die ID erst frei, wenn der Aktor sie nicht mehr kennt (Teach-out). Sonst steuert ein neues Gerät mit dieser ID den alten Aktor mit.`,
+    blockedHint: "Erst freigeben, wenn der Aktor die ID nicht mehr kennt (Teach-out). Sonst steuert ein neues Gerät mit dieser ID den alten Aktor mit.",
+    idCount: (n) => (n === 1 ? "1 ID" : `${n} IDs`),
+    profiles: { central: "Zentralbefehl", controller: "Controller", rocker: "Taster", cooling: "Kühlschalter", direction_rocker: "Richtungstaster",
+      vld: "VLD-Befehle", contact: "Fensterkontakt", temperature: "Temperatur", motion: "Bewegung", brightness: "Helligkeit", weather: "Wetter" },
     freeConfirmTitle: (id) => `${id} freigeben?`,
     freeConfirmText: "Der Aktor hat diese ID im Teach-out verlernt. Danach kann ein neues Gerät sie bekommen.",
     freeConfirm: "Ja, freigeben", freed: "Sender-ID freigegeben",
@@ -469,6 +473,8 @@ const STYLE = `
   .chip[aria-pressed="true"] { border-color: transparent; color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .chip.add { color: var(--accent); }
+  .chip.primary { background: var(--accent); color: var(--text-primary-color, #fff); border-color: var(--accent); }
+  .chip:disabled { opacity: .5; cursor: default; }
   .meta { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: 12px; color: var(--muted); }
   .notice { margin: 8px 16px 0; padding: 10px 12px; border-radius: 8px; font-size: 13px;
     background: color-mix(in srgb, var(--warn) 14%, transparent); display: flex; gap: 8px; align-items: center; }
@@ -552,7 +558,6 @@ const STYLE = `
   .sendform .text { height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--primary-text-color);
     padding: 0 10px; font: 13px ui-monospace, monospace; text-transform: none; min-width: 0; }
   .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-  .sendform .primary { background: var(--accent); color: var(--text-primary-color, #fff); border-color: var(--accent); }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
@@ -604,19 +609,33 @@ const STYLE = `
   .senders .pool .range { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .senders .meter { display: block; height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
   .senders .meter i { display: block; height: 100%; background: var(--accent); }
-  .senders table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .senders th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 16px; }
-  .senders td { padding: 10px 16px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
-  .senders tr.blocked td { background: color-mix(in srgb, var(--warn) 12%, transparent); }
-  .senders td.act { text-align: right; }
-  .senders .deleted { color: var(--muted); }
+  .senders .sid-group { padding: 4px 0 8px; border-top: 1px solid var(--line); }
+  .senders .sid-group.blocked { background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .senders .sid-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px 2px; min-width: 0; }
+  .senders .sid-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+  .senders .sid-head .sub { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .senders .sid-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 96px auto; gap: 2px 12px; align-items: center;
+    min-height: 34px; padding: 2px 16px 2px 28px; font-size: 13px; }
+  .senders .sid-profile { color: var(--muted); overflow-wrap: anywhere; }
+  .senders .act { text-align: right; }
+  .senders .act .chip { height: 30px; }
+  .senders .deleted { color: var(--muted); font-weight: 400; }
   .senders .tag.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
-  .senders .banner { margin: 0; padding: 10px 16px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
-  .senders .confirm { padding: 14px 16px; border-top: 1px solid var(--line); }
+  .senders .sid-hint { margin: 4px 16px 0 28px; font-size: 12px; color: var(--muted); }
+  .senders .confirm { margin: 10px 16px 0 28px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
   .senders .confirm b { display: block; font-weight: 500; margin-bottom: 4px; }
   .senders .confirm p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
   .senders .confirm .buttons { display: flex; justify-content: flex-end; gap: 8px; }
   .senders .pick { padding: 12px 16px 0; }
+  @media (max-width: 760px) {
+    /* phones: ID and status on top, profile and button below */
+    .senders .sid-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id state" "profile act"; padding: 6px 16px; }
+    .senders .sid-id { grid-area: id; }
+    .senders .sid-state { grid-area: state; }
+    .senders .sid-profile { grid-area: profile; }
+    .senders .act { grid-area: act; }
+    .senders .sid-hint, .senders .confirm { margin-left: 16px; }
+  }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
   .devices { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto auto; column-gap: 16px; }
@@ -725,7 +744,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -1579,6 +1598,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     ).length;
   }
 
+  _profile(profile) {
+    return this._t.profiles[profile] || profile;
+  }
+
   _label(label) {
     return this._t.fields[label] || label.replace(/_/g, " ");
   }
@@ -1615,7 +1638,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (r.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
-    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(r.profile) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
+    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
       `<span class="m-only"> · ${esc(type)}${this._multi ? ` · ${esc(r.gateway_name)}` : ""}</span>`;
     const fields = r.fields || (r.values ? Object.entries(r.values).map(([label, value]) => ({ label, value })) : null);
     const values = fields && fields.length
@@ -1648,7 +1671,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
-          ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
+          ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
           <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
       : "";
@@ -2049,34 +2072,45 @@ class EnOceanEltakoPanel extends HTMLElement {
           .map((p) => `<option value="${esc(p.id)}"${p.id === pool.id ? " selected" : ""}>${esc(this._poolLabel(p))}</option>`)
           .join("")}</select></div>`
       : "";
-    const rows = pool.rows
-      .map((r) => {
-        const isBlocked = r.state === "blocked";
-        const name = r.device
-          ? esc(r.device)
-          : `<span class="deleted">${esc(t.deletedDevice)}${r.ref ? ` · ${esc(r.ref)}` : ""}</span>`;
-        return `<tr class="${isBlocked ? "blocked" : ""}">
-          <td class="mono">${esc(r.id)}</td><td>${name}</td><td>${esc(r.profile || "–")}</td>
-          <td><span class="tag ${isBlocked ? "warn" : "ok"}">${esc(isBlocked ? t.stateBlocked : t.stateAssigned)}</span></td>
-          <td class="act">${isBlocked ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</td>
-        </tr>`;
+    // one block per device with its IDs; blocked IDs (deleted devices) first, they need doing
+    const groups = new Map();
+    for (const r of pool.rows) {
+      const key = r.ref || r.device || r.id;
+      if (!groups.has(key)) groups.set(key, { device: r.device, ref: r.ref, rows: [] });
+      groups.get(key).rows.push(r);
+    }
+    const isBlocked = (r) => r.state === "blocked";
+    const list = [...groups.values()]
+      .map((g) => ({ ...g, blocked: g.rows.some(isBlocked), rows: g.rows.sort((a, b) => isBlocked(b) - isBlocked(a) || collator.compare(a.id, b.id)) }))
+      .sort((a, b) => b.blocked - a.blocked || (a.device == null) - (b.device == null) || collator.compare(a.device || "", b.device || ""));
+    const html = list
+      .map((g) => {
+        const name = g.device
+          ? `<span class="sid-name">${esc(g.device)}</span>`
+          : `<span class="sid-name deleted" title="${esc(g.ref || "")}">${esc(t.deletedDevice)}</span>`;
+        const rows = g.rows
+          .map((r) => `<div class="sid-row${isBlocked(r) ? " blocked" : ""}" data-key="${esc(r.id)}">
+            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
+            <span class="sid-state"><span class="tag ${isBlocked(r) ? "warn" : "ok"}">${esc(isBlocked(r) ? t.stateBlocked : t.stateAssigned)}</span></span>
+            <span class="act">${isBlocked(r) ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</span>
+          </div>`)
+          .join("");
+        const confirm = this._freeing && g.rows.some((r) => isBlocked(r) && r.id === this._freeing.id)
+          ? `<div class="confirm"><b>${esc(t.freeConfirmTitle(this._freeing.id))}</b><p>${esc(t.freeConfirmText)}</p>
+              <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(t.freeConfirm)}</button></div></div>`
+          : "";
+        return `<div class="sid-group${g.blocked ? " blocked" : ""}">
+          <div class="sid-head">${name}<span class="sub">${esc(t.idCount(g.rows.length))}</span></div>
+          ${rows}${g.blocked ? `<p class="sid-hint">${esc(t.blockedHint)}</p>` : ""}${confirm}</div>`;
       })
       .join("");
-    const warning = blocked.length ? `<p class="banner">${esc(t.blockedWarning(blocked.map((r) => r.id).join(", ")))}</p>` : "";
-    const confirm = this._freeing && blocked.some((r) => r.id === this._freeing.id)
-      ? `<div class="confirm"><b>${esc(t.freeConfirmTitle(this._freeing.id))}</b><p>${esc(t.freeConfirmText)}</p>
-          <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip" data-free-confirm>${esc(t.freeConfirm)}</button></div></div>`
-      : "";
     this._replace(container, `${select}
       <div class="pool">
         <div><div class="meta-label">${esc(t.poolFree)}</div><div class="big">${esc(pool.free)} <small>${esc(t.poolOf(pool.size))}</small></div></div>
         <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${Math.round((used / pool.size) * 100)}%"></i></span>
           <div class="range"><span class="mono">${esc(pool.start)} – ${esc(pool.end)}</span> · ${esc(t.poolSummary(pool.rows.length - blocked.length, blocked.length))}</div></div>
       </div>
-      ${pool.rows.length
-        ? `<table><thead><tr><th>${esc(t.colId)}</th><th>${esc(t.colDevice)}</th><th>${esc(t.colProfile)}</th><th>${esc(t.colState)}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
-        : `<div class="hint">${esc(t.noSenderIds)}</div>`}
-      ${warning}${confirm}`);
+      ${pool.rows.length ? `<div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
   }
 
   _sendersClick(e) {

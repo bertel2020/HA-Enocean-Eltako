@@ -259,8 +259,8 @@ es erscheint in der Liste als gesendet.
 ## Sender-IDs
 
 Der Schalter **Sender-IDs** im Panel zeigt, wer welche Sender-ID nutzt: je Gateway (und je
-Bus-Gruppe) die freien IDs des Pools und eine Tabelle mit ID, Gerät, Profil und Status.
-Funkgateways vergeben Base-ID + 0…127.
+Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
+gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 0…127.
 
 Nach dem Löschen eines Geräts bleibt seine ID **gesperrt**, bis sie aus allen Aktoren abgelernt
 ist. **Freigeben** gibt sie nach einer Rückfrage frei, sobald der Aktor sie verlernt hat
