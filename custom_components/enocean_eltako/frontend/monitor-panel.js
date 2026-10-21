@@ -680,6 +680,10 @@ const STYLE = `
     .pager .icon-btn { width: 34px; height: 34px; }
     .pager label span { display: none; }
     .filters .search { flex-basis: 100%; }
+    /* the view switch gets a line of its own and scrolls instead of cutting off a view */
+    #view { flex-basis: 100%; overflow-x: auto; scrollbar-width: none; }
+    #view::-webkit-scrollbar { display: none; }
+    #view button { flex: 1 0 auto; padding: 0 10px; }
     .filters .chip { padding: 0 10px; font-size: 12px; flex: 1 1 auto; justify-content: center; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
@@ -837,7 +841,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         </section>
         <section class="panel" id="panel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
           <div class="bar">
-            <h2>${esc(t.telegrams)}</h2>
+            <h2 id="viewTitle">${esc(t.telegrams)}</h2>
             <span class="live list-only" id="live"><i></i><span></span></span>
             <div class="segmented" role="group" id="view">
               <button data-view="telegrams" aria-pressed="true">${esc(t.viewTelegrams)}</button>
@@ -1165,6 +1169,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._offset = 0;
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
+    // the heading names the view; the section's label follows it
+    const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover }[view];
+    $("viewTitle").textContent = title;
+    $("panel").setAttribute("aria-label", title);
     if (view === "senders") this._loadPools();
     if (view === "takeover") this._loadTakeover();
     for (const button of $("view").querySelectorAll("button")) {
