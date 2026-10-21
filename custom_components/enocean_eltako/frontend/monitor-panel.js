@@ -103,7 +103,17 @@ const TEXT = {
     pair: "Command and answer",
     repeated: "Repetitions", repeater: "Repeater hops",
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
-    viewTelegrams: "Telegrams", viewDevices: "Devices",
+    viewTelegrams: "Telegrams", viewDevices: "Devices", viewSenders: "Sender IDs",
+    pools: "Sender ID pool", poolBus: (t) => `${t} (bus)`, poolFree: "Free", poolOf: (n) => `of ${n}`,
+    poolSummary: (a, b) => `${a} assigned · ${b} blocked`,
+    colId: "Sender ID", colDevice: "Device", colProfile: "Profile", colState: "Status",
+    stateAssigned: "assigned", stateBlocked: "blocked", deletedDevice: "deleted device",
+    freeAction: "Free", noSenderIds: "No sender IDs in use yet.",
+    blockedWarning: (id) => `${id}: free the ID only once the actuator no longer knows it (teach-out). Otherwise a new device with this ID would control the old actuator.`,
+    freeConfirmTitle: (id) => `Free ${id}?`,
+    freeConfirmText: "The actuator has forgotten this ID in its teach-out. After that a new device can get it.",
+    freeConfirm: "Yes, free it", freed: "Sender ID freed",
+    freeErrors: { not_blocked: "Only a blocked sender ID can be freed", not_found: "Pool not found", invalid_id: "Invalid sender ID", unknown: "Freeing failed" },
     deviceCount: (n) => (n === 1 ? "1 sender" : `${n} senders`),
     telegramsCount: (n) => (n === 1 ? "1 telegram" : `${n} telegrams`),
     weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
@@ -209,7 +219,17 @@ const TEXT = {
     pair: "Befehl und Antwort",
     repeated: "Wiederholungen", repeater: "Repeater-Stufen",
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
-    viewTelegrams: "Telegramme", viewDevices: "Geräte",
+    viewTelegrams: "Telegramme", viewDevices: "Geräte", viewSenders: "Sender-IDs",
+    pools: "Sender-ID-Pool", poolBus: (t) => `${t} (Bus)`, poolFree: "Frei", poolOf: (n) => `von ${n}`,
+    poolSummary: (a, b) => `${a} zugewiesen · ${b} gesperrt`,
+    colId: "Sender-ID", colDevice: "Gerät", colProfile: "Profil", colState: "Status",
+    stateAssigned: "zugewiesen", stateBlocked: "gesperrt", deletedDevice: "gelöschtes Gerät",
+    freeAction: "Freigeben", noSenderIds: "Noch keine Sender-IDs vergeben.",
+    blockedWarning: (id) => `${id}: Gib die ID erst frei, wenn der Aktor sie nicht mehr kennt (Teach-out). Sonst steuert ein neues Gerät mit dieser ID den alten Aktor mit.`,
+    freeConfirmTitle: (id) => `${id} freigeben?`,
+    freeConfirmText: "Der Aktor hat diese ID im Teach-out verlernt. Danach kann ein neues Gerät sie bekommen.",
+    freeConfirm: "Ja, freigeben", freed: "Sender-ID freigegeben",
+    freeErrors: { not_blocked: "Nur eine gesperrte Sender-ID lässt sich freigeben", not_found: "Pool nicht gefunden", invalid_id: "Ungültige Sender-ID", unknown: "Freigeben fehlgeschlagen" },
     deviceCount: (n) => (n === 1 ? "1 Sender" : `${n} Sender`),
     telegramsCount: (n) => (n === 1 ? "1 Telegramm" : `${n} Telegramme`),
     weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
@@ -463,8 +483,28 @@ const STYLE = `
     padding: 0 10px; font: 13px ui-monospace, monospace; text-transform: none; min-width: 0; }
   .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   .sendform .primary { background: var(--accent); color: var(--text-primary-color, #fff); border-color: var(--accent); }
-  .panel[data-view="devices"] .tg-only { display: none !important; }
-  .panel[data-view="telegrams"] .devices { display: none; }
+  .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only { display: none !important; }
+  .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders { display: none; }
+  .senders .pool { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px 16px; align-items: center; padding: 14px 16px; }
+  .senders .meta-label { font-size: 13px; color: var(--muted); }
+  .senders .pool .big { font-size: 24px; font-weight: 500; }
+  .senders .pool .big small { font-size: 13px; font-weight: 400; color: var(--muted); }
+  .senders .pool .range { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .senders .meter { display: block; height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
+  .senders .meter i { display: block; height: 100%; background: var(--accent); }
+  .senders table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .senders th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 16px; }
+  .senders td { padding: 10px 16px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+  .senders tr.blocked td { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .senders td.act { text-align: right; }
+  .senders .deleted { color: var(--muted); }
+  .senders .tag.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
+  .senders .banner { margin: 0; padding: 10px 16px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .senders .confirm { padding: 14px 16px; border-top: 1px solid var(--line); }
+  .senders .confirm b { display: block; font-weight: 500; margin-bottom: 4px; }
+  .senders .confirm p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .senders .confirm .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+  .senders .pick { padding: 12px 16px 0; }
   .devices .dev { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: 4px 16px; align-items: center;
     padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
@@ -609,7 +649,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pending = [];
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
-    this._view = "telegrams"; // or "devices": one line per sender
+    this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
+    this._pools = [];
+    this._pool = ""; // shown pool
+    this._freeing = null; // blocked sender ID waiting for its confirmation
     const view = loadView();
     this._filter = view.filter;
     this._sort = view.sort;
@@ -684,18 +727,19 @@ class EnOceanEltakoPanel extends HTMLElement {
         <section class="panel" id="panel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
           <div class="bar">
             <h2>${esc(t.telegrams)}</h2>
-            <span class="live" id="live"><i></i><span></span></span>
+            <span class="live list-only" id="live"><i></i><span></span></span>
             <div class="segmented" role="group" id="view">
               <button data-view="telegrams" aria-pressed="true">${esc(t.viewTelegrams)}</button>
               <button data-view="devices" aria-pressed="false">${esc(t.viewDevices)}</button>
+              <button data-view="senders" aria-pressed="false">${esc(t.viewSenders)}</button>
             </div>
             <span class="spacer"></span>
-            <button class="icon-btn" id="pause"></button>
-            <button class="icon-btn" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
-            <button class="icon-btn" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
-            <button class="icon-btn" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
+            <button class="icon-btn list-only" id="pause"></button>
+            <button class="icon-btn list-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
+            <button class="icon-btn list-only" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
+            <button class="icon-btn list-only" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
           </div>
-          <div class="filters">
+          <div class="filters list-only">
             <label class="search" title="${esc(t.searchKey)}">
               ${svg(ICON.search)}
               <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off">
@@ -712,7 +756,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <button class="chip tg-only" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
           </div>
-          <form class="sendform" id="sendForm" hidden>
+          <form class="sendform list-only" id="sendForm" hidden>
             <h3>${esc(t.sendTitle)}</h3>
             <p>${esc(t.sendHint)}</p>
             <div class="fields">
@@ -725,8 +769,9 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
-          <div class="meta"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
+          <div class="senders" id="senders"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager tg-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
@@ -761,6 +806,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("view").addEventListener("click", (e) => {
       const button = e.target.closest("button");
       if (button) this._setView(button.dataset.view);
+    });
+    $("senders").addEventListener("click", (e) => this._sendersClick(e));
+    $("senders").addEventListener("change", (e) => {
+      if (e.target.id !== "poolSelect") return;
+      this._pool = e.target.value;
+      this._freeing = null;
+      this._renderSenderIds();
     });
     $("devices").addEventListener("click", (e) => {
       const dev = e.target.closest(".dev");
@@ -898,6 +950,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._renderCards(true);
     if (this._view === "devices") this._render(true); // "heard x ago" moves on
+    if (this._view === "senders" && !this._freeing) this._loadPools();
     const multi = gateways.length > 1;
     if (multi !== this._multi) {
       this._multi = multi;
@@ -995,6 +1048,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._offset = 0;
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
+    if (view === "senders") this._loadPools();
     for (const button of $("view").querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.view === view));
     }
@@ -1457,6 +1511,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderDevices(background);
       return;
     }
+    if (this._view === "senders") return;
     const rows = this._visible().sort((a, b) => this._compare(a, b));
     const total = rows.length;
     this._total = total;
@@ -1476,6 +1531,91 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._replace(list, page.map((r) => this._row(r)).join(""));
     }
     this._fresh.clear();
+  }
+
+  async _loadPools() {
+    try {
+      this._pools = await this._hass.callWS({ type: "enocean_eltako/sender_pools" });
+    } catch (err) {
+      return;
+    }
+    if (!this._pools.some((p) => p.id === this._pool)) this._pool = this._pools[0]?.id || "";
+    this._renderSenderIds();
+  }
+
+  _poolLabel(pool) {
+    return pool.kind === "bus" ? this._t.poolBus(pool.title) : pool.title;
+  }
+
+  _renderSenderIds() {
+    const t = this._t;
+    const container = this.shadowRoot.getElementById("senders");
+    const pool = this._pools.find((p) => p.id === this._pool);
+    if (!pool) {
+      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noGateways)}</b></div>`);
+      return;
+    }
+    const blocked = pool.rows.filter((r) => r.state === "blocked");
+    const used = pool.size - pool.free;
+    const select = this._pools.length > 1
+      ? `<div class="pick"><select class="select" id="poolSelect" aria-label="${esc(t.pools)}">${this._pools
+          .map((p) => `<option value="${esc(p.id)}"${p.id === pool.id ? " selected" : ""}>${esc(this._poolLabel(p))}</option>`)
+          .join("")}</select></div>`
+      : "";
+    const rows = pool.rows
+      .map((r) => {
+        const isBlocked = r.state === "blocked";
+        const name = r.device
+          ? esc(r.device)
+          : `<span class="deleted">${esc(t.deletedDevice)}${r.ref ? ` · ${esc(r.ref)}` : ""}</span>`;
+        return `<tr class="${isBlocked ? "blocked" : ""}">
+          <td class="mono">${esc(r.id)}</td><td>${name}</td><td>${esc(r.profile || "–")}</td>
+          <td><span class="tag ${isBlocked ? "warn" : "ok"}">${esc(isBlocked ? t.stateBlocked : t.stateAssigned)}</span></td>
+          <td class="act">${isBlocked ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</td>
+        </tr>`;
+      })
+      .join("");
+    const warning = blocked.length ? `<p class="banner">${esc(t.blockedWarning(blocked.map((r) => r.id).join(", ")))}</p>` : "";
+    const confirm = this._freeing && blocked.some((r) => r.id === this._freeing.id)
+      ? `<div class="confirm"><b>${esc(t.freeConfirmTitle(this._freeing.id))}</b><p>${esc(t.freeConfirmText)}</p>
+          <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip" data-free-confirm>${esc(t.freeConfirm)}</button></div></div>`
+      : "";
+    this._replace(container, `${select}
+      <div class="pool">
+        <div><div class="meta-label">${esc(t.poolFree)}</div><div class="big">${esc(pool.free)} <small>${esc(t.poolOf(pool.size))}</small></div></div>
+        <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${Math.round((used / pool.size) * 100)}%"></i></span>
+          <div class="range"><span class="mono">${esc(pool.start)} – ${esc(pool.end)}</span> · ${esc(t.poolSummary(pool.rows.length - blocked.length, blocked.length))}</div></div>
+      </div>
+      ${pool.rows.length
+        ? `<table><thead><tr><th>${esc(t.colId)}</th><th>${esc(t.colDevice)}</th><th>${esc(t.colProfile)}</th><th>${esc(t.colState)}</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+        : `<div class="hint">${esc(t.noSenderIds)}</div>`}
+      ${warning}${confirm}`);
+  }
+
+  _sendersClick(e) {
+    const free = e.target.closest("[data-free]");
+    if (free) {
+      this._freeing = { id: free.dataset.free, device: free.dataset.device };
+      this._renderSenderIds();
+    } else if (e.target.closest("[data-free-cancel]")) {
+      this._freeing = null;
+      this._renderSenderIds();
+    } else if (e.target.closest("[data-free-confirm]")) {
+      this._freeSender();
+    }
+  }
+
+  async _freeSender() {
+    const t = this._t;
+    const { id } = this._freeing;
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/sender_pools/free", pool: this._pool, sender: id });
+      this._notice(t.freed);
+    } catch (err) {
+      this._notice(t.freeErrors[err.code] || t.freeErrors.unknown);
+    }
+    this._freeing = null;
+    await this._loadPools();
   }
 
   _deviceList() {

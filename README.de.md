@@ -224,6 +224,12 @@ Hex) über die Sendewarteschlange, nur von einer Sender-ID, die eines deiner Ger
 nutzt, etwa um einen Aktor auszuprobieren. Aktoren reagieren darauf wie auf jedes Telegramm;
 es erscheint in der Liste als gesendet.
 
+Der Schalter **Sender-IDs** zeigt, wer welche Sender-ID nutzt: je Gateway (und je Bus-Gruppe)
+die freien IDs des Pools und eine Tabelle mit ID, Gerät, Profil und Status. Nach dem Löschen
+eines Geräts bleibt seine ID **gesperrt**; **Freigeben** gibt sie nach einer Rückfrage frei,
+sobald der Aktor sie verlernt hat (Teach-out). Dieselbe Liste gibt es weiterhin in den
+Gateway-Optionen.
+
 ## Gateway-Optionen und Reparaturen
 
 **Konfigurieren** an einem Gateway öffnet **Einstellungen** (Pause zwischen Telegrammen,

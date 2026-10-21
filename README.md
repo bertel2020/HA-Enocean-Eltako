@@ -215,6 +215,11 @@ The **Send a telegram** button sends a raw telegram (type, data, status as hex) 
 send queue, only from a sender ID that one of your devices already uses, to try out an actuator.
 Actuators react to it as to any telegram; the telegram appears in the list as sent.
 
+The **Sender IDs** switch shows who uses which sender ID: per gateway (and per bus group) the
+free IDs of the pool, and a table with ID, device, profile and status. After a device is
+deleted its ID stays **blocked**; **Free** releases it once the actuator has forgotten it
+(teach-out), after a confirmation. The same list is still available in the gateway options.
+
 ## Gateway options and repairs
 
 **Configure** on a gateway opens **Settings** (pause between telegrams, discovery, bus
