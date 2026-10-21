@@ -74,6 +74,7 @@ Jeder Schritt, alle Gerätearten, das Panel, die Übernahme, Blueprints, bekannt
 - [Benutzerhandbuch](docs/USER-GUIDE.de.md)
 - [Unterstützte Geräte](docs/devices.de.md)
 - [Einlernfunktionen der Eltako-Aktoren Baureihe 14](docs/teach_in.de.md)
+- [Änderungsprotokoll](CHANGELOG.md) (Englisch und Deutsch)
 
 ## Entwicklung
 

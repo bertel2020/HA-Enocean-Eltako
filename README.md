@@ -71,6 +71,7 @@ Every step, all device types, the panel, the takeover, blueprints, known limitat
 - [User Guide](docs/USER-GUIDE.md)
 - [Supported devices](docs/devices.md)
 - [Learn functions of Eltako series 14 actuators](docs/teach_in.md)
+- [Changelog](CHANGELOG.md)
 
 ## Development
 
