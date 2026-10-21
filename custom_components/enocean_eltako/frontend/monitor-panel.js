@@ -736,7 +736,7 @@ const STYLE = `
     .pager label span { display: none; }
     .filters .search { flex-basis: 100%; }
     /* the view switch gets a line of its own and scrolls instead of cutting off a view */
-    #view { flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .segmented#view { flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     #view::-webkit-scrollbar { display: none; }
     #view button { flex: 1 0 auto; justify-content: center; padding: 0 10px; }
     .filters .chip { padding: 0 10px; font-size: 12px; flex: 1 1 auto; justify-content: center; }

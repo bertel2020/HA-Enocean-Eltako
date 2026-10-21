@@ -17,6 +17,11 @@ All notable changes to this project are documented here, in English and German
   and announced by another is found by its base ID; its entry only gets the new address and
   status port, devices and entities stay
 
+#### Fixed
+
+- **Panel on phones:** the view tabs in the header stay on one line and scroll sideways
+  instead of wrapping into a second line
+
 ### [0.1.2] - 2026-10-21
 
 #### Changed
@@ -98,6 +103,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Umstieg vom EnOcean Proxy zum Device Proxy:** Ein Gateway, das über die eine Proxy-App
   eingerichtet wurde und von der anderen gemeldet wird, wird über seine Base-ID erkannt; der
   Eintrag bekommt nur die neue Adresse und den Status-Port, Geräte und Entitäten bleiben
+
+#### Behoben
+
+- **Panel auf dem Handy:** Die Ansichts-Reiter in der Kopfzeile bleiben in einer Zeile und
+  lassen sich seitlich wischen, statt in eine zweite Zeile umzubrechen
 
 ### [0.1.2] - 2026-10-21
 
