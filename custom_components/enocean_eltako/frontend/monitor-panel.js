@@ -7,6 +7,7 @@ const MAX_ROWS = 1000;
 const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
+const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
 
@@ -81,6 +82,11 @@ const TEXT = {
     duplicate: "repetition",
     teachIn: "Teach-in",
     filterSender: "Show only this sender",
+    filterDevice: "Show only this device (commands and answers)",
+    answerAfter: (ms) => `Answered after ${ms} ms`,
+    answerTo: (ms) => `Answer to a command ${ms} ms earlier`,
+    noAnswer: "No answer within 3 s",
+    pair: "Command and answer",
     raw: "Data",
     status: "Status",
     destination: "Destination",
@@ -164,6 +170,11 @@ const TEXT = {
     duplicate: "Wiederholung",
     teachIn: "Lerntelegramm",
     filterSender: "Nur diesen Sender zeigen",
+    filterDevice: "Nur dieses Gerät zeigen (Befehle und Antworten)",
+    answerAfter: (ms) => `Antwort nach ${ms} ms`,
+    answerTo: (ms) => `Antwort auf einen Befehl vor ${ms} ms`,
+    noAnswer: "Keine Antwort innerhalb von 3 s",
+    pair: "Befehl und Antwort",
     raw: "Daten",
     status: "Status",
     destination: "Ziel",
@@ -1124,6 +1135,21 @@ class EnOceanEltakoPanel extends HTMLElement {
     return String(value);
   }
 
+  _pairText(r) {
+    // a command we sent and the answer of the same device, matched by time (3 s window)
+    if (!r.device || r.duplicate) return "";
+    const at = Date.parse(r.time);
+    let best = null;
+    for (const o of this._rows) {
+      if (o.device !== r.device || o.dir === r.dir || o.duplicate) continue;
+      const delta = r.dir === "tx" ? Date.parse(o.time) - at : at - Date.parse(o.time);
+      if (delta >= 0 && delta <= ANSWER_WINDOW && (best === null || delta < best)) best = delta;
+    }
+    if (best !== null) return r.dir === "tx" ? this._t.answerAfter(best) : this._t.answerTo(best);
+    // the newest telegrams may still be waiting for their answer: only call it missing when old
+    return r.dir === "tx" && Date.now() - at > ANSWER_WINDOW ? this._t.noAnswer : "";
+  }
+
   _row(r) {
     const t = this._t;
     const key = rowKey(r);
@@ -1152,6 +1178,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
+    const pair = expanded ? this._pairText(r) : "";
     const details = expanded
       ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(time.toLocaleString(this._hass.language))}.${ms}</dd></div>
@@ -1163,8 +1190,9 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
+          ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-only="${esc(r.sender)}">${svg(ICON.filter)}${esc(t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
+          <div class="actions"><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
