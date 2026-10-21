@@ -204,6 +204,26 @@ endet. Das Panel lädt die letzten 200 Telegramme der laufenden Sitzung und häl
 fehlt. Anzeige leeren setzt die Telegramme pro Minute nicht zurück, sie kommen vom Gateway.
 Es folgt dem Home-Assistant-Design, hell und dunkel.
 
+Weitere Angaben in den Details eines Telegramms: die EEP (mit Variante) und bei Eltako-Geräten
+der Gerätetyp; was sich gegenüber dem vorigen Telegramm des Senders geändert hat (geänderte
+Bytes und Werte); ein Befehl und die Antwort des Geräts mit der Laufzeit; die Repeater-Stufen
+und wie viele Kopien des Telegramms das Gateway gehört hat. Bei einem unbekannten Sender,
+dessen Telegramm nur auf wenige Profile passt, steht in der Zeile „Könnte sein …“.
+**Als Capture-Zeile kopieren** legt das Telegramm im Format der Capture-Aktion in die
+Zwischenablage; der Export nutzt dasselbe Format, beide taugen als Testdaten. Das Panel merkt
+sich die Filter im Browser, die Taste `P` hält an und setzt fort.
+
+Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Sender: die letzten Werte,
+wann er zuletzt gehört wurde, Telegramme in der Liste und pro Minute sowie eine Kurve der
+Signalstärke seiner letzten Telegramme, mit einem Hinweis bei schwachem Empfang (unter -85 dBm),
+dem ein Repeater oder ein besserer Gateway-Standort hilft. Ein Klick öffnet die Telegramme
+dieses Senders.
+
+Die Schaltfläche **Telegramm senden** schickt ein rohes Telegramm (Typ, Daten und Status als
+Hex) über die Sendewarteschlange, nur von einer Sender-ID, die eines deiner Geräte schon
+nutzt, etwa um einen Aktor auszuprobieren. Aktoren reagieren darauf wie auf jedes Telegramm;
+es erscheint in der Liste als gesendet.
+
 ## Gateway-Optionen und Reparaturen
 
 **Konfigurieren** an einem Gateway öffnet **Einstellungen** (Pause zwischen Telegrammen,

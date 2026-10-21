@@ -197,6 +197,24 @@ and keeps up to 1,000; after a lost connection or a long time in a background ta
 only what it missed. Clearing the display does not reset telegrams per minute, which come
 from the gateway. It follows the Home Assistant theme, light and dark.
 
+More in the details of a telegram: the EEP (with its variant) and, for Eltako devices, the
+device type; what changed against the previous telegram of the sender (changed bytes and
+values); a command and the device's answer with the latency; the repeater hops and how many
+copies of the telegram the gateway heard. For an unknown sender whose telegram fits only a few
+profiles the row says "Could be …". **Copy as capture line** puts the telegram on the
+clipboard in the format of the capture action; the export uses the same format, so both can
+be used as test fixtures. The panel remembers the filters in the browser, and the key `P`
+pauses and resumes.
+
+The **Devices** switch shows one line per sender instead of the telegram list: the latest
+values, when it was last heard, telegrams in the list and per minute, and a curve of the
+signal of its last telegrams with a note for weak reception (below -85 dBm), which a
+repeater or a better gateway position helps. A click opens that sender's telegrams.
+
+The **Send a telegram** button sends a raw telegram (type, data, status as hex) through the
+send queue, only from a sender ID that one of your devices already uses, to try out an actuator.
+Actuators react to it as to any telegram; the telegram appears in the list as sent.
+
 ## Gateway options and repairs
 
 **Configure** on a gateway opens **Settings** (pause between telegrams, discovery, bus

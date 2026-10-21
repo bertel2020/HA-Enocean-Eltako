@@ -858,6 +858,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (e.key === "/" && input && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       input.focus();
+    } else if ((e.key === "p" || e.key === "P") && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      this._togglePause();
     } else if (e.key === "Escape" && this.shadowRoot.activeElement === input) {
       this._setText("");
       input.blur();
@@ -1187,7 +1190,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     live.classList.toggle("paused", this._paused);
     live.querySelector("span").textContent = this._paused ? t.paused(this._missed) : t.live;
     const pause = this.shadowRoot.getElementById("pause");
-    const label = this._paused ? t.resume : t.pause;
+    const label = `${this._paused ? t.resume : t.pause} (P)`;
     pause.innerHTML = svg(this._paused ? ICON.play : ICON.pause);
     pause.title = label;
     pause.setAttribute("aria-label", label);
