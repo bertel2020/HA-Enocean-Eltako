@@ -1,8 +1,30 @@
 # Supported devices
 
+[Deutsch](devices.de.md)
+
 Generated from the device catalog by `scripts/gen_device_docs.py`; do not edit.
 Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 `eltako` = Eltako variant documented in `protocol/eep/eltako/`).
+
+## Gateways
+
+One config entry per gateway. Serial gateways connect over USB or, through
+ser2net or the EnOcean Proxy app, over TCP.
+
+| Gateway | Connection |
+| --- | --- |
+| Eltako FGW14-USB | Eltako series 14 bus (RS485) over USB; forms a bus group with the FAM14 |
+| Eltako FAM14 | Eltako series 14 bus (RS485); may stay disconnected until it is needed |
+| Eltako FAM-USB | USB radio gateway (ESP2) |
+| PioTek MGW-ETH | Network (TCP, ESP3), found automatically |
+| Symcon EnOcean LAN Gateway | Network (TCP, ESP3) |
+| Generic ESP3 (USB 300, TCM 310 …) | Any ESP3 gateway over USB or TCP |
+| Generic ESP2 | Any ESP2 gateway over USB or TCP |
+
+## Devices of the catalog
+
+Receives: telegrams the device sends to Home Assistant. Sends: sender profiles
+Home Assistant uses to control it, each with its own sender ID from the gateway's pool.
 
 | Category | Device | Manufacturer | Receives | Sends (sender profiles) | Entities |
 | --- | --- | --- | --- | --- | --- |
@@ -41,3 +63,15 @@ Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 | Virtual sensor (Home Assistant sends) | Virtual weather station (FWS61) | Home Assistant | - | `weather: A5-13-01:eltako` | button, sensor |
 | Virtual sensor (Home Assistant sends) | Virtual scene button (scenes 1–4) | Home Assistant | - | `rocker: F6-02-01:std` | button |
 | Virtual sensor (Home Assistant sends) | Virtual rocker | Home Assistant | - | `rocker: F6-02-01:std` | button |
+
+## Beyond the catalog
+
+- **By EEP** (expert): all 318 standard profiles of the EnOcean Alliance can be added
+  as a device with one sensor per value. Profiles outside the catalog are not checked
+  against hardware.
+- **Own definition**: sensors you describe in `/config/enocean_eltako/custom_devices.yaml`.
+- **Discovered senders**: every unknown sender a gateway hears is offered as a card
+  with a suggested kind.
+
+How to add each kind: [User Guide](USER-GUIDE.md). Learn function to set on an Eltako
+series 14 actuator for each teach-in button: [teach_in.md](teach_in.md).
