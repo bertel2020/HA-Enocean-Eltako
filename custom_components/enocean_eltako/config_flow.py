@@ -13,6 +13,7 @@ from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
     SOURCE_ZEROCONF,
     ConfigEntry,
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
     ConfigSubentry,
@@ -107,6 +108,17 @@ async def probe_gateway(model: GatewayModel, connection: Connection) -> int | No
         await gateway.close()
 
 
+def _base_part(entry: ConfigEntry) -> str:
+    """The base ID of a gateway entry; a second gateway with the same ID has a "#2" suffix."""
+    return (entry.unique_id or "").split("#")[0]
+
+
+def _is_connected(entry: ConfigEntry) -> bool:
+    """A running gateway did not move: a second one with its base ID is another gateway."""
+    runtime = getattr(entry, "runtime_data", None)
+    return entry.state is ConfigEntryState.LOADED and bool(runtime and runtime.gateway.connected)
+
+
 class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     """Add a gateway: model, connection, connection test, base ID. Also confirms
     discovered devices (discovery.py) and adds them to the gateway that heard them."""
@@ -118,6 +130,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._model: GatewayModel | None = None
         self._connection: Connection | None = None
         self._base_id = 0
+        self._same_base_id_ok = False  # the user confirmed a second gateway with this base ID
         self._data: dict[str, Any] = {}
         self._options: dict[str, Any] = {}
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
@@ -203,7 +216,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         if base_id is None or not is_valid_base_id(base_id):
             return None
         for entry in candidates:
-            if entry.unique_id == format_id(base_id):
+            if _base_part(entry) == format_id(base_id) and not _is_connected(entry):
                 _LOGGER.info("%s moved to %s", entry.title, connection)
                 return self.async_update_reload_and_abort(
                     entry,
@@ -539,21 +552,47 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     async def _async_create(self, base_id: int) -> ConfigFlowResult:
         assert self._model is not None
-        await self.async_set_unique_id(format_id(base_id), raise_on_progress=False)
         if self.source == SOURCE_RECONFIGURE:
-            self._abort_if_unique_id_mismatch(reason="wrong_gateway")
+            if _base_part(self._get_reconfigure_entry()) != format_id(base_id):
+                return self.async_abort(reason="wrong_gateway")
             return self._async_update_connection()
-        # a rediscovered gateway with a new address updates its entry
-        updates = (
-            {CONF_DEVICE: self._connection.as_dict()}
-            if self.source == SOURCE_ZEROCONF and self._connection is not None
-            else None
-        )
-        self._abort_if_unique_id_configured(updates=updates)
         self._base_id = base_id
+        same = [
+            e
+            for e in self._async_current_entries(include_ignore=False)
+            if _base_part(e) == format_id(base_id)
+        ]
+        if same and not self._same_base_id_ok:
+            return await self.async_step_same_base_id()
+        # a second gateway with the same base ID gets "<base ID>#2", "#3" ...
+        taken = {e.unique_id for e in self._async_current_entries()}
+        unique_id, number = format_id(base_id), 2
+        while unique_id in taken:
+            unique_id = f"{format_id(base_id)}#{number}"
+            number += 1
+        await self.async_set_unique_id(unique_id, raise_on_progress=False)
+        self._abort_if_unique_id_configured()
         if self._model.bus:
             return await self.async_step_bus_group()
         return self._async_create_entry()
+
+    async def async_step_same_base_id(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Another gateway already has this base ID: add this one anyway (e.g. a second radio)."""
+        if user_input is not None:
+            self._same_base_id_ok = True
+            return await self._async_create(self._base_id)
+        others = ", ".join(
+            e.title
+            for e in self._async_current_entries(include_ignore=False)
+            if _base_part(e) == format_id(self._base_id)
+        )
+        return self.async_show_form(
+            step_id="same_base_id",
+            data_schema=vol.Schema({}),
+            description_placeholders={"base_id": format_id(self._base_id), "gateways": others},
+        )
 
     @callback
     def _async_update_connection(self) -> ConfigFlowResult:

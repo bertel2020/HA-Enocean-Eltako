@@ -175,6 +175,10 @@
         "data": {
           "model": "Modell"
         }
+      },
+      "same_base_id": {
+        "title": "Gleiche Basis-ID",
+        "description": "Ein Gateway mit der Basis-ID {base_id} ist schon eingerichtet ({gateways}). Dieses als zweites Gateway mit derselben Basis-ID hinzufügen? Das ist z. B. für zwei Funkgateways einer Anlage gedacht. Sender-IDs werden über alle Gateways nie doppelt vergeben, aber ein Aktor, der an einem Gateway eingelernt wurde, reagiert auf die Telegramme des anderen nur, wenn er dort ebenfalls eingelernt ist."
       }
     },
     "error": {

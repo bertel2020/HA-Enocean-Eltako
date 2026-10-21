@@ -175,6 +175,10 @@
         "data": {
           "model": "Model"
         }
+      },
+      "same_base_id": {
+        "title": "Same base ID",
+        "description": "A gateway with the base ID {base_id} is already set up ({gateways}). Add this one as a second gateway with the same base ID? That is meant for e.g. two radios of one installation. Sender IDs are never assigned twice across the gateways, but an actuator taught in on one gateway only reacts to the other one's telegrams if it was taught in there too."
       }
     },
     "error": {

@@ -157,8 +157,8 @@ async def test_network_gateway_esp3_skips_menu(hass: HomeAssistant) -> None:
     assert result["title"] == "PioTek MGW-ETH"
 
 
-async def test_duplicate_base_id_aborts(hass: HomeAssistant, fake_esp2) -> None:
-    MockConfigEntry(domain=DOMAIN, unique_id="FF-B7-44-80").add_to_hass(hass)
+async def test_duplicate_base_id_needs_confirmation(hass: HomeAssistant, fake_esp2) -> None:
+    MockConfigEntry(domain=DOMAIN, unique_id="FF-B7-44-80", title="Funk 1").add_to_hass(hass)
     result = await _start(hass, "fam_usb")
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "tcp"}
@@ -166,8 +166,12 @@ async def test_duplicate_base_id_aborts(hass: HomeAssistant, fake_esp2) -> None:
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
     )
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
+    assert result["step_id"] == "same_base_id"
+    assert result["description_placeholders"] == {"base_id": "FF-B7-44-80", "gateways": "Funk 1"}
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await _name(hass, result)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["result"].unique_id == "FF-B7-44-80#2"
 
 
 async def test_fam14_joins_bus_group_of_fgw14_on_demand(hass: HomeAssistant, fake_esp2) -> None:

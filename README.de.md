@@ -212,6 +212,11 @@ welchem Gerät und Profil gehört, wie viele frei sind und welche gesperrt sind.
 entfernten Geräts bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist; danach lässt sie
 sich dort freigeben.
 
+Zwei Gateways dürfen dieselbe Basis-ID haben (z. B. zwei Funkgateways einer Anlage): Das zweite
+wird nach einer Rückfrage als `<Basis-ID>#2` angelegt. Sender-IDs werden über beide hinweg nie
+doppelt vergeben. Ein gefundenes Gateway mit bekannter Basis-ID gilt nur dann als umgezogen,
+wenn das bekannte nicht verbunden ist; sonst wird es als weiteres Gateway angeboten.
+
 **Aus eltako übernehmen** liest die Geräte der alten Integration `eltako` aus der
 `configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
 IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. `left`/`right` eines

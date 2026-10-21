@@ -215,6 +215,11 @@ entity can be added. Covers get whole seconds as with the old integration; **Run
 know that form. Turn the old integration off once its devices run here: both must not open
 the same port.
 
+Two gateways may share one base ID (e.g. two radios of one installation): adding the second
+asks for confirmation, and it is stored as `<base ID>#2`. Sender IDs are never assigned twice
+across them. A discovered gateway with a known base ID counts as moved only if the known one
+is not connected; otherwise it is offered as another gateway.
+
 Repairs point out what needs a hand:
 
 - a gateway that stays disconnected, or a device that has gone silent
