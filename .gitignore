@@ -12,3 +12,8 @@ htmlcov/
 
 # Local Claude Code instructions: not part of the public repo
 CLAUDE.md
+
+# Kept local only
+/docs/quality_scale.md
+/packaging/
+/scripts/build_protocol_package.py

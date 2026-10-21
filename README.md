@@ -268,7 +268,7 @@ its ports.
   (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot answer.
 - **Generic profiles:** devices added by EEP decode every standard profile, but profiles
   outside the catalog are not checked against hardware; some official test containers
-  disagree (see [docs/quality_scale.md](docs/quality_scale.md)).
+  disagree.
 - **Virtual brightness sensor and weather station** send Eltako's FAH60 and FWS61
   formats as documented; not checked against an actuator yet. While a chosen weather
   entity is unavailable nothing is sent, so no false alarm goes out.
@@ -334,9 +334,6 @@ python -m pytest
 
 `python scripts/fetch_eep.py --generated` followed by
 `python scripts/generate_eep.py` regenerates the standard profiles.
-`python scripts/build_protocol_package.py` builds the protocol layer as a standalone wheel
-(`enocean-eltako-protocol`, no Home Assistant needed) into `dist/`; CI builds it on every
-push. It is not published on PyPI yet.
 `python scripts/fetch_eep.py` downloads the official EEP definitions into
 `.eep_cache/`. These files belong to the EnOcean Alliance and are never
 committed (see [NOTICE](NOTICE)).
