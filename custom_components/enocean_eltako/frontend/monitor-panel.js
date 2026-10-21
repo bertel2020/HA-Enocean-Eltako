@@ -5,7 +5,7 @@
 
 const MAX_ROWS = 1000;
 const PAGE_SIZES = [25, 50, 100, 200];
-const STORAGE_KEY = "enocean_eltako_monitor"; // page size and sort order, per browser
+const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
@@ -493,15 +493,28 @@ const SORTERS = {
 };
 const DESC_FIRST = new Set(["time", "dbm"]); // first click: newest, strongest
 
+const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
+
 function loadView() {
+  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, filter: { ...NO_FILTER } };
   try {
     const view = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const saved = view.filter || {};
+    const text = (v) => (typeof v === "string" ? v : "");
     return {
       pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
-      sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : { key: "time", desc: true },
+      sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : fallback.sort,
+      filter: {
+        gateway: text(saved.gateway),
+        text: text(saved.text),
+        dir: ["rx", "tx"].includes(saved.dir) ? saved.dir : "",
+        type: text(saved.type),
+        repeats: saved.repeats === true,
+        unknown: saved.unknown === true,
+      },
     };
   } catch (err) {
-    return { pageSize: 50, sort: { key: "time", desc: true } };
+    return fallback;
   }
 }
 
@@ -517,8 +530,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pending = [];
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
-    this._filter = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
     const view = loadView();
+    this._filter = view.filter;
     this._sort = view.sort;
     this._pageSize = view.pageSize;
     this._offset = 0; // first row of the page within the sorted, filtered rows
@@ -709,6 +722,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
     $("pageSize").value = String(this._pageSize);
+    $("text").value = this._filter.text;
+    $("clearText").hidden = !this._filter.text;
     this._renderHead();
     this._renderFilters();
     this._renderBar();
@@ -754,6 +769,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     this._gateways = gateways;
+    // a remembered gateway filter for a gateway that is gone would hide everything
+    if (this._filter.gateway && !gateways.some((g) => g.entry_id === this._filter.gateway)) {
+      this._set("gateway", "");
+    }
     this._renderCards(true);
     const multi = gateways.length > 1;
     if (multi !== this._multi) {
@@ -823,7 +842,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _saveView() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort, filter: this._filter }));
     } catch (err) {
       // private window or blocked storage: the view just is not remembered
     }
@@ -841,6 +860,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _set(key, value) {
     this._filter[key] = value;
     this._offset = 0;
+    this._saveView();
     if (key === "gateway") this._renderCards();
     this._renderFilters();
     this._render();
@@ -894,8 +914,9 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _resetFilters() {
-    this._filter = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
+    this._filter = { ...NO_FILTER };
     this._offset = 0;
+    this._saveView();
     this.shadowRoot.getElementById("text").value = "";
     this.shadowRoot.getElementById("clearText").hidden = true;
     this._renderCards();
