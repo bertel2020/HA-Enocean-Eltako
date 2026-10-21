@@ -182,13 +182,13 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     assert event["teach_in"] == "A5-02-05"
 
     # an unknown 1BS contact fits one profile; a 4BS data telegram fits too many to say
-    server.push(esp2.Esp2Frame(esp2.HSeq.RRT, 0x06, bytes([0x09, 0, 0, 0]), 0x01A0B0C1, 0x00).encode())
+    server.push(
+        esp2.Esp2Frame(esp2.HSeq.RRT, 0x06, bytes([0x09, 0, 0, 0]), 0x01A0B0C1, 0x00).encode()
+    )
     event = (await client.receive_json())["event"]
     assert "device" not in event
     assert event["candidates"] == ["D5-00-01:std"]
-    server.push(
-        esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, bytes.fromhex("00000009"), 0x01A0B0C2).encode()
-    )
+    server.push(esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, bytes.fromhex("00000009"), 0x01A0B0C2).encode())
     event = (await client.receive_json())["event"]
     assert "candidates" not in event and "teach_in" not in event
 

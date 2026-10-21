@@ -227,16 +227,15 @@ es erscheint in der Liste als gesendet.
 Der Schalter **Sender-IDs** zeigt, wer welche Sender-ID nutzt: je Gateway (und je Bus-Gruppe)
 die freien IDs des Pools und eine Tabelle mit ID, Gerät, Profil und Status. Nach dem Löschen
 eines Geräts bleibt seine ID **gesperrt**; **Freigeben** gibt sie nach einer Rückfrage frei,
-sobald der Aktor sie verlernt hat (Teach-out). Dieselbe Liste gibt es weiterhin in den
-Gateway-Optionen.
+sobald der Aktor sie verlernt hat (Teach-out).
 
 ## Gateway-Optionen und Reparaturen
 
 **Konfigurieren** an einem Gateway öffnet **Einstellungen** (Pause zwischen Telegrammen,
-Discovery, Bus-Verbindung, ESP3-Repeater) und **Sender-IDs**: welche der 128 Sender-IDs zu
-welchem Gerät und Profil gehört, wie viele frei sind und welche gesperrt sind. Die ID eines
-entfernten Geräts bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist; danach lässt sie
-sich dort freigeben.
+Discovery, Bus-Verbindung, ESP3-Repeater). Die Sender-IDs (welche der 128 zu welchem Gerät
+gehört, wie viele frei sind, welche gesperrt sind) stehen in der Ansicht **Sender-IDs** des
+Panels; die ID eines entfernten Geräts bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist,
+und wird dort freigegeben.
 
 Zwei Gateways dürfen dieselbe Basis-ID haben (z. B. zwei Funkgateways einer Anlage): Das zweite
 wird nach einer Rückfrage als `<Basis-ID>#2` angelegt. Sender-IDs werden über beide hinweg nie

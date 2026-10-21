@@ -361,12 +361,6 @@
         "safe": "Sicheren Wert senden"
       }
     },
-    "sender_state": {
-      "options": {
-        "assigned": "zugewiesen",
-        "blocked": "gesperrt"
-      }
-    },
     "takeover_reason": {
       "options": {
         "takeover_unsupported": "Nicht unterstützt",
@@ -436,12 +430,10 @@
         "title": "Gateway-Optionen",
         "menu_options": {
           "settings": "Einstellungen",
-          "senders": "Sender-IDs",
           "takeover": "Aus eltako übernehmen"
         },
         "menu_option_descriptions": {
           "settings": "Pause zwischen Telegrammen, Discovery, Verbindung, Repeater.",
-          "senders": "Welche Sender-ID zu welchem Gerät gehört; gesperrte IDs freigeben.",
           "takeover": "Geräte der alten Integration eltako (configuration.yaml) mit ihren IDs und Sender-IDs."
         }
       },
@@ -462,16 +454,6 @@
           "proxy_replay": "Nur wenn dieses Gateway über die App EnOcean Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen."
         }
       },
-      "senders": {
-        "title": "Sender-IDs",
-        "description": "{free} von {size} Sender-IDs sind frei.\n\n| Sender-ID | Gerät | Profil | Zustand |\n|---|---|---|---|\n{rows}\n\nEine **gesperrte** ID gehörte zu einem entfernten Gerät. Sie bleibt gesperrt, bis sie aus allen Aktoren abgelernt ist, damit kein neues Gerät einen Aktor schaltet, der sie noch kennt. Ist das Ablernen erledigt, hier auswählen und freigeben.",
-        "data": {
-          "free": "Freigeben"
-        },
-        "data_description": {
-          "free": "Nur auswählen, wenn die ID in keinem Aktor mehr eingelernt ist."
-        }
-      },
       "takeover": {
         "title": "Aus der alten Integration eltako übernehmen",
         "description": "Geräte des alten Gateways mit Base-ID {base_id}. Sie behalten ihre IDs und Sender-IDs, die Aktoren reagieren also ohne neues Einlernen. Die alte Integration danach abschalten; sie darf nicht denselben Port benutzen.\n\n| ID | Name | Alt | Neu | Hinweis |\n|---|---|---|---|---|\n{rows}",
@@ -484,7 +466,6 @@
       }
     },
     "abort": {
-      "senders_freed": "Die gewählten Sender-IDs sind wieder frei.",
       "senders_unchanged": "Nichts geändert.",
       "gateway_not_loaded": "Das Gateway ist nicht geladen.",
       "takeover_no_config": "Kein Abschnitt `eltako:` in der configuration.yaml gefunden.",

@@ -2,7 +2,8 @@
 
 Each telegram is sent with what Home Assistant knows about it: the gateway's name, the
 device it comes from (or, for sent telegrams, the device and sender profile of the sender
-ID), the decoded values, and the EEP of a 4BS teach-in from an unknown sender, or the profiles that fit its telegram.
+ID), the decoded values, and the EEP of a 4BS teach-in from an unknown sender, or the profiles
+that fit its telegram.
 """
 
 from __future__ import annotations
@@ -31,8 +32,8 @@ from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
-from .protocol.send_queue import Priority
 from .protocol.monitor import MonitorEntry
+from .protocol.send_queue import Priority
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram, Rorg
 
@@ -356,9 +357,7 @@ async def ws_send(
     if format_id(sender) not in {s["id"] for s in own_senders(runtime)}:
         connection.send_error(msg["id"], "invalid_sender", "not a sender ID of a device")
         return
-    result = await runtime.queue.submit(
-        RadioTelegram(rorg, data, sender, status[0]), Priority.USER
-    )
+    result = await runtime.queue.submit(RadioTelegram(rorg, data, sender, status[0]), Priority.USER)
     connection.send_result(msg["id"], {"result": result.value})
 
 
@@ -370,7 +369,8 @@ def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:
         pools[f"radio:{entry.entry_id}"] = ("radio", entry, runtime.senders)
         if runtime.bus is not None:
             # the members of a bus group share one pool: listed once, under the first member
-            pools.setdefault(f"bus:{entry.data[CONF_BUS_GROUP]}", ("bus", entry, runtime.bus.senders))
+            bus_id = f"bus:{entry.data[CONF_BUS_GROUP]}"
+            pools.setdefault(bus_id, ("bus", entry, runtime.bus.senders))
     return pools
 
 

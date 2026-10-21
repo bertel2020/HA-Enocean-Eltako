@@ -4,7 +4,6 @@ import asyncio
 
 import pytest
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import issue_registry as ir
 
 from custom_components.enocean_eltako.const import DOMAIN
@@ -37,30 +36,6 @@ async def test_base_id_change_raises_repair(hass: HomeAssistant) -> None:
     await hass.config_entries.async_unload(entry.entry_id)
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
     await server.stop()
-
-
-@pytest.mark.parametrize("gateway", [SWITCH], indirect=True)
-async def test_sender_page_lists_and_frees(hass: HomeAssistant, gateway) -> None:  # noqa: F811
-    entry, _server = gateway
-    pool = entry.runtime_data.senders.pool
-    pool.assign(0xFFB74481, "device:05-10-A2-B3:central")  # as the device flow does
-    pool.assign(0xFFB74490, "device:01-02-03-04:central")
-    pool.release(0xFFB74490)  # removed device: blocked until the teach-out is confirmed
-
-    options = hass.config_entries.options
-    result = await options.async_init(entry.entry_id)
-    assert result["menu_options"] == ["settings", "senders", "takeover"]
-    result = await options.async_configure(result["flow_id"], {"next_step_id": "senders"})
-    rows = result["description_placeholders"]["rows"]
-    assert "| FF-B7-44-81 | Licht Diele | central |" in rows
-    assert "| FF-B7-44-90 | 01-02-03-04 | central |" in rows
-    assert result["description_placeholders"]["free"] == "126"
-
-    result = await options.async_configure(result["flow_id"], {"free": ["FF-B7-44-90"]})
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "senders_freed"
-    assert pool.get(0xFFB74490) is None
-    assert pool.get(0xFFB74481) is not None
 
 
 @pytest.mark.parametrize("gateway", [SWITCH], indirect=True)

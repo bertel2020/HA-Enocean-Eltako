@@ -218,14 +218,14 @@ Actuators react to it as to any telegram; the telegram appears in the list as se
 The **Sender IDs** switch shows who uses which sender ID: per gateway (and per bus group) the
 free IDs of the pool, and a table with ID, device, profile and status. After a device is
 deleted its ID stays **blocked**; **Free** releases it once the actuator has forgotten it
-(teach-out), after a confirmation. The same list is still available in the gateway options.
+(teach-out), after a confirmation.
 
 ## Gateway options and repairs
 
 **Configure** on a gateway opens **Settings** (pause between telegrams, discovery, bus
-connection, ESP3 repeater) and **Sender IDs**: which of the 128 sender IDs belongs to which
-device and profile, how many are free, and which are blocked. An ID of a removed device stays
-blocked until it is taught out of every actuator; free it there once that is done.
+connection, ESP3 repeater). The sender IDs (which of the 128 belongs to which device, how many
+are free, which are blocked) are in the **Sender IDs** view of the panel; an ID of a removed
+device stays blocked until it is taught out of every actuator, and is freed there.
 
 **Take over from eltako** reads the devices of the old `eltako` integration from
 `configuration.yaml` (the gateway with the same base ID) and sets up the chosen ones with

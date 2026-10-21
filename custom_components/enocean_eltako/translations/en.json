@@ -361,12 +361,6 @@
         "safe": "Send the safe value"
       }
     },
-    "sender_state": {
-      "options": {
-        "assigned": "assigned",
-        "blocked": "blocked"
-      }
-    },
     "takeover_reason": {
       "options": {
         "takeover_unsupported": "Not supported",
@@ -436,12 +430,10 @@
         "title": "Gateway options",
         "menu_options": {
           "settings": "Settings",
-          "senders": "Sender IDs",
           "takeover": "Take over from eltako"
         },
         "menu_option_descriptions": {
           "settings": "Pause between telegrams, discovery, connection, repeater.",
-          "senders": "Which sender ID belongs to which device; free blocked IDs.",
           "takeover": "Devices of the old eltako integration (configuration.yaml) with their IDs and sender IDs."
         }
       },
@@ -462,16 +454,6 @@
           "proxy_replay": "Only when this gateway is reached through the EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting."
         }
       },
-      "senders": {
-        "title": "Sender IDs",
-        "description": "{free} of {size} sender IDs are free.\n\n| Sender ID | Device | Profile | State |\n|---|---|---|---|\n{rows}\n\nA **blocked** ID belonged to a removed device. It stays blocked until it is taught out of every actuator, so no new device switches an actuator that still knows it. Once the teach-out is done, select it here and free it.",
-        "data": {
-          "free": "Free"
-        },
-        "data_description": {
-          "free": "Only select an ID that is no longer taught into any actuator."
-        }
-      },
       "takeover": {
         "title": "Take over from the old eltako integration",
         "description": "Devices of the old gateway with base ID {base_id}. They keep their IDs and sender IDs, so the actuators go on reacting without a new teach-in. Turn the old integration off afterwards; it must not use the same port.\n\n| ID | Name | Old | New | Note |\n|---|---|---|---|---|\n{rows}",
@@ -484,7 +466,6 @@
       }
     },
     "abort": {
-      "senders_freed": "The selected sender IDs are free again.",
       "senders_unchanged": "Nothing changed.",
       "gateway_not_loaded": "The gateway is not loaded.",
       "takeover_no_config": "No `eltako:` section found in configuration.yaml.",
