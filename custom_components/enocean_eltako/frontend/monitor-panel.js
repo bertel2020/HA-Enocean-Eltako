@@ -25,6 +25,7 @@ const ICON = {
   play: "M8,5.14V19.14L19,12.14L8,5.14Z",
   clear:
     "M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z",
+  send: "M2,21L23,12L2,3V10L17,12L2,14V21Z",
   copy: "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z",
   download: "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z",
   close:
@@ -71,6 +72,13 @@ const TEXT = {
     resume: "Resume",
     clear: "Clear display",
     export: "Export visible telegrams (JSON lines, like the capture service)",
+    send: "Send a telegram", sendTitle: "Send a telegram",
+    sendHint: "A real telegram: actuators react to it. It is sent from the sender ID of one of your devices, so use it to try out that device.",
+    sendGateway: "Gateway", sendSender: "Sender ID", sendType: "Telegram type", sendData: "Data (hex)", sendStatus: "Status (hex)",
+    sendAction: "Send", sendCancel: "Cancel", noSenders: "No device of this gateway has a sender ID of its own.",
+    sendResult: { sent: "Telegram sent", confirmed: "Telegram sent and confirmed", unconfirmed: "Sent, no answer", failed: "Sending failed: gateway not connected",
+      replaced: "Replaced by a newer command", cancelled: "Cancelled", invalid_format: "ID or data is not valid hex", invalid_length: "Wrong data length for this type",
+      invalid_sender: "This is not the sender ID of a device", not_found: "Gateway not loaded", unknown: "Sending failed" },
     copy: "Copy as capture line", copied: "Capture line copied", copyFailed: "Copying failed",
     search: "Search device, ID or data",
     searchKey: "Press / to search",
@@ -170,6 +178,13 @@ const TEXT = {
     resume: "Fortsetzen",
     clear: "Anzeige leeren",
     export: "Sichtbare Telegramme exportieren (JSON-Zeilen, wie der Capture-Dienst)",
+    send: "Telegramm senden", sendTitle: "Telegramm senden",
+    sendHint: "Ein echtes Telegramm: Aktoren reagieren darauf. Es wird von der Sender-ID eines deiner Geräte gesendet, taugt also zum Ausprobieren dieses Geräts.",
+    sendGateway: "Gateway", sendSender: "Sender-ID", sendType: "Telegrammtyp", sendData: "Daten (Hex)", sendStatus: "Status (Hex)",
+    sendAction: "Senden", sendCancel: "Abbrechen", noSenders: "Kein Gerät dieses Gateways hat eine eigene Sender-ID.",
+    sendResult: { sent: "Telegramm gesendet", confirmed: "Telegramm gesendet und bestätigt", unconfirmed: "Gesendet, keine Antwort", failed: "Senden fehlgeschlagen: Gateway nicht verbunden",
+      replaced: "Durch einen neueren Befehl ersetzt", cancelled: "Abgebrochen", invalid_format: "ID oder Daten sind kein gültiges Hex", invalid_length: "Falsche Datenlänge für diesen Typ",
+      invalid_sender: "Das ist nicht die Sender-ID eines Geräts", not_found: "Gateway nicht geladen", unknown: "Senden fehlgeschlagen" },
     copy: "Als Capture-Zeile kopieren", copied: "Capture-Zeile kopiert", copyFailed: "Kopieren fehlgeschlagen",
     search: "Gerät, ID oder Daten suchen",
     searchKey: "Taste / zum Suchen",
@@ -438,6 +453,16 @@ const STYLE = `
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
   .m-only { display: none; }
+  .sendform { padding: 12px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+  .sendform[hidden] { display: none; }
+  .sendform h3 { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
+  .sendform p { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  .sendform .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 12px; }
+  .sendform label { display: grid; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; min-width: 0; }
+  .sendform .text { height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--primary-text-color);
+    padding: 0 10px; font: 13px ui-monospace, monospace; text-transform: none; min-width: 0; }
+  .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .sendform .primary { background: var(--accent); color: var(--text-primary-color, #fff); border-color: var(--accent); }
   .panel[data-view="devices"] .tg-only { display: none !important; }
   .panel[data-view="telegrams"] .devices { display: none; }
   .devices .dev { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: 4px 16px; align-items: center;
@@ -666,6 +691,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             </div>
             <span class="spacer"></span>
             <button class="icon-btn" id="pause"></button>
+            <button class="icon-btn" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
             <button class="icon-btn" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
             <button class="icon-btn" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
           </div>
@@ -686,6 +712,18 @@ class EnOceanEltakoPanel extends HTMLElement {
             <button class="chip tg-only" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
           </div>
+          <form class="sendform" id="sendForm" hidden>
+            <h3>${esc(t.sendTitle)}</h3>
+            <p>${esc(t.sendHint)}</p>
+            <div class="fields">
+              <label id="sendGatewayRow"><span>${esc(t.sendGateway)}</span><select class="select" id="sendGateway"></select></label>
+              <label><span>${esc(t.sendSender)}</span><select class="select" id="sendSender"></select></label>
+              <label><span>${esc(t.sendType)}</span><select class="select" id="sendType">${[["F6", "RPS"], ["D5", "1BS"], ["A5", "4BS"], ["D2", "VLD"]].map(([v, l]) => `<option value="${v}">${l} (${v})</option>`).join("")}</select></label>
+              <label><span>${esc(t.sendData)}</span><input class="text" id="sendData" autocomplete="off" spellcheck="false" placeholder="70" required></label>
+              <label><span>${esc(t.sendStatus)}</span><input class="text" id="sendStatus" autocomplete="off" spellcheck="false" value="30" required></label>
+            </div>
+            <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
+          </form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
           <div class="meta"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
@@ -780,6 +818,17 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._render();
     });
     $("export").addEventListener("click", () => this._export());
+    $("send").addEventListener("click", () => this._toggleSend());
+    $("sendCancel").addEventListener("click", () => this._toggleSend(false));
+    $("sendGateway").addEventListener("change", () => this._renderSenders());
+    $("sendType").addEventListener("change", (e) => {
+      // a rocker telegram carries its button state in the status byte
+      $("sendStatus").value = e.target.value === "F6" ? "30" : "00";
+    });
+    $("sendForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      this._send();
+    });
     $("closeNotice").addEventListener("click", () => this._notice(""));
     $("cards").addEventListener("click", (e) => {
       const button = e.target.closest("[data-gateway-action]");
@@ -1028,6 +1077,52 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     this._notice(this._t.addResult[result.reason] || this._t.addResult.failed);
+  }
+
+  _toggleSend(open = this.shadowRoot.getElementById("sendForm").hidden) {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    $("sendForm").hidden = !open;
+    $("send").setAttribute("aria-expanded", String(open));
+    $("send").classList.toggle("on", open);
+    if (open) {
+      const loaded = this._gateways.filter((g) => g.loaded);
+      this._options($("sendGateway"), loaded.map((g) => [g.entry_id, g.title]), this._filter.gateway || loaded[0]?.entry_id || "");
+      $("sendGatewayRow").hidden = loaded.length < 2;
+      this._renderSenders();
+    }
+  }
+
+  _renderSenders() {
+    const t = this._t;
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const gateway = this._gateways.find((g) => g.entry_id === $("sendGateway").value);
+    const senders = gateway?.senders || [];
+    const keep = senders.some((s) => s.id === $("sendSender").value) ? $("sendSender").value : senders[0]?.id || "";
+    this._options($("sendSender"), senders.map((s) => [s.id, `${s.device} · ${s.id}`]), keep);
+    $("sendGo").disabled = !senders.length;
+    if (!senders.length) this._notice(t.noSenders);
+    else if (this.shadowRoot.getElementById("notice").textContent === t.noSenders) this._notice("");
+  }
+
+  async _send() {
+    const t = this._t;
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    if (!$("sendSender").value) return;
+    $("sendGo").disabled = true;
+    try {
+      const result = await this._hass.callWS({
+        type: "enocean_eltako/send",
+        entry_id: $("sendGateway").value,
+        sender: $("sendSender").value,
+        rorg: $("sendType").value,
+        data: $("sendData").value.trim(),
+        status: $("sendStatus").value.trim(),
+      });
+      this._notice(t.sendResult[result.result] || t.sendResult.unknown);
+    } catch (err) {
+      this._notice(t.sendResult[err.code] || t.sendResult.unknown);
+    }
+    $("sendGo").disabled = false;
   }
 
   _notice(text) {

@@ -29,12 +29,16 @@ from .hub import async_get_hub
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
-from .protocol.ids import parse_id
+from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
+from .protocol.send_queue import Priority
 from .protocol.monitor import MonitorEntry
+from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram, Rorg
 
 MAX_CANDIDATES = 4
+# telegram types the panel may send, with the data lengths in bytes
+SEND_LENGTHS = {Rorg.RPS: (1,), Rorg.BS1: (1,), Rorg.BS4: (4,), Rorg.VLD: tuple(range(1, 15))}
 
 
 @callback
@@ -42,6 +46,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe_telegrams)
     websocket_api.async_register_command(hass, ws_gateways)
     websocket_api.async_register_command(hass, ws_discover)
+    websocket_api.async_register_command(hass, ws_send)
 
 
 LABELS: HassKey[dict[str, dict[str, str]]] = HassKey(f"{DOMAIN}_monitor_labels")
@@ -221,6 +226,18 @@ def ws_gateways(
     connection.send_result(msg["id"], [gateway_status(e) for e in entries])
 
 
+def own_senders(runtime: Any) -> list[dict[str, str]]:
+    """The gateway's sender IDs that a device uses: what the panel may send from."""
+    pool = runtime.senders.pool
+    return [
+        {"id": format_id(sender_id), "device": device.subentry.title, "profile": profile}
+        for device in runtime.devices.values()
+        for profile, sender_id in device.senders.items()
+        if sender_id in pool
+        and getattr(pool.get(sender_id), "state", SenderState.ASSIGNED) is SenderState.ASSIGNED
+    ]
+
+
 def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
     model = MODELS.get(entry.data.get(CONF_MODEL, ""))
     status: dict[str, Any] = {
@@ -244,6 +261,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "unconfirmed": runtime.queue.stats.unconfirmed + runtime.queue.stats.failed,
             "devices": len(runtime.devices),
             "free_senders": runtime.senders.pool.free_count(),
+            "senders": own_senders(runtime),
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),
@@ -295,3 +313,48 @@ async def ws_discover(
         connection.send_result(msg["id"], {"reason": result["reason"]})
         return
     connection.send_result(msg["id"], {"flow_id": result["flow_id"]})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/send",
+        vol.Required("entry_id"): str,
+        vol.Required("sender"): str,
+        vol.Required("rorg"): vol.In([f"{r:02X}" for r in SEND_LENGTHS]),
+        vol.Required("data"): str,
+        vol.Optional("status", default="00"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_send(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel "send telegram": a raw telegram through the send queue, to try out an actuator.
+
+    Only from a sender ID a device of this gateway already uses (never an arbitrary ID), at
+    user priority; it shows up in the monitor like any sent telegram.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    runtime = entry.runtime_data
+    try:
+        sender = parse_id(msg["sender"])
+        data = bytes.fromhex(msg["data"].replace(" ", ""))
+        status = bytes.fromhex(msg["status"].replace(" ", ""))
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_format", "invalid ID or hex data")
+        return
+    rorg = Rorg(int(msg["rorg"], 16))
+    if len(data) not in SEND_LENGTHS[rorg] or len(status) != 1:
+        connection.send_error(msg["id"], "invalid_length", "wrong data length for this type")
+        return
+    if format_id(sender) not in {s["id"] for s in own_senders(runtime)}:
+        connection.send_error(msg["id"], "invalid_sender", "not a sender ID of a device")
+        return
+    result = await runtime.queue.submit(
+        RadioTelegram(rorg, data, sender, status[0]), Priority.USER
+    )
+    connection.send_result(msg["id"], {"result": result.value})

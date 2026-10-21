@@ -211,6 +211,71 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     await server.stop()
 
 
+async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, hass_ws_client):
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 2,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+
+    await client.send_json({"id": 1, "type": "enocean_eltako/gateways"})
+    (status,) = (await client.receive_json())["result"]
+    assert status["senders"] == [
+        {"id": "FF-B7-44-81", "device": "Licht Diele", "profile": "central"}
+    ]
+
+    async def send(msg_id: int, **fields):
+        base = {"type": "enocean_eltako/send", "entry_id": entry.entry_id, "rorg": "F6"}
+        await client.send_json({"id": msg_id, **base, **fields})
+        return await client.receive_json()
+
+    ok = await send(2, sender="FF-B7-44-81", data="70", status="30")
+    assert ok["success"] and ok["result"]["result"] == "sent"
+    history = entry.runtime_data.hub.monitor.history(entry.entry_id)
+    assert [(e.direction, e.telegram.sender, e.telegram.data) for e in history] == [
+        ("tx", 0xFFB74481, b"\x70")
+    ]
+
+    # a free pool ID, a foreign ID, a wrong length and bad hex are refused
+    for msg_id, fields, code in (
+        (3, {"sender": "FF-B7-44-90", "data": "70"}, "invalid_sender"),
+        (4, {"sender": "01-02-03-04", "data": "70"}, "invalid_sender"),
+        (5, {"sender": "FF-B7-44-81", "data": "7000"}, "invalid_length"),
+        (6, {"sender": "FF-B7-44-81", "data": "7"}, "invalid_format"),
+    ):
+        reply = await send(msg_id, **fields)
+        assert not reply["success"] and reply["error"]["code"] == code
+    assert len(entry.runtime_data.hub.monitor.history(entry.entry_id)) == 1
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
 async def test_panel_registered_with_frontend(hass: HomeAssistant):
     from unittest.mock import AsyncMock, MagicMock, patch
 
