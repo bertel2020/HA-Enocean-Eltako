@@ -43,6 +43,26 @@ und der obere Drehschalter des FAM14 muss beim Einlernen auf Position 2 stehen.
 Ein Strich heißt, die Anleitung nennt für diesen Sender keine Einlernfunktion; über das
 PC-Tool PCT14 kann der Aktor ihn trotzdem annehmen.
 
+## Welchen virtuellen Sensor welcher Aktor annimmt
+
+Aus der Tabelle oben abgelesen (Anleitung des Aktors, nicht an Hardware geprüft). **Ja** heißt,
+die Anleitung nennt eine Einlernfunktion, **nein**, dass sie keine nennt (über PCT14 kann er
+trotzdem möglich sein).
+
+| Virtuelles Gerät | FSR14-4x | FUD14 | FSB14 | FHK14 |
+|---|---|---|---|---|
+| Fensterkontakt | ja | ja | ja (Aussperrschutz) | ja |
+| Bewegungsmelder | ja | nein | nein | nein |
+| Temperaturfühler | nein | nein | nein | ja (legt auch die Solltemperatur fest) |
+| Helligkeitssensor (FAH60-Format) | ja | nein | ja | nein |
+| Wetterstation (FWS61-Format) | nein | nein | ja | nein |
+| Taster als Zentraltaster | ja | ja | ja | nein |
+| Szenentaster | ja | ja | ja | nein |
+
+Noch nicht erfasst: FAE14SSR und die Aktoren der Serien 61/62 (FSR61, FSB61, FUD61, FD62,
+FJ62). Ihre Anleitungen nennen andere Einlernstellungen; eine Spalte ergänzen, sobald sie
+geprüft sind.
+
 ## Aussperrschutz
 
 Ist ein Fensterkontakt in einen FSB14 eingelernt, sperrt der Aktor Zentral-Ab und

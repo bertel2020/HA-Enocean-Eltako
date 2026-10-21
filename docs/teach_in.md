@@ -41,6 +41,24 @@ FAM14's upper rotary switch must be at position 2 while teaching in.
 A dash means the manual names no learn function for this sender; the actuator may still
 accept it through the PC tool PCT14.
 
+## Which virtual sensor which actuator accepts
+
+Read from the table above (manual of the actuator, not tested on hardware). **Yes** means the
+manual names a learn function, **no** that it names none (PCT14 may still allow it).
+
+| Virtual device | FSR14-4x | FUD14 | FSB14 | FHK14 |
+|---|---|---|---|---|
+| Window contact | yes | yes | yes (lock-out protection) | yes |
+| Motion sensor | yes | no | no | no |
+| Temperature sensor | no | no | no | yes (also sets the setpoint) |
+| Brightness sensor (FAH60 format) | yes | no | yes | no |
+| Weather station (FWS61 format) | no | no | yes | no |
+| Rocker as central button | yes | yes | yes | no |
+| Scene button | yes | yes | yes | no |
+
+Not covered yet: FAE14SSR and the series 61/62 actuators (FSR61, FSB61, FUD61, FD62, FJ62).
+Their manuals differ in the learn positions; add a column when you have checked them.
+
 ## Lock-out protection
 
 Once a window contact is taught into an FSB14, the actuator blocks central down and scene
