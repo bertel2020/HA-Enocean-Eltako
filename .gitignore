@@ -9,3 +9,6 @@ htmlcov/
 # Official EnOcean Alliance EEP files: never commit (see NOTICE)
 .eep_cache/
 /dist/
+
+# Local Claude Code instructions: not part of the public repo
+CLAUDE.md
