@@ -2,6 +2,6 @@
 pytest-homeassistant-custom-component==0.13.373
 # the requirements of Home Assistant's usb integration (same versions as its manifest)
 aiousbwatcher==1.1.2
-serialx==1.11.0
+serialx==1.14.0
 ruff==0.17.1
 mypy==2.4.0
