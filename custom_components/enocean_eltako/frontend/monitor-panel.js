@@ -87,6 +87,8 @@ const TEXT = {
     answerTo: (ms) => `Answer to a command ${ms} ms earlier`,
     noAnswer: "No answer within 3 s",
     pair: "Command and answer",
+    repeated: "Repetitions", repeater: "Repeater hops",
+    heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
     status: "Status",
@@ -176,6 +178,8 @@ const TEXT = {
     answerTo: (ms) => `Antwort auf einen Befehl vor ${ms} ms`,
     noAnswer: "Keine Antwort innerhalb von 3 s",
     pair: "Befehl und Antwort",
+    repeated: "Wiederholungen", repeater: "Repeater-Stufen",
+    heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
     status: "Status",
@@ -1167,6 +1171,14 @@ class EnOceanEltakoPanel extends HTMLElement {
     return { raw, prev: prev.data, text: changes.length ? changes.join(" · ") : unchanged ? this._t.noChange : "" };
   }
 
+  _repeats(r) {
+    // copies of this telegram the gateway heard (repeaters, a second path), within one second
+    const at = Date.parse(r.time);
+    return this._rows.filter(
+      (o) => o.duplicate && o.sender === r.sender && o.data === r.data && o.gateway === r.gateway && Math.abs(Date.parse(o.time) - at) <= 1000
+    ).length;
+  }
+
   _label(label) {
     return this._t.fields[label] || label.replace(/_/g, " ");
   }
@@ -1216,6 +1228,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<span class="raw mono">${esc(r.data)}</span>`;
     const pair = expanded ? this._pairText(r) : "";
     const diff = expanded ? this._diff(r) : null;
+    const copies = expanded && !r.duplicate ? this._repeats(r) : 0;
+    const hops = parseInt(r.status, 16) & 0x0f; // low nibble of the status byte: repeater count
     const details = expanded
       ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(time.toLocaleString(this._hass.language))}.${ms}</dd></div>
@@ -1227,6 +1241,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           <div><dt>${esc(t.destination)}</dt><dd class="mono">${esc(r.destination)}</dd></div>
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
+          ${hops ? `<div><dt>${esc(t.repeater)}</dt><dd>${hops}</dd></div>` : ""}
+          ${copies ? `<div><dt>${esc(t.repeated)}</dt><dd>${esc(t.heardTimes(copies))}</dd></div>` : ""}
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
