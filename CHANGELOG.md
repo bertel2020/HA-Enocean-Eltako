@@ -6,6 +6,17 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Added
+
+- **Device Proxy app:** its EnOcean gateways are discovered like those of the EnOcean Proxy app,
+  titled "(Device Proxy)", with replay and the status in the panel. The update issue for old
+  EnOcean Proxy versions does not apply to it (it names the version of the contract instead).
+- **Moving from the EnOcean Proxy to the Device Proxy:** a gateway set up through one proxy app
+  and announced by another is found by its base ID; its entry only gets the new address and
+  status port, devices and entities stay
+
 ### [0.1.2] - 2026-10-21
 
 #### Changed
@@ -75,6 +86,18 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Neu
+
+- **App Device Proxy:** ihre EnOcean-Gateways werden wie die der App EnOcean Proxy gefunden,
+  mit dem Titel „(Device Proxy)“, Nachlieferung und Status im Panel. Der Hinweis auf eine zu
+  alte EnOcean-Proxy-Version gilt für sie nicht (sie nennt stattdessen die Version der
+  Schnittstelle).
+- **Umstieg vom EnOcean Proxy zum Device Proxy:** Ein Gateway, das über die eine Proxy-App
+  eingerichtet wurde und von der anderen gemeldet wird, wird über seine Base-ID erkannt; der
+  Eintrag bekommt nur die neue Adresse und den Status-Port, Geräte und Entitäten bleiben
 
 ### [0.1.2] - 2026-10-21
 

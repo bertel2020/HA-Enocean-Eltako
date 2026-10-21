@@ -33,6 +33,8 @@ STATUS = {
 def test_summarize_picks_the_gateway_by_port() -> None:
     status = {**STATUS, "gateways": [{**STATUS["gateways"][0], "port": 9100}]}
     assert summarize(status, 9100) == {
+        "app": "EnOcean Proxy",
+        "api": None,
         "version": "0.4.0",
         "name": "FAM-USB",
         "connected": True,
@@ -80,3 +82,26 @@ def test_outdated() -> None:
     assert not outdated("1.0")
     assert not outdated("dev")  # local build
     assert not outdated(None)
+
+
+async def test_the_device_proxy_is_checked_by_its_api(
+    hass: HomeAssistant, aioclient_mock, hass_ws_client
+) -> None:
+    """The Device Proxy's own version (0.x) is no reason for the update issue."""
+    server = await FakeGateway(Protocol.ESP2).start()
+    gateway = {**STATUS["gateways"][0], "port": server.port}
+    status = {"app": "device_proxy", "api": 1, "version": "0.2.0", "gateways": [gateway]}
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json=status)
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, options={"proxy_replay": True})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    await hass.async_block_till_done()
+    assert entry.runtime_data.proxy["app"] == "Device Proxy"
+    assert entry.runtime_data.proxy["api"] == 1
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, f"proxy_outdated_{entry.entry_id}")
+    assert issue is None
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()

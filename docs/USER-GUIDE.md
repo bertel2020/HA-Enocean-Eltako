@@ -14,7 +14,7 @@
 - [Gateway settings and repairs](#gateway-settings-and-repairs)
 - [Taking over the old eltako integration](#taking-over-the-old-eltako-integration)
 - [Blueprints and actions](#blueprints-and-actions)
-- [EnOcean Proxy app](#enocean-proxy-app)
+- [Device Proxy app](#device-proxy-app)
 - [Known limitations](#known-limitations)
 - [Troubleshooting](#troubleshooting)
 
@@ -70,7 +70,7 @@ sender IDs they learned; teach them out on the actuator if a new controller shou
 The old `eltako` integration keeps running in parallel; this one uses its own domain
 `enocean_eltako`. A serial gateway can only be opened by one program at a time: remove it
 from the old integration before adding it here, or share it through the
-[EnOcean Proxy app](#enocean-proxy-app).
+[Device Proxy app](#device-proxy-app).
 
 ## Setting up a gateway
 
@@ -79,7 +79,7 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
 
 - **USB gateways** are picked with Home Assistant's port selector. The port is stored with
   the entry, so Home Assistant attributes it to the integration.
-- **Network gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, EnOcean Proxy app) are added by
+- **Network gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, Device Proxy or EnOcean Proxy app) are added by
   host and port. A MGW-ETH and the Proxy app's gateways are found automatically and show up as
   discovered; a MGW-ETH that gets a new IP address is updated by itself.
 - **FGW14-USB and FAM14 on the same bus** form a bus group with failover. The FAM14 can stay
@@ -187,7 +187,7 @@ the last telegram, to check the fields.
 The **EnOcean** sidebar panel (admins only) starts with a compact summary per gateway:
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
 Use **Telegrams** to filter by gateway. **Details** expands the connection, send queue
-and unconfirmed commands. For an EnOcean Proxy gateway it also shows the proxy version,
+and unconfirmed commands. For a gateway through the Device Proxy or EnOcean Proxy it also shows the app and its version,
 connected programs, air time against the 1 % limit and any capture send lock.
 
 ### Telegram list
@@ -266,7 +266,7 @@ Repairs point out what needs a hand:
   replaced): the actuators know the old sender IDs, so commands would not arrive
 - bus actuators that confirm commands after more than 3 s on average: the FAM14 passes
   confirmations on right away only in operating mode 5 with a device list made by PCT14
-- an EnOcean Proxy app older than this integration needs (0.5.2)
+- an EnOcean Proxy app older than this integration needs (0.5.2; the Device Proxy is always fine)
 
 ## Taking over the old eltako integration
 
@@ -314,22 +314,29 @@ Rockers report short, long and double presses per button. Ready-made automations
   drives to the open end instead, never to the closed one. `only_if_inaccurate: true` skips
   covers whose position is already known well.
 
-## EnOcean Proxy app
+## Device Proxy app
 
-The optional [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) app (Home
-Assistant OS or Supervised) keeps the gateways' serial ports and offers each gateway on a
-TCP port, so several programs can use one gateway at the same time, for example the old
-`eltako` integration while moving over.
+The optional [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app (Home Assistant OS or Supervised) keeps the gateways'
+serial ports and offers each EnOcean gateway on a TCP port, so several programs can use one
+gateway at the same time, for example the old `eltako` integration while moving over, eo_man
+or PCT14. It replaces the older [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy)
+app; the integration works with both in the same way.
 
-- The app announces its gateways: each one shows up here as discovered (**EnOcean Proxy**);
-  pick the model and the gateway is set up with **Replay over EnOcean Proxy** switched on.
+- The app announces its gateways: each one shows up here as discovered (**Device Proxy**);
+  pick the model and the gateway is set up with **Replay over the proxy app** switched on.
 - After a Home Assistant restart the app delivers the telegrams that arrived meanwhile (radio
-  telegrams only, up to 15 minutes old) with their reception time, so cover positions, meter
-  readings and "last seen" stay right.
-- Its status page also records captures (for example PCT14 with a FAM14) and shows the air
-  time against the 1 % limit.
+  telegrams only, up to 15 minutes old by default) with their reception time, so cover
+  positions, meter readings and "last seen" stay right. If wanted, the app keeps them over its
+  own restart too.
+- Its web interface shows every frame live, tests the gateway, sends a single frame, records
+  captures (for example PCT14 with a FAM14) and shows the air time against the 1 % limit.
 - A gateway the app moves to another port is found again by its base ID and updated by itself.
-- The app is reachable from Home Assistant only, unless you open its ports.
+- **Moving from the EnOcean Proxy:** in the Device Proxy choose *Import / Export* → *Fetch
+  from the EnOcean Proxy app*, stop the EnOcean Proxy, take the gateways over. Each gateway is
+  announced again; the integration finds its entry by the base ID and only changes the
+  address, so devices and entities stay as they are.
+- The gateways are reachable from Home Assistant and the other apps only, unless you allow
+  more addresses in the app.
 
 ## Known limitations
 
@@ -338,13 +345,13 @@ TCP port, so several programs can use one gateway at the same time, for example 
   configuration) is not built yet; it needs captures of the PCT14 ↔ FAM14 exchange.
 - **Network gateways serve one connection:** the PioTek MGW-ETH accepts further connections
   but does not answer them; a stuck connection stays until the gateway is restarted. HA then
-  raises the repair "… does not answer". Use the EnOcean Proxy app to share one gateway.
+  raises the repair "… does not answer". Use the Device Proxy app to share one gateway.
 - **PSC energy and power:** the Permundo PSC reports them as D2-01 (Wh, W) and A5-12-01. The
   full D2-01 telegram needs an ESP3 gateway (MGW-ETH, Symcon, USB300); ESP2 gateways (FAM-USB)
   cut it, so energy then comes from the A5-12-01 counter, which is sent every 10 minutes.
 - **One program per port:** a serial gateway can only be used by one integration at a time.
   Remove it from the old `eltako` integration before adding it here, or share it through the
-  EnOcean Proxy app.
+  Device Proxy app.
 - **VLD teach-in:** D2-01 and D2-05 actuators learn by UTE, which needs an ESP3 gateway
   (USB300, MGW-ETH, generic ESP3); ESP2 gateways such as the FAM-USB cannot answer.
 - **Generic profiles:** devices added by EEP decode every standard profile, but profiles
@@ -371,7 +378,7 @@ TCP port, so several programs can use one gateway at the same time, for example 
    sensor **Bytes received** of the gateway. It grows with every byte that arrives, parsed
    or not. Not growing: nothing is sent on this connection (many network gateways serve only
    one client; stop other users such as the old `eltako` integration, an app or a bridge, or
-   use the EnOcean Proxy app). Growing: the diagnostics list "ignored_packets" (packet types
+   use the Device Proxy app). Growing: the diagnostics list "ignored_packets" (packet types
    that are no radio telegram) and "bytes_unparsed".
 5. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
    the panel's export or the action `enocean_eltako.capture`. Debug logging:

@@ -128,7 +128,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._data: dict[str, Any] = {}
         self._options: dict[str, Any] = {}
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
-        self._proxy: dict[str, Any] | None = None  # gateway announced by the EnOcean Proxy app
+        self._proxy: dict[str, Any] | None = None  # gateway announced by a proxy app
+        self._proxy_app = "EnOcean Proxy"  # its name: Device Proxy or EnOcean Proxy
         self._discovery: dict[str, Any] = {}  # discovered device: gateway, ID, telegram
         self._device_model: DeviceModel | None = None
 
@@ -194,12 +195,16 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         return await self.async_step_zeroconf_confirm()
 
     async def _async_moved_gateway(
-        self, model: GatewayModel, connection: TcpConnection, candidates: list[ConfigEntry]
+        self,
+        model: GatewayModel,
+        connection: TcpConnection,
+        candidates: list[ConfigEntry],
+        data_updates: dict[str, Any] | None = None,
     ) -> ConfigFlowResult | None:
         """discovery-update-info: a known gateway at a new address updates its entry.
 
         Reads the base ID at the announced address; when it is a configured gateway's, that
-        entry gets the new address and reloads, no confirmation needed.
+        entry gets the new address (and data_updates) and reloads, no confirmation needed.
         """
         if not candidates or not model.reads_base_id:
             return None
@@ -214,17 +219,20 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 _LOGGER.info("%s moved to %s", entry.title, connection)
                 return self.async_update_reload_and_abort(
                     entry,
-                    data_updates={CONF_DEVICE: connection.as_dict()},
+                    data_updates={CONF_DEVICE: connection.as_dict(), **(data_updates or {})},
                     reason="already_configured",
                 )
         return None
 
     async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
-        """The EnOcean Proxy app announced its gateways.
+        """A proxy app announced its gateways: the Device Proxy or the older EnOcean Proxy.
 
         The Supervisor keeps one message per app and service, so the app lists all gateways
         in one message; this flow takes the first unconfigured one and starts a flow of its
         own for each further one. Older app versions sent a single gateway (host + port).
+        A gateway that was set up through a proxy app before and now comes from another one
+        (moving from the EnOcean Proxy to the Device Proxy) keeps its entry: it is found by
+        its base ID and gets the new address.
         """
         config = dict(discovery_info.config)
         if "gateways" in config:
@@ -258,11 +266,14 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         port = int(gateway["port"])
         await self.async_set_unique_id(f"proxy_{host}_{port}")
         self._abort_if_unique_id_configured()
-        # a gateway of the app on another port (the app's port options changed)
+        # a gateway of the app on another port (the app's port options changed), or one
+        # that came through another proxy app before (moved to the Device Proxy)
         through_app = [
             e
             for e in self._async_current_entries(include_ignore=False)
             if e.data.get(CONF_DEVICE, {}).get(CONF_HOST) == host
+            or e.options.get(CONF_PROXY_REPLAY)
+            or CONF_PROXY_STATUS_PORT in e.data
         ]
         probe = next(
             m
@@ -270,12 +281,19 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             if m.reads_base_id and m.protocol == (gateway.get("protocol") or "esp2")
         )
         connection = TcpConnection(host, port)
-        if (moved := await self._async_moved_gateway(probe, connection, through_app)) is not None:
+        updates = (
+            {CONF_PROXY_STATUS_PORT: int(config["status_port"])}
+            if config.get("status_port")
+            else {}
+        )
+        moved = await self._async_moved_gateway(probe, connection, through_app, updates)
+        if moved is not None:
             return moved
         self._proxy = {**config, **gateway}
         self._connection = TcpConnection(host, port)
+        self._proxy_app = "Device Proxy" if config.get("app") == "device_proxy" else "EnOcean Proxy"
         self.context["title_placeholders"] = {
-            "name": f"{gateway.get('name', host)} (EnOcean Proxy)"
+            "name": f"{gateway.get('name', host)} ({self._proxy_app})"
         }
         return await self.async_step_proxy_confirm()
 
@@ -311,6 +329,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "name": str(self._proxy.get("name", "")),
                 "connection": str(self._connection),
+                "app": self._proxy_app,
             },
         )
 

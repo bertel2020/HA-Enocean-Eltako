@@ -14,7 +14,7 @@
 - [Gateway-Einstellungen und Reparaturen](#gateway-einstellungen-und-reparaturen)
 - [Übernahme der alten Integration eltako](#übernahme-der-alten-integration-eltako)
 - [Blueprints und Aktionen](#blueprints-und-aktionen)
-- [App EnOcean Proxy](#app-enocean-proxy)
+- [App Device Proxy](#app-device-proxy)
 - [Bekannte Einschränkungen](#bekannte-einschränkungen)
 - [Fehlersuche](#fehlersuche)
 
@@ -74,7 +74,7 @@ behalten die gelernten Sender-IDs; am Aktor ablernen, wenn ein neuer Regler sie 
 
 Die alte Integration `eltako` läuft parallel weiter; diese hier hat die eigene Domain
 `enocean_eltako`. Einen seriellen Port kann nur ein Programm gleichzeitig öffnen: das Gateway
-vorher aus der alten Integration entfernen oder über die [App EnOcean Proxy](#app-enocean-proxy)
+vorher aus der alten Integration entfernen oder über die [App Device Proxy](#app-device-proxy)
 teilen.
 
 ## Gateway einrichten
@@ -85,7 +85,7 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
 
 - **USB-Gateways** werden mit der Port-Auswahl von Home Assistant gewählt. Der Port wird am
   Eintrag gespeichert, damit Home Assistant ihn der Integration zuordnet.
-- **Netzwerk-Gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, App EnOcean Proxy) werden mit
+- **Netzwerk-Gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, App Device Proxy oder EnOcean Proxy) werden mit
   Host und Port angelegt. Ein MGW-ETH und die Gateways der Proxy-App werden automatisch
   gefunden und erscheinen als entdeckt; ein MGW-ETH mit neuer IP-Adresse wird selbst angepasst.
 - **FGW14-USB und FAM14 am selben Bus** bilden eine Bus-Gruppe mit Failover. Der FAM14 kann
@@ -195,7 +195,7 @@ EEP-Geräte weiter. Geräte per EEP oder Definition haben einen Diagnosesensor *
 Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine kompakte
 Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
 und freie Sender-IDs. **Telegramme** filtert auf das jeweilige Gateway. **Details** zeigt
-Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über EnOcean Proxy
+Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über Device Proxy oder EnOcean Proxy
 stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
 und eine Sendesperre während eines Mitschnitts.
 
@@ -280,7 +280,7 @@ Reparaturen weisen darauf hin, wo etwas zu tun ist:
   die Aktoren kennen die alten Sender-IDs, Befehle kämen nicht an
 - Bus-Aktoren bestätigen Befehle im Mittel erst nach mehr als 3 s: der FAM14 gibt
   Bestätigungen nur in Betriebsart 5 mit einer per PCT14 erstellten Geräteliste sofort weiter
-- eine App EnOcean Proxy, die älter ist, als diese Integration braucht (0.5.2)
+- eine App EnOcean Proxy, die älter ist, als diese Integration braucht (0.5.2; der Device Proxy passt immer)
 
 ## Übernahme der alten Integration eltako
 
@@ -329,23 +329,32 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
   stattdessen in die offene Endlage, nie in die geschlossene. `only_if_inaccurate: true`
   überspringt Rollläden, deren Position schon genau bekannt ist.
 
-## App EnOcean Proxy
+## App Device Proxy
 
-Die optionale App [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) (Home
-Assistant OS oder Supervised) hält die seriellen Ports der Gateways und bietet jedes Gateway
-auf einem TCP-Port an. So können mehrere Programme ein Gateway gleichzeitig nutzen, z. B. die
-alte Integration `eltako` während des Umstiegs.
+Die optionale App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) (Home Assistant OS oder Supervised) hält die seriellen
+Ports der Gateways und bietet jedes EnOcean-Gateway auf einem TCP-Port an. So können mehrere
+Programme ein Gateway gleichzeitig nutzen, z. B. die alte Integration `eltako` während des
+Umstiegs, eo_man oder PCT14. Sie löst die ältere App
+[EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) ab; die Integration arbeitet mit
+beiden gleich.
 
-- Die App meldet ihre Gateways an: Jedes erscheint hier als entdeckt (**EnOcean Proxy**);
-  Modell wählen, und das Gateway ist mit **Nachlieferung über EnOcean Proxy** eingerichtet.
+- Die App meldet ihre Gateways an: Jedes erscheint hier als entdeckt (**Device Proxy**);
+  Modell wählen, und das Gateway ist mit **Nachlieferung über die Proxy-App** eingerichtet.
 - Nach einem Neustart von Home Assistant liefert die App die Telegramme nach, die inzwischen
-  ankamen (nur Funktelegramme, höchstens 15 Minuten alt), mit ihrer Empfangszeit, damit
-  Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen.
-- Ihre Statusseite nimmt außerdem Mitschnitte auf (z. B. PCT14 mit FAM14) und zeigt die
-  Funkbelegung gegenüber dem 1-%-Limit.
+  ankamen (nur Funktelegramme, standardmäßig höchstens 15 Minuten alt), mit ihrer
+  Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Auf
+  Wunsch hebt die App sie auch über ihren eigenen Neustart auf.
+- Ihre Oberfläche zeigt jedes Telegramm live, testet das Gateway, sendet einzelne Telegramme,
+  nimmt Mitschnitte auf (z. B. PCT14 mit FAM14) und zeigt die Funkbelegung gegenüber dem
+  1-%-Limit.
 - Legt die App ein Gateway auf einen anderen Port, findet die Integration es über die Base-ID
   wieder und passt den Eintrag selbst an.
-- Die App ist nur aus Home Assistant erreichbar, solange ihre Ports nicht freigegeben sind.
+- **Umstieg vom EnOcean Proxy:** im Device Proxy *Import / Export* → *Aus der EnOcean Proxy App
+  holen*, den EnOcean Proxy stoppen, die Gateways übernehmen. Jedes Gateway wird neu
+  angemeldet; die Integration findet seinen Eintrag über die Base-ID und ändert nur die
+  Adresse, Geräte und Entitäten bleiben, wie sie sind.
+- Die Gateways sind nur aus Home Assistant und den anderen Apps erreichbar, solange in der App
+  keine weiteren Adressen erlaubt sind.
 
 ## Bekannte Einschränkungen
 
@@ -355,13 +364,13 @@ alte Integration `eltako` während des Umstiegs.
 - **Netzwerk-Gateways bedienen eine Verbindung:** Das PioTek MGW-ETH nimmt weitere
   Verbindungen an, antwortet ihnen aber nicht; eine hängende Verbindung bleibt, bis das Gateway
   neu gestartet wird. HA zeigt dann die Reparatur „… antwortet nicht“. Zum Teilen eines Gateways
-  die App EnOcean Proxy nutzen.
+  die App Device Proxy nutzen.
 - **PSC-Energie und -Leistung:** Das Permundo PSC meldet sie als D2-01 (Wh, W) und als
   A5-12-01. Das volle D2-01-Telegramm braucht ein ESP3-Gateway (MGW-ETH, Symcon, USB300);
   ESP2-Gateways (FAM-USB) kürzen es, dann kommt die Energie aus dem A5-12-01-Zähler, der nur
   alle 10 Minuten gesendet wird.
 - **Ein Programm pro Port:** Ein serielles Gateway kann nur von einer Integration genutzt
-  werden. Vorher aus der alten Integration `eltako` entfernen oder über die App EnOcean Proxy
+  werden. Vorher aus der alten Integration `eltako` entfernen oder über die App Device Proxy
   teilen.
 - **VLD-Anlernen:** D2-01- und D2-05-Aktoren lernen per UTE, dafür ist ein ESP3-Gateway nötig
   (USB300, MGW-ETH, generisch ESP3); ESP2-Gateways wie der FAM-USB können nicht antworten.
@@ -385,12 +394,12 @@ alte Integration `eltako` während des Umstiegs.
 3. „Connection … lost: device disconnected or in use by another process“ immer wieder im
    Protokoll: Ein anderes Programm nutzt denselben seriellen Port, etwa eine zweite
    EnOcean-Integration oder eine App. Einen Port darf nur eines öffnen; zum Teilen eines
-   Gateways die App EnOcean Proxy nutzen und alles mit ihr verbinden.
+   Gateways die App Device Proxy nutzen und alles mit ihr verbinden.
 4. Ein Netzwerk-Gateway ist verbunden, aber „Telegramme empfangen“ bleibt bei 0: den
    Diagnose-Sensor **Empfangene Bytes** des Gateways aktivieren. Er wächst mit jedem Byte,
    das ankommt, ob lesbar oder nicht. Wächst er nicht, wird auf dieser Verbindung nichts
    gesendet (viele Netzwerk-Gateways bedienen nur einen Client; andere Nutzer wie die alte
-   Integration `eltako`, eine App oder eine Brücke beenden, oder die App EnOcean Proxy
+   Integration `eltako`, eine App oder eine Brücke beenden, oder die App Device Proxy
    verwenden). Wächst er, zeigen die Diagnosedaten „ignored_packets“ (Pakettypen, die kein
    Funktelegramm sind) und „bytes_unparsed“.
 5. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme

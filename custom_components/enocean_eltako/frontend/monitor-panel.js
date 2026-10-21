@@ -196,7 +196,7 @@ const TEXT = {
     ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
     since: (s) => (s < 3600 ? `for ${Math.round(s / 60)} min` : `for ${Math.round(s / 3600)} h`),
     cardHint: "Show only this gateway's telegrams",
-    viaProxy: (version) => (version ? `via EnOcean Proxy ${version}` : "via EnOcean Proxy"),
+    viaProxy: (app, version) => (version ? `via ${app || "proxy app"} ${version}` : `via ${app || "proxy app"}`),
     proxyUnreachable: "proxy status not reachable",
     airtime: "Air time",
     airtimeHint: "Share of the allowed 1 % radio time used in the last hour (estimated by the proxy)",
@@ -351,7 +351,7 @@ const TEXT = {
     ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
     since: (s) => (s < 3600 ? `seit ${Math.round(s / 60)} min` : `seit ${Math.round(s / 3600)} h`),
     cardHint: "Nur die Telegramme dieses Gateways zeigen",
-    viaProxy: (version) => (version ? `über EnOcean Proxy ${version}` : "über EnOcean Proxy"),
+    viaProxy: (app, version) => (version ? `über ${app || "Proxy-App"} ${version}` : `über ${app || "Proxy-App"}`),
     proxyUnreachable: "Proxy-Status nicht erreichbar",
     airtime: "Funkbelegung",
     airtimeHint: "Anteil der erlaubten 1 % Sendezeit in der letzten Stunde (vom Proxy geschätzt)",
@@ -1569,12 +1569,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const p = gw.proxy;
     if (!p) {
-      return `<div class="proxy"><span class="tag">${esc(t.viaProxy(""))}</span><span class="muted">${esc(t.proxyUnreachable)}</span></div>`;
+      return `<div class="proxy"><span class="tag">${esc(t.viaProxy("", ""))}</span><span class="muted">${esc(t.proxyUnreachable)}</span></div>`;
     }
     const share = Number(p.duty_of_limit ?? 0);
     const level = share >= 80 ? "bad" : share >= 50 ? "warn" : "";
     return `<div class="proxy">
-        <span class="tag">${esc(t.viaProxy(p.version))}</span>
+        <span class="tag">${esc(t.viaProxy(p.app, p.version))}</span>
         <span>${esc(t.programs(p.programs ?? 0))}</span>
         ${p.exclusive_peer ? `<span class="tag warn">${esc(t.alone(p.exclusive_peer))}</span>` : ""}
       </div>

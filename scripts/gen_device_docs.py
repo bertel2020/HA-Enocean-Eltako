@@ -83,7 +83,7 @@ TEXT = {
         ),
         "gateways": "Gateways",
         "gateways_text": "One config entry per gateway. Serial gateways connect over USB or, through\n"
-        "ser2net or the EnOcean Proxy app, over TCP.",
+        "ser2net or the Device Proxy app, over TCP.",
         "gateway_cols": ("Gateway", "Connection"),
         "gateway_rows": (
             (
@@ -125,7 +125,7 @@ TEXT = {
         ),
         "gateways": "Gateways",
         "gateways_text": "Ein Eintrag pro Gateway. Serielle Gateways verbinden per USB oder, über ser2net\n"
-        "oder die App EnOcean Proxy, per TCP.",
+        "oder die App Device Proxy, per TCP.",
         "gateway_cols": ("Gateway", "Anbindung"),
         "gateway_rows": (
             (

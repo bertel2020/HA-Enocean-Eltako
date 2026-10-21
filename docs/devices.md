@@ -9,7 +9,7 @@ Every profile is named as EEP plus variant (`std` = EnOcean Alliance definition,
 ## Gateways
 
 One config entry per gateway. Serial gateways connect over USB or, through
-ser2net or the EnOcean Proxy app, over TCP.
+ser2net or the Device Proxy app, over TCP.
 
 | Gateway | Connection |
 | --- | --- |
