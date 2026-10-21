@@ -46,7 +46,7 @@ from .catalog import (
     custom_key,
     generic_fields,
 )
-from .const import CONF_MODEL
+from .const import CONF_DEVICE, CONF_MODEL
 from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
@@ -408,7 +408,14 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     bus = MODELS[entry.data[CONF_MODEL]].bus
-    async_add_entities([GatewaySensor(entry, d) for d in GATEWAY_SENSORS if bus or not d.bus_only])
+    tcp = entry.data[CONF_DEVICE].get("type") == "tcp"
+    async_add_entities(
+        [
+            GatewaySensor(entry, d)
+            for d in GATEWAY_SENSORS
+            if (bus or not d.bus_only) and (tcp or not d.tcp_only)
+        ]
+    )
     for subentry_id, device in entry.runtime_data.devices.items():
         # E5/I7 diagnostics for every device
         if device.model.group == GROUP_VIRTUAL:  # sends only: no radio statistics

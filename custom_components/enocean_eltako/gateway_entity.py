@@ -18,13 +18,13 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, UnitOfInformation
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_BASE_ID, DOMAIN
+from .const import CONF_BASE_ID, CONF_DEVICE, DOMAIN
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry, GatewayRuntime
@@ -70,6 +70,7 @@ class GatewayConnectionSensor(GatewayEntity, BinarySensorEntity):
 class GatewaySensorDescription(SensorEntityDescription):
     value_fn: Callable[[GatewayRuntime, EnOceanEltakoConfigEntry], Any]
     bus_only: bool = False
+    tcp_only: bool = False
 
 
 def _last_telegram(runtime: GatewayRuntime, _entry: Any) -> datetime | None:
@@ -87,6 +88,20 @@ GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (
         key="last_telegram",
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=_last_telegram,
+    ),
+    GatewaySensorDescription(
+        key="bytes",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        entity_registry_enabled_default=False,
+        value_fn=lambda r, _e: r.gateway.bytes_received,
+    ),
+    GatewaySensorDescription(
+        key="address",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        tcp_only=True,
+        value_fn=lambda _r, e: e.data[CONF_DEVICE].get("host"),
     ),
     GatewaySensorDescription(
         key="queue",

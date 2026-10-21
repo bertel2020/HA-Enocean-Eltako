@@ -1109,6 +1109,12 @@
       },
       "acceleration_z": {
         "name": "Acceleration Z"
+      },
+      "gateway_bytes": {
+        "name": "Bytes received"
+      },
+      "gateway_address": {
+        "name": "IP address"
       }
     },
     "binary_sensor": {

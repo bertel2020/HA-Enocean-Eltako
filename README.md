@@ -295,7 +295,13 @@ its ports.
    and again: another program uses the same serial port, for example a second EnOcean
    integration or an app. Only one may open a port; to share a gateway, use the EnOcean
    Proxy app and connect everything to it.
-4. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
+4. A network gateway is connected but "Telegrams received" stays at 0: enable the diagnostic
+   sensor **Bytes received** of the gateway. It grows with every byte that arrives, parsed
+   or not. Not growing: nothing is sent on this connection (many network gateways serve only
+   one client; stop other users such as the old `eltako` integration, an app or a bridge, or
+   use the EnOcean Proxy app). Growing: the diagnostics list "ignored_packets" (packet types
+   that are no radio telegram) and "bytes_unparsed".
+5. For a bug report, download the diagnostics of the gateway entry, and record telegrams with
    the panel's export or the action `enocean_eltako.capture`. Debug logging:
    ```yaml
    logger:

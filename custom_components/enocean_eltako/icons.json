@@ -124,6 +124,12 @@
       "enocean_id": {
         "default": "mdi:identifier"
       },
+      "gateway_address": {
+        "default": "mdi:ip-network-outline"
+      },
+      "gateway_bytes": {
+        "default": "mdi:swap-vertical"
+      },
       "gateway_base_id": {
         "default": "mdi:identifier"
       },

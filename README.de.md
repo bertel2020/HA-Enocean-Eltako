@@ -305,7 +305,14 @@ solange ihre Ports nicht freigegeben sind.
    Protokoll: Ein anderes Programm nutzt denselben seriellen Port, etwa eine zweite
    EnOcean-Integration oder eine App. Einen Port darf nur eines öffnen; zum Teilen eines
    Gateways die App EnOcean Proxy nutzen und alles mit ihr verbinden.
-4. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme
+4. Ein Netzwerk-Gateway ist verbunden, aber „Telegramme empfangen“ bleibt bei 0: den
+   Diagnose-Sensor **Empfangene Bytes** des Gateways aktivieren. Er wächst mit jedem Byte,
+   das ankommt, ob lesbar oder nicht. Wächst er nicht, wird auf dieser Verbindung nichts
+   gesendet (viele Netzwerk-Gateways bedienen nur einen Client; andere Nutzer wie die alte
+   Integration `eltako`, eine App oder eine Brücke beenden, oder die App EnOcean Proxy
+   verwenden). Wächst er, zeigen die Diagnosedaten „ignored_packets“ (Pakettypen, die kein
+   Funktelegramm sind) und „bytes_unparsed“.
+5. Für einen Fehlerbericht die Diagnosedaten des Gateway-Eintrags herunterladen und Telegramme
    mit dem Export im Panel oder der Aktion `enocean_eltako.capture` mitschneiden.
    Debug-Protokoll:
    ```yaml

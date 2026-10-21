@@ -66,6 +66,24 @@ async def test_gateway_sensors(hass: HomeAssistant, gateway) -> None:
     assert hass.states.get(last).state not in ("unknown", "unavailable")
 
 
+async def test_gateway_address_and_byte_counters(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    address = _entity_id(hass, "sensor", entry, "address")  # TCP gateways only
+    assert hass.states.get(address).state == "127.0.0.1"
+    gateway_runtime = entry.runtime_data.gateway
+    assert _entity_id(hass, "sensor", entry, "bytes") is not None  # disabled by default
+    seen = gateway_runtime.bytes_received  # the base ID answer
+
+    server.push(bytes([0x55, 0, 1, 0, 0x17]))  # not a frame of ours: the decoder skips it
+    server.push(esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes(4), 0x00216343, 0x30).encode())
+    for _ in range(50):
+        if gateway_runtime.telegrams_received:
+            break
+        await asyncio.sleep(0.01)
+    assert gateway_runtime.bytes_received > seen
+    assert gateway_runtime.ignored == {}
+
+
 async def test_reconnect_button(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     connection = _entity_id(hass, "binary_sensor", entry, "connection")

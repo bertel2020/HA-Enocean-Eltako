@@ -102,10 +102,17 @@ class Gateway:
         self._response_match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool] | None = None
         self.telegrams_received = 0
         self.polls_dropped = 0
+        self.bytes_received = 0  # raw bytes read from the stream, parsed or not
+        self.ignored: dict[str, int] = {}  # packets that are no radio telegram, by type
         self.last_telegram: float | None = None  # time.time() of the last radio telegram
         self._outage_logged = False  # one warning per outage, then debug until it is back
         self._connected_at = 0.0  # time.monotonic() of the last successful connect
         self._stable_timer: asyncio.TimerHandle | None = None
+
+    @property
+    def bytes_unparsed(self) -> int:
+        """Bytes the frame decoder skipped (no sync byte, bad CRC)."""
+        return int(self._codec.decoder.dropped)
 
     @property
     def connected(self) -> bool:
@@ -224,6 +231,7 @@ class Gateway:
         pending = bytearray() if self._hello else None  # a replay block may come first
         try:
             while chunk := await reader.read(1024):
+                self.bytes_received += len(chunk)
                 if pending is not None:
                     pending += chunk
                     chunk, done = self._take_replay(pending)
@@ -293,6 +301,7 @@ class Gateway:
             return
         telegram = self._codec.radio(item)
         if telegram is None:
+            self._note_ignored(item)
             return
         self.telegrams_received += 1
         self.last_telegram = time.time()
@@ -301,6 +310,18 @@ class Gateway:
                 self._on_telegram(telegram)
             except Exception:
                 _LOGGER.exception("Error handling telegram %s", telegram)
+
+    def _note_ignored(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> None:
+        """Count a packet that is no radio telegram; the first of each kind is logged."""
+        if isinstance(item, esp3.Esp3Packet):
+            kind = f"esp3 type 0x{item.packet_type:02X}"
+        else:
+            kind = f"esp2 org 0x{item.org:02X}"
+        self.ignored[kind] = self.ignored.get(kind, 0) + 1
+        if self.ignored[kind] == 1:
+            _LOGGER.info(
+                "%s sent a packet that is no radio telegram (%s), ignored", self.connection, kind
+            )
 
     async def _disconnect(self) -> None:
         was_connected = self.connected
