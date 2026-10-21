@@ -8,6 +8,8 @@ const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
 const ANSWER_WINDOW = 3000; // ms in which a device answers a command
+const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
+const TREND_POINTS = 30; // telegrams in a sender's signal curve
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
 
@@ -92,6 +94,8 @@ const TEXT = {
     viewTelegrams: "Telegrams", viewDevices: "Devices",
     deviceCount: (n) => (n === 1 ? "1 sender" : `${n} senders`),
     telegramsCount: (n) => (n === 1 ? "1 telegram" : `${n} telegrams`),
+    weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
+    trend: (n, lo, hi) => `Signal of the last ${n} telegrams: ${lo} to ${hi} dBm`,
     noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
@@ -187,6 +191,8 @@ const TEXT = {
     viewTelegrams: "Telegramme", viewDevices: "Geräte",
     deviceCount: (n) => (n === 1 ? "1 Sender" : `${n} Sender`),
     telegramsCount: (n) => (n === 1 ? "1 Telegramm" : `${n} Telegramme`),
+    weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
+    trend: (n, lo, hi) => `Signal der letzten ${n} Telegramme: ${lo} bis ${hi} dBm`,
     noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
@@ -431,6 +437,8 @@ const STYLE = `
     padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
+  .spark { display: block; }
+  .spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; }
   @media (max-width: 760px) {
@@ -1354,12 +1362,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       const key = `${r.gateway}|${r.sender}`;
       let d = senders.get(key);
       if (!d) {
-        d = { last: r, fields: null, count: 0, perMinute: 0 };
+        d = { last: r, fields: null, count: 0, perMinute: 0, dbm: [] };
         senders.set(key, d);
       }
       d.count += 1;
       if (!d.fields && (r.fields || r.values)) d.fields = r.fields || Object.entries(r.values).map(([label, value]) => ({ label, value }));
       if (Date.parse(r.time) >= since) d.perMinute += 1;
+      if (r.dbm != null && d.dbm.length < TREND_POINTS) d.dbm.unshift(r.dbm); // oldest first
     }
     return [...senders.values()]
       .filter(({ last: r }) => {
@@ -1384,7 +1393,18 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noDevices)}</b></div>`);
   }
 
-  _deviceRow({ last: r, fields, count, perMinute }, now) {
+  _sparkline(dbm) {
+    // the signal of the last telegrams as a small curve; the band is fixed (-100 to -30 dBm),
+    // so curves of different senders compare
+    if (dbm.length < 2) return "";
+    const [w, h] = [72, 18];
+    const y = (v) => (h - 2 - ((Math.min(-30, Math.max(-100, v)) + 100) / 70) * (h - 4)).toFixed(1);
+    const points = dbm.map((v, i) => `${((i / (dbm.length - 1)) * w).toFixed(1)},${y(v)}`).join(" ");
+    const title = this._t.trend(dbm.length, Math.min(...dbm), Math.max(...dbm));
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><polyline points="${points}"/></svg>`;
+  }
+
+  _deviceRow({ last: r, fields, count, perMinute, dbm }, now) {
     const t = this._t;
     const unknown = !r.device;
     const name = unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(r.device)}</span>`;
@@ -1400,11 +1420,13 @@ class EnOceanEltakoPanel extends HTMLElement {
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
+    const weak = r.dbm != null && r.dbm < WEAK_DBM;
     const heard = t.ago(Math.max(0, Math.round((now - Date.parse(r.time)) / 1000)));
     return `<div class="dev" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}">
       <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div></div>
       <div class="values">${values}</div>
-      <div class="stats"><span>${esc(heard)}</span><span>${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span></div>
+      <div class="stats"><span>${esc(heard)}</span><span>${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span>
+        <span class="signal">${this._sparkline(dbm)}${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span></div>
     </div>`;
   }
 
