@@ -36,6 +36,7 @@ from .protocol.monitor import MonitorEntry
 from .protocol.send_queue import Priority
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram, Rorg
+from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
 # telegram types the panel may send, with the data lengths in bytes
@@ -50,6 +51,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_send)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
+    async_setup_takeover_websocket(hass)
 
 
 LABELS: HassKey[dict[str, dict[str, str]]] = HassKey(f"{DOMAIN}_monitor_labels")

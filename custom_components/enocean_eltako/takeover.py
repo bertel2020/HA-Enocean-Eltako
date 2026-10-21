@@ -8,14 +8,20 @@ carry " left" or " right": the rocker the old integration pressed (left when mis
 
 from __future__ import annotations
 
+import logging
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config import async_hass_config_yaml
+from homeassistant.config_entries import ConfigEntryState, ConfigSubentry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from .catalog import (
     CATALOG,
@@ -43,9 +49,18 @@ from .const import (
     CONF_PROFILE,
     CONF_SENDER_ID,
     CONF_SENDERS,
+    DOMAIN,
+    SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
 from .protocol.ids import format_id, parse_id
+from .protocol.sender_pool import SenderIdError
+from .subentry_flow import sender_owner
+
+if TYPE_CHECKING:
+    from . import EnOceanEltakoConfigEntry
+
+_LOGGER = logging.getLogger(__name__)
 
 OLD_DOMAIN = "eltako"
 
@@ -243,3 +258,174 @@ def subentry_data(device: TakeoverDevice, senders: Mapping[str, int]) -> dict[st
             {CONF_PROFILE: p, CONF_SENDER_ID: format_id(s)} for p, s in senders.items()
         ]
     return data
+
+
+# ---- the old integration's registry entries -------------------------------------------------
+
+# "eltako_gw1_ff_c2_4a_a2" (the device) or "eltako_gw1_ff_c2_4a_a2_id" (a further entity of it)
+_OLD_UNIQUE_ID = re.compile(r"^eltako_gw\d+_((?:[0-9a-f]{2}_){3}[0-9a-f]{2})(?:_(.+))?$")
+ASSISTANTS = ("conversation", "cloud.alexa", "cloud.google_assistant")
+
+
+def old_entities(hass: HomeAssistant) -> dict[int, list[er.RegistryEntry]]:
+    """The old integration's entity registry entries by the device ID in their unique ID."""
+    found: dict[int, list[er.RegistryEntry]] = {}
+    for entry in er.async_get(hass).entities.values():
+        if entry.platform != OLD_DOMAIN or not entry.unique_id:
+            continue
+        if (match := _OLD_UNIQUE_ID.match(entry.unique_id)) is None:
+            continue  # the gateway's own entities
+        device_id = parse_id(match.group(1).replace("_", "-"))
+        found.setdefault(device_id, []).append(entry)
+    return found
+
+
+def old_suffix(entry: er.RegistryEntry) -> str | None:
+    match = _OLD_UNIQUE_ID.match(entry.unique_id)
+    return match.group(2) if match else None
+
+
+def old_active(hass: HomeAssistant) -> bool:
+    """The old integration is set up, so its entity IDs are still taken."""
+    return any(
+        e.state is ConfigEntryState.LOADED for e in hass.config_entries.async_entries(OLD_DOMAIN)
+    )
+
+
+async def async_takeover_available(hass: HomeAssistant) -> bool:
+    """There is an old configuration or there are old entities: the panel offers the view."""
+    return await async_old_config(hass) is not None or bool(old_entities(hass))
+
+
+def primary_entity(entries: list[er.RegistryEntry]) -> er.RegistryEntry | None:
+    """The entity that is the device itself (light, switch ...): it has no name of its own."""
+    return next((e for e in entries if e.original_name is None), None)
+
+
+@dataclass(slots=True)
+class Carried:
+    """What the old device and its main entity had set that should go on the new ones."""
+
+    area_id: str | None = None
+    labels: set[str] = field(default_factory=set)
+    entity_labels: set[str] = field(default_factory=set)
+    exposed: dict[str, bool] = field(default_factory=dict)  # assistant -> should expose
+
+
+def carried_from(hass: HomeAssistant, entries: list[er.RegistryEntry]) -> Carried:
+    carried = Carried()
+    devices = dr.async_get(hass)
+    for entry in entries:
+        if entry.device_id and (old := devices.async_get(entry.device_id)) is not None:
+            carried.area_id = carried.area_id or old.area_id
+            carried.labels |= set(old.labels)
+    if (main := primary_entity(entries)) is not None:
+        carried.area_id = carried.area_id or main.area_id
+        carried.entity_labels = set(main.labels)
+        for assistant in ASSISTANTS:
+            should = (main.options.get(assistant) or {}).get("should_expose")
+            if isinstance(should, bool):
+                carried.exposed[assistant] = should
+    return carried
+
+
+def registered_device(
+    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, device: Any
+) -> dr.DeviceEntry | None:
+    """The device registry entry of one of our devices (identifiers are not unique per domain)."""
+    wanted = (DOMAIN, device.unique_prefix)
+    return next(
+        (
+            d
+            for d in dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+            if wanted in d.identifiers
+        ),
+        None,
+    )
+
+
+def apply_carried(
+    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, carried: dict[int, Carried]
+) -> int:
+    """Area and labels on the new device, labels and voice exposure on its main entity."""
+    from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
+
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    done = 0
+    for device in entry.runtime_data.devices.values():
+        if (what := carried.get(device.device_id)) is None or device.channel != 1:
+            continue
+        registered = registered_device(hass, entry, device)
+        if registered is None:
+            continue
+        devices.async_update_device(
+            registered.id,
+            area_id=what.area_id or registered.area_id,
+            labels=set(registered.labels) | what.labels,
+        )
+        if (
+            main := primary_entity(er.async_entries_for_device(entities, registered.id))
+        ) is not None:
+            entities.async_update_entity(
+                main.entity_id, labels=set(main.labels) | what.entity_labels
+            )
+            for assistant, should in what.exposed.items():
+                try:
+                    async_expose_entity(hass, assistant, main.entity_id, should)
+                except Exception:  # an assistant that is not set up: the rest still goes over
+                    _LOGGER.debug("Could not expose %s to %s", main.entity_id, assistant)
+        done += 1
+    return done
+
+
+@dataclass(slots=True)
+class TakeoverResult:
+    count: int
+    skipped: list[str]
+    carried: int
+
+
+async def async_take_over(
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    devices: list[TakeoverDevice],
+    *,
+    carry_over: bool,
+) -> TakeoverResult:
+    """Subentries with the old sender IDs, one reload, then area, labels and exposure."""
+    if not devices:
+        return TakeoverResult(0, [], 0)
+    runtime = entry.runtime_data
+    pool = runtime.senders.pool
+    old = old_entities(hass)
+    carried = {d.device_id: carried_from(hass, old.get(d.device_id, [])) for d in devices}
+    runtime.suspend_reload()
+    skipped: list[str] = []
+    for device in devices:
+        senders: dict[str, int] = {}
+        for profile, sender in device.senders.items():
+            try:
+                pool.assign(sender, sender_owner(device.device_id, profile))
+            except SenderIdError as err:
+                skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
+                continue
+            senders[profile] = sender
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(
+                data=MappingProxyType(subentry_data(device, senders)),
+                subentry_type=SUBENTRY_DEVICE,
+                title=device.name,
+                unique_id=format_id(device.device_id),
+            ),
+        )
+    await runtime.senders.async_save()
+    await hass.config_entries.async_reload(entry.entry_id)
+    done = 0
+    if carry_over and entry.state is ConfigEntryState.LOADED:
+        try:
+            done = apply_carried(hass, entry, carried)
+        except Exception:
+            _LOGGER.exception("Could not carry area and labels over from the old integration")
+    return TakeoverResult(len(devices), skipped, done)

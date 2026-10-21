@@ -5,9 +5,19 @@ from unittest.mock import patch
 import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.enocean_eltako.takeover import find_gateway, plan, subentry_data
+from custom_components.enocean_eltako.takeover import (
+    find_gateway,
+    plan,
+    registered_device,
+    subentry_data,
+)
+from custom_components.enocean_eltako.usage import async_usage
 
 from .test_devices import BASE, _subentry, gateway  # noqa: F401
 
@@ -209,11 +219,66 @@ def old_yaml():
         yield state
 
 
-async def _start(hass: HomeAssistant, entry):
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    return await hass.config_entries.options.async_configure(
-        result["flow_id"], {"next_step_id": "takeover"}
+def _old_device(hass: HomeAssistant, old_entry, name: str, device_id: str, area: str | None):
+    """A device and its entities of the old integration, as its registry entries look."""
+    devices = dr.async_get(hass)
+    device = devices.async_get_or_create(
+        config_entry_id=old_entry.entry_id, identifiers={("eltako", device_id)}, name=name
     )
+    if area:
+        devices.async_update_device(device.id, area_id=ar.async_get(hass).async_create(area).id)
+    registry = er.async_get(hass)
+    unique = "eltako_gw1_" + device_id.lower().replace("-", "_")
+    light = registry.async_get_or_create(
+        "light",
+        "eltako",
+        unique,
+        config_entry=old_entry,
+        device_id=device.id,
+        suggested_object_id=unique,
+    )
+    registry.async_update_entity(light.entity_id, labels={"matter_hub"})
+    registry.async_get_or_create(
+        "sensor",
+        "eltako",
+        f"{unique}_id",
+        config_entry=old_entry,
+        device_id=device.id,
+        original_name="Id",
+        suggested_object_id=f"{unique}_id",
+    )
+    return light.entity_id
+
+
+async def _ws(hass_ws_client, hass, msg_id: int, type_: str, **fields):
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": msg_id, "type": f"enocean_eltako/takeover/{type_}", **fields})
+    return await client.receive_json()
+
+
+async def test_takeover_status(hass: HomeAssistant, gateway, hass_ws_client, old_yaml) -> None:  # noqa: F811
+    assert (await _ws(hass_ws_client, hass, 1, "status"))["result"] == {"available": False}
+    old_yaml["config"] = {"eltako": OLD_CONFIG}
+    assert (await _ws(hass_ws_client, hass, 2, "status"))["result"] == {"available": True}
+    old_yaml["config"] = {}  # no configuration, but entities the old integration left behind
+    old = MockConfigEntry(domain="eltako")
+    old.add_to_hass(hass)
+    _old_device(hass, old, "Licht Büro", "FF-C2-4A-8F", None)
+    assert (await _ws(hass_ws_client, hass, 3, "status"))["result"] == {"available": True}
+
+
+async def test_takeover_errors(hass: HomeAssistant, gateway, old_yaml, hass_ws_client) -> None:  # noqa: F811
+    entry, _ = gateway
+    reply = await _ws(hass_ws_client, hass, 1, "preview", entry_id=entry.entry_id)
+    assert reply["error"]["code"] == "no_config"
+    old_yaml["config"] = {"eltako": {"gateway": [{**OLD_GATEWAY, "base_id": "FF-80-00-00"}]}}
+    reply = await _ws(hass_ws_client, hass, 2, "preview", entry_id=entry.entry_id)
+    assert reply["error"]["code"] == "no_gateway"
+    reply = await _ws(hass_ws_client, hass, 3, "preview", entry_id="unknown")
+    assert reply["error"]["code"] == "gateway_not_loaded"
+    old_yaml["error"] = OSError("no configuration.yaml")
+    reply = await _ws(hass_ws_client, hass, 4, "run", entry_id=entry.entry_id, devices=[])
+    assert reply["error"]["code"] == "no_config"
 
 
 @pytest.mark.parametrize(
@@ -221,50 +286,143 @@ async def _start(hass: HomeAssistant, entry):
     [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
     indirect=True,
 )
-async def test_takeover_flow(hass: HomeAssistant, gateway, old_yaml) -> None:  # noqa: F811
+async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_client) -> None:  # noqa: F811
     entry, server = gateway
     old_yaml["config"] = {"eltako": OLD_CONFIG}
-    pool = entry.runtime_data.senders.pool
-    pool.assign(0xFFB744BA, "device:FF-00-00-99:rocker")  # taken by another device
-    result = await _start(hass, entry)
-    assert result["step_id"] == "takeover"
-    rows = result["description_placeholders"]["rows"]
-    assert "| FF-C2-4A-8F | Licht Büro | light M5-38-08 |" in rows
-    assert "| 05-00-00-12 | Zähler | sensor A5-12-01 | - |" in rows  # already set up
-    default = next(iter(result["data_schema"].schema)).default()
-    assert "05-00-00-12" not in default and "FF-C2-4A-96" not in default
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"devices": ["FF-C2-4A-8F", "FF-C2-4A-91", "01-00-00-07"]}
-    )
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "takeover_done"
-    assert result["description_placeholders"]["count"] == "3"
-    assert "FF-B7-44-BA (Steckdose): in_use" in result["description_placeholders"]["skipped"]
-    await hass.async_block_till_done()
+    old = MockConfigEntry(domain="eltako", state=ConfigEntryState.LOADED)
+    old.add_to_hass(hass)
+    old_light = _old_device(hass, old, "Licht Büro", "FF-C2-4A-8F", "Büro")
+    entry.runtime_data.senders.pool.assign(0xFFB744BA, "device:FF-00-00-99:rocker")  # taken
+
+    preview = (await _ws(hass_ws_client, hass, 1, "preview", entry_id=entry.entry_id))["result"]
+    assert preview["old_active"] is True
+    devices: dict = {}
+    for d in preview["devices"]:
+        devices.setdefault(d["id"], d)  # an ID listed twice: the first entry is the device
+    assert devices["FF-C2-4A-8F"]["ready"] and devices["FF-C2-4A-8F"]["area"] == "Büro"
+    assert devices["FF-C2-4A-8F"]["labels"] == ["matter_hub"]
+    assert not devices["05-00-00-12"]["ready"]  # already set up
+    assert devices["05-00-00-12"]["reason"] == "takeover_exists"
+    assert devices["FF-C2-4A-96"]["reason"] == "takeover_unsupported"
+
+    ran = (
+        await _ws(
+            hass_ws_client,
+            hass,
+            2,
+            "run",
+            entry_id=entry.entry_id,
+            devices=["FF-C2-4A-8F", "FF-C2-4A-91", "01-00-00-07", "05-00-00-12"],
+        )
+    )["result"]
+    assert (ran["count"], ran["carried"]) == (3, 3)  # the meter was already there
+    assert "FF-B7-44-BA (Steckdose): in_use" in ran["skipped"][0]
     await server.connected.wait()
     assert entry.state is ConfigEntryState.LOADED
-    data = {s.title: dict(s.data) for s in entry.subentries.values()}
-    assert data["Licht Büro"]["senders"] == [{"profile": "rocker", "sender_id": "FF-B7-44-B9"}]
-    assert "senders" not in data["Steckdose"]
-    assert data["Haustür"]["device_class"] == "door"
-    pool = entry.runtime_data.senders.pool
-    assert pool.get(0xFFB744B9).owner == "device:FF-C2-4A-8F:rocker"
-    assert len(entry.runtime_data.devices) == 4  # the meter and the three new ones
+    assert len(entry.runtime_data.devices) == 4
+    assert entry.runtime_data.senders.pool.get(0xFFB744B9).owner == "device:FF-C2-4A-8F:rocker"
+
+    # the new device sits in the old device's area and its main entity has the old labels
+    (device,) = (d for d in entry.runtime_data.devices.values() if d.subentry.title == "Licht Büro")
+    registered = registered_device(hass, entry, device)
+    assert ar.async_get(hass).async_get_area(registered.area_id).name == "Büro"
+    main = next(
+        e
+        for e in er.async_entries_for_device(er.async_get(hass), registered.id)
+        if e.original_name is None
+    )
+    assert main.labels == {"matter_hub"}
+
+    mapping = (await _ws(hass_ws_client, hass, 3, "mapping", entry_id=entry.entry_id))["result"]
+    assert mapping["old_active"] is True
+    rows = {r["old"]: r for r in mapping["rows"]}
+    assert rows[old_light]["new"] == main.entity_id and rows[old_light]["primary"]
+    assert rows[old_light]["taken"] and rows[old_light]["area"] == "Büro"
+    assert rows[old_light]["device"] == "Licht Büro"
+    id_row = rows[old_light.replace("light.", "sensor.") + "_id"]
+    assert id_row["new"] is None  # this device has no ID sensor to replace it
+    assert id_row["usage"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
 
 
-async def test_takeover_aborts(hass: HomeAssistant, gateway, old_yaml) -> None:  # noqa: F811
-    entry, _ = gateway
-    result = await _start(hass, entry)
-    assert result["reason"] == "takeover_no_config"
-    old_yaml["config"] = {"eltako": {"gateway": [{**OLD_GATEWAY, "base_id": "FF-80-00-00"}]}}
-    result = await _start(hass, entry)
-    assert result["reason"] == "takeover_no_gateway"
-    assert result["description_placeholders"]["found"] == "FF-80-00-00"
-    old_yaml["error"] = OSError("no configuration.yaml")
-    result = await _start(hass, entry)
-    assert result["reason"] == "takeover_no_config"
-    del old_yaml["error"]
-    old_yaml["config"] = {"eltako": OLD_CONFIG}
-    result = await _start(hass, entry)
-    result = await hass.config_entries.options.async_configure(result["flow_id"], {"devices": []})
-    assert result["reason"] == "senders_unchanged"
+async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant) -> None:
+    assert await async_setup_component(
+        hass,
+        "automation",
+        {
+            "automation": {
+                "alias": "Licht abends",
+                "trigger": {"platform": "state", "entity_id": "input_boolean.x", "to": "on"},
+                "action": {"service": "light.turn_on", "target": {"entity_id": "light.alt"}},
+            }
+        },
+    )
+    await hass.async_block_till_done()
+
+    class Dashboard:
+        config = {"title": "Unser Zuhause"}
+
+        async def async_load(self, force):
+            return {"views": [{"cards": [{"type": "button", "entity": "light.alt"}]}]}
+
+    class Broken:
+        async def async_load(self, force):
+            raise ValueError("not loadable")
+
+    from homeassistant.components.lovelace.const import LOVELACE_DATA
+
+    class Data:
+        dashboards = {"home": Dashboard(), "bad": Broken()}
+
+    hass.data[LOVELACE_DATA] = Data()
+    usage = await async_usage(hass, ["light.alt", "light.alt_2", "light.unused"])
+    assert usage["light.alt"]["automation"] == ["Licht abends"]
+    assert usage["light.alt"]["dashboard"] == ["Unser Zuhause"]
+    assert usage["light.alt"]["scene"] == usage["light.alt"]["script"] == []
+    assert usage["light.alt_2"]["dashboard"] == []  # no prefix match
+    assert usage["light.unused"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
+
+
+def test_new_entity_for_an_old_one() -> None:
+    from types import SimpleNamespace as Entry
+
+    from custom_components.enocean_eltako.takeover_ws import _new_entity
+
+    light = Entry(
+        domain="light", original_name=None, original_device_class=None, translation_key=None
+    )
+    id_sensor = Entry(
+        domain="sensor",
+        original_name="EnOcean ID",
+        original_device_class=None,
+        translation_key="enocean_id",
+    )
+    temp = Entry(
+        domain="sensor",
+        original_name="Temperature",
+        original_device_class="temperature",
+        translation_key=None,
+    )
+    other_temp = Entry(
+        domain="sensor",
+        original_name="Temperature 2",
+        original_device_class="temperature",
+        translation_key=None,
+    )
+    old_id = Entry(
+        domain="sensor",
+        original_name="Id",
+        original_device_class=None,
+        unique_id="eltako_gw1_ff_c2_4a_a2_id",
+    )
+    old_temp = Entry(
+        domain="sensor",
+        original_name="T",
+        original_device_class="temperature",
+        unique_id="eltako_gw1_ff_c2_4a_a2_temperature",
+    )
+    new = [light, id_sensor, temp]
+    old_main = Entry(domain="switch")
+    assert _new_entity(old_main, old_main, new) is light
+    assert _new_entity(old_id, None, new) is id_sensor  # the old "Id" sensor
+    assert _new_entity(old_temp, None, new) is temp  # the one sensor of its kind
+    assert _new_entity(old_temp, None, [temp, other_temp]) is None  # two: not guessed
