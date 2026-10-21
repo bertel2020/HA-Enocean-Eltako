@@ -109,11 +109,13 @@ const TEXT = {
       todo: (n) => (n === 1 ? "1 device to take over" : `${n} devices to take over`), done: (a, b) => `${a} of ${b} devices`, check: "Look at the mapping",
       oldOn: "still active", oldOff: "switched off", later: "possible once step 3 is done",
     },
-    tkTabs: ["Preview and selection", "Mapping old → new"],
-    tkOldDevices: "Old devices", tkReady: "Can be taken over", tkNot: "Cannot be taken over", tkExists: "Already set up",
-    tkAssigned: "Assigned", tkAutomations: "Automations", tkScenes: "Scenes", tkScripts: "Scripts", tkDashboards: "Dashboards",
+    tkReady: "Can be taken over", tkNot: "Cannot be taken over", tkExists: "Already set up",
+    tkAutomations: "Automations", tkScenes: "Scenes", tkScripts: "Scripts", tkDashboards: "Dashboards",
     tkCarry: "Carry area, labels and voice assistant exposure over from the old integration",
-    tkCarryInfo: (area, labels) => [area ? `area ${area}` : "", labels.length ? `label ${labels.join(", ")}` : ""].filter(Boolean).join(" · "),
+    tkNoArea: "No area", tkSearch: "Search name or ID", tkNoMatch: "Nothing matches the search",
+    tkSelected: (n, total) => `${n} of ${total} selected`,
+    tkGroupCount: (n, total) => (n === total ? (total === 1 ? "1 device" : `${total} devices`) : `${n} of ${total} selected`),
+    tkFilterAll: "All", tkFilterUsed: "In use", tkFilterUnused: "Not used",
     tkRun: (n) => (n === 1 ? "Take over 1 device" : `Take over ${n} devices`), tkSelectAll: "Select all", tkSelectNone: "Select none",
     tkNothing: "Nothing selected", tkNotReady: "Cannot be taken over",
     tkReasons: {
@@ -257,11 +259,13 @@ const TEXT = {
       todo: (n) => (n === 1 ? "1 Gerät zu übernehmen" : `${n} Geräte zu übernehmen`), done: (a, b) => `${a} von ${b} Geräten`, check: "Zuordnung ansehen",
       oldOn: "noch aktiv", oldOff: "abgeschaltet", later: "möglich nach Schritt 3",
     },
-    tkTabs: ["Vorschau und Auswahl", "Zuordnung alt → neu"],
-    tkOldDevices: "Alte Geräte", tkReady: "Übernehmbar", tkNot: "Nicht übernehmbar", tkExists: "Schon eingerichtet",
-    tkAssigned: "Zugeordnet", tkAutomations: "Automationen", tkScenes: "Szenen", tkScripts: "Skripte", tkDashboards: "Dashboards",
+    tkReady: "Übernehmbar", tkNot: "Nicht übernehmbar", tkExists: "Schon eingerichtet",
+    tkAutomations: "Automationen", tkScenes: "Szenen", tkScripts: "Skripte", tkDashboards: "Dashboards",
     tkCarry: "Bereich, Labels und Sprachsteuerungs-Freigabe aus der alten Integration übernehmen",
-    tkCarryInfo: (area, labels) => [area ? `Bereich ${area}` : "", labels.length ? `Label ${labels.join(", ")}` : ""].filter(Boolean).join(" · "),
+    tkNoArea: "Ohne Bereich", tkSearch: "Name oder ID suchen", tkNoMatch: "Nichts passt zur Suche",
+    tkSelected: (n, total) => `${n} von ${total} gewählt`,
+    tkGroupCount: (n, total) => (n === total ? (total === 1 ? "1 Gerät" : `${total} Geräte`) : `${n} von ${total} gewählt`),
+    tkFilterAll: "Alle", tkFilterUsed: "Verwendet", tkFilterUnused: "Nicht verwendet",
     tkRun: (n) => (n === 1 ? "1 Gerät übernehmen" : `${n} Geräte übernehmen`), tkSelectAll: "Alle auswählen", tkSelectNone: "Alle abwählen",
     tkNothing: "Nichts ausgewählt", tkNotReady: "Nicht übernehmbar",
     tkReasons: {
@@ -552,26 +556,34 @@ const STYLE = `
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
   .panel:not([data-view="takeover"]) .takeover { display: none; }
   .takeover { padding-bottom: 8px; }
-  .takeover .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 8px; }
-  .takeover .step { font-size: 12px; color: var(--muted); border-top: 3px solid var(--line); padding-top: 6px; }
+  .takeover .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+  .takeover .step { display: flex; gap: 8px; align-items: flex-start; text-align: left; font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; }
+  .takeover button.step { cursor: pointer; }
+  .takeover button.step:disabled { cursor: default; opacity: .6; }
   .takeover .step b { display: block; font-weight: 500; font-size: 13px; color: var(--primary-text-color); }
-  .takeover .step.done { border-color: var(--ok); }
-  .takeover .step.cur { border-color: var(--accent); }
-  .takeover .step.opt { border-top-style: dashed; }
-  .takeover .tabs { padding: 4px 16px 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .takeover .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; padding: 0 16px 12px; }
-  .takeover .metric { background: var(--soft); border-radius: 8px; padding: 8px 12px; }
-  .takeover .metric small { display: block; font-size: 12px; color: var(--muted); }
-  .takeover .metric b { font-size: 20px; font-weight: 500; }
-  .takeover .banner { margin: 0 0 8px; padding: 10px 16px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .takeover .step.opt b { color: var(--muted); }
+  .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .takeover .step.cur .num { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .takeover .step.done .num { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
+  .takeover .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .takeover .pill { height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .takeover .pill[aria-pressed="true"] { border-color: transparent; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .takeover .search { flex: 1; min-width: 140px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);
+    color: var(--primary-text-color); font: inherit; font-size: 13px; padding: 0 10px; }
+  .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
-  .takeover .pickrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; }
-  .takeover .pickrow input { margin-top: 3px; }
+  .takeover .group { display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-top: 1px solid var(--line); background: var(--soft); font-size: 12px; }
+  .takeover .group .sub { margin-left: auto; }
+  .takeover .fold { font: inherit; font-weight: 500; color: var(--primary-text-color); background: none; border: 0; padding: 0; cursor: pointer; }
+  .takeover .pickrow { display: flex; gap: 10px; align-items: center; padding: 6px 16px 6px 40px; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+  .takeover .pick-name { flex: 1; }
   .takeover .sub { color: var(--muted); font-size: 12px; }
-  .takeover h3 { margin: 14px 16px 4px; font-size: 11px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
   .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
-  .takeover .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 16px 4px; }
-  .takeover .carry { display: flex; gap: 8px; align-items: flex-start; padding: 10px 16px; font-size: 13px; border-top: 1px solid var(--line); }
+  .takeover .actionbar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px;
+    border-top: 1px solid var(--line); background: var(--soft); }
+  .takeover .bar-info { flex: 1; min-width: 200px; font-size: 13px; }
+  .takeover .bar-info b { font-weight: 500; display: block; }
+  .takeover .carry { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
   .takeover table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
   .takeover th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 12px; }
   .takeover td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
@@ -748,7 +760,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
-    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false };
+    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false, filter: "ready", mfilter: "all", q: "", folded: new Set() };
     this._pools = [];
     this._pool = ""; // shown pool
     this._freeing = null; // blocked sender ID waiting for its confirmation
@@ -911,6 +923,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
     $("takeover").addEventListener("change", (e) => this._takeoverChange(e));
+    $("takeover").addEventListener("input", (e) => this._takeoverInput(e));
     $("senders").addEventListener("change", (e) => {
       if (e.target.id !== "poolSelect") return;
       this._pool = e.target.value;
@@ -1672,6 +1685,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     tk.mapping = mapping.status === "fulfilled" ? mapping.value : null;
     const ready = (tk.preview?.devices || []).filter((d) => d.ready);
     tk.selected = new Set(ready.map((d) => d.id));
+    tk.filter = "ready";
     if (!tk.tab || !tk.mapping?.rows.length) tk.tab = ready.length || !tk.mapping?.rows.length ? "preview" : "mapping";
     this._renderTakeover();
   }
@@ -1698,87 +1712,155 @@ class EnOceanEltakoPanel extends HTMLElement {
     const taken = new Set(rows.filter((r) => r.taken).map((r) => r.id));
     const oldActive = !!(tk.mapping?.old_active ?? tk.preview?.old_active);
     const st = t.tkStepState;
+    const mapping = tk.tab === "mapping";
     const steps = [
-      [ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, taken.size) : "–", taken.size && !ready.length ? "done" : "cur"],
-      [st.check, taken.size ? "cur" : ""],
-      [oldActive ? st.oldOn : st.oldOff, oldActive ? "" : "done"],
-      [st.later, "opt"],
+      { text: ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, devices.length || taken.size) : "–", done: !ready.length && taken.size > 0, cur: !mapping, tab: "preview" },
+      { text: st.check, cur: mapping, tab: "mapping", off: !rows.length },
+      { text: oldActive ? st.oldOn : st.oldOff, done: !oldActive && taken.size > 0 },
+      { text: st.later, opt: true },
     ];
+    const stepsHtml = steps
+      .map((s, i) => {
+        const cls = `step${s.done ? " done" : ""}${s.cur ? " cur" : ""}${s.opt ? " opt" : ""}`;
+        const inner = `<span class="num">${s.done ? "✓" : i + 1}</span><span><b>${esc(t.tkSteps[i])}</b>${esc(s.text)}</span>`;
+        return s.tab
+          ? `<button class="${cls}" data-tk-tab="${s.tab}"${s.cur ? ' aria-current="step"' : ""}${s.off ? " disabled" : ""}>${inner}</button>`
+          : `<div class="${cls}">${inner}</div>`;
+      })
+      .join("");
     const select = gateways.length > 1
       ? `<select class="select" id="tkGateway" aria-label="${esc(t.gateway)}">${gateways
           .map((g) => `<option value="${esc(g.entry_id)}"${g.entry_id === tk.entry ? " selected" : ""}>${esc(g.title)}</option>`)
           .join("")}</select>`
       : "";
-    const tabs = `<div class="tabs">${select}<div class="segmented" role="group" id="tkTabs">${["preview", "mapping"]
-      .map((id, i) => `<button data-tk-tab="${id}" aria-pressed="${tk.tab === id}">${esc(t.tkTabs[i])}</button>`)
-      .join("")}</div></div>`;
-    const body = tk.tab === "mapping" ? this._renderMapping(rows, taken, oldActive) : this._renderPreview(devices, ready);
-    this._replace(container, `<div class="steps">${steps
-      .map(([text, cls], i) => `<div class="step ${cls}"><b>${i + 1} ${esc(t.tkSteps[i])}</b>${esc(text)}</div>`)
-      .join("")}</div>${tabs}${body}`);
+    const body = mapping ? this._renderMapping(rows, oldActive, select) : this._renderPreview(devices, ready, select);
+    this._replace(container, `<div class="steps">${stepsHtml}</div>${body}`);
+    container.querySelectorAll("[data-partial]").forEach((box) => { box.indeterminate = true; });
   }
 
-  _renderPreview(devices, ready) {
+  _tkMatches(...fields) {
+    const q = this._tk.q.trim().toLowerCase();
+    return !q || fields.some((f) => String(f || "").toLowerCase().includes(q));
+  }
+
+  _tkToolbar(select, pills, attr, active, extra = "") {
+    const t = this._t;
+    const pillHtml = pills
+      .map(([key, label, n]) => `<button class="pill" ${attr}="${key}" aria-pressed="${key === active}">${esc(label)} ${n}</button>`)
+      .join("");
+    return `<div class="toolbar">${select}${pillHtml}<input class="search" id="tkSearch" type="search" placeholder="${esc(t.tkSearch)}" value="${esc(this._tk.q)}" aria-label="${esc(t.tkSearch)}">${extra}</div>`;
+  }
+
+  _tkGroups(list) {
+    // devices by area, areas alphabetical, devices without an area last
+    const groups = new Map();
+    for (const d of list) {
+      const key = d.area || "";
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(d);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => (a === "") - (b === "") || a.localeCompare(b))
+      .map(([area, items]) => ({ area, items: items.sort((x, y) => x.name.localeCompare(y.name)) }));
+  }
+
+  _renderPreview(devices, ready, select) {
     const t = this._t;
     const tk = this._tk;
     if (tk.previewError) return `<p class="banner">${esc(t.tkErrors[tk.previewError] || t.tkErrors.unknown)}</p>`;
-    const exists = devices.filter((d) => d.reason === "takeover_exists").length;
-    const notReady = devices.filter((d) => !d.ready);
-    const metric = (label, value) => `<div class="metric"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+    const lists = {
+      ready,
+      exists: devices.filter((d) => d.reason === "takeover_exists"),
+      not: devices.filter((d) => !d.ready && d.reason !== "takeover_exists"),
+    };
+    const labels = { ready: t.tkReady, exists: t.tkExists, not: t.tkNot };
+    const pills = Object.keys(lists).filter((k) => k === "ready" || lists[k].length).map((k) => [k, labels[k], lists[k].length]);
+    const active = pills.some(([k]) => k === tk.filter) ? tk.filter : "ready";
+    const visible = lists[active].filter((d) => this._tkMatches(d.name, d.id, d.area, ...(d.labels || [])));
+    const toolbar = this._tkToolbar(select, pills, "data-tk-filter", active);
+    let list;
+    if (!visible.length) {
+      list = `<div class="hint">${esc(t.tkNoMatch)}</div>`;
+    } else if (active === "ready") {
+      const q = tk.q.trim();
+      list = this._tkGroups(visible)
+        .map((g) => {
+          const picked = g.items.filter((d) => tk.selected.has(d.id)).length;
+          const folded = !q && tk.folded.has(g.area);
+          const rowsHtml = folded
+            ? ""
+            : g.items
+                .map((d) => `<label class="pickrow"><input type="checkbox" data-tk-pick="${esc(d.id)}"${tk.selected.has(d.id) ? " checked" : ""}>
+                  <span class="pick-name">${esc(d.name)} <span class="sub mono">${esc(d.id)}</span></span>
+                  ${(d.labels || []).map((l) => `<span class="chip-s">${esc(l)}</span>`).join("")}</label>`)
+                .join("");
+          return `<div class="group"><input type="checkbox" data-tk-group="${esc(g.area)}" aria-label="${esc(g.area || t.tkNoArea)}"${picked === g.items.length ? " checked" : ""}${picked && picked < g.items.length ? " data-partial" : ""}>
+            <button class="fold" data-tk-fold="${esc(g.area)}" aria-expanded="${!folded}"><span aria-hidden="true">${folded ? "▸" : "▾"}</span> ${esc(g.area || t.tkNoArea)}</button>
+            <span class="sub">${esc(t.tkGroupCount(picked, g.items.length))}</span></div>${rowsHtml}`;
+        })
+        .join("");
+    } else {
+      list = visible
+        .map((d) => `<div class="skiprow"><span>${esc(d.name)} <span class="mono">${esc(d.id)}</span></span><span>${esc(t.tkReasons[d.reason] || d.reason || "")}</span></div>`)
+        .join("");
+    }
     const picked = ready.filter((d) => tk.selected.has(d.id)).length;
-    const list = ready
-      .map((d) => {
-        const info = t.tkCarryInfo(d.area, d.labels);
-        return `<label class="pickrow"><input type="checkbox" data-tk-pick="${esc(d.id)}"${tk.selected.has(d.id) ? " checked" : ""}>
-          <span>${esc(d.name)} <span class="sub mono">${esc(d.id)}</span>${info ? `<br><span class="sub">${esc(info)}</span>` : ""}</span></label>`;
-      })
-      .join("");
-    const skipped = notReady
-      .map((d) => `<div class="skiprow"><span>${esc(d.name)} <span class="mono">${esc(d.id)}</span></span><span>${esc(t.tkReasons[d.reason] || d.reason || "")}</span></div>`)
-      .join("");
-    return `<div class="metrics">${metric(t.tkOldDevices, devices.length)}${metric(t.tkReady, ready.length)}${metric(t.tkExists, exists)}${metric(t.tkNot, notReady.length - exists)}</div>
-      ${list}
-      ${ready.length ? `<div class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}><label for="tkCarry">${esc(t.tkCarry)}</label></div>
-        <div class="actions"><button class="chip" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
-        <button class="chip" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button></div>` : ""}
-      ${skipped ? `<h3>${esc(t.tkNotReady)}</h3>${skipped}` : ""}`;
+    const bar = ready.length
+      ? `<div class="actionbar"><div class="bar-info"><b>${esc(t.tkSelected(picked, ready.length))}</b>
+          <label class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}>${esc(t.tkCarry)}</label></div>
+          <button class="chip" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
+          <button class="chip run" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button></div>`
+      : "";
+    return `${toolbar}${list}${bar}`;
   }
 
-  _renderMapping(rows, taken, oldActive) {
+  _renderMapping(rows, oldActive, select) {
     const t = this._t;
     const tk = this._tk;
     if (!rows.length) return `<div class="hint">${esc(t.tkEmpty)}</div>`;
-    const totals = tk.mapping.totals || {};
-    const metric = (label, value) => `<div class="metric"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+    const kinds = ["automation", "script", "scene", "dashboard"];
+    const isUsed = (r) => kinds.some((k) => r.usage[k].length);
+    const used = rows.filter(isUsed).length;
+    const pills = [["all", t.tkFilterAll, rows.length], ["used", t.tkFilterUsed, used], ["unused", t.tkFilterUnused, rows.length - used]];
+    const active = tk.mfilter;
+    const visible = rows.filter((r) => (active === "all" || (active === "used") === isUsed(r)) && this._tkMatches(r.device, r.id, r.old, r.new, r.area));
+    const extra = `<button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button>`;
     const usageChips = (r) => {
-      const chips = ["automation", "script", "scene", "dashboard"]
+      const chips = kinds
         .filter((k) => r.usage[k].length)
         .map((k) => `<span class="chip-s used">${esc(t.tkUsage[k](r.usage[k].length))}</span>`)
         .join("");
       return chips || `<span class="chip-s ok">${esc(t.tkUnused)}</span>`;
     };
     let last = "";
-    const body = rows
+    const body = visible
       .map((r) => {
         const first = r.id !== last;
         last = r.id;
         const open = tk.open.has(r.old);
-        const used = ["automation", "script", "scene", "dashboard"].filter((k) => r.usage[k].length);
-        const where = open && used.length
-          ? `<tr class="where"><td colspan="4"><b>${esc(t.tkWhere)}:</b> ${used.map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
+        const where = open && isUsed(r)
+          ? `<tr class="where"><td colspan="3"><b>${esc(t.tkWhere)}:</b> ${kinds.filter((k) => r.usage[k].length).map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
           : "";
         return `<tr class="map" data-tk-open="${esc(r.old)}">
           <td>${first ? `${esc(r.device)}<div class="sub">${esc([r.area, r.taken ? "" : t.tkNotTaken].filter(Boolean).join(" · "))}</div>` : ""}</td>
-          <td class="mono old">${esc(r.old)}</td>
-          <td class="mono">${r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : "–")}</span>`}</td>
+          <td class="mono"><span class="old">${esc(r.old)}</span><br>→ ${r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : "–")}</span>`}</td>
           <td>${usageChips(r)}</td></tr>${where}`;
       })
       .join("");
-    return `<div class="metrics">${metric(t.tkAssigned, taken.size)}${metric(t.tkAutomations, totals.automation ?? 0)}${metric(t.tkScenes, totals.scene ?? 0)}${metric(t.tkScripts, totals.script ?? 0)}${metric(t.tkDashboards, totals.dashboard ?? 0)}</div>
+    return `${this._tkToolbar(select, pills, "data-tk-mfilter", active, extra)}
       <p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>
-      <table><colgroup><col style="width:22%"><col style="width:26%"><col style="width:26%"><col style="width:26%"></colgroup>
-        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)}</th><th>${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead><tbody>${body}</tbody></table>
-      <div class="actions"><button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button></div>`;
+      ${visible.length ? `<table><colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
+        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead><tbody>${body}</tbody></table>` : `<div class="hint">${esc(t.tkNoMatch)}</div>`}`;
+  }
+
+  _takeoverInput(e) {
+    if (e.target.id !== "tkSearch" || e.isComposing) return;
+    const pos = e.target.selectionStart;
+    this._tk.q = e.target.value;
+    this._renderTakeover();
+    const input = this.shadowRoot.getElementById("tkSearch");
+    input.focus();
+    input.setSelectionRange(pos, pos);
   }
 
   _takeoverChange(e) {
@@ -1793,14 +1875,34 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (e.target.checked) tk.selected.add(e.target.dataset.tkPick);
       else tk.selected.delete(e.target.dataset.tkPick);
       this._renderTakeover();
+    } else if (e.target.dataset.tkGroup !== undefined) {
+      const area = e.target.dataset.tkGroup;
+      for (const d of this._tkDevices()) {
+        if (!d.ready || (d.area || "") !== area || !this._tkMatches(d.name, d.id, d.area, ...(d.labels || []))) continue;
+        if (e.target.checked) tk.selected.add(d.id);
+        else tk.selected.delete(d.id);
+      }
+      this._renderTakeover();
     }
   }
 
   _takeoverClick(e) {
     const tk = this._tk;
     const tab = e.target.closest("[data-tk-tab]");
+    const fold = e.target.closest("[data-tk-fold]");
+    const filter = e.target.closest("[data-tk-filter], [data-tk-mfilter]");
     if (tab) {
+      if (tk.tab !== tab.dataset.tkTab) tk.q = "";
       tk.tab = tab.dataset.tkTab;
+      this._renderTakeover();
+    } else if (filter) {
+      if (filter.dataset.tkFilter) tk.filter = filter.dataset.tkFilter;
+      else tk.mfilter = filter.dataset.tkMfilter;
+      this._renderTakeover();
+    } else if (fold) {
+      const area = fold.dataset.tkFold;
+      if (tk.folded.has(area)) tk.folded.delete(area);
+      else tk.folded.add(area);
       this._renderTakeover();
     } else if (e.target.closest("[data-tk-all]")) {
       const all = e.target.closest("[data-tk-all]").dataset.tkAll === "all";

@@ -7,9 +7,6 @@
     "lovelace",
     "panel_custom"
   ],
-  "categories": [
-    "hubs_protocols"
-  ],
   "codeowners": [
     "@bertel2020"
   ],
