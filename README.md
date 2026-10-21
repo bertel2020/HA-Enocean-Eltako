@@ -227,16 +227,22 @@ connection, ESP3 repeater). The sender IDs (which of the 128 belongs to which de
 are free, which are blocked) are in the **Sender IDs** view of the panel; an ID of a removed
 device stays blocked until it is taught out of every actuator, and is freed there.
 
-**Take over from eltako** reads the devices of the old `eltako` integration from
-`configuration.yaml` (the gateway with the same base ID) and sets up the chosen ones with
-their IDs, names and sender IDs, so the actuators need no new teach-in. A rocker sender's
+The **Takeover** view of the panel (shown while there is an old configuration or there are
+old entities) reads the devices of the old `eltako` integration from `configuration.yaml` (the
+gateway with the same base ID) and sets up the chosen ones with their IDs, names and sender
+IDs, so the actuators need no new teach-in. Area, labels and voice assistant exposure of the
+old device go over to the new one unless you turn that off. Once devices are taken over,
+**Mapping old → new** lists the old entity ID next to the new one and where the old ID is
+still used (automations, scripts, scenes, dashboards), with a copy and a CSV export, so the
+references can be switched over. The mapping reads the old integration's entity registry,
+so it works while the old integration is still installed. A rocker sender's
 `left`/`right` becomes the rocker buttons it presses, `invert_signal` of switches and window
 handles becomes **Invert**, cover times are carried over. Buttons of the old integration and
 switches reporting as rockers are not taken over (use a virtual rocker). Heating actuators, as
 with the old integration, get only the setpoint and keep their thermostat; a room temperature
 entity can be added. Covers get whole seconds as with the old integration; **Run times in 100 ms** is for actuators that
 know that form. Turn the old integration off once its devices run here: both must not open
-the same port.
+the same port. The gateway options now hold only the settings.
 
 Two gateways may share one base ID (e.g. two radios of one installation): adding the second
 asks for confirmation, and it is stored as `<base ID>#2`. Sender IDs are never assigned twice

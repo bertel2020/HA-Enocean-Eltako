@@ -335,9 +335,6 @@ async def test_options_of_a_loaded_gateway(hass: HomeAssistant, gateway) -> None
     entry, server = gateway
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"next_step_id": "settings"}
-    )
-    result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"message_delay": 20, "discovery": False}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY

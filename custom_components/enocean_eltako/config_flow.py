@@ -36,7 +36,6 @@ from homeassistant.helpers.selector import (
 )
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
-from homeassistant.helpers.translation import async_get_translations
 
 from .catalog import CATALOG, GENERIC_EEPS, DeviceModel, generic_model
 from .const import (
@@ -68,7 +67,6 @@ from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
-from .protocol.sender_pool import SenderIdError
 from .protocol.telegram import Rorg
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .proxy_status import CONF_PROXY_STATUS_PORT
@@ -78,12 +76,9 @@ from .subentry_flow import (
     candidates,
     flatten_sections,
     receives,
-    sender_owner,
     status_channel,
     subentry_unique_id,
 )
-from .takeover import TakeoverDevice, async_old_config, find_gateway, old_gateways, plan
-from .takeover import subentry_data as takeover_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -697,122 +692,16 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlow):
-    """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater)
-    and the takeover from the old eltako integration. Sender IDs live in the panel.
+    """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater).
+
+    Sender IDs and the takeover from the old eltako integration live in the panel.
 
     No OptionsFlowWithReload: the entry's update listener reloads it on every change
     (subentries as well), and Home Assistant refuses the two together.
     """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        return self.async_show_menu(step_id="init", menu_options=["settings", "takeover"])
-
-    async def async_step_takeover(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Take devices over from the old eltako integration's YAML configuration."""
-        entry = self.config_entry
-        runtime = getattr(entry, "runtime_data", None)
-        if runtime is None:
-            return self.async_abort(reason="gateway_not_loaded")
-        if (config := await async_old_config(self.hass)) is None:
-            return self.async_abort(reason="takeover_no_config")
-        try:
-            base_id = parse_id(entry.data.get(CONF_BASE_ID, ""))
-        except ValueError:
-            base_id = -1
-        if (gateway := find_gateway(config, base_id)) is None:
-            found = ", ".join(str(g.get("base_id", "?")) for g in old_gateways(config)) or "-"
-            return self.async_abort(
-                reason="takeover_no_gateway", description_placeholders={"found": found}
-            )
-        existing = {s.unique_id for s in entry.subentries.values()}
-        devices = plan(gateway)
-        for device in devices:
-            if device.model is not None and format_id(device.device_id) in existing:
-                device.model, device.reason = None, "takeover_exists"
-        ready = [d for d in devices if d.model is not None]
-        if user_input is not None:
-            chosen = set(user_input.get("devices", []))
-            return await self._async_take_over(
-                [d for d in ready if format_id(d.device_id) in chosen], runtime
-            )
-        translations = await async_get_translations(
-            self.hass, self.hass.config.language, "selector", [DOMAIN]
-        )
-
-        def text(key: str, value: str) -> str:
-            return translations.get(f"component.{DOMAIN}.selector.{key}.options.{value}", value)
-
-        rows = [
-            f"| {format_id(d.device_id)} | {d.name} | {d.old} | "
-            + (text("device_model", d.model) if d.model else "-")
-            + f" | {text('takeover_reason', d.reason) if d.reason else ''} |"
-            for d in devices
-        ]
-        schema: dict[Any, Any] = {}
-        if ready:
-            schema[vol.Optional("devices", default=[format_id(d.device_id) for d in ready])] = (
-                SelectSelector(
-                    SelectSelectorConfig(
-                        options=[
-                            SelectOptionDict(
-                                value=format_id(d.device_id),
-                                label=f"{d.name} ({format_id(d.device_id)})",
-                            )
-                            for d in ready
-                        ],
-                        multiple=True,
-                        mode=SelectSelectorMode.LIST,
-                    )
-                )
-            )
-        return self.async_show_form(
-            step_id="takeover",
-            data_schema=vol.Schema(schema),
-            description_placeholders={
-                "base_id": format_id(base_id),
-                "rows": "\n".join(rows) or "| - | - | - | - | - |",
-            },
-        )
-
-    async def _async_take_over(
-        self, devices: list[TakeoverDevice], runtime: Any
-    ) -> ConfigFlowResult:
-        """Subentries with the old sender IDs, then one reload instead of one per device."""
-        if not devices:
-            return self.async_abort(reason="senders_unchanged")
-        entry = self.config_entry
-        pool = runtime.senders.pool
-        runtime.suspend_reload()
-        skipped: list[str] = []
-        for device in devices:
-            senders: dict[str, int] = {}
-            for profile, sender in device.senders.items():
-                try:
-                    pool.assign(sender, sender_owner(device.device_id, profile))
-                except SenderIdError as err:
-                    skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
-                    continue
-                senders[profile] = sender
-            self.hass.config_entries.async_add_subentry(
-                entry,
-                ConfigSubentry(
-                    data=MappingProxyType(takeover_data(device, senders)),
-                    subentry_type=SUBENTRY_DEVICE,
-                    title=device.name,
-                    unique_id=format_id(device.device_id),
-                ),
-            )
-        await runtime.senders.async_save()
-        self.hass.config_entries.async_schedule_reload(entry.entry_id)
-        return self.async_abort(
-            reason="takeover_done",
-            description_placeholders={
-                "count": str(len(devices)),
-                "skipped": "\n".join(f"- {s}" for s in skipped) or "-",
-            },
-        )
+        return await self.async_step_settings()
 
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None

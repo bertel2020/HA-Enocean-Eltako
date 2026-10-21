@@ -242,9 +242,16 @@ wird nach einer Rückfrage als `<Basis-ID>#2` angelegt. Sender-IDs werden über 
 doppelt vergeben. Ein gefundenes Gateway mit bekannter Basis-ID gilt nur dann als umgezogen,
 wenn das bekannte nicht verbunden ist; sonst wird es als weiteres Gateway angeboten.
 
-**Aus eltako übernehmen** liest die Geräte der alten Integration `eltako` aus der
+Die Ansicht **Übernahme** des Panels (sie erscheint, solange es eine alte Konfiguration oder
+alte Entitäten gibt) liest die Geräte der alten Integration `eltako` aus der
 `configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
-IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. `left`/`right` eines
+IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Bereich, Labels und
+Sprachsteuerungs-Freigabe des alten Geräts gehen auf das neue über, sofern du das nicht
+abschaltest. Sind Geräte übernommen, listet **Zuordnung alt → neu** die alte Entity-ID neben
+der neuen und wo die alte ID noch verwendet wird (Automationen, Skripte, Szenen,
+Dashboards), mit Kopieren und CSV-Export, damit sich die Verweise umstellen lassen. Die
+Zuordnung liest die Entity-Registry der alten Integration und funktioniert deshalb, solange sie
+noch installiert ist. `left`/`right` eines
 Taster-Senders wird zu den Tasten, die er drückt, `invert_signal` von Schaltern und
 Fenstergriffen zu **Umkehren**, Fahrzeiten von Rollläden werden übernommen. Buttons der alten
 Integration und Schalter, die sich als Taster melden, werden nicht übernommen (dafür einen
@@ -252,7 +259,7 @@ virtuellen Taster anlegen). Heizungsaktoren bekommen wie bei der alten Integrati
 und behalten ihren Thermostat; eine Raumtemperatur-Entität lässt sich ergänzen. Rollläden
 bekommen wie bei der alten Integration ganze Sekunden; **Fahrzeiten in 100 ms** ist für Aktoren, die diese Form kennen. Die alte
 Integration abschalten, sobald ihre Geräte hier laufen: beide dürfen nicht denselben Port
-öffnen.
+öffnen. Die Gateway-Optionen enthalten nur noch die Einstellungen.
 
 Reparaturen weisen darauf hin, wo etwas zu tun ist:
 

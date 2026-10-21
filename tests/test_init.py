@@ -243,9 +243,6 @@ async def test_proxy_replay_request_after_connect(hass: HomeAssistant) -> None:
     assert bytes(server.received).startswith(PROXY_REPLAY_REQUEST)
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"next_step_id": "settings"}
-    )
     assert "proxy_replay" in result["data_schema"].schema  # TCP gateways only
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
