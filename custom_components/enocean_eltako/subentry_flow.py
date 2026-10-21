@@ -39,6 +39,7 @@ from .catalog import (
     GROUP_ENOCEAN,
     GROUP_VIRTUAL,
     GROUPS,
+    OPT_BUTTONS,
     OPT_CALIBRATION,
     OPT_CHANNEL,
     OPT_DEVICE_CLASS,
@@ -196,6 +197,7 @@ OPTION_KEYS = (
     OPT_STATUS_REQUEST,
     OPT_LONG_PRESS,
     OPT_DOUBLE_PRESS,
+    OPT_BUTTONS,
     OPT_CALIBRATION,
     OPT_TENTHS,
     OPT_SOURCE,
@@ -211,6 +213,7 @@ OPTION_KEYS = (
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
+VIRTUAL_BUTTONS = ["a0", "a1", "b0", "b1"]  # the buttons a virtual rocker can offer
 # collapsed sections of rarely needed fields; the subentry data stays flat
 SECTION_ROCKER = "rocker_buttons"
 SECTION_WALL = "wall_switch_settings"
@@ -430,6 +433,12 @@ class DeviceForm:
                     options=[*BUTTONS, "released"], translation_key="rocker_button"
                 )
             )
+        if OPT_BUTTONS in model.options:
+            schema[vol.Required(OPT_BUTTONS, default=VIRTUAL_BUTTONS)] = SelectSelector(
+                SelectSelectorConfig(
+                    options=VIRTUAL_BUTTONS, multiple=True, translation_key="rocker_button"
+                )
+            )
         if OPT_CALIBRATION in model.options:
             schema[vol.Required(OPT_CALIBRATION, default="passive")] = SelectSelector(
                 SelectSelectorConfig(
@@ -510,6 +519,8 @@ class DeviceForm:
                 errors[field] = "sender_in_use"
                 continue
             wanted[sender_profile.id] = sender
+        if OPT_BUTTONS in model.options and not user_input.get(OPT_BUTTONS):
+            errors[OPT_BUTTONS] = "no_buttons"
         if model.any_sender and not wanted and not errors:
             errors["base"] = "sender_none"
         if OPT_WEATHER_TEMPERATURE in model.options and not any(

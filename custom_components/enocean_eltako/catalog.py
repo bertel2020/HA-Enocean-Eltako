@@ -60,6 +60,7 @@ OPT_STATUS_CHANNEL = "status_channel"  # switch: "1" reports 0x70/0x50, "2" 0x30
 OPT_TENTHS = "run_time_tenths"  # cover: controller run times in 100 ms (newer firmware)
 OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up
 OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
+OPT_BUTTONS = "buttons"  # virtual rocker: the buttons it offers (all four when absent)
 
 
 @dataclass(frozen=True, slots=True)
@@ -524,6 +525,7 @@ CATALOG: dict[str, DeviceModel] = {
             group=GROUP_VIRTUAL,
             senders=(ROCKER,),
             manufacturer="Home Assistant",
+            options=(OPT_BUTTONS,),
             examples="FT55, FTS14EM",
         ),
     )

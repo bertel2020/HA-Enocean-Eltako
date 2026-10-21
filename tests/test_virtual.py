@@ -167,6 +167,57 @@ async def test_add_virtual_contact_via_flow(hass: HomeAssistant, gateway) -> Non
     assert data["priority"] is True
 
 
+CHOSEN_ROCKER = 0xFFB74493
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_virtual("virtual_rocker", CHOSEN_ROCKER, "Garagentor", "rocker", buttons=["a0", "b1"])]],
+    indirect=True,
+)
+async def test_virtual_rocker_offers_only_the_chosen_buttons(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    entry, server = gateway
+    for button in ("a0", "b1"):
+        assert _entity(hass, "button", f"{BASE}_FF-B7-44-93_1_press_{button}") is not None
+    for button in ("a1", "b0"):
+        assert _entity(hass, "button", f"{BASE}_FF-B7-44-93_1_press_{button}") is None
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_FF-B7-44-93_1_press_a0")},
+        blocking=True,
+    )
+    await _settle(hass)
+    assert _sent(server, Rorg.RPS, "30", CHOSEN_ROCKER, 0x30)
+
+
+async def test_virtual_rocker_flow_chooses_buttons(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, _server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await configure(result["flow_id"], {"next_step_id": "virtual"})
+    result = await configure(result["flow_id"], {"next_step_id": "model_virtual_rocker"})
+    schema = result["data_schema"].schema
+    buttons = next(k for k in schema if k == "buttons")
+    assert buttons.default() == ["a0", "a1", "b0", "b1"]  # all four unless chosen
+    result = await configure(
+        result["flow_id"], {"name": "Garagentor", "sender_rocker": "FF-B7-44-82", "buttons": []}
+    )
+    assert result["errors"] == {"buttons": "no_buttons"}
+    result = await configure(
+        result["flow_id"],
+        {"name": "Garagentor", "sender_rocker": "FF-B7-44-82", "buttons": ["b0"]},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["buttons"] == ["b0"]
+    await hass.async_block_till_done()
+
+
 PRIORITY_CONTACT = 0xFFB74496
 
 

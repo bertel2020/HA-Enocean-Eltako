@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnOceanEltakoConfigEntry
+from .catalog import OPT_BUTTONS
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayReconnectButton
@@ -36,7 +37,8 @@ async def async_setup_entry(
         if device.model.kind == "cover":
             buttons.append(CalibrateButton(device))
         if device.model.kind == "virtual_rocker":
-            buttons.extend(VirtualRockerButton(device, b) for b in ROCKER_BUTTONS)
+            chosen = device.options.get(OPT_BUTTONS, SCENE_BUTTONS)
+            buttons.extend(VirtualRockerButton(device, b) for b in SCENE_BUTTONS if b in chosen)
         elif device.model.kind == "virtual_scene":
             buttons.extend(
                 VirtualRockerButton(device, b, scene=n) for n, b in enumerate(SCENE_BUTTONS, 1)
