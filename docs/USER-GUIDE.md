@@ -281,6 +281,8 @@ so the actuators need no new teach-in.
   one and where the old ID is still used (automations, scripts, scenes, dashboards), with a copy
   and a CSV export, so the references can be switched over. The mapping reads the old
   integration's entity registry, so it works while the old integration is still installed.
+  After a takeover the panel moves on to it and says how many old IDs are still in use. Side
+  entities with no counterpart and no use are folded away per device.
 - A rocker sender's `left`/`right` becomes the rocker buttons it presses, `invert_signal` of
   switches and window handles becomes **Invert**, cover times are carried over. Covers get whole
   seconds as with the old integration; **Run times in 100 ms** is for actuators that know that

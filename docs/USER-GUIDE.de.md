@@ -295,7 +295,8 @@ IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen.
   wo die alte ID noch verwendet wird (Automationen, Skripte, Szenen, Dashboards), mit Kopieren
   und CSV-Export, damit sich die Verweise umstellen lassen. Die Zuordnung liest die
   Entity-Registry der alten Integration und funktioniert deshalb, solange sie noch installiert
-  ist.
+  ist. Nach einer Übernahme wechselt das Panel dorthin und nennt, wie viele alte IDs noch
+  verwendet werden. Nebenentitäten ohne Gegenstück und ohne Verwendung sind je Gerät eingeklappt.
 - `left`/`right` eines Taster-Senders wird zu den Tasten, die er drückt, `invert_signal` von
   Schaltern und Fenstergriffen zu **Umkehren**, Fahrzeiten von Rollläden werden übernommen.
   Rollläden bekommen wie bei der alten Integration ganze Sekunden; **Fahrzeiten in 100 ms** ist

@@ -137,6 +137,8 @@ const TEXT = {
       scene: (n) => (n === 1 ? "1 scene" : `${n} scenes`), dashboard: (n) => (n === 1 ? "1 dashboard" : `${n} dashboards`) },
     tkWhere: "Where the old ID is used", tkCopy: "Copy mapping", tkCsv: "As CSV", tkCopied: "Mapping copied",
     tkEmpty: "No old entities found.",
+    tkMore: (n) => (n === 1 ? "1 more entity without counterpart or use" : `${n} more entities without counterpart or use`), tkLess: "Show less",
+    tkStillUsed: (n) => (n === 1 ? "1 old ID is still in use: switch it over under Check" : `${n} old IDs are still in use: switch them over under Check`),
     viewTelegrams: "Telegrams", viewDevices: "Devices", viewSenders: "Sender IDs",
     pools: "Sender ID pool", poolBus: (t) => `${t} (bus)`, poolFree: "Free", poolOf: (n) => `of ${n}`,
     poolSummary: (a, b) => `${a} assigned · ${b} blocked`,
@@ -290,6 +292,8 @@ const TEXT = {
       scene: (n) => (n === 1 ? "1 Szene" : `${n} Szenen`), dashboard: (n) => (n === 1 ? "1 Dashboard" : `${n} Dashboards`) },
     tkWhere: "Wo die alte ID steht", tkCopy: "Zuordnung kopieren", tkCsv: "Als CSV", tkCopied: "Zuordnung kopiert",
     tkEmpty: "Keine alten Entitäten gefunden.",
+    tkMore: (n) => (n === 1 ? "1 weitere Entität ohne Gegenstück und Verwendung" : `${n} weitere Entitäten ohne Gegenstück und Verwendung`), tkLess: "Weniger zeigen",
+    tkStillUsed: (n) => (n === 1 ? "1 alte ID wird noch verwendet: unter „Prüfen“ umstellen" : `${n} alte IDs werden noch verwendet: unter „Prüfen“ umstellen`),
     viewTelegrams: "Telegramme", viewDevices: "Geräte", viewSenders: "Sender-IDs",
     pools: "Sender-ID-Pool", poolBus: (t) => `${t} (Bus)`, poolFree: "Frei", poolOf: (n) => `von ${n}`,
     poolSummary: (a, b) => `${a} zugewiesen · ${b} gesperrt`,
@@ -586,14 +590,20 @@ const STYLE = `
   .takeover .pick-name { flex: 1; }
   .takeover .sub { color: var(--muted); font-size: 12px; }
   .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
-  .takeover .actionbar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px;
+  .takeover .actionbar { position: sticky; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: "count all run" "carry carry carry"; align-items: center; gap: 6px 12px; padding: 10px 16px;
     border-top: 1px solid var(--line); background: var(--soft); }
-  .takeover .bar-info { flex: 1; min-width: 200px; font-size: 13px; }
-  .takeover .bar-info b { font-weight: 500; display: block; }
-  .takeover .carry { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+  .takeover .bar-count { grid-area: count; font-size: 13px; font-weight: 500; }
+  .takeover .bar-all { grid-area: all; }
+  .takeover .bar-run { grid-area: run; }
+  .takeover .carry { grid-area: carry; display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
   .takeover table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
   .takeover th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 12px; }
-  .takeover td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+  .takeover td { padding: 6px 12px; vertical-align: top; overflow-wrap: anywhere; }
+  .takeover tbody.block { border-top: 1px solid var(--line); }
+  .takeover tbody.block tr:first-child td { padding-top: 10px; }
+  .takeover tbody.block tr:last-child td { padding-bottom: 10px; }
+  .takeover tr.more .fold { font-size: 12px; font-weight: 400; color: var(--muted); }
   .takeover tr.map { cursor: pointer; }
   .takeover tr.map:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .takeover .old { color: var(--muted); }
@@ -601,7 +611,12 @@ const STYLE = `
   .takeover .chip-s.used { background: color-mix(in srgb, var(--warn) 25%, transparent); }
   .takeover .chip-s.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
   .takeover .where td { background: var(--soft); font-size: 12px; }
-  @media (max-width: 760px) { .takeover .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 760px) {
+    .takeover .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* phones: the main button gets the whole width */
+    .takeover .actionbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "count all" "carry carry" "run run"; }
+    .takeover .bar-run { justify-content: center; }
+  }
   .senders .pool { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px 16px; align-items: center; padding: 14px 16px; }
   .senders .meta-label { font-size: 13px; color: var(--muted); }
   .senders .pool .big { font-size: 24px; font-weight: 500; }
@@ -766,6 +781,10 @@ const DEV_SORTERS = {
   busy: (a, b) => b.count - a.count || byName(a, b),
 };
 
+// where an old entity ID of the takeover mapping is still used
+const USAGE_KINDS = ["automation", "script", "scene", "dashboard"];
+const isUsed = (row) => USAGE_KINDS.some((k) => row.usage[k].length);
+
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
 
 function loadView() {
@@ -805,7 +824,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
-    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false, filter: "ready", mfilter: "all", q: "", folded: new Set() };
+    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false, filter: "ready", mfilter: "all", q: "", folded: new Set(), more: new Set() };
     this._pools = [];
     this._pool = ""; // shown pool
     this._freeing = null; // blocked sender ID waiting for its confirmation
@@ -1874,10 +1893,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     const picked = ready.filter((d) => tk.selected.has(d.id)).length;
     const bar = ready.length
-      ? `<div class="actionbar"><div class="bar-info"><b>${esc(t.tkSelected(picked, ready.length))}</b>
-          <label class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}>${esc(t.tkCarry)}</label></div>
-          <button class="chip" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
-          <button class="chip run" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button></div>`
+      ? `<div class="actionbar"><b class="bar-count">${esc(t.tkSelected(picked, ready.length))}</b>
+          <button class="chip bar-all" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
+          <button class="chip primary bar-run" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button>
+          <label class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}>${esc(t.tkCarry)}</label></div>`
       : "";
     return `${toolbar}${list}${bar}`;
   }
@@ -1886,39 +1905,52 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const tk = this._tk;
     if (!rows.length) return `<div class="hint">${esc(t.tkEmpty)}</div>`;
-    const kinds = ["automation", "script", "scene", "dashboard"];
-    const isUsed = (r) => kinds.some((k) => r.usage[k].length);
     const used = rows.filter(isUsed).length;
     const pills = [["all", t.tkFilterAll, rows.length], ["used", t.tkFilterUsed, used], ["unused", t.tkFilterUnused, rows.length - used]];
     const active = tk.mfilter;
     const visible = rows.filter((r) => (active === "all" || (active === "used") === isUsed(r)) && this._tkMatches(r.device, r.id, r.old, r.new, r.area));
     const extra = `<button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button>`;
     const usageChips = (r) => {
-      const chips = kinds
+      const chips = USAGE_KINDS
         .filter((k) => r.usage[k].length)
         .map((k) => `<span class="chip-s used">${esc(t.tkUsage[k](r.usage[k].length))}</span>`)
         .join("");
       return chips || `<span class="chip-s ok">${esc(t.tkUnused)}</span>`;
     };
-    let last = "";
-    const body = visible
-      .map((r) => {
-        const first = r.id !== last;
-        last = r.id;
-        const open = tk.open.has(r.old);
-        const where = open && isUsed(r)
-          ? `<tr class="where"><td colspan="3"><b>${esc(t.tkWhere)}:</b> ${kinds.filter((k) => r.usage[k].length).map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
+    const line = (r, first) => {
+      const open = tk.open.has(r.old);
+      const where = open && isUsed(r)
+        ? `<tr class="where"><td colspan="3"><b>${esc(t.tkWhere)}:</b> ${USAGE_KINDS.filter((k) => r.usage[k].length).map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
+        : "";
+      const target = r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : t.tkNotTaken)}</span>`;
+      return `<tr class="map" data-tk-open="${esc(r.old)}">
+        <td>${first ? `${esc(r.device)}<div class="sub">${esc([r.area, r.taken ? "" : t.tkNotTaken].filter(Boolean).join(" · "))}</div>` : ""}</td>
+        <td class="mono"><span class="old">${esc(r.old)}</span><br>→ ${target}</td>
+        <td>${usageChips(r)}</td></tr>${where}`;
+    };
+    // one block per device; side entities with no counterpart and no use fold away while
+    // the whole, unsearched list is shown
+    const blocks = new Map();
+    for (const r of visible) {
+      if (!blocks.has(r.id)) blocks.set(r.id, []);
+      blocks.get(r.id).push(r);
+    }
+    const folding = active === "all" && !tk.q.trim();
+    const body = [...blocks.entries()]
+      .map(([id, items]) => {
+        const minor = folding ? items.filter((r) => !r.primary && !r.new && !isUsed(r)) : [];
+        const open = tk.more.has(id);
+        const shown = open ? items : items.filter((r) => !minor.includes(r));
+        const toggle = minor.length
+          ? `<tr class="more"><td></td><td colspan="2"><button class="fold" data-tk-more="${esc(id)}" aria-expanded="${open}"><span aria-hidden="true">${open ? "▾" : "▸"}</span> ${esc(open ? t.tkLess : t.tkMore(minor.length))}</button></td></tr>`
           : "";
-        return `<tr class="map" data-tk-open="${esc(r.old)}">
-          <td>${first ? `${esc(r.device)}<div class="sub">${esc([r.area, r.taken ? "" : t.tkNotTaken].filter(Boolean).join(" · "))}</div>` : ""}</td>
-          <td class="mono"><span class="old">${esc(r.old)}</span><br>→ ${r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : "–")}</span>`}</td>
-          <td>${usageChips(r)}</td></tr>${where}`;
+        return `<tbody class="block">${shown.map((r, i) => line(r, i === 0)).join("")}${toggle}</tbody>`;
       })
       .join("");
     return `${this._tkToolbar(select, pills, "data-tk-mfilter", active, extra)}
       <p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>
       ${visible.length ? `<table><colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
-        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead><tbody>${body}</tbody></table>` : `<div class="hint">${esc(t.tkNoMatch)}</div>`}`;
+        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead>${body}</table>` : `<div class="hint">${esc(t.tkNoMatch)}</div>`}`;
   }
 
   _takeoverInput(e) {
@@ -1959,7 +1991,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     const tab = e.target.closest("[data-tk-tab]");
     const fold = e.target.closest("[data-tk-fold]");
     const filter = e.target.closest("[data-tk-filter], [data-tk-mfilter]");
-    if (tab) {
+    const more = e.target.closest("[data-tk-more]");
+    if (more) {
+      const id = more.dataset.tkMore;
+      if (tk.more.has(id)) tk.more.delete(id);
+      else tk.more.add(id);
+      this._renderTakeover();
+    } else if (tab) {
       if (tk.tab !== tab.dataset.tkTab) tk.q = "";
       tk.tab = tab.dataset.tkTab;
       this._renderTakeover();
@@ -1999,21 +2037,31 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (tk.busy || !tk.selected.size) return;
     tk.busy = true;
     this._renderTakeover();
+    let result = null;
     try {
-      const result = await this._hass.callWS({
+      result = await this._hass.callWS({
         type: "enocean_eltako/takeover/run",
         entry_id: tk.entry,
         devices: [...tk.selected],
         carry_over: tk.carry,
       });
-      this._notice(t.tkDone(result.count, result.carried) + (result.skipped.length ? `. ${t.tkSkipped}: ${result.skipped.join("; ")}` : ""));
     } catch (err) {
       this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
     }
     tk.busy = false;
-    tk.tab = "";
+    // something taken over: on to step 2, the old IDs that still need switching over
+    tk.tab = result?.count ? "mapping" : "";
+    tk.mfilter = "all";
+    tk.q = "";
     await this._refreshStatus();
     await this._loadTakeover();
+    if (!result) return;
+    const stillUsed = result.count ? (tk.mapping?.rows || []).filter(isUsed).length : 0;
+    this._notice(
+      t.tkDone(result.count, result.carried) +
+        (stillUsed ? `. ${t.tkStillUsed(stillUsed)}` : "") +
+        (result.skipped.length ? `. ${t.tkSkipped}: ${result.skipped.join("; ")}` : "")
+    );
   }
 
   _mappingTable() {
