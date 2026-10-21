@@ -35,10 +35,13 @@ First version of the integration.
   protection), temperature, motion and brightness sensor, weather station, scene button or
   rocker with selectable buttons.
 - **Telegram monitor panel:** live telegram list with details, filters, sorting, exports,
-  signal quality per sender, gateway cards, sender ID table, sending a telegram and adding
-  unknown senders as devices.
-- **Takeover from the old `eltako` integration** in the panel: preview, selection, area and
-  label carry-over and a mapping of old to new entity IDs with their usage.
+  signal quality per sender, gateway cards, sending a telegram and adding unknown senders as
+  devices. Also:
+  - a device view with one line per sender, sortable
+  - the sender IDs of each device, blocked ones first
+  - a layout for phones
+- **Takeover from the old `eltako` integration** in the panel, in guided steps: preview,
+  selection, area and label carry-over and a mapping of old to new entity IDs with their usage.
 - **Gateway care:** last-seen monitoring, state reconciliation at startup, repairs for an
   unstable or silent connection, diagnostic sensors and diagnostics download.
 - **EnOcean Proxy** gateways are set up through Supervisor discovery.
@@ -86,10 +89,14 @@ Erste Version der Integration.
   Aussperrschutz), Temperatur-, Bewegungs- und Helligkeitssensor, Wetterstation,
   Szenentaster oder Wippe mit wählbaren Tasten.
 - **Telegramm-Monitor im Panel:** Live-Liste mit Details, Filtern, Sortierung, Export,
-  Signalqualität pro Sender, Gateway-Karten, Sender-ID-Tabelle, Telegramm senden und
-  unbekannte Sender als Gerät hinzufügen.
-- **Übernahme aus der alten `eltako`-Integration** im Panel: Vorschau, Auswahl, Übernahme von
-  Bereich und Labels sowie eine Zuordnung alter zu neuen Entitäts-IDs mit ihrer Verwendung.
+  Signalqualität pro Sender, Gateway-Karten, Telegramm senden und unbekannte Sender als Gerät
+  hinzufügen. Dazu:
+  - eine Geräteansicht mit einer Zeile je Sender, sortierbar
+  - die Sender-IDs jedes Geräts, gesperrte zuerst
+  - eine Darstellung für das Handy
+- **Übernahme aus der alten `eltako`-Integration** im Panel, in geführten Schritten: Vorschau,
+  Auswahl, Übernahme von Bereich und Labels sowie eine Zuordnung alter zu neuen Entitäts-IDs mit
+  ihrer Verwendung.
 - **Gateway-Pflege:** Überwachung der letzten Meldung, Zustandsabgleich beim Start, Reparaturen
   bei instabiler oder stummer Verbindung, Diagnosesensoren und Diagnose-Download.
 - **EnOcean-Proxy-Gateways** werden über die Supervisor-Erkennung eingerichtet.
