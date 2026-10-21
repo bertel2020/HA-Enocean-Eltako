@@ -151,7 +151,33 @@ def test_plan_actuators() -> None:
     assert heating.senders == {"controller": 0xFFB744BD, "cooling": 0xFFB744BE}
     assert devices["Ohne Sender"].reason == "takeover_no_sender"
     assert devices["Kaputt"].reason == "takeover_bad_sender"
-    assert devices["Knopf"].reason == "takeover_unsupported"
+    knopf = devices["Knopf"]  # the old button platform: a virtual rocker with its sender's ID
+    assert (knopf.model, knopf.senders, knopf.target_id) == (
+        "virtual_rocker",
+        {"rocker": 0xFFB744BF},
+        0xFFB744BF,
+    )
+    assert subentry_data(knopf, knopf.senders)["device_id"] == "FF-B7-44-BF"
+
+
+def test_plan_button_without_sender_section() -> None:
+    old = {"devices": {"button": [{"id": "FF-C2-4A-AE", "eep": "F6-02-01", "name": "Tor"}]}}
+    (tor,) = plan(old)
+    assert (tor.model, tor.senders, tor.target_id) == (
+        "virtual_rocker",
+        {"rocker": 0xFFC24AAE},
+        0xFFC24AAE,
+    )
+
+
+def test_plan_button_with_broken_sender() -> None:
+    old = {
+        "devices": {
+            "button": [{"id": "FF-C2-4A-AE", "eep": "F6-02-01", "sender": {"id": "nonsense"}}]
+        }
+    }
+    (tor,) = plan(old)
+    assert (tor.model, tor.reason) == (None, "takeover_bad_sender")
 
 
 def test_plan_sensors() -> None:
@@ -303,7 +329,7 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert devices["FF-C2-4A-8F"]["labels"] == ["matter_hub"]
     assert not devices["05-00-00-12"]["ready"]  # already set up
     assert devices["05-00-00-12"]["reason"] == "takeover_exists"
-    assert devices["FF-C2-4A-96"]["reason"] == "takeover_unsupported"
+    assert devices["FF-C2-4A-96"]["ready"]  # a button: becomes a virtual rocker
 
     ran = (
         await _ws(
@@ -312,15 +338,17 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
             2,
             "run",
             entry_id=entry.entry_id,
-            devices=["FF-C2-4A-8F", "FF-C2-4A-91", "01-00-00-07", "05-00-00-12"],
+            devices=["FF-C2-4A-8F", "FF-C2-4A-91", "01-00-00-07", "05-00-00-12", "FF-C2-4A-96"],
         )
     )["result"]
-    assert (ran["count"], ran["carried"]) == (3, 3)  # the meter was already there
+    assert (ran["count"], ran["carried"]) == (4, 4)  # the meter was already there
     assert "FF-B7-44-BA (Steckdose): in_use" in ran["skipped"][0]
     await server.connected.wait()
     assert entry.state is ConfigEntryState.LOADED
-    assert len(entry.runtime_data.devices) == 4
+    assert len(entry.runtime_data.devices) == 5
     assert entry.runtime_data.senders.pool.get(0xFFB744B9).owner == "device:FF-C2-4A-8F:rocker"
+    # the button became a virtual rocker under its sender's ID
+    assert entry.runtime_data.senders.pool.get(0xFFB744BF).owner == "device:FF-B7-44-BF:rocker"
 
     # the new device sits in the old device's area and its main entity has the old labels
     (device,) = (d for d in entry.runtime_data.devices.values() if d.subentry.title == "Licht Büro")

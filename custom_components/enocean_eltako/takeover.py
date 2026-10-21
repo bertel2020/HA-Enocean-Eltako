@@ -98,6 +98,13 @@ class TakeoverDevice:
     data: dict[str, Any] = field(default_factory=dict)  # options of the subentry
     senders: dict[str, int] = field(default_factory=dict)  # profile -> sender ID
     reason: str | None = None  # why not (translation key)
+    new_id: int | None = (
+        None  # a virtual device's ID is its sender, which may differ from the old ID
+    )
+
+    @property
+    def target_id(self) -> int:
+        return self.device_id if self.new_id is None else self.new_id
 
 
 async def async_old_config(hass: HomeAssistant) -> Mapping[str, Any] | None:
@@ -211,6 +218,20 @@ def _actuator(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str
         device.reason = "takeover_bad_sender"
 
 
+def _button(device: TakeoverDevice, conf: Mapping[str, Any]) -> None:
+    """The old button platform: Home Assistant presses a rocker, now a virtual rocker."""
+    sender = device.device_id  # without a sender section the ID is the one it sends with
+    if isinstance(sender_conf := conf.get("sender"), Mapping):
+        try:
+            sender = parse_id(str(sender_conf.get("id", "")).split()[0])
+        except (ValueError, IndexError):
+            device.reason = "takeover_bad_sender"
+            return
+    device.model = "virtual_rocker"
+    device.new_id = sender
+    device.senders[ROCKER.id] = sender
+
+
 def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
     """The devices of one old gateway and what each becomes; first entry of an ID wins."""
     devices: list[TakeoverDevice] = []
@@ -239,7 +260,9 @@ def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
                 _sensor(device, eep, conf)
             elif platform in (Platform.LIGHT, Platform.SWITCH, Platform.COVER, Platform.CLIMATE):
                 _actuator(device, str(platform), eep, conf)
-            else:  # buttons: Home Assistant as a rocker, set up as a virtual rocker instead
+            elif platform == Platform.BUTTON:
+                _button(device, conf)
+            else:
                 device.reason = "takeover_unsupported"
     return devices
 
@@ -250,7 +273,7 @@ def subentry_data(device: TakeoverDevice, senders: Mapping[str, int]) -> dict[st
     data: dict[str, Any] = {
         "schema": SUBENTRY_SCHEMA,
         CONF_MODEL: device.model,
-        CONF_DEVICE_ID: format_id(device.device_id),
+        CONF_DEVICE_ID: format_id(device.target_id),
         **device.data,
     }
     if senders:
@@ -399,14 +422,14 @@ async def async_take_over(
     runtime = entry.runtime_data
     pool = runtime.senders.pool
     old = old_entities(hass)
-    carried = {d.device_id: carried_from(hass, old.get(d.device_id, [])) for d in devices}
+    carried = {d.target_id: carried_from(hass, old.get(d.device_id, [])) for d in devices}
     runtime.suspend_reload()
     skipped: list[str] = []
     for device in devices:
         senders: dict[str, int] = {}
         for profile, sender in device.senders.items():
             try:
-                pool.assign(sender, sender_owner(device.device_id, profile))
+                pool.assign(sender, sender_owner(device.target_id, profile))
             except SenderIdError as err:
                 skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
                 continue
@@ -417,7 +440,7 @@ async def async_take_over(
                 data=MappingProxyType(subentry_data(device, senders)),
                 subentry_type=SUBENTRY_DEVICE,
                 title=device.name,
-                unique_id=format_id(device.device_id),
+                unique_id=format_id(device.target_id),
             ),
         )
     await runtime.senders.async_save()

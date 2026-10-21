@@ -58,7 +58,7 @@ async def _plan(hass: HomeAssistant, entry: Any) -> tuple[list[Any] | None, str 
     existing = {s.unique_id for s in entry.subentries.values()}
     devices = plan(gateway)
     for device in devices:
-        if device.model is not None and format_id(device.device_id) in existing:
+        if device.model is not None and format_id(device.target_id) in existing:
             device.model, device.reason = None, "takeover_exists"
     return devices, None
 
