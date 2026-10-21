@@ -145,7 +145,8 @@ class CoverPosition:
         return up, abs(target - self.tilt) / 100 * self.tilt_time
 
     def nearer_end(self) -> int:
-        return 100 if (self.position or 0) >= 50 else 0
+        """End to drive to for calibration; unknown position: open, never close unasked."""
+        return 100 if self.position is None or self.position >= 50 else 0
 
     def restarted(self) -> None:
         self.inaccuracy = min(MAX_INACCURACY, self.inaccuracy + RESTART_PENALTY)

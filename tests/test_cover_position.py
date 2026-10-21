@@ -29,6 +29,8 @@ def test_partial_run_and_nearer_end() -> None:
     assert cover.partial_run(50) is None
     assert cover.nearer_end() == 100
     assert CoverPosition(20, 20).partial_run(10) is None
+    assert CoverPosition(20, 20).nearer_end() == 100  # unknown: open, never close unasked
+    assert CoverPosition(20, 20, position=10).nearer_end() == 0
 
 
 def test_overrun_into_end_and_penalties() -> None:

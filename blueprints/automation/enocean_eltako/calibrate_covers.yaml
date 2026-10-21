@@ -4,7 +4,7 @@ blueprint:
     Drives the chosen covers to the nearer end position and back at a fixed time on
     the chosen weekdays, so their estimated position is exact again. Optionally only
     when an entity allows it (for example "windows closed" or "nobody asleep").
-    The covers run one after another through the send queue.
+    The telegrams go through the send queue; the covers then drive at the same time.
   domain: automation
   source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml
   input:
@@ -42,6 +42,15 @@ blueprint:
               value: sat
             - label: Sunday
               value: sun
+    only_if_inaccurate:
+      name: Only covers whose position is uncertain
+      description: >-
+        Skip covers whose position is already known well (less than 10 points off),
+        which saves noise and wear. A cover with an unknown position is always calibrated;
+        it then drives to the open end.
+      default: true
+      selector:
+        boolean: {}
     allowed_by:
       name: Only when this entity is on (optional)
       default: ""
@@ -71,3 +80,5 @@ actions:
   - action: enocean_eltako.calibrate_cover
     target:
       entity_id: !input covers
+    data:
+      only_if_inaccurate: !input only_if_inaccurate

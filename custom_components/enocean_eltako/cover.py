@@ -25,6 +25,7 @@ import contextlib
 from collections.abc import Callable
 from typing import Any
 
+import probatio as vol
 from homeassistant.components.cover import (
     ATTR_POSITION,
     ATTR_TILT_POSITION,
@@ -64,6 +65,7 @@ from .protocol.eep.eltako import shutter
 PARALLEL_UPDATES = 0
 
 SERVICE_CALIBRATE = "calibrate_cover"
+ATTR_ONLY_IF_INACCURATE = "only_if_inaccurate"
 
 DEFAULT_TRAVEL_TIME = 30.0
 DEFAULT_THRESHOLD = 10.0  # inaccuracy points before an uncertain move triggers calibration
@@ -81,7 +83,9 @@ async def async_setup_entry(
         elif Platform.COVER in device.model.platforms:
             async_add_entities([EnOceanCover(device)], config_subentry_id=subentry_id)
     entity_platform.async_get_current_platform().async_register_entity_service(
-        SERVICE_CALIBRATE, None, "async_calibrate"
+        SERVICE_CALIBRATE,
+        {vol.Optional(ATTR_ONLY_IF_INACCURATE, default=False): bool},
+        "async_calibrate",
     )
 
 
@@ -211,8 +215,14 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
             up, seconds = run
             self._run(shutter.UP if up else shutter.DOWN, seconds, full=False)
 
-    async def async_calibrate(self) -> None:
-        """Drive to the nearer end (anchor) and back to the previous position."""
+    async def async_calibrate(self, only_if_inaccurate: bool = False) -> None:
+        """Drive to the nearer end (anchor) and back to the previous position.
+
+        Unknown position: to the open end, and no way back. only_if_inaccurate skips a cover
+        whose position is already known well enough (below DEFAULT_THRESHOLD points off).
+        """
+        if only_if_inaccurate and self.position.inaccuracy <= DEFAULT_THRESHOLD:
+            return
         previous = self.position.position
         end = self.position.nearer_end()
         if await self._drive_to_anchor(end) and previous not in (None, 0, 100, end):
@@ -350,7 +360,7 @@ class VldCover(EnOceanEntity, CoverEntity, RestoreEntity):
     async def async_stop_cover(self, **kwargs: Any) -> None:
         self._device.send(vld.encode_blind_stop(self._channel), key="move")
 
-    async def async_calibrate(self) -> None:
+    async def async_calibrate(self, only_if_inaccurate: bool = False) -> None:
         """The blind measures its position itself; nothing to calibrate."""
 
     def _apply(self, values: dict[str, Any]) -> bool:

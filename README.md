@@ -240,7 +240,9 @@ Rockers report short, long and double presses per button. Ready-made automations
   seconds (default 60) into `enocean_eltako/capture-<time>.jsonl` in the configuration
   directory, for bug reports.
 - `enocean_eltako.calibrate_cover`: drives Eltako covers to the nearer end position and
-  back, which makes their position exact again (I6).
+  back, which makes their position exact again (I6). A cover with an unknown position
+  drives to the open end instead, never to the closed one. `only_if_inaccurate: true` skips
+  covers whose position is already known well.
 
 ## EnOcean Proxy app
 

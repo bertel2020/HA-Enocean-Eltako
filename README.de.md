@@ -249,7 +249,9 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
   eine Anzahl Sekunden (Vorgabe 60) nach `enocean_eltako/capture-<Zeit>.jsonl` im
   Konfigurationsverzeichnis mit, für Fehlerberichte.
 - `enocean_eltako.calibrate_cover`: fährt Eltako-Rollläden an die nähere Endlage und zurück,
-  danach stimmt die Position wieder genau (I6).
+  danach stimmt die Position wieder genau (I6). Bei unbekannter Position fährt ein Rollladen
+  stattdessen in die offene Endlage, nie in die geschlossene. `only_if_inaccurate: true`
+  überspringt Rollläden, deren Position schon genau bekannt ist.
 
 ## App EnOcean Proxy
 

@@ -417,7 +417,13 @@
     },
     "calibrate_cover": {
       "name": "Calibrate cover",
-      "description": "Drives the cover to the nearer end position to reset its tracked position, then back."
+      "description": "Drives the cover to the nearer end position to reset its tracked position, then back. With an unknown position it drives to the open end.",
+      "fields": {
+        "only_if_inaccurate": {
+          "name": "Only if inaccurate",
+          "description": "Skip covers whose position is already known well (less than 10 points off)."
+        }
+      }
     }
   },
   "options": {

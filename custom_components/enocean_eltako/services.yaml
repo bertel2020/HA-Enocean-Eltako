@@ -17,3 +17,8 @@ calibrate_cover:
     entity:
       integration: enocean_eltako
       domain: cover
+  fields:
+    only_if_inaccurate:
+      default: false
+      selector:
+        boolean:

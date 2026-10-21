@@ -1339,6 +1339,56 @@ async def test_travel_time_assistant_measures_vent_slots(hass: HomeAssistant, ga
     assert entry.subentries[subentry_id].data["vent_time"] == 4.0
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-27",
+                "Rollladen Flur",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-96"}],
+                time_opens=20,
+                time_closes=20,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_calibrate_only_if_inaccurate(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    entity_id = _entity(hass, "cover", f"{BASE}_05-00-00-27_1_cover")
+    cover = entry.runtime_data.devices[next(iter(entry.runtime_data.devices))].cover_entity
+    full_up = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00160108"), 0xFFB74496))
+    full_down = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00160208"), 0xFFB74496))
+
+    cover.position.anchor(30)  # exact: skipped
+    sent = len(server.received)
+    await hass.services.async_call(
+        "enocean_eltako",
+        "calibrate_cover",
+        {"entity_id": entity_id, "only_if_inaccurate": True},
+        blocking=True,
+    )
+    assert len(server.received) == sent
+
+    cover.position.position = None  # unknown: calibrated, towards the open end, never closed
+    cover.position.inaccuracy = 100
+    task = hass.async_create_task(
+        hass.services.async_call(
+            "enocean_eltako",
+            "calibrate_cover",
+            {"entity_id": entity_id, "only_if_inaccurate": True},
+            blocking=True,
+        )
+    )
+    await asyncio.sleep(0.1)
+    assert full_up in bytes(server.received)
+    assert full_down not in bytes(server.received)
+    _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000027)  # FSB: drove 22 s up
+    await asyncio.wait_for(task, 5)
+
+
 async def _init_flow(hass: HomeAssistant, entry):
     return await hass.config_entries.subentries.async_init(
         (entry.entry_id, "device"), context={"source": "user"}

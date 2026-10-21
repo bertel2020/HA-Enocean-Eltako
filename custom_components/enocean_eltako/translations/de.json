@@ -417,7 +417,13 @@
     },
     "calibrate_cover": {
       "name": "Rollladen kalibrieren",
-      "description": "Fährt den Rollladen in die nähere Endlage, um die berechnete Position zurückzusetzen, und wieder zurück."
+      "description": "Fährt den Rollladen in die nähere Endlage, um die berechnete Position zurückzusetzen, und wieder zurück. Bei unbekannter Position fährt er in die offene Endlage.",
+      "fields": {
+        "only_if_inaccurate": {
+          "name": "Nur wenn ungenau",
+          "description": "Rollläden überspringen, deren Position schon genau bekannt ist (weniger als 10 Punkte daneben)."
+        }
+      }
     }
   },
   "options": {
