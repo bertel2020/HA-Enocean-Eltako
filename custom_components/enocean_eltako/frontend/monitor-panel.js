@@ -7,6 +7,8 @@ const MAX_ROWS = 1000;
 const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
+// the keys of a capture line (service enocean_eltako.capture): exports can be used as test fixtures
+const CAPTURE_KEYS = ["time", "gateway", "dir", "rorg", "data", "sender", "status", "destination", "dbm", "duplicate"];
 const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
 const TREND_POINTS = 30; // telegrams in a sender's signal curve
@@ -23,6 +25,7 @@ const ICON = {
   play: "M8,5.14V19.14L19,12.14L8,5.14Z",
   clear:
     "M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z",
+  copy: "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z",
   download: "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z",
   close:
     "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",
@@ -67,7 +70,8 @@ const TEXT = {
     pause: "Pause",
     resume: "Resume",
     clear: "Clear display",
-    export: "Export visible telegrams (JSON lines)",
+    export: "Export visible telegrams (JSON lines, like the capture service)",
+    copy: "Copy as capture line", copied: "Capture line copied", copyFailed: "Copying failed",
     search: "Search device, ID or data",
     searchKey: "Press / to search",
     dirAll: "All",
@@ -165,7 +169,8 @@ const TEXT = {
     pause: "Anhalten",
     resume: "Fortsetzen",
     clear: "Anzeige leeren",
-    export: "Sichtbare Telegramme exportieren (JSON-Zeilen)",
+    export: "Sichtbare Telegramme exportieren (JSON-Zeilen, wie der Capture-Dienst)",
+    copy: "Als Capture-Zeile kopieren", copied: "Capture-Zeile kopiert", copyFailed: "Kopieren fehlgeschlagen",
     search: "Gerät, ID oder Daten suchen",
     searchKey: "Taste / zum Suchen",
     dirAll: "Alle",
@@ -528,7 +533,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".expand", "[data-only]", ".add", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -977,6 +982,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._addDevice(add.dataset.id);
       return;
     }
+    const copy = e.target.closest("[data-copy]");
+    if (copy) {
+      this._copy(copy.dataset.copy);
+      return;
+    }
     const only = e.target.closest("[data-only]");
     if (only) {
       this._setText(only.dataset.only);
@@ -1047,8 +1057,24 @@ class EnOceanEltakoPanel extends HTMLElement {
     return this._rows.filter((r) => this._matches(r));
   }
 
+  _captureLine(r) {
+    // gateway as the entry ID, like the capture service writes it
+    return JSON.stringify(Object.fromEntries(CAPTURE_KEYS.map((k) => [k, r[k]])));
+  }
+
+  async _copy(key) {
+    const row = this._rows.find((r) => rowKey(r) === key);
+    if (!row) return;
+    try {
+      await navigator.clipboard.writeText(this._captureLine(row));
+      this._notice(this._t.copied);
+    } catch (err) {
+      this._notice(this._t.copyFailed);
+    }
+  }
+
   _export() {
-    const lines = this._visible().slice().reverse().map((r) => JSON.stringify(r)).join("\n");
+    const lines = this._visible().slice().reverse().map((r) => this._captureLine(r)).join("\n");
     const blob = new Blob([lines + "\n"], { type: "application/x-ndjson" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -1308,7 +1334,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
