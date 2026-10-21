@@ -89,6 +89,10 @@ const TEXT = {
     pair: "Command and answer",
     repeated: "Repetitions", repeater: "Repeater hops",
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
+    viewTelegrams: "Telegrams", viewDevices: "Devices",
+    deviceCount: (n) => (n === 1 ? "1 sender" : `${n} senders`),
+    telegramsCount: (n) => (n === 1 ? "1 telegram" : `${n} telegrams`),
+    noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
     status: "Status",
@@ -180,6 +184,10 @@ const TEXT = {
     pair: "Befehl und Antwort",
     repeated: "Wiederholungen", repeater: "Repeater-Stufen",
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
+    viewTelegrams: "Telegramme", viewDevices: "Geräte",
+    deviceCount: (n) => (n === 1 ? "1 Sender" : `${n} Sender`),
+    telegramsCount: (n) => (n === 1 ? "1 Telegramm" : `${n} Telegramme`),
+    noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
     status: "Status",
@@ -417,6 +425,18 @@ const STYLE = `
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
   .m-only { display: none; }
+  .panel[data-view="devices"] .tg-only { display: none !important; }
+  .panel[data-view="telegrams"] .devices { display: none; }
+  .devices .dev { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: 4px 16px; align-items: center;
+    padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+  .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  .devices .dev .ident { min-width: 0; }
+  .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  @media (max-width: 760px) {
+    .devices .dev { grid-template-columns: minmax(0, 1fr) auto; }
+    .devices .dev .values { grid-column: 1 / -1; grid-row: 2; }
+  }
 
   .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 12px;
     padding: 8px 8px 8px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
@@ -549,6 +569,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pending = [];
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
+    this._view = "telegrams"; // or "devices": one line per sender
     const view = loadView();
     this._filter = view.filter;
     this._sort = view.sort;
@@ -567,11 +588,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._frame = null;
     this._timer = null;
     this._drawn = new WeakMap(); // last HTML per container: unchanged status costs nothing
-    this._stale = { list: false, cards: false }; // redraw held back while text is selected
+    this._stale = { list: false, cards: false, devices: false }; // redraw held back while text is selected
     this._onKey = (e) => this._keydown(e);
     this._onSelection = () => {
       if (this._stale.list) this._render(true);
       if (this._stale.cards) this._renderCards(true);
+      if (this._stale.devices) this._render(true);
     };
   }
 
@@ -619,10 +641,14 @@ class EnOceanEltakoPanel extends HTMLElement {
         <section aria-label="${esc(t.gateways)}">
           <div class="cards" id="cards"></div>
         </section>
-        <section class="panel" aria-label="${esc(t.telegrams)}">
+        <section class="panel" id="panel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
           <div class="bar">
             <h2>${esc(t.telegrams)}</h2>
             <span class="live" id="live"><i></i><span></span></span>
+            <div class="segmented" role="group" id="view">
+              <button data-view="telegrams" aria-pressed="true">${esc(t.viewTelegrams)}</button>
+              <button data-view="devices" aria-pressed="false">${esc(t.viewDevices)}</button>
+            </div>
             <span class="spacer"></span>
             <button class="icon-btn" id="pause"></button>
             <button class="icon-btn" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
@@ -634,21 +660,22 @@ class EnOceanEltakoPanel extends HTMLElement {
               <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off">
               <button class="icon-btn" id="clearText" aria-label="✕" hidden>${svg(ICON.close)}</button>
             </label>
-            <div class="segmented" role="group" id="dir">
+            <div class="segmented tg-only" role="group" id="dir">
               <button data-dir="" aria-pressed="true">${esc(t.dirAll)}</button>
               <button data-dir="rx" aria-pressed="false">${esc(t.rx)}</button>
               <button data-dir="tx" aria-pressed="false">${esc(t.tx)}</button>
             </div>
             <select class="select" id="gatewayFilter" aria-label="${esc(t.gateway)}" hidden></select>
-            <select class="select" id="typeFilter" aria-label="${esc(t.type)}"></select>
+            <select class="select tg-only" id="typeFilter" aria-label="${esc(t.type)}"></select>
             <button class="chip" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
-            <button class="chip" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
-            <select class="select m-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
+            <button class="chip tg-only" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
+            <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
           </div>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
           <div class="meta"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
-          <table class="telegrams" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
-          <div class="pager" id="pager">
+          <div class="devices" id="devices"></div>
+          <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
+          <div class="pager tg-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
             <label><span>${esc(t.rowsPerPage)}</span><select class="select" id="pageSize" aria-label="${esc(t.rowsPerPage)}">${PAGE_SIZES.map((n) => `<option value="${n}">${n}</option>`).join("")}</select></label>
             <span class="range" id="range" aria-live="polite"></span>
@@ -677,6 +704,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("dir").addEventListener("click", (e) => {
       const button = e.target.closest("button");
       if (button) this._set("dir", button.dataset.dir);
+    });
+    $("view").addEventListener("click", (e) => {
+      const button = e.target.closest("button");
+      if (button) this._setView(button.dataset.view);
+    });
+    $("devices").addEventListener("click", (e) => {
+      const dev = e.target.closest(".dev");
+      if (!dev || this._selecting($("devices"))) return;
+      this._setText(dev.dataset.only);
+      this._setView("telegrams");
     });
     $("unknown").addEventListener("click", () => this._set("unknown", !this._filter.unknown));
     $("repeats").addEventListener("click", () => this._set("repeats", !this._filter.repeats));
@@ -793,6 +830,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._set("gateway", "");
     }
     this._renderCards(true);
+    if (this._view === "devices") this._render(true); // "heard x ago" moves on
     const multi = gateways.length > 1;
     if (multi !== this._multi) {
       this._multi = multi;
@@ -882,6 +920,17 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._saveView();
     if (key === "gateway") this._renderCards();
     this._renderFilters();
+    this._render();
+  }
+
+  _setView(view) {
+    this._view = view;
+    this._offset = 0;
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    $("panel").dataset.view = view;
+    for (const button of $("view").querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.view === view));
+    }
     this._render();
   }
 
@@ -1268,6 +1317,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const list = this.shadowRoot.getElementById("list");
     if (!list) return;
     this._renderTypes();
+    if (this._view === "devices") {
+      this._renderDevices(background);
+      return;
+    }
     const rows = this._visible().sort((a, b) => this._compare(a, b));
     const total = rows.length;
     this._total = total;
@@ -1287,6 +1340,72 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._replace(list, page.map((r) => this._row(r)).join(""));
     }
     this._fresh.clear();
+  }
+
+  _deviceList() {
+    // the latest telegram of each sender, with its values, count and rate
+    const f = this._filter;
+    const text = f.text.toLowerCase();
+    const compact = text.replace(/[-:\s]/g, "");
+    const since = Date.now() - 60000;
+    const senders = new Map();
+    for (const r of this._rows) {
+      if (r.dir !== "rx" || r.duplicate || (f.gateway && r.gateway !== f.gateway) || (f.unknown && r.device)) continue;
+      const key = `${r.gateway}|${r.sender}`;
+      let d = senders.get(key);
+      if (!d) {
+        d = { last: r, fields: null, count: 0, perMinute: 0 };
+        senders.set(key, d);
+      }
+      d.count += 1;
+      if (!d.fields && (r.fields || r.values)) d.fields = r.fields || Object.entries(r.values).map(([label, value]) => ({ label, value }));
+      if (Date.parse(r.time) >= since) d.perMinute += 1;
+    }
+    return [...senders.values()]
+      .filter(({ last: r }) => {
+        if (!text) return true;
+        return (
+          [r.device, r.teach_in, r.profile, r.eep, r.model, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
+          (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact))
+        );
+      })
+      .sort((a, b) => collator.compare(a.last.device || `\uffff${a.last.sender}`, b.last.device || `\uffff${b.last.sender}`));
+  }
+
+  _renderDevices(background) {
+    const t = this._t;
+    const container = this.shadowRoot.getElementById("devices");
+    const devices = this._deviceList();
+    this.shadowRoot.getElementById("count").textContent = t.deviceCount(devices.length);
+    if (this._hold("devices", container, background)) return;
+    const now = Date.now();
+    this._replace(container, devices.length
+      ? devices.map((d) => this._deviceRow(d, now)).join("")
+      : `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noDevices)}</b></div>`);
+  }
+
+  _deviceRow({ last: r, fields, count, perMinute }, now) {
+    const t = this._t;
+    const unknown = !r.device;
+    const name = unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(r.device)}</span>`;
+    const sub = [`<span class="mono">${esc(r.sender)}</span>`, r.eep ? esc(r.eep) : r.teach_in ? esc(r.teach_in) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : "", this._multi ? esc(r.gateway_name) : ""]
+      .filter(Boolean)
+      .join(" · ");
+    const values = fields && fields.length
+      ? fields
+          .map((f) =>
+            f.label === "on" || f.label === "state"
+              ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>`
+              : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
+          )
+          .join("")
+      : `<span class="raw mono">${esc(r.data)}</span>`;
+    const heard = t.ago(Math.max(0, Math.round((now - Date.parse(r.time)) / 1000)));
+    return `<div class="dev" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}">
+      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div></div>
+      <div class="values">${values}</div>
+      <div class="stats"><span>${esc(heard)}</span><span>${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span></div>
+    </div>`;
   }
 
   _renderTypes() {
