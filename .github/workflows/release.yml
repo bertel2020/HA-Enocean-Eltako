@@ -1,0 +1,59 @@
+name: Release
+
+# Bump "version" in custom_components/enocean_eltako/manifest.json and add its section to
+# CHANGELOG.md: the push to main creates the tag and the GitHub release (once per version).
+on:
+  push:
+    branches: [main]
+    paths:
+      - custom_components/enocean_eltako/manifest.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Read the version
+        id: version
+        run: |
+          version=$(jq -r .version custom_components/enocean_eltako/manifest.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "Release v$version exists already."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+      - name: Collect the release notes from the changelog
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          # the section of this version in each language, without its heading
+          awk -v v="$version" '
+            /^## /      { lang = $0; sub(/^## /, "", lang) }
+            /^### \[/   { on = index($0, "[" v "]") > 0; if (on) print "## " lang; next }
+            /^## /      { on = 0 }
+            on          { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::CHANGELOG.md has no section for version $version"
+            exit 1
+          fi
+          cat notes.md
+      - name: Create the release
+        if: steps.version.outputs.exists != 'true'
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          flags=()
+          case "$version" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" \
+            --notes-file notes.md "${flags[@]}"
+        env:
+          GH_TOKEN: ${{ github.token }}
