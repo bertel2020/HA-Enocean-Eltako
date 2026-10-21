@@ -2,7 +2,7 @@
 
 Each telegram is sent with what Home Assistant knows about it: the gateway's name, the
 device it comes from (or, for sent telegrams, the device and sender profile of the sender
-ID), the decoded values, and the EEP of a 4BS teach-in from an unknown sender.
+ID), the decoded values, and the EEP of a 4BS teach-in from an unknown sender, or the profiles that fit its telegram.
 """
 
 from __future__ import annotations
@@ -22,16 +22,19 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
-from .catalog import GENERIC_EEP
+from .catalog import CATALOG, GENERIC_EEP
 from .const import CONF_BASE_ID, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
 from .discovery import discovery_data
 from .hub import async_get_hub
+from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.ids import parse_id
 from .protocol.models import MODELS
 from .protocol.monitor import MonitorEntry
-from .protocol.telegram import Rorg
+from .protocol.telegram import RadioTelegram, Rorg
+
+MAX_CANDIDATES = 4
 
 
 @callback
@@ -116,6 +119,26 @@ def _json_value(value: Any) -> Any:
     return str(value)
 
 
+def _catalog_refs() -> list[EEPRef]:
+    refs: dict[EEPRef, None] = {}
+    for model in CATALOG.values():
+        for ref in (model.receive, *model.receive_extra):
+            if ref is not None:
+                refs[ref] = None
+    return list(refs)
+
+
+def candidate_eeps(telegram: RadioTelegram) -> list[str]:
+    """Profiles of the catalog that decode this telegram: a hint for an unknown sender.
+
+    Only profiles a device can be added with. A telegram that fits many of them (any 4BS
+    data telegram fits about a dozen) says nothing about the sender, so there is no hint
+    then; short VLD telegrams and 1BS contacts are narrow enough.
+    """
+    found = [str(ref) for ref in _catalog_refs() if decode_telegram(ref, telegram)]
+    return found if len(found) <= MAX_CANDIDATES else []
+
+
 @callback
 def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
     """The monitor line plus gateway name, device, profile, decoded values, teach-in EEP."""
@@ -146,6 +169,8 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                 return data
     if telegram.rorg == Rorg.BS4 and (teach_in := decode_teach_in_4bs(telegram.data)):
         data["teach_in"] = teach_in.eep
+    elif entry.direction == "rx" and (candidates := candidate_eeps(telegram)):
+        data["candidates"] = candidates
     return data
 
 

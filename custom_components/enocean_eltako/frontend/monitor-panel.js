@@ -97,6 +97,7 @@ const TEXT = {
     weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
     trend: (n, lo, hi) => `Signal of the last ${n} telegrams: ${lo} to ${hi} dBm`,
     noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
+    maybe: "Could be", maybeHint: "These profiles decode the telegram; a single telegram cannot tell for sure",
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
     status: "Status",
@@ -194,6 +195,7 @@ const TEXT = {
     weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
     trend: (n, lo, hi) => `Signal der letzten ${n} Telegramme: ${lo} bis ${hi} dBm`,
     noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
+    maybe: "Könnte sein", maybeHint: "Diese Profile dekodieren das Telegramm; ein einzelnes Telegramm sagt es nicht sicher",
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
     status: "Status",
@@ -1035,7 +1037,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (f.repeats || !r.duplicate) &&
       !(f.unknown && (r.device || r.dir === "tx")) &&
       (!text ||
-        [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
+        [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name, ...(r.candidates || [])].some((v) => v && String(v).toLowerCase().includes(text)) ||
         (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
         (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact)))
     );
@@ -1268,7 +1270,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
     const tags = r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "";
     const extra =
-      (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "");
+      (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "") +
+      (r.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
     const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(r.profile) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
@@ -1300,6 +1303,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
           ${hops ? `<div><dt>${esc(t.repeater)}</dt><dd>${hops}</dd></div>` : ""}
           ${copies ? `<div><dt>${esc(t.repeated)}</dt><dd>${esc(t.heardTimes(copies))}</dd></div>` : ""}
+          ${r.candidates ? `<div class="wide"><dt>${esc(t.maybe)}</dt><dd class="mono">${esc(r.candidates.join(", "))}</dd></div>` : ""}
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
