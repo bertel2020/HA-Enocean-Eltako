@@ -436,7 +436,7 @@ const STYLE = `
 
   /* telegram section */
   .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
-    box-shadow: var(--ha-card-box-shadow, none); overflow: hidden; }
+    box-shadow: var(--ha-card-box-shadow, none); overflow: clip; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 12px 12px 16px;
     border-bottom: 1px solid var(--line); }
   .live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 3px 10px;
