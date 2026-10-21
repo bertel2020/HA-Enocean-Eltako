@@ -517,3 +517,67 @@ async def test_enocean_proxy_app_port_change_updates_entry(hass: HomeAssistant) 
         await server.stop()
     assert result["reason"] == "already_configured"
     assert entry.data["device"]["port"] == server.port
+
+
+async def test_moving_to_the_device_proxy_keeps_the_entry(hass: HomeAssistant) -> None:
+    """A gateway set up through the EnOcean Proxy comes back from the Device Proxy: the
+    entry is found by the base ID and gets the new address, no new gateway is offered."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "abc-enocean-proxy", "port": 9100},
+            "proxy_status_port": 9199,
+        },
+        options={"proxy_replay": True},
+    )
+    entry.add_to_hass(hass)
+    info = HassioServiceInfo(
+        config={
+            "host": "127.0.0.1",
+            "status_port": 9299,
+            "replay": True,
+            "app": "device_proxy",
+            "gateways": [{"name": "FAM-USB", "port": server.port, "protocol": "esp2"}],
+        },
+        name="Device Proxy",
+        slug="def_device_proxy",
+        uuid="5678",
+    )
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+    finally:
+        await server.stop()
+    assert result["reason"] == "already_configured"
+    assert entry.data["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
+    assert entry.data["proxy_status_port"] == 9299
+
+
+async def test_a_new_gateway_of_the_device_proxy(hass: HomeAssistant) -> None:
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    info = HassioServiceInfo(
+        config={
+            "host": "abc-device-proxy",
+            "status_port": 9199,
+            "replay": True,
+            "app": "device_proxy",
+            "gateways": [{"name": "MGW", "port": 9101, "protocol": "esp3"}],
+        },
+        name="Device Proxy",
+        slug="abc_device_proxy",
+        uuid="5678",
+    )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+    )
+    assert result["step_id"] == "proxy_confirm"
+    assert result["description_placeholders"]["app"] == "Device Proxy"
+    (flow,) = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert flow["context"]["title_placeholders"]["name"] == "MGW (Device Proxy)"

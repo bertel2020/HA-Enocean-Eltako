@@ -9,7 +9,7 @@ Jedes Profil heißt EEP plus Variante (`std` = Definition der EnOcean Alliance,
 ## Gateways
 
 Ein Eintrag pro Gateway. Serielle Gateways verbinden per USB oder, über ser2net
-oder die App EnOcean Proxy, per TCP.
+oder die App Device Proxy, per TCP.
 
 | Gateway | Anbindung |
 | --- | --- |

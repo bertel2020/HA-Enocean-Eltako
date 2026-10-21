@@ -170,8 +170,8 @@
         }
       },
       "proxy_confirm": {
-        "title": "Gateway through EnOcean Proxy",
-        "description": "The EnOcean Proxy app offers the gateway **{name}** at {connection}. Which model is behind it? Replay after restarts is switched on.",
+        "title": "Gateway through a proxy app",
+        "description": "The {app} app offers the gateway **{name}** at {connection}. Which model is behind it? Replay after restarts is switched on.",
         "data": {
           "model": "Model"
         }
@@ -424,14 +424,14 @@
           "mode": "Connection",
           "repeater": "Repeater",
           "discovery": "Discover devices",
-          "proxy_replay": "Replay over EnOcean Proxy"
+          "proxy_replay": "Replay over the proxy app"
         },
         "data_description": {
           "message_delay": "Minimum time between two telegrams sent by this gateway.",
           "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between.",
           "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect.",
           "discovery": "Offer unknown senders this gateway receives as discovered devices.",
-          "proxy_replay": "Only when this gateway is reached through the EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting."
+          "proxy_replay": "Only when this gateway is reached through the Device Proxy or EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting."
         }
       }
     }

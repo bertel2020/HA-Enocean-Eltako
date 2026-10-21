@@ -1,12 +1,14 @@
-"""Status of the EnOcean Proxy app for gateways reached through it (panel "EnOcean").
+"""Status of the proxy app for gateways reached through it (panel "EnOcean").
 
-The app serves a read-only status on STATUS_PORT inside the Supervisor network; the
-integration polls it every POLL_INTERVAL and keeps the part about its own gateway (matched
-by TCP port): app version, other programs connected, air time against the 1 % duty cycle,
+The proxy app is the Device Proxy (its EnOcean gateways) or the older EnOcean Proxy; both
+serve a read-only status on STATUS_PORT inside the Supervisor network. The integration polls
+it every POLL_INTERVAL and keeps the part about its own gateway (matched by TCP port): app
+name and version, other programs connected, air time against the 1 % duty cycle,
 replayed telegrams, a program that currently has the gateway alone.
 
-An app older than MIN_VERSION raises a repair issue: it lacks what this integration expects
-(0.5.2: one discovery message listing every gateway).
+An EnOcean Proxy older than MIN_VERSION raises a repair issue: it lacks what this integration
+expects (0.5.2: one discovery message listing every gateway). An app that names the version of
+the contract ("api", the Device Proxy) is checked by that instead of its own version.
 """
 
 from __future__ import annotations
@@ -34,6 +36,8 @@ DEFAULT_STATUS_PORT = 9199
 POLL_INTERVAL = timedelta(seconds=15)
 TIMEOUT = aiohttp.ClientTimeout(total=5)
 MIN_VERSION = "0.5.2"
+MIN_API = 1
+APP_NAMES = {"device_proxy": "Device Proxy"}  # "app" in the status; none: EnOcean Proxy
 
 
 def parse_version(version: str | None) -> tuple[int, ...] | None:
@@ -51,10 +55,17 @@ def outdated(version: str | None) -> bool:
 
 @callback
 def async_check_version(
-    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, version: str | None
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    version: str | None,
+    api: int | None = None,
 ) -> None:
     """Raise or clear the "update the EnOcean Proxy app" issue of this gateway."""
     issue_id = f"proxy_outdated_{entry.entry_id}"
+    if api is not None:  # the Device Proxy: its own version says nothing about the contract
+        if api >= MIN_API:
+            ir.async_delete_issue(hass, DOMAIN, issue_id)
+        return
     if version is None:  # unknown (not reachable or local build): leave the issue as it is
         return
     if outdated(version):
@@ -82,7 +93,10 @@ def summarize(status: dict[str, Any], port: int) -> dict[str, Any] | None:
         return None
     duty = gateway.get("duty_cycle", {})
     stats = gateway.get("stats", {})
+    api = status.get("api")
     return {
+        "app": APP_NAMES.get(str(status.get("app")), "EnOcean Proxy"),
+        "api": api if isinstance(api, int) else None,
         "version": status.get("version") or None,
         "name": gateway.get("name"),
         "connected": bool(gateway.get("connected")),
@@ -113,10 +127,10 @@ def async_setup_proxy_status(
                 response.raise_for_status()
                 runtime.proxy = summarize(await response.json(), port)
             if runtime.proxy is not None:
-                async_check_version(hass, entry, runtime.proxy["version"])
+                async_check_version(hass, entry, runtime.proxy["version"], runtime.proxy["api"])
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             if runtime.proxy is not None:
-                _LOGGER.debug("EnOcean Proxy status from %s unavailable: %s", url, err)
+                _LOGGER.debug("Proxy app status from %s unavailable: %s", url, err)
             runtime.proxy = None
 
     @callback
