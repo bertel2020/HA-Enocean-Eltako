@@ -75,8 +75,9 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
   Wetterdienst dessen Wind- und Regenalarm. So senkt ein HA-Fensterkontakt den Heizungsaktor ab oder eine HA-Temperatur dient
   als Raumfühler. Gesendet wird bei jeder Änderung der gewählten Entität und alle 15 min
   (einstellbar); ist die Entität nicht verfügbar, kann ein Kontakt den sicheren Wert „offen“
-  senden. Eingelernt wird über den Button auf der Geräteseite, dort steht auch der zuletzt
-  gesendete Wert.
+  senden. Mit **Mit Priorität senden** überholt ein Kontakt alle wartenden Befehle, für den
+  Aussperrschutz eines FSB14. Eingelernt wird über den Button auf der Geräteseite, dort steht
+  auch der zuletzt gesendete Wert.
 - **Per EEP** (Experte): Jedes der 318 Standardprofile der EnOcean Alliance wird zu einem Gerät
   mit einem Sensor je Wert; ein Code wie `A5-04-02` findet es direkt.
 - **Eigene Definition**: Geräte, die du selbst in
@@ -123,7 +124,8 @@ werden trotzdem geladen. Fällt eine Definition weg, laufen ihre Geräte als gen
 EEP-Geräte weiter. Geräte per EEP oder Definition haben einen Diagnosesensor **Rohdaten**
 (standardmäßig deaktiviert) mit den Bytes des letzten Telegramms, um die Felder zu prüfen.
 
-Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md).
+Aus dem Katalog erzeugt; Details in [docs/devices.md](docs/devices.md). Welche Einlernfunktion
+am Eltako-Aktor der Baureihe 14 zu welchem Einlern-Button gehört: [docs/teach_in.de.md](docs/teach_in.de.md).
 
 <!-- devices:start -->
 | Kategorie | Gerät | Hersteller | Empfängt | Sendet (Sender-Profile) | Entitäten |

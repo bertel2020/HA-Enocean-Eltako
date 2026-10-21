@@ -5,7 +5,9 @@ from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
+from custom_components.enocean_eltako.device import EnOceanDevice
 from custom_components.enocean_eltako.protocol import esp2
+from custom_components.enocean_eltako.protocol.send_queue import Priority
 from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
 
 from .test_devices import BASE, _entity, _settle, gateway  # noqa: F401
@@ -154,6 +156,7 @@ async def test_add_virtual_contact_via_flow(hass: HomeAssistant, gateway) -> Non
             "invert": True,
             "send_interval": 0,
             "when_unavailable": "safe",
+            "priority": True,
         },
     )
     assert result["reason"] == "reconfigure_successful"
@@ -161,6 +164,50 @@ async def test_add_virtual_contact_via_flow(hass: HomeAssistant, gateway) -> Non
     data = entry.subentries[subentry.subentry_id].data
     assert data["senders"] == [{"profile": "contact", "sender_id": "FF-B7-44-81"}]
     assert data["invert"] is True
+    assert data["priority"] is True
+
+
+PRIORITY_CONTACT = 0xFFB74496
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            *VIRTUALS[:1],
+            _virtual(
+                "virtual_contact",
+                PRIORITY_CONTACT,
+                "Haustür HA",
+                "contact",
+                source="binary_sensor.door",
+                send_interval=0,
+                priority=True,
+            ),
+        ]
+    ],
+    indirect=True,
+)
+async def test_virtual_contact_priority(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lock-out protection: a contact with priority is queued ahead of everything else."""
+    entry, server = gateway
+    sent: dict[str, Priority] = {}
+    original = EnOceanDevice.send
+
+    def spy(self, data, *args, **kwargs):
+        sent[self.subentry.title] = kwargs.get("priority")
+        return original(self, data, *args, **kwargs)
+
+    monkeypatch.setattr(EnOceanDevice, "send", spy)
+    hass.states.async_set("binary_sensor.window", "on")
+    hass.states.async_set("binary_sensor.door", "on")
+    await _settle(hass)
+    assert sent == {"Fenster HA": Priority.AUTOMATION, "Haustür HA": Priority.SAFETY}
+    assert _sent(server, Rorg.BS1, "08", PRIORITY_CONTACT)
 
 
 BRIGHTNESS = 0xFFB74493

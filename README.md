@@ -71,8 +71,10 @@ Add a device under the gateway with **Add device** in one of six ways:
   own sender ID. An HA lux sensor can drive the shading automatic of an FSB14, a weather
   service its wind and rain alarm. An HA window contact can lower the heating actuator, an HA temperature can be its room
   sensor. It sends on every change of the chosen entity and repeats every 15 min (adjustable);
-  if the entity is unavailable, a contact can send the safe value "open". Teach it in with the
-  button on the device page; the device page also shows the value sent last.
+  if the entity is unavailable, a contact can send the safe value "open". With **Send with
+  priority** a contact overtakes every queued command, for the lock-out protection of an FSB14.
+  Teach it in with the button on the device page; the device page also shows the value sent
+  last.
 - **By EEP** (expert): any of the 318 standard profiles of the EnOcean Alliance becomes a
   device with one sensor per value; type a code such as `A5-04-02` to find it.
 - **Own definition**: devices you describe yourself in
@@ -119,7 +121,8 @@ definition is removed, its devices keep working as generic EEP devices. Devices 
 or by definition have a diagnostic sensor **Raw data** (disabled by default) with the bytes of
 the last telegram, to check the fields.
 
-Generated from the catalog; details in [docs/devices.md](docs/devices.md).
+Generated from the catalog; details in [docs/devices.md](docs/devices.md). Which learn function
+to set on an Eltako series 14 actuator for each teach-in button: [docs/teach_in.md](docs/teach_in.md).
 
 <!-- devices:start -->
 | Category | Device | Manufacturer | Receives | Sends (sender profiles) | Entities |

@@ -48,6 +48,7 @@ from .catalog import (
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
     OPT_PLATFORM,
+    OPT_PRIORITY,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
     OPT_ROUTING,
@@ -194,6 +195,7 @@ OPTION_KEYS = (
     OPT_TENTHS,
     OPT_SOURCE,
     OPT_WHEN_UNAVAILABLE,
+    OPT_PRIORITY,
     OPT_CHANNEL,
     OPT_WALL_SWITCH,
     OPT_WALL_ON,
@@ -382,6 +384,8 @@ class DeviceForm:
             schema[vol.Required(OPT_WHEN_UNAVAILABLE, default="skip")] = SelectSelector(
                 SelectSelectorConfig(options=WHEN_UNAVAILABLE, translation_key=OPT_WHEN_UNAVAILABLE)
             )
+        if OPT_PRIORITY in model.options:
+            schema[vol.Required(OPT_PRIORITY, default=False)] = BooleanSelector()
         if OPT_ROUTING in model.options:
             schema[vol.Required(OPT_ROUTING, default=model.senders[0].id)] = SelectSelector(
                 SelectSelectorConfig(

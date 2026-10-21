@@ -50,6 +50,7 @@ WEATHER_SOURCES = (
     OPT_WEATHER_BRIGHTNESS,
 )
 OPT_WHEN_UNAVAILABLE = "when_unavailable"  # I9: source unavailable -> skip | safe value
+OPT_PRIORITY = "priority"  # I9 contact: sent ahead of everything else (lock-out protection)
 OPT_CHANNEL = "channel"  # VLD actuators: output channel (D2-01 I/O, D2-05 CHN)
 OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on/off state
 OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
@@ -451,7 +452,7 @@ CATALOG: dict[str, DeviceModel] = {
             group=GROUP_VIRTUAL,
             senders=(VIRTUAL_CONTACT,),
             manufacturer="Home Assistant",
-            options=(OPT_SOURCE, OPT_INVERT, OPT_SEND_INTERVAL, OPT_WHEN_UNAVAILABLE),
+            options=(OPT_SOURCE, OPT_INVERT, OPT_SEND_INTERVAL, OPT_WHEN_UNAVAILABLE, OPT_PRIORITY),
             examples="FTK",
         ),
         DeviceModel(

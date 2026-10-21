@@ -37,6 +37,7 @@ from homeassistant.util.unit_conversion import SpeedConverter, TemperatureConver
 
 from .catalog import (
     OPT_INVERT,
+    OPT_PRIORITY,
     OPT_SEND_INTERVAL,
     OPT_SOURCE,
     OPT_WEATHER_BRIGHTNESS,
@@ -179,6 +180,13 @@ class VirtualSensor:
             return None if lux is None else round(lux)
         return _celsius(state)
 
+    @property
+    def priority(self) -> Priority:
+        """A contact for a lock-out protection overtakes queued commands (central down)."""
+        if self.device.options.get(OPT_PRIORITY):
+            return Priority.SAFETY
+        return Priority.AUTOMATION
+
     def encode(self, value: str | float) -> bytes:
         if self.kind == "virtual_contact":
             return virtual.encode_contact(value == CONTACT_CLOSED)
@@ -227,7 +235,7 @@ class VirtualSensor:
                 if value is not None:
                     self.device.send(
                         self.encode(value),
-                        priority=Priority.AUTOMATION,
+                        priority=self.priority,
                         key="value",
                         confirm=False,
                     )
