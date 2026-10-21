@@ -72,7 +72,16 @@ from .protocol.sender_pool import SenderIdError, SenderState
 from .protocol.telegram import Rorg
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .proxy_status import CONF_PROXY_STATUS_PORT
-from .subentry_flow import SUBENTRY_FLOWS, DeviceForm, candidates, receives, sender_owner
+from .subentry_flow import (
+    SUBENTRY_FLOWS,
+    DeviceForm,
+    candidates,
+    flatten_sections,
+    receives,
+    sender_owner,
+    status_channel,
+    subentry_unique_id,
+)
 from .takeover import TakeoverDevice, async_old_config, find_gateway, old_gateways, plan
 from .takeover import subentry_data as takeover_data
 
@@ -404,13 +413,15 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                         data=MappingProxyType(data),
                         subentry_type=SUBENTRY_DEVICE,
                         title=user_input[CONF_NAME],
-                        unique_id=format_id(device_id),
+                        unique_id=subentry_unique_id(
+                            device_id, status_channel(flatten_sections(user_input))
+                        ),
                     ),
                 )
                 return self.async_abort(reason="device_added")
         schema = {
             vol.Required(CONF_NAME): TextSelector(),
-            **self._fields(self._device_model, {}),
+            **self._fields(self._device_model, {}, new=True),
         }
         result: ConfigFlowResult = await self._form("discovered_device", schema, user_input, errors)
         return result

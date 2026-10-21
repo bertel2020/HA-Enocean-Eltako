@@ -160,8 +160,11 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     event = (await client.receive_json())["event"]
     assert event["gateway_name"] == "FAM-USB Keller"
     assert event["device"] == "Licht Diele"
-    assert event["values"] == {"on": True}
-    assert event["fields"] == [{"label": "on", "value": True, "unit": None}]  # no sensors
+    assert event["values"] == {"on": True, "channel": 1}
+    assert event["fields"] == [  # no sensors: the raw values
+        {"label": "on", "value": True, "unit": None},
+        {"label": "channel", "value": 1, "unit": None},
+    ]
 
     climate = esp2.Esp2Frame(esp2.HSeq.RRT, 0x07, bytes.fromhex("007D7D08"), 0x01820A11)
     server.push(climate.encode())

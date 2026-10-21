@@ -356,7 +356,7 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
         if device.model.group == GROUP_VIRTUAL and not buttons_only:
             device.virtual = VirtualSensor(hass, device)
             entry.async_on_unload(device.virtual.start())
-        owners.update(sender_owner(device.device_id, p) for p in device.senders)
+        owners.update(sender_owner(device.device_id, p, device.channel) for p in device.senders)
     _async_remove_stale_entities(hass, entry)
     pool = runtime.senders.pool
     released = False
@@ -377,7 +377,7 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
     registry = er.async_get(hass)
     stale: list[tuple[str, str]] = []
     for device in entry.runtime_data.devices.values():
-        prefix = f"{device.unique_prefix}_1"
+        prefix = device.entity_prefix
         if device.model.kind in ("switch", "psc", "vld_switch"):
             default = Platform.SWITCH if device.model.kind == "psc" else Platform.LIGHT
             chosen = device.options.get(OPT_PLATFORM, default)

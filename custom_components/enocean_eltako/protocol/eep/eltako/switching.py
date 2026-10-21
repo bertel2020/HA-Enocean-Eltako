@@ -2,7 +2,8 @@
 
 M5-38-08 (status of switching actuators, e.g. FSR61, FSR14 via FAM14):
     RPS like a PTM200 rocker without release telegram: data 0x70 = on, 0x50 = off
-    (bit 5 carries the state). Not an official profile.
+    (bit 5 carries the state). Two-channel actuators with one ID (e.g. FSR71NP-2x) report
+    channel 2 like the left rocker: 0x30 = on, 0x10 = off. Not an official profile.
 
 A5-38-08:eltako (central command to switching and dimming actuators, and dimmer status):
     Command 1 (switching) as official. Command 2 (dimming) deviates:
@@ -22,15 +23,15 @@ from ..teach_in import encode_teach_in_4bs
 TEACH_IN = encode_teach_in_4bs("A5-38-08")
 
 
+STATUS_CODES = {0x70: (1, True), 0x50: (1, False), 0x30: (2, True), 0x10: (2, False)}
+
+
 def decode_switch_status(data: bytes) -> dict[str, Any] | None:
-    """M5-38-08: {"on": bool} for 0x70/0x50 (and other PTM200 codes with bit 5)."""
-    if len(data) != 1:
+    """M5-38-08: {"on": bool, "channel": 1 | 2} (0x70/0x50 channel 1, 0x30/0x10 channel 2)."""
+    if len(data) != 1 or data[0] not in STATUS_CODES:
         return None
-    if data[0] == 0x70:
-        return {"on": True}
-    if data[0] == 0x50:
-        return {"on": False}
-    return None
+    channel, on = STATUS_CODES[data[0]]
+    return {"on": on, "channel": channel}
 
 
 def encode_switch_status(on: bool) -> bytes:

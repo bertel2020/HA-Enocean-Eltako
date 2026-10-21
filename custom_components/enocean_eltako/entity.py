@@ -20,7 +20,7 @@ class EnOceanEntity(Entity):
 
     def __init__(self, device: EnOceanDevice, key: str) -> None:
         self._device = device
-        self._attr_unique_id = f"{device.unique_prefix}_1_{key}"
+        self._attr_unique_id = f"{device.entity_prefix}_{key}"
         self._attr_device_info = device.device_info
 
     async def async_added_to_hass(self) -> None:

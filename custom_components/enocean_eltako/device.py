@@ -19,6 +19,7 @@ from .catalog import (
     GROUP_VIRTUAL,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
+    OPT_STATUS_CHANNEL,
     OPT_WALL_OFF,
     OPT_WALL_ON,
     OPT_WALL_SWITCH,
@@ -33,6 +34,7 @@ from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, D
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
+from .protocol.eep.eltako import switching
 from .protocol.eep.ute import decode_ute_request, encode_ute_response
 from .protocol.ids import BROADCAST, format_id, parse_id
 from .protocol.send_queue import Priority, SendResult
@@ -121,8 +123,27 @@ class EnOceanDevice:
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
 
     @property
+    def channel(self) -> int:
+        """1, or 2 for the second channel of a two-channel actuator sharing the ID."""
+        return 2 if str(self.options.get(OPT_STATUS_CHANNEL, "1")) == "2" else 1
+
+    @property
     def unique_prefix(self) -> str:
-        return f"{self.entry.unique_id}_{format_id(self.device_id)}"
+        """Device identity: entry and ID, plus the channel beyond the first."""
+        prefix = f"{self.entry.unique_id}_{format_id(self.device_id)}"
+        return prefix if self.channel == 1 else f"{prefix}_{self.channel}"
+
+    @property
+    def entity_prefix(self) -> str:
+        return f"{self.entry.unique_id}_{format_id(self.device_id)}_{self.channel}"
+
+    def own_channel(self, telegram: RadioTelegram) -> bool:
+        """False for a status telegram of the other channel of a shared actuator ID."""
+        if OPT_STATUS_CHANNEL not in self.model.options:
+            return True  # e.g. heating actuators report modes with the same codes
+        if telegram.rorg != Rorg.RPS or not telegram.data:
+            return True
+        return switching.STATUS_CODES.get(telegram.data[0], (self.channel,))[0] == self.channel
 
     @property
     def _model_name(self) -> str:
@@ -230,7 +251,7 @@ class EnOceanDevice:
         for ref in (self.model.receive, *self.model.receive_extra):
             if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
                 break
-        if values is None:
+        if values is None or values.get("channel", self.channel) != self.channel:
             return
         self.last_received = received
         if "on" in values:
@@ -266,7 +287,7 @@ class EnOceanDevice:
         sender_id = self.senders[profile]
         rorg = rorg or self.model.sender_profile(profile).rorg
         telegram = RadioTelegram(rorg, data, sender_id, status, destination)
-        expect = (lambda t: t.sender == self.device_id) if confirm else None
+        expect = (lambda t: t.sender == self.device_id and self.own_channel(t)) if confirm else None
         runtime = self.entry.runtime_data
         queue_key = (self.unique_prefix, key) if key else None
         started = time.monotonic()

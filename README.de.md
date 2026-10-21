@@ -51,6 +51,8 @@ andere EnOcean-Geräte. Ziele:
   parallel, Positionsverfolgung und Kalibrierung an den Endlagen
 - **Taster-Sender** drücken die gewählten Tasten (linke oder rechte Wippe, oben
   und unten vertauscht), passend dazu, wie die ID im Aktor eingelernt ist
+- **Zweikanal-Aktoren** mit einer ID (z. B. FSR71NP-2x): jeder Kanal ist ein eigenes Gerät;
+  Kanal 2 meldet 0x30/0x10
 - **Virtuelle Sensoren:** HA-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur
   oder -Taster senden
 - **Anlernen, Discovery, Telegramm-Monitor**, Import aus dem Bus-Speicher des

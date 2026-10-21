@@ -1745,3 +1745,77 @@ async def test_unstable_connection_repair(hass: HomeAssistant, gateway, monkeypa
     monkeypatch.setattr(health.time, "time", lambda: later)
     runtime.health_check()
     assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+async def test_two_channel_actuator(hass: HomeAssistant, gateway) -> None:
+    """Two channels under one ID: two devices, each with its own status codes and senders."""
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    for name, channel, sender in (("Kanal 1", "1", "FF-B7-44-8A"), ("Kanal 2", "2", "FF-B7-44-89")):
+        result = await hass.config_entries.subentries.async_init(
+            (entry.entry_id, "device"), context={"source": "user"}
+        )
+        result = await _choose_model(hass, result["flow_id"], "switch")
+        result = await configure(result["flow_id"], {"next_step_id": "device"})
+        assert "status_channel_settings" in [str(k) for k in result["data_schema"].schema]
+        result = await configure(
+            result["flow_id"],
+            {
+                "name": name,
+                "device_id": "05-10-A2-C0",
+                "sender_central": sender,
+                "platform": "switch",
+                "status_channel_settings": {"status_channel": channel},
+            },
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+    assert {s.unique_id for s in entry.subentries.values()} == {"05-10-A2-C0", "05-10-A2-C0_2"}
+    # a third device on the same channel is refused
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "switch")
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    result = await configure(
+        result["flow_id"],
+        {
+            "name": "Doppelt",
+            "device_id": "05-10-A2-C0",
+            "platform": "switch",
+            "sender_rocker": "FF-B7-44-88",
+            "status_channel_settings": {"status_channel": "2"},
+        },
+    )
+    assert result["errors"] == {"device_id": "already_configured"}
+    await server.connected.wait()
+
+    one = _entity(hass, "switch", f"{BASE}_05-10-A2-C0_1_switch")
+    two = _entity(hass, "switch", f"{BASE}_05-10-A2-C0_2_switch")
+    _push(server, 0x05, b"\x30", 0x0510A2C0, 0x30)  # channel 2 on
+    await _settle(hass)
+    assert hass.states.get(two).state == "on"
+    assert hass.states.get(one).state != "on"
+    _push(server, 0x05, b"\x70", 0x0510A2C0, 0x30)  # channel 1 on
+    _push(server, 0x05, b"\x10", 0x0510A2C0, 0x30)  # channel 2 off
+    await _settle(hass)
+    assert (hass.states.get(one).state, hass.states.get(two).state) == ("on", "off")
+    devices = {d.subentry.title: d for d in entry.runtime_data.devices.values()}
+    channel_two = devices["Kanal 2"]
+    assert channel_two.unique_prefix == f"{BASE}_05-10-A2-C0_2"
+    status = RadioTelegram(Rorg.RPS, b"\x70", 0x0510A2C0, 0x30)
+    assert not channel_two.own_channel(status)  # no confirmation from the other channel
+    assert devices["Kanal 1"].own_channel(status)
+    pool = entry.runtime_data.senders.pool
+    assert pool.get(0xFFB74489).owner == "device:05-10-A2-C0_2:central"
+
+    subentry_id = next(i for i, s in entry.subentries.items() if s.unique_id == "05-10-A2-C0_2")
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    assert "status_channel_settings" not in [str(k) for k in result["data_schema"].schema]
+    result = await configure(
+        result["flow_id"],
+        {"name": "Kanal 2", "sender_central": "FF-B7-44-89", "platform": "switch"},
+    )
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    assert entry.subentries[subentry_id].data["status_channel"] == "2"  # stays

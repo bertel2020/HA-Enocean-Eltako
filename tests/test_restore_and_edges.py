@@ -170,9 +170,10 @@ async def test_heating_cycle_and_silence_repair(hass: HomeAssistant, restored, m
 
 
 def test_eltako_switching_telegrams() -> None:
-    assert switching.decode_switch_status(b"\x70") == {"on": True}
-    assert switching.decode_switch_status(b"\x50") == {"on": False}
-    assert switching.decode_switch_status(b"\x30") is None
+    assert switching.decode_switch_status(b"\x70") == {"on": True, "channel": 1}
+    assert switching.decode_switch_status(b"\x50") == {"on": False, "channel": 1}
+    assert switching.decode_switch_status(b"\x30") == {"on": True, "channel": 2}
+    assert switching.decode_switch_status(b"\x00") is None  # a release telegram
     assert switching.decode_switch_status(b"\x70\x00") is None
     assert switching.encode_switch_status(False) == b"\x50"
     assert switching.encode_switch(True, lock=True) == bytes.fromhex("0100000D")

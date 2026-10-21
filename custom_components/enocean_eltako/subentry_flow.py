@@ -54,6 +54,7 @@ from .catalog import (
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
     OPT_SOURCE,
+    OPT_STATUS_CHANNEL,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
     OPT_TENTHS,
@@ -202,15 +203,18 @@ OPTION_KEYS = (
     OPT_WALL_OFF,
     OPT_ROCKER_ON,
     OPT_ROCKER_OFF,
+    OPT_STATUS_CHANNEL,
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
 # collapsed sections of rarely needed fields; the subentry data stays flat
 SECTION_ROCKER = "rocker_buttons"
 SECTION_WALL = "wall_switch_settings"
+SECTION_STATUS = "status_channel_settings"
 SECTIONS = {
     SECTION_ROCKER: (OPT_ROCKER_ON, OPT_ROCKER_OFF),
     SECTION_WALL: (OPT_WALL_SWITCH, OPT_WALL_ON, OPT_WALL_OFF),
+    SECTION_STATUS: (OPT_STATUS_CHANNEL,),
 }
 
 
@@ -239,8 +243,17 @@ def _buttons_section(fields: dict[Any, Any], buttons: tuple[tuple[str, str], ...
     return section(vol.Schema(fields), {"collapsed": True})
 
 
-def sender_owner(device_id: int, profile: str) -> str:
-    return f"device:{format_id(device_id)}:{profile}"
+def subentry_unique_id(device_id: int, channel: int = 1) -> str:
+    """The device ID; a second channel sharing it (two-channel actuators) gets "_2"."""
+    return format_id(device_id) if channel == 1 else f"{format_id(device_id)}_{channel}"
+
+
+def status_channel(values: dict[str, Any]) -> int:
+    return 2 if str(values.get(OPT_STATUS_CHANNEL, "1")) == "2" else 1
+
+
+def sender_owner(device_id: int, profile: str, channel: int = 1) -> str:
+    return f"device:{subentry_unique_id(device_id, channel)}:{profile}"
 
 
 def sender_field(profile: str) -> str:
@@ -300,7 +313,9 @@ class DeviceForm:
     def _pool(self) -> SenderPool:
         return cast(SenderPool, self._get_entry().runtime_data.senders.pool)
 
-    def _fields(self, model: DeviceModel, current: dict[str, str]) -> dict[Any, Any]:
+    def _fields(
+        self, model: DeviceModel, current: dict[str, str], *, new: bool = False
+    ) -> dict[Any, Any]:
         """Sender IDs (first suggested from the pool, required unless any one will do), options."""
         schema: dict[Any, Any] = {}
         virtual_fixed = model.group == GROUP_VIRTUAL and bool(current)
@@ -444,6 +459,19 @@ class DeviceForm:
             schema[vol.Optional(SECTION_ROCKER, default={})] = _buttons_section(
                 {}, ((OPT_ROCKER_ON, "a0"), (OPT_ROCKER_OFF, "a1"))
             )
+        if new and OPT_STATUS_CHANNEL in model.options:  # the device's identity, fixed afterwards
+            schema[vol.Optional(SECTION_STATUS, default={})] = section(
+                vol.Schema(
+                    {
+                        vol.Required(OPT_STATUS_CHANNEL, default="1"): SelectSelector(
+                            SelectSelectorConfig(
+                                options=["1", "2"], translation_key=OPT_STATUS_CHANNEL
+                            )
+                        )
+                    }
+                ),
+                {"collapsed": True},
+            )
         if OPT_WALL_SWITCH in model.options:
             schema[vol.Optional(SECTION_WALL, default={})] = _buttons_section(
                 {vol.Optional(OPT_WALL_SWITCH): TextSelector()},
@@ -503,7 +531,7 @@ class DeviceForm:
             if current.get(profile) == format_id(sender):
                 continue
             try:
-                pool.assign(sender, sender_owner(device_id, profile))
+                pool.assign(sender, sender_owner(device_id, profile, status_channel(user_input)))
             except SenderIdError as err:
                 errors[sender_field(profile)] = f"sender_{err.reason}"
                 continue
@@ -788,18 +816,20 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             except ValueError:
                 errors[id_field] = "sender_invalid_id" if virtual else "invalid_id"
             else:
-                if any(s.unique_id == format_id(device_id) for s in entry.subentries.values()):
+                channel = status_channel(flatten_sections(user_input))
+                unique_id = subentry_unique_id(device_id, channel)
+                if any(s.unique_id == unique_id for s in entry.subentries.values()):
                     errors[id_field] = "already_configured"
             if device_id is not None and not errors:
                 result = await self._async_save(user_input, device_id, {}, errors)
                 if result is not None:
                     return self.async_create_entry(
-                        title=user_input[CONF_NAME], data=result, unique_id=format_id(device_id)
+                        title=user_input[CONF_NAME], data=result, unique_id=unique_id
                     )
         schema = {
             vol.Required(CONF_NAME): TextSelector(),
             **({} if virtual else {vol.Required(CONF_DEVICE_ID): TextSelector()}),
-            **self._fields(self._device_model, {}),
+            **self._fields(self._device_model, {}, new=True),
         }
         if user_input is None and self._learned is not None:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
@@ -823,6 +853,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if user_input is not None:
             if model.group == GROUP_VIRTUAL:  # the sender is the device's ID: it stays
                 user_input = {**user_input, **{sender_field(p): s for p, s in current.items()}}
+            if OPT_STATUS_CHANNEL in data:  # part of the device's identity: it stays
+                user_input = {**user_input, OPT_STATUS_CHANNEL: data[OPT_STATUS_CHANNEL]}
             result = await self._async_save(user_input, device_id, current, errors)
             if result is not None:
                 return self.async_update_and_abort(

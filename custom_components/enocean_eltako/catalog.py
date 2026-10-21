@@ -56,6 +56,7 @@ OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on
 OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
 OPT_WALL_OFF = "wall_off_button"  # I4: its button that switches off (same button = toggle)
 OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
+OPT_STATUS_CHANNEL = "status_channel"  # switch: "1" reports 0x70/0x50, "2" 0x30/0x10
 OPT_TENTHS = "run_time_tenths"  # cover: controller run times in 100 ms (newer firmware)
 OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up
 OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
@@ -195,7 +196,13 @@ CATALOG: dict[str, DeviceModel] = {
             category="lighting",
             senders=(ROCKER, CENTRAL),
             any_sender=True,
-            options=(OPT_STATUS_REQUEST, OPT_INVERT, OPT_WALL_SWITCH, OPT_ROCKER_ON),
+            options=(
+                OPT_STATUS_REQUEST,
+                OPT_INVERT,
+                OPT_WALL_SWITCH,
+                OPT_ROCKER_ON,
+                OPT_STATUS_CHANNEL,
+            ),
             examples="FSR61, FSR14, FL62, FSR71",
         ),
         DeviceModel(

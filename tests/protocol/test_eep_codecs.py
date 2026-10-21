@@ -26,9 +26,13 @@ def test_teach_in_telegrams() -> None:
     assert decode_teach_in_4bs(bytes.fromhex("0000FF08")) is None  # data telegram
 
 
-@pytest.mark.parametrize(("data", "on"), [("70", True), ("50", False)])
-def test_m5_38_08(data: str, on: bool) -> None:
-    assert decode_telegram(EEPRef("M5-38-08", "eltako"), tg(Rorg.RPS, data, 0x30)) == {"on": on}
+@pytest.mark.parametrize(
+    ("data", "on", "channel"),
+    [("70", True, 1), ("50", False, 1), ("30", True, 2), ("10", False, 2)],
+)
+def test_m5_38_08(data: str, on: bool, channel: int) -> None:
+    values = decode_telegram(EEPRef("M5-38-08", "eltako"), tg(Rorg.RPS, data, 0x30))
+    assert values == {"on": on, "channel": channel}
 
 
 def test_switch_and_dim_commands() -> None:

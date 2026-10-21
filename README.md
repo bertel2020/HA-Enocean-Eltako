@@ -49,6 +49,8 @@ devices, written from scratch. Goals:
   parallel, position tracking and calibration at the end positions
 - **Rocker senders** press the buttons you choose (left or right rocker, top and
   bottom swapped), matching how the ID was taught into the actuator
+- **Two-channel actuators** with one ID (e.g. FSR71NP-2x): each channel is a device of its
+  own; channel 2 reports 0x30/0x10
 - **Virtual sensors:** HA entities sent as EnOcean contact, motion, temperature or rocker
 - **Teach-in, discovery, telegram monitor**, import from the FAM14 bus memory
   and a takeover assistant for the old `eltako` integration
