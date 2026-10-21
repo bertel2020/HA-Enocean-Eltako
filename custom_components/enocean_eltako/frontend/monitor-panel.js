@@ -87,6 +87,7 @@ const TEXT = {
     answerTo: (ms) => `Answer to a command ${ms} ms earlier`,
     noAnswer: "No answer within 3 s",
     pair: "Command and answer",
+    change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
     raw: "Data",
     status: "Status",
     destination: "Destination",
@@ -175,6 +176,7 @@ const TEXT = {
     answerTo: (ms) => `Antwort auf einen Befehl vor ${ms} ms`,
     noAnswer: "Keine Antwort innerhalb von 3 s",
     pair: "Befehl und Antwort",
+    change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
     raw: "Daten",
     status: "Status",
     destination: "Ziel",
@@ -407,6 +409,8 @@ const STYLE = `
   .details div { min-width: 0; }
   .details dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
   .details dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+  .details .wide { grid-column: 1 / -1; }
+  .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
   .m-only { display: none; }
 
@@ -1135,6 +1139,38 @@ class EnOceanEltakoPanel extends HTMLElement {
     return String(value);
   }
 
+  _previous(r) {
+    // the telegram before this one from the same sender: same direction and type, no repetition
+    const start = this._rows.indexOf(r);
+    if (start < 0 || r.duplicate) return null;
+    for (let i = start + 1; i < this._rows.length; i++) {
+      const o = this._rows[i];
+      if (o.sender === r.sender && o.dir === r.dir && o.rorg === r.rorg && !o.duplicate && o.gateway === r.gateway) return o;
+    }
+    return null;
+  }
+
+  _diff(r) {
+    // the data bytes that differ from the previous telegram, and the values that changed
+    const prev = this._previous(r);
+    if (!prev) return null;
+    const bytes = r.data.match(/../g) || [];
+    const before = prev.data.match(/../g) || [];
+    const same = bytes.length === before.length;
+    const raw = bytes.map((b, i) => (same && b === before[i] ? b : `<span class="chg">${esc(b)}</span>`)).join(" ");
+    const now = new Map((r.fields || []).map((f) => [f.label, f]));
+    const changes = (prev.fields || [])
+      .map((old) => [old, now.get(old.label)])
+      .filter(([old, cur]) => cur && cur.value !== old.value)
+      .map(([old, cur]) => `${this._label(cur.label)}: ${this._value(old.value)} → ${this._value(cur.value)}${cur.unit ? ` ${cur.unit}` : ""}`);
+    const unchanged = same && r.data === prev.data;
+    return { raw, prev: prev.data, text: changes.length ? changes.join(" · ") : unchanged ? this._t.noChange : "" };
+  }
+
+  _label(label) {
+    return this._t.fields[label] || label.replace(/_/g, " ");
+  }
+
   _pairText(r) {
     // a command we sent and the answer of the same device, matched by time (3 s window)
     if (!r.device || r.duplicate) return "";
@@ -1174,17 +1210,20 @@ class EnOceanEltakoPanel extends HTMLElement {
           .map((f) =>
             f.label === "on" || f.label === "state"
               ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>`
-              : `<span class="value"><span>${esc(t.fields[f.label] || f.label.replace(/_/g, " "))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
+              : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
     const pair = expanded ? this._pairText(r) : "";
+    const diff = expanded ? this._diff(r) : null;
     const details = expanded
       ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(time.toLocaleString(this._hass.language))}.${ms}</dd></div>
           <div><dt>${esc(t.gateway)}</dt><dd>${esc(r.gateway_name)}</dd></div>
           <div><dt>${esc(t.type)}</dt><dd>${esc(type)} (${esc(r.rorg)})</dd></div>
-          <div><dt>${esc(t.raw)}</dt><dd class="mono">${esc(r.data)}</dd></div>
+          <div><dt>${esc(t.raw)}</dt><dd class="mono">${diff ? diff.raw : esc(r.data)}</dd></div>
+          ${diff ? `<div><dt>${esc(t.previous)}</dt><dd class="mono">${esc(diff.prev)}</dd></div>` : ""}
+          ${diff?.text ? `<div class="wide"><dt>${esc(t.change)}</dt><dd>${esc(diff.text)}</dd></div>` : ""}
           <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           <div><dt>${esc(t.destination)}</dt><dd class="mono">${esc(r.destination)}</dd></div>
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
