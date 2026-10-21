@@ -157,27 +157,24 @@ def test_plan_actuators() -> None:
         {"rocker": 0xFFB744BF},
         0xFFB744BF,
     )
-    assert subentry_data(knopf, knopf.senders)["device_id"] == "FF-B7-44-BF"
+    assert knopf.data == {"buttons": ["a0"]}  # "left": the old code pressed 0x30
+    data = subentry_data(knopf, knopf.senders)
+    assert (data["device_id"], data["buttons"]) == ("FF-B7-44-BF", ["a0"])
 
 
-def test_plan_button_without_sender_section() -> None:
-    old = {"devices": {"button": [{"id": "FF-C2-4A-AE", "eep": "F6-02-01", "name": "Tor"}]}}
-    (tor,) = plan(old)
-    assert (tor.model, tor.senders, tor.target_id) == (
-        "virtual_rocker",
-        {"rocker": 0xFFC24AAE},
-        0xFFC24AAE,
-    )
+def _old_button(**conf) -> dict:
+    return {"devices": {"button": [{"id": "FF-C2-4A-AE", "eep": "F6-02-01", **conf}]}}
 
 
-def test_plan_button_with_broken_sender() -> None:
-    old = {
-        "devices": {
-            "button": [{"id": "FF-C2-4A-AE", "eep": "F6-02-01", "sender": {"id": "nonsense"}}]
-        }
-    }
-    (tor,) = plan(old)
-    assert (tor.model, tor.reason) == (None, "takeover_bad_sender")
+def test_plan_button_side() -> None:
+    right = plan(_old_button(sender={"id": "FF-B7-44-C0 right", "eep": "F6-02-01"}))[0]
+    assert (right.senders, right.data) == ({"rocker": 0xFFB744C0}, {"buttons": ["b0"]})  # 0x70
+
+
+def test_plan_button_without_usable_sender() -> None:
+    assert plan(_old_button())[0].reason == "takeover_no_sender"
+    broken = plan(_old_button(sender={"id": "nonsense"}))[0]
+    assert (broken.model, broken.reason) == (None, "takeover_bad_sender")
 
 
 def test_plan_sensors() -> None:

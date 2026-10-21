@@ -32,6 +32,7 @@ from .catalog import (
     GENERIC_EEP,
     GENERIC_EEPS,
     HEATING_CONTROLLER,
+    OPT_BUTTONS,
     OPT_DEVICE_CLASS,
     OPT_INVERT,
     OPT_PLATFORM,
@@ -219,17 +220,19 @@ def _actuator(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str
 
 
 def _button(device: TakeoverDevice, conf: Mapping[str, Any]) -> None:
-    """The old button platform: Home Assistant presses a rocker, now a virtual rocker."""
-    sender = device.device_id  # without a sender section the ID is the one it sends with
-    if isinstance(sender_conf := conf.get("sender"), Mapping):
-        try:
-            sender = parse_id(str(sender_conf.get("id", "")).split()[0])
-        except (ValueError, IndexError):
-            device.reason = "takeover_bad_sender"
-            return
+    """The old button platform: Home Assistant pressed the top button of the sender's rocker."""
+    if not isinstance(sender_conf := conf.get("sender"), Mapping):
+        device.reason = "takeover_no_sender"
+        return
+    try:
+        sender, side = _parse_sender(sender_conf.get("id"))
+    except ValueError:
+        device.reason = "takeover_bad_sender"
+        return
     device.model = "virtual_rocker"
-    device.new_id = sender
+    device.new_id = sender  # a virtual device's ID is its sender
     device.senders[ROCKER.id] = sender
+    device.data[OPT_BUTTONS] = [_rocker_buttons(side)[OPT_ROCKER_ON]]  # left 0x30, right 0x70
 
 
 def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
