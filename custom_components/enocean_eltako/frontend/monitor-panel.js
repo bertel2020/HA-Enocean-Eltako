@@ -103,6 +103,38 @@ const TEXT = {
     pair: "Command and answer",
     repeated: "Repetitions", repeater: "Repeater hops",
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
+    viewTakeover: "Takeover",
+    tkSteps: ["Take over", "Check", "Old integration off", "Old IDs (optional)"],
+    tkStepState: {
+      todo: (n) => (n === 1 ? "1 device to take over" : `${n} devices to take over`), done: (a, b) => `${a} of ${b} devices`, check: "Look at the mapping",
+      oldOn: "still active", oldOff: "switched off", later: "possible once step 3 is done",
+    },
+    tkTabs: ["Preview and selection", "Mapping old → new"],
+    tkOldDevices: "Old devices", tkReady: "Can be taken over", tkNot: "Cannot be taken over", tkExists: "Already set up",
+    tkAssigned: "Assigned", tkAutomations: "Automations", tkScenes: "Scenes", tkScripts: "Scripts", tkDashboards: "Dashboards",
+    tkCarry: "Carry area, labels and voice assistant exposure over from the old integration",
+    tkCarryInfo: (area, labels) => [area ? `area ${area}` : "", labels.length ? `label ${labels.join(", ")}` : ""].filter(Boolean).join(" · "),
+    tkRun: (n) => (n === 1 ? "Take over 1 device" : `Take over ${n} devices`), tkSelectAll: "Select all", tkSelectNone: "Select none",
+    tkNothing: "Nothing selected", tkNotReady: "Cannot be taken over",
+    tkReasons: {
+      takeover_unsupported: "not supported", takeover_no_sender: "no sender", takeover_bad_sender: "sender not usable",
+      takeover_duplicate: "ID listed twice", takeover_exists: "already set up",
+    },
+    tkErrors: {
+      no_config: "No `eltako:` section found in configuration.yaml, so there is nothing to preview. The mapping of already taken devices is below.",
+      no_gateway: "The old configuration has no gateway with this base ID.",
+      gateway_not_loaded: "The gateway is not loaded.", unknown: "The takeover failed",
+    },
+    tkDone: (n, carried) => `${n === 1 ? "1 device" : `${n} devices`} taken over${carried ? `, area and labels carried over for ${carried}` : ""}`,
+    tkSkipped: "Sender IDs not taken over", tkBusy: "Taking over…",
+    tkOldActive: "The old integration is still active, so its entity IDs are taken. Switch the references over, turn the old integration off and remove its entities.",
+    tkOldGone: "The old integration is switched off.",
+    tkColDevice: "Device", tkColOld: "Old ID", tkColNew: "New ID", tkColUsed: "Used in",
+    tkNoNew: "no counterpart", tkNotTaken: "not taken over", tkUnused: "not used",
+    tkUsage: { automation: (n) => (n === 1 ? "1 automation" : `${n} automations`), script: (n) => (n === 1 ? "1 script" : `${n} scripts`),
+      scene: (n) => (n === 1 ? "1 scene" : `${n} scenes`), dashboard: (n) => (n === 1 ? "1 dashboard" : `${n} dashboards`) },
+    tkWhere: "Where the old ID is used", tkCopy: "Copy mapping", tkCsv: "As CSV", tkCopied: "Mapping copied",
+    tkEmpty: "No old entities found.",
     viewTelegrams: "Telegrams", viewDevices: "Devices", viewSenders: "Sender IDs",
     pools: "Sender ID pool", poolBus: (t) => `${t} (bus)`, poolFree: "Free", poolOf: (n) => `of ${n}`,
     poolSummary: (a, b) => `${a} assigned · ${b} blocked`,
@@ -219,6 +251,38 @@ const TEXT = {
     pair: "Befehl und Antwort",
     repeated: "Wiederholungen", repeater: "Repeater-Stufen",
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
+    viewTakeover: "Übernahme",
+    tkSteps: ["Übernehmen", "Prüfen", "Alte Integration aus", "Alte IDs (optional)"],
+    tkStepState: {
+      todo: (n) => (n === 1 ? "1 Gerät zu übernehmen" : `${n} Geräte zu übernehmen`), done: (a, b) => `${a} von ${b} Geräten`, check: "Zuordnung ansehen",
+      oldOn: "noch aktiv", oldOff: "abgeschaltet", later: "möglich nach Schritt 3",
+    },
+    tkTabs: ["Vorschau und Auswahl", "Zuordnung alt → neu"],
+    tkOldDevices: "Alte Geräte", tkReady: "Übernehmbar", tkNot: "Nicht übernehmbar", tkExists: "Schon eingerichtet",
+    tkAssigned: "Zugeordnet", tkAutomations: "Automationen", tkScenes: "Szenen", tkScripts: "Skripte", tkDashboards: "Dashboards",
+    tkCarry: "Bereich, Labels und Sprachsteuerungs-Freigabe aus der alten Integration übernehmen",
+    tkCarryInfo: (area, labels) => [area ? `Bereich ${area}` : "", labels.length ? `Label ${labels.join(", ")}` : ""].filter(Boolean).join(" · "),
+    tkRun: (n) => (n === 1 ? "1 Gerät übernehmen" : `${n} Geräte übernehmen`), tkSelectAll: "Alle auswählen", tkSelectNone: "Alle abwählen",
+    tkNothing: "Nichts ausgewählt", tkNotReady: "Nicht übernehmbar",
+    tkReasons: {
+      takeover_unsupported: "nicht unterstützt", takeover_no_sender: "kein Sender", takeover_bad_sender: "Sender nicht nutzbar",
+      takeover_duplicate: "ID doppelt", takeover_exists: "schon eingerichtet",
+    },
+    tkErrors: {
+      no_config: "Kein `eltako:`-Abschnitt in der configuration.yaml gefunden, es gibt also nichts in der Vorschau. Unten steht die Zuordnung der schon übernommenen Geräte.",
+      no_gateway: "Die alte Konfiguration hat kein Gateway mit dieser Base-ID.",
+      gateway_not_loaded: "Das Gateway ist nicht geladen.", unknown: "Die Übernahme ist fehlgeschlagen",
+    },
+    tkDone: (n, carried) => `${n === 1 ? "1 Gerät" : `${n} Geräte`} übernommen${carried ? `, Bereich und Labels für ${carried} übertragen` : ""}`,
+    tkSkipped: "Sender-IDs nicht übernommen", tkBusy: "Übernehme…",
+    tkOldActive: "Die alte Integration ist noch aktiv, ihre Entity-IDs sind belegt. Stelle die Verweise um, schalte die alte Integration ab und entferne ihre Entitäten.",
+    tkOldGone: "Die alte Integration ist abgeschaltet.",
+    tkColDevice: "Gerät", tkColOld: "Alte ID", tkColNew: "Neue ID", tkColUsed: "Verwendet in",
+    tkNoNew: "kein Gegenstück", tkNotTaken: "nicht übernommen", tkUnused: "nicht verwendet",
+    tkUsage: { automation: (n) => (n === 1 ? "1 Automation" : `${n} Automationen`), script: (n) => (n === 1 ? "1 Skript" : `${n} Skripte`),
+      scene: (n) => (n === 1 ? "1 Szene" : `${n} Szenen`), dashboard: (n) => (n === 1 ? "1 Dashboard" : `${n} Dashboards`) },
+    tkWhere: "Wo die alte ID steht", tkCopy: "Zuordnung kopieren", tkCsv: "Als CSV", tkCopied: "Zuordnung kopiert",
+    tkEmpty: "Keine alten Entitäten gefunden.",
     viewTelegrams: "Telegramme", viewDevices: "Geräte", viewSenders: "Sender-IDs",
     pools: "Sender-ID-Pool", poolBus: (t) => `${t} (Bus)`, poolFree: "Frei", poolOf: (n) => `von ${n}`,
     poolSummary: (a, b) => `${a} zugewiesen · ${b} gesperrt`,
@@ -483,8 +547,42 @@ const STYLE = `
     padding: 0 10px; font: 13px ui-monospace, monospace; text-transform: none; min-width: 0; }
   .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   .sendform .primary { background: var(--accent); color: var(--text-primary-color, #fff); border-color: var(--accent); }
-  .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only { display: none !important; }
-  .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders { display: none; }
+  .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
+  .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
+  .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
+  .panel:not([data-view="takeover"]) .takeover { display: none; }
+  .takeover { padding-bottom: 8px; }
+  .takeover .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 8px; }
+  .takeover .step { font-size: 12px; color: var(--muted); border-top: 3px solid var(--line); padding-top: 6px; }
+  .takeover .step b { display: block; font-weight: 500; font-size: 13px; color: var(--primary-text-color); }
+  .takeover .step.done { border-color: var(--ok); }
+  .takeover .step.cur { border-color: var(--accent); }
+  .takeover .step.opt { border-top-style: dashed; }
+  .takeover .tabs { padding: 4px 16px 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .takeover .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; padding: 0 16px 12px; }
+  .takeover .metric { background: var(--soft); border-radius: 8px; padding: 8px 12px; }
+  .takeover .metric small { display: block; font-size: 12px; color: var(--muted); }
+  .takeover .metric b { font-size: 20px; font-weight: 500; }
+  .takeover .banner { margin: 0 0 8px; padding: 10px 16px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
+  .takeover .pickrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+  .takeover .pickrow input { margin-top: 3px; }
+  .takeover .sub { color: var(--muted); font-size: 12px; }
+  .takeover h3 { margin: 14px 16px 4px; font-size: 11px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+  .takeover .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 16px 4px; }
+  .takeover .carry { display: flex; gap: 8px; align-items: flex-start; padding: 10px 16px; font-size: 13px; border-top: 1px solid var(--line); }
+  .takeover table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  .takeover th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 12px; }
+  .takeover td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+  .takeover tr.map { cursor: pointer; }
+  .takeover tr.map:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  .takeover .old { color: var(--muted); }
+  .takeover .chip-s { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--soft); }
+  .takeover .chip-s.used { background: color-mix(in srgb, var(--warn) 25%, transparent); }
+  .takeover .chip-s.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
+  .takeover .where td { background: var(--soft); font-size: 12px; }
+  @media (max-width: 760px) { .takeover .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .senders .pool { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px 16px; align-items: center; padding: 14px 16px; }
   .senders .meta-label { font-size: 13px; color: var(--muted); }
   .senders .pool .big { font-size: 24px; font-weight: 500; }
@@ -650,6 +748,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
+    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false };
     this._pools = [];
     this._pool = ""; // shown pool
     this._freeing = null; // blocked sender ID waiting for its confirmation
@@ -732,6 +831,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               <button data-view="telegrams" aria-pressed="true">${esc(t.viewTelegrams)}</button>
               <button data-view="devices" aria-pressed="false">${esc(t.viewDevices)}</button>
               <button data-view="senders" aria-pressed="false">${esc(t.viewSenders)}</button>
+              <button data-view="takeover" aria-pressed="false" hidden>${esc(t.viewTakeover)}</button>
             </div>
             <span class="spacer"></span>
             <button class="icon-btn list-only" id="pause"></button>
@@ -772,6 +872,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="meta list-only"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
+          <div class="takeover" id="takeover"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager tg-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
@@ -808,6 +909,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (button) this._setView(button.dataset.view);
     });
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
+    $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
+    $("takeover").addEventListener("change", (e) => this._takeoverChange(e));
     $("senders").addEventListener("change", (e) => {
       if (e.target.id !== "poolSelect") return;
       this._pool = e.target.value;
@@ -932,6 +1035,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (this._unsub === unsub) this._unsub = null;
     });
     await this._refreshStatus();
+    this._checkTakeover();
     clearInterval(this._timer);
     this._timer = setInterval(() => this._refreshStatus(), STATUS_INTERVAL);
   }
@@ -1049,6 +1153,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
     if (view === "senders") this._loadPools();
+    if (view === "takeover") this._loadTakeover();
     for (const button of $("view").querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.view === view));
     }
@@ -1511,7 +1616,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderDevices(background);
       return;
     }
-    if (this._view === "senders") return;
+    if (this._view === "senders" || this._view === "takeover") return;
     const rows = this._visible().sort((a, b) => this._compare(a, b));
     const total = rows.length;
     this._total = total;
@@ -1531,6 +1636,241 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._replace(list, page.map((r) => this._row(r)).join(""));
     }
     this._fresh.clear();
+  }
+
+  async _checkTakeover() {
+    // the Takeover view exists only while there is something to take over or to look up
+    try {
+      const { available } = await this._hass.callWS({ type: "enocean_eltako/takeover/status" });
+      const button = this.shadowRoot.querySelector('#view button[data-view="takeover"]');
+      if (button) button.hidden = !available;
+      if (!available && this._view === "takeover") this._setView("telegrams");
+    } catch (err) {
+      // not an admin or the integration is still starting: no view
+    }
+  }
+
+  _tkGateways() {
+    return this._gateways.filter((g) => g.loaded);
+  }
+
+  async _loadTakeover() {
+    const tk = this._tk;
+    const gateways = this._tkGateways();
+    if (!gateways.some((g) => g.entry_id === tk.entry)) tk.entry = gateways[0]?.entry_id || "";
+    if (!tk.entry) {
+      this._renderTakeover();
+      return;
+    }
+    tk.previewError = "";
+    const [preview, mapping] = await Promise.allSettled([
+      this._hass.callWS({ type: "enocean_eltako/takeover/preview", entry_id: tk.entry }),
+      this._hass.callWS({ type: "enocean_eltako/takeover/mapping", entry_id: tk.entry }),
+    ]);
+    tk.preview = preview.status === "fulfilled" ? preview.value : null;
+    tk.previewError = preview.status === "rejected" ? preview.reason?.code || "unknown" : "";
+    tk.mapping = mapping.status === "fulfilled" ? mapping.value : null;
+    const ready = (tk.preview?.devices || []).filter((d) => d.ready);
+    tk.selected = new Set(ready.map((d) => d.id));
+    if (!tk.tab || !tk.mapping?.rows.length) tk.tab = ready.length || !tk.mapping?.rows.length ? "preview" : "mapping";
+    this._renderTakeover();
+  }
+
+  _tkDevices() {
+    // an ID listed twice in the old configuration: the first entry is the device
+    const seen = new Map();
+    for (const d of this._tk.preview?.devices || []) if (!seen.has(d.id)) seen.set(d.id, d);
+    return [...seen.values()];
+  }
+
+  _renderTakeover() {
+    const t = this._t;
+    const tk = this._tk;
+    const container = this.shadowRoot.getElementById("takeover");
+    const gateways = this._tkGateways();
+    if (!gateways.length) {
+      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noGateways)}</b></div>`);
+      return;
+    }
+    const devices = this._tkDevices();
+    const ready = devices.filter((d) => d.ready);
+    const rows = tk.mapping?.rows || [];
+    const taken = new Set(rows.filter((r) => r.taken).map((r) => r.id));
+    const oldActive = !!(tk.mapping?.old_active ?? tk.preview?.old_active);
+    const st = t.tkStepState;
+    const steps = [
+      [ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, taken.size) : "–", taken.size && !ready.length ? "done" : "cur"],
+      [st.check, taken.size ? "cur" : ""],
+      [oldActive ? st.oldOn : st.oldOff, oldActive ? "" : "done"],
+      [st.later, "opt"],
+    ];
+    const select = gateways.length > 1
+      ? `<select class="select" id="tkGateway" aria-label="${esc(t.gateway)}">${gateways
+          .map((g) => `<option value="${esc(g.entry_id)}"${g.entry_id === tk.entry ? " selected" : ""}>${esc(g.title)}</option>`)
+          .join("")}</select>`
+      : "";
+    const tabs = `<div class="tabs">${select}<div class="segmented" role="group" id="tkTabs">${["preview", "mapping"]
+      .map((id, i) => `<button data-tk-tab="${id}" aria-pressed="${tk.tab === id}">${esc(t.tkTabs[i])}</button>`)
+      .join("")}</div></div>`;
+    const body = tk.tab === "mapping" ? this._renderMapping(rows, taken, oldActive) : this._renderPreview(devices, ready);
+    this._replace(container, `<div class="steps">${steps
+      .map(([text, cls], i) => `<div class="step ${cls}"><b>${i + 1} ${esc(t.tkSteps[i])}</b>${esc(text)}</div>`)
+      .join("")}</div>${tabs}${body}`);
+  }
+
+  _renderPreview(devices, ready) {
+    const t = this._t;
+    const tk = this._tk;
+    if (tk.previewError) return `<p class="banner">${esc(t.tkErrors[tk.previewError] || t.tkErrors.unknown)}</p>`;
+    const exists = devices.filter((d) => d.reason === "takeover_exists").length;
+    const notReady = devices.filter((d) => !d.ready);
+    const metric = (label, value) => `<div class="metric"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+    const picked = ready.filter((d) => tk.selected.has(d.id)).length;
+    const list = ready
+      .map((d) => {
+        const info = t.tkCarryInfo(d.area, d.labels);
+        return `<label class="pickrow"><input type="checkbox" data-tk-pick="${esc(d.id)}"${tk.selected.has(d.id) ? " checked" : ""}>
+          <span>${esc(d.name)} <span class="sub mono">${esc(d.id)}</span>${info ? `<br><span class="sub">${esc(info)}</span>` : ""}</span></label>`;
+      })
+      .join("");
+    const skipped = notReady
+      .map((d) => `<div class="skiprow"><span>${esc(d.name)} <span class="mono">${esc(d.id)}</span></span><span>${esc(t.tkReasons[d.reason] || d.reason || "")}</span></div>`)
+      .join("");
+    return `<div class="metrics">${metric(t.tkOldDevices, devices.length)}${metric(t.tkReady, ready.length)}${metric(t.tkExists, exists)}${metric(t.tkNot, notReady.length - exists)}</div>
+      ${list}
+      ${ready.length ? `<div class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}><label for="tkCarry">${esc(t.tkCarry)}</label></div>
+        <div class="actions"><button class="chip" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
+        <button class="chip" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button></div>` : ""}
+      ${skipped ? `<h3>${esc(t.tkNotReady)}</h3>${skipped}` : ""}`;
+  }
+
+  _renderMapping(rows, taken, oldActive) {
+    const t = this._t;
+    const tk = this._tk;
+    if (!rows.length) return `<div class="hint">${esc(t.tkEmpty)}</div>`;
+    const totals = tk.mapping.totals || {};
+    const metric = (label, value) => `<div class="metric"><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+    const usageChips = (r) => {
+      const chips = ["automation", "script", "scene", "dashboard"]
+        .filter((k) => r.usage[k].length)
+        .map((k) => `<span class="chip-s used">${esc(t.tkUsage[k](r.usage[k].length))}</span>`)
+        .join("");
+      return chips || `<span class="chip-s ok">${esc(t.tkUnused)}</span>`;
+    };
+    let last = "";
+    const body = rows
+      .map((r) => {
+        const first = r.id !== last;
+        last = r.id;
+        const open = tk.open.has(r.old);
+        const used = ["automation", "script", "scene", "dashboard"].filter((k) => r.usage[k].length);
+        const where = open && used.length
+          ? `<tr class="where"><td colspan="4"><b>${esc(t.tkWhere)}:</b> ${used.map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
+          : "";
+        return `<tr class="map" data-tk-open="${esc(r.old)}">
+          <td>${first ? `${esc(r.device)}<div class="sub">${esc([r.area, r.taken ? "" : t.tkNotTaken].filter(Boolean).join(" · "))}</div>` : ""}</td>
+          <td class="mono old">${esc(r.old)}</td>
+          <td class="mono">${r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : "–")}</span>`}</td>
+          <td>${usageChips(r)}</td></tr>${where}`;
+      })
+      .join("");
+    return `<div class="metrics">${metric(t.tkAssigned, taken.size)}${metric(t.tkAutomations, totals.automation ?? 0)}${metric(t.tkScenes, totals.scene ?? 0)}${metric(t.tkScripts, totals.script ?? 0)}${metric(t.tkDashboards, totals.dashboard ?? 0)}</div>
+      <p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>
+      <table><colgroup><col style="width:22%"><col style="width:26%"><col style="width:26%"><col style="width:26%"></colgroup>
+        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)}</th><th>${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead><tbody>${body}</tbody></table>
+      <div class="actions"><button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button></div>`;
+  }
+
+  _takeoverChange(e) {
+    const tk = this._tk;
+    if (e.target.id === "tkGateway") {
+      tk.entry = e.target.value;
+      tk.tab = "";
+      this._loadTakeover();
+    } else if (e.target.id === "tkCarry") {
+      tk.carry = e.target.checked;
+    } else if (e.target.dataset.tkPick) {
+      if (e.target.checked) tk.selected.add(e.target.dataset.tkPick);
+      else tk.selected.delete(e.target.dataset.tkPick);
+      this._renderTakeover();
+    }
+  }
+
+  _takeoverClick(e) {
+    const tk = this._tk;
+    const tab = e.target.closest("[data-tk-tab]");
+    if (tab) {
+      tk.tab = tab.dataset.tkTab;
+      this._renderTakeover();
+    } else if (e.target.closest("[data-tk-all]")) {
+      const all = e.target.closest("[data-tk-all]").dataset.tkAll === "all";
+      tk.selected = new Set(all ? this._tkDevices().filter((d) => d.ready).map((d) => d.id) : []);
+      this._renderTakeover();
+    } else if (e.target.closest("[data-tk-run]")) {
+      this._takeOver();
+    } else if (e.target.closest("[data-tk-copy]")) {
+      this._copyMapping();
+    } else if (e.target.closest("[data-tk-csv]")) {
+      this._downloadMapping();
+    } else {
+      const row = e.target.closest("[data-tk-open]");
+      if (row && !this._selecting(this.shadowRoot.getElementById("takeover"))) {
+        const id = row.dataset.tkOpen;
+        if (tk.open.has(id)) tk.open.delete(id);
+        else tk.open.add(id);
+        this._renderTakeover();
+      }
+    }
+  }
+
+  async _takeOver() {
+    const t = this._t;
+    const tk = this._tk;
+    if (tk.busy || !tk.selected.size) return;
+    tk.busy = true;
+    this._renderTakeover();
+    try {
+      const result = await this._hass.callWS({
+        type: "enocean_eltako/takeover/run",
+        entry_id: tk.entry,
+        devices: [...tk.selected],
+        carry_over: tk.carry,
+      });
+      this._notice(t.tkDone(result.count, result.carried) + (result.skipped.length ? `. ${t.tkSkipped}: ${result.skipped.join("; ")}` : ""));
+    } catch (err) {
+      this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
+    }
+    tk.busy = false;
+    tk.tab = "";
+    await this._refreshStatus();
+    await this._loadTakeover();
+  }
+
+  _mappingTable() {
+    const t = this._t;
+    const head = [t.tkColDevice, "ID", t.tkColOld, t.tkColNew, t.tkAutomations, t.tkScripts, t.tkScenes, t.tkDashboards];
+    const lines = (this._tk.mapping?.rows || []).map((r) => [
+      r.device, r.id, r.old, r.new || "", r.usage.automation.join("; "), r.usage.script.join("; "), r.usage.scene.join("; "), r.usage.dashboard.join("; "),
+    ]);
+    return [head, ...lines];
+  }
+
+  async _copyMapping() {
+    try {
+      await navigator.clipboard.writeText(this._mappingTable().map((l) => l.join("\t")).join("\n"));
+      this._notice(this._t.tkCopied);
+    } catch (err) {
+      this._notice(this._t.copyFailed);
+    }
+  }
+
+  _downloadMapping() {
+    const csv = this._mappingTable().map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv + "\n"], { type: "text/csv" }));
+    link.download = "enocean-entity-mapping.csv";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
   async _loadPools() {
