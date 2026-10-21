@@ -133,8 +133,11 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     return data
             elif device.device_id == telegram.sender:
                 data["device"] = device.subentry.title
+                if device.model.examples:
+                    data["model"] = device.model.examples.split(",")[0].strip()
                 for ref in (device.model.receive, *device.model.receive_extra):
                     if ref is not None and (values := decode_telegram(ref, telegram)):
+                        data["eep"] = str(ref)
                         data["values"] = {k: _json_value(v) for k, v in values.items()}
                         data["fields"] = readable_fields(
                             device, values, hass.data.get(LABELS, {}).get(hass.config.language, {})

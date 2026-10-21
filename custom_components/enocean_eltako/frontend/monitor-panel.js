@@ -89,6 +89,7 @@ const TEXT = {
     time: "Time",
     type: "Type",
     profile: "Sender profile",
+    eep: "EEP", model: "Device type",
     on: "on",
     off: "off",
     fields: {
@@ -171,6 +172,7 @@ const TEXT = {
     time: "Zeit",
     type: "Typ",
     profile: "Sender-Profil",
+    eep: "EEP", model: "Gerätetyp",
     on: "an",
     off: "aus",
     fields: {
@@ -936,7 +938,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (f.repeats || !r.duplicate) &&
       !(f.unknown && (r.device || r.dir === "tx")) &&
       (!text ||
-        [r.device, r.data, r.teach_in, r.profile, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
+        [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
         (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
         (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact)))
     );
@@ -1117,7 +1119,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "");
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
-    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(r.profile) : ""].filter(Boolean).join(" · ") +
+    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(r.profile) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
       `<span class="m-only"> · ${esc(type)}${this._multi ? ` · ${esc(r.gateway_name)}` : ""}</span>`;
     const fields = r.fields || (r.values ? Object.entries(r.values).map(([label, value]) => ({ label, value })) : null);
     const values = fields && fields.length
@@ -1138,6 +1140,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           <div><dt>${esc(t.destination)}</dt><dd class="mono">${esc(r.destination)}</dd></div>
           <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
+          ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
+          ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(r.profile)}</dd></div>` : ""}
           <div class="actions"><button class="chip" data-only="${esc(r.sender)}">${svg(ICON.filter)}${esc(t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
