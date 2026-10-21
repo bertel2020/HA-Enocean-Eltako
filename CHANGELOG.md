@@ -18,6 +18,8 @@ All notable changes to this project are documented here, in English and German
   - Takeover: after taking devices over the view moves on to checking the old IDs that are still
     in use, the mapping is shorter per device
   - the heading names the view, layouts for phones
+  - new look like the Device Proxy app: white header with the views as tabs, rounded cards and
+    buttons, its own light and dark colours that follow Home Assistant's theme
 
 ### [0.1.0] - 2026-10-21
 
@@ -82,6 +84,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   - Übernahme: nach dem Übernehmen geht es gleich zur Prüfung der alten IDs, die noch verwendet
     werden, die Zuordnung ist je Gerät kürzer
   - die Überschrift nennt die Ansicht, Darstellung für das Handy
+  - neues Aussehen wie die Device-Proxy-App: weiße Kopfzeile mit den Ansichten als Reiter, runde
+    Karten und Knöpfe, eigene helle und dunkle Farben, die dem Theme von Home Assistant folgen
 
 ### [0.1.0] - 2026-10-21
 
