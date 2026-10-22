@@ -58,6 +58,10 @@ jobs:
           node-version: "24"
       - name: Panel files load, texts complete in en and de
         run: node scripts/check_panel.mjs
+      - name: Install happy-dom (simulated browser for the render check)
+        run: npm install --no-save --no-package-lock @happy-dom/global-registrator@20.14.6
+      - name: Panel renders every view in en and de
+        run: node scripts/check_panel_render.mjs
 
   hassfest:
     name: Hassfest
