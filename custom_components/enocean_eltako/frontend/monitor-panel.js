@@ -1475,16 +1475,32 @@ class EnOceanEltakoPanel extends HTMLElement {
     return value.toLocaleString(format in locales ? locales[format] : language, { ...options, ...(format === "none" ? { useGrouping: false } : {}) });
   }
 
-  _time(date, withDate = false) {
+  _timeFormat(withDate = false, ms = false) {
     // as the user's profile says: 12 or 24 hours, and the browser's or the server's time zone
     const locale = this._hass.locale || {};
-    const options = {
+    return new Intl.DateTimeFormat(locale.time_format === "system" ? undefined : locale.language || this._hass.language, {
       hour: "2-digit", minute: "2-digit", second: "2-digit",
       hour12: locale.time_format === "12" ? true : locale.time_format === "24" ? false : undefined,
       timeZone: locale.time_zone === "server" ? this._hass.config?.time_zone : undefined,
       ...(withDate ? { year: "numeric", month: "2-digit", day: "2-digit" } : {}),
-    };
-    return date.toLocaleString(locale.time_format === "system" ? undefined : locale.language || this._hass.language, options);
+      ...(ms ? { fractionalSecondDigits: 3 } : {}),
+    });
+  }
+
+  _time(date, withDate = false, ms = false) {
+    return this._timeFormat(withDate, ms).format(date);
+  }
+
+  _clock(date) {
+    // the list's time: milliseconds small, where the locale puts them ("1:02:03.456 PM")
+    const parts = this._timeFormat(false, true).formatToParts(date);
+    return parts
+      .map((p, i) => {
+        if (p.type === "fractionalSecond") return `<small>${esc(parts[i - 1]?.type === "literal" ? parts[i - 1].value : "")}${esc(p.value)}</small>`;
+        if (p.type === "literal" && parts[i + 1]?.type === "fractionalSecond") return "";
+        return esc(p.value);
+      })
+      .join("");
   }
 
   _now() {
@@ -1706,7 +1722,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         return `<article class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}">
           <div class="gateway-icon">${svg(ICON.tower)}</div>
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
-          ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(gw.devices ?? "–")} ${esc(t.devices)}</b><span>${esc(gw.free_senders ?? "–")} ${esc(t.freeSenders)}</span></div>` : ""}
+          ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
           ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
         </article>`;
@@ -1826,8 +1842,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const key = rowKey(r);
     const expanded = this._expanded.has(key);
     const time = new Date(r.time);
-    const clock = this._time(time);
-    const ms = String(time.getMilliseconds()).padStart(3, "0");
+    const clock = this._clock(time);
     const unknown = !r.device && r.dir === "rx";
     const hidden = unknown && this._isHidden(r.gateway, r.sender);
     const name = r.device
@@ -1858,7 +1873,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const hops = parseInt(r.status, 16) & 0x0f; // low nibble of the status byte: repeater count
     const details = expanded
       ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
-          <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true))}.${ms}</dd></div>
+          <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true, true))}</dd></div>
           <div><dt>${esc(t.gateway)}</dt><dd>${esc(r.gateway_name)}</dd></div>
           <div><dt>${esc(t.type)}</dt><dd>${esc(type)} (${esc(r.rorg)})</dd></div>
           <div><dt>${esc(t.raw)}</dt><dd class="mono">${diff ? diff.raw : esc(r.data)}</dd></div>
@@ -1879,7 +1894,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
     return `<tr class="${classes}" data-key="${esc(key)}">
-      <td class="time">${esc(clock)}<small>.${ms}</small></td>
+      <td class="time">${clock}</td>
       <td class="dirc"><span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
       <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
       <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
