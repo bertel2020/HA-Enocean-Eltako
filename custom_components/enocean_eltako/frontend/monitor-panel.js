@@ -299,8 +299,19 @@ const STYLE = `
     min-height: 34px; padding: 2px 16px 2px 28px; font-size: 13px; }
   .senders .sid-profile { color: var(--muted); overflow-wrap: anywhere; }
   .senders .sid-dec { color: var(--muted); }
-  .senders .map { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px; padding: 4px 16px 14px; }
+  /* the pool map: small squares, 32 to a row (16 on phones); details in the tooltip */
+  .senders .map { display: grid; grid-template-columns: repeat(32, 16px); gap: 3px; padding: 4px 16px 8px; }
   .senders .map button { all: unset; box-sizing: border-box; aspect-ratio: 1; border-radius: 3px; border: 1px solid var(--line); cursor: default; }
+  .senders .map button[data-goto]:hover { transform: scale(1.25); }
+  .senders .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0 16px 14px; font-size: 12px; color: var(--muted); }
+  .senders .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .senders .legend i { width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--line); }
+  .senders .legend .t-assigned { background: var(--accent); border-color: var(--accent); }
+  .senders .legend .t-blocked { background: var(--warn); border-color: var(--warn); }
+  .senders .legend .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
+  @media (max-width: 760px) {
+    .senders .map { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+  }
   .senders .map button[data-goto] { cursor: pointer; }
   .senders .map button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .senders .map .t-assigned { background: var(--accent); border-color: var(--accent); }
@@ -1856,6 +1867,12 @@ class EnOceanEltakoPanel extends HTMLElement {
       const text = `${hex} (${n}) · ${label}${who}`;
       return `<button class="t-${state}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
     }).join("");
+    // the legend names the states the map shows; free is always there to compare with
+    const shown = new Set(["free", ...pool.rows.map((r) => r.state), ...(away.size ? ["unavailable"] : [])]);
+    const legend = [["free", t.stateFree], ["assigned", t.stateAssigned], ["blocked", t.stateBlocked], ["unavailable", t.stateUnavailable]]
+      .filter(([state]) => shown.has(state))
+      .map(([state, label]) => `<span><i class="t-${state}"></i>${esc(label)}</span>`)
+      .join("");
     this._replace(container, `${select}
       <div class="pool">
         <div><div class="meta-label">${esc(t.poolFree)}</div><div class="big">${esc(pool.free)} <small>${esc(t.poolOf(pool.size))}</small></div></div>
@@ -1864,6 +1881,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${pool.next_free ? `<div class="next">${esc(t.poolNext)}: <span class="mono">${esc(pool.next_free)}</span></div>` : ""}</div>
       </div>
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
+      <div class="legend" aria-hidden="true">${legend}</div>
       ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
   }
 
