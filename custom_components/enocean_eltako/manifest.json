@@ -23,7 +23,7 @@
     "custom_components.enocean_eltako"
   ],
   "requirements": [],
-  "version": "0.1.6",
+  "version": "0.1.7",
   "zeroconf": [
     "_bsc-sc-socket._tcp.local."
   ]
