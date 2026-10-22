@@ -331,6 +331,12 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
   danach stimmt die Position wieder genau (I6). Bei unbekannter Position fährt ein Rollladen
   stattdessen in die offene Endlage, nie in die geschlossene. `only_if_inaccurate: true`
   überspringt Rollläden, deren Position schon genau bekannt ist.
+- `enocean_eltako.add_energy_devices`: fügt die Stromzähler deiner Geräte als Einzelgeräte zum
+  **Energie**-Dashboard hinzu, mit dem Leistungssensor des Geräts, wenn es genau einen hat.
+  Zähler mit Tag- und Nachttarif nehmen ihren Gesamt-Sensor, wenn du ihn aktiviert hast,
+  sonst beide Tarifzähler. Bereits vorhandene Zähler bleiben unverändert; Gas- und
+  Wasserzähler werden nicht hinzugefügt. Öffne vor dem ersten Aufruf einmal Einstellungen →
+  Dashboards → Energie.
 
 ## App Device Proxy
 

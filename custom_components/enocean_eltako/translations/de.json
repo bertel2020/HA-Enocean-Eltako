@@ -288,6 +288,9 @@
     },
     "room_controller_read_only": {
       "message": "Dieser Raumregler wird vor Ort bedient; sein Sollwert lässt sich nicht aus Home Assistant ändern."
+    },
+    "energy_not_loaded": {
+      "message": "Das Energie-Dashboard ist in Home Assistant nicht eingerichtet. Öffne einmal Einstellungen → Dashboards → Energie und versuche es dann erneut."
     }
   },
   "services": {
@@ -312,6 +315,16 @@
         "only_if_inaccurate": {
           "name": "Nur wenn ungenau",
           "description": "Rollläden überspringen, deren Position schon genau bekannt ist (weniger als 10 Punkte daneben)."
+        }
+      }
+    },
+    "add_energy_devices": {
+      "name": "Zähler zum Energie-Dashboard hinzufügen",
+      "description": "Fügt die Stromzähler deiner Geräte als Einzelgeräte zum Energie-Dashboard hinzu (mit ihrem Leistungssensor, falls das Gerät einen hat). Bereits vorhandene Zähler bleiben unverändert; Gas- und Wasserzähler werden nicht hinzugefügt.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Gateway",
+          "description": "Nur die Geräte dieses Gateways; leer für alle."
         }
       }
     }

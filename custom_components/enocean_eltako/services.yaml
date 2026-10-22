@@ -22,3 +22,10 @@ calibrate_cover:
       default: false
       selector:
         boolean:
+
+add_energy_devices:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: enocean_eltako

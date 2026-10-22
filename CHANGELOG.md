@@ -18,6 +18,8 @@ All notable changes to this project are documented here, in English and German
 
 #### Added
 
+- **Energy dashboard:** the action `enocean_eltako.add_energy_devices` adds the electricity
+  meters of your devices (with their power sensor) to the Energy dashboard.
 - **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
   again under **Configure → Hidden senders**. The list keeps the newest 100 senders.
 
@@ -119,6 +121,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Neu
 
+- **Energie-Dashboard:** die Aktion `enocean_eltako.add_energy_devices` fügt die Stromzähler
+  deiner Geräte (mit ihrem Leistungssensor) zum Energie-Dashboard hinzu.
 - **Sender ausblenden:** fremde Sender lassen sich ausblenden (pro Gateway gemerkt) und unter
   **Konfigurieren → Ausgeblendete Sender** wieder anzeigen. Die Liste behält die neuesten 100
   Sender.

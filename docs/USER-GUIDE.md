@@ -316,6 +316,11 @@ Rockers report short, long and double presses per button. Ready-made automations
   back, which makes their position exact again (I6). A cover with an unknown position
   drives to the open end instead, never to the closed one. `only_if_inaccurate: true` skips
   covers whose position is already known well.
+- `enocean_eltako.add_energy_devices`: adds the electricity meters of your devices to the
+  **Energy** dashboard as individual devices, with the device's power sensor when it has
+  exactly one. Meters with a day and a night tariff use their total sensor when you enabled
+  it, otherwise both tariff counters. Meters that are already there stay untouched; gas and
+  water meters are not added. Open Settings → Dashboards → Energy once before the first call.
 
 ## Device Proxy app
 

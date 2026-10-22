@@ -2,6 +2,7 @@
   "domain": "enocean_eltako",
   "name": "EnOcean Eltako",
   "after_dependencies": [
+    "energy",
     "frontend",
     "http",
     "lovelace",
