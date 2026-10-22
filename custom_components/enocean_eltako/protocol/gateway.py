@@ -25,6 +25,9 @@ Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.St
 
 REPLAY_BLOCK = b"EOPX TS "  # start of the Device Proxy replay with reception times
 REPLAY_END = b"EOPX END\n"
+# ESP3 answers every radio telegram with a RESPONSE; a command waits this long after the last
+# one so that answer cannot be taken for the command's
+RESPONSE_SETTLE = 0.3
 
 
 class _Codec:
@@ -48,7 +51,8 @@ class _Codec:
         """ESP3 answers in order; ESP2 also sends unrelated messages (OK, INF_INIT, bus)."""
         if isinstance(item, esp2.Esp2Frame):
             return item.hseq == esp2.HSeq.RMT and item.org in (esp2.MSG_INF_IDBASE, esp2.MSG_ERR)
-        return item.packet_type == esp3.PacketType.RESPONSE
+        # RET_OK + base ID + remaining writes; a 1-byte RESPONSE answers a radio telegram
+        return item.packet_type == esp3.PacketType.RESPONSE and len(item.data) >= 5
 
     def is_noise(self, item: esp2.Esp2Frame | esp3.Esp3Packet) -> bool:
         """Bus polling and empty answers: dropped before they reach the dispatcher."""
@@ -97,7 +101,8 @@ class Gateway:
         self._disconnected = asyncio.Event()
         self._disconnected.set()
         self._closing = False
-        self._command_lock = asyncio.Lock()
+        self._command_lock = asyncio.Lock()  # no radio telegram is written during a command
+        self._last_radio = 0.0  # time.monotonic() of the last radio telegram written
         self._response: asyncio.Future[esp2.Esp2Frame | esp3.Esp3Packet] | None = None
         self._response_match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool] | None = None
         self.telegrams_received = 0
@@ -196,7 +201,9 @@ class Gateway:
 
     async def send(self, telegram: RadioTelegram) -> None:
         """Write one radio telegram; raises ConnectionError when not connected."""
-        await self._write(self._codec.encode_radio(telegram))
+        async with self._command_lock:
+            await self._write(self._codec.encode_radio(telegram))
+            self._last_radio = time.monotonic()
 
     async def close(self) -> None:
         """Disconnect for good; run() returns."""
@@ -214,6 +221,10 @@ class Gateway:
         match: Callable[[esp2.Esp2Frame | esp3.Esp3Packet], bool],
     ) -> esp2.Esp2Frame | esp3.Esp3Packet | None:
         async with self._command_lock:
+            if self.protocol is Protocol.ESP3:
+                wait = self._last_radio + RESPONSE_SETTLE - time.monotonic()
+                if wait > 0:
+                    await asyncio.sleep(wait)
             self._response = asyncio.get_running_loop().create_future()
             self._response_match = match
             try:
