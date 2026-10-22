@@ -18,6 +18,8 @@ All notable changes to this project are documented here, in English and German
 
 #### Added
 
+- **Old integration on the same gateway:** a repair issue names a gateway that the old
+  `eltako` integration also uses (same USB port, or same host and port).
 - **Sharing device definitions:** the actions `enocean_eltako.export_custom_devices` and
   `enocean_eltako.import_custom_devices` hand definitions over as YAML text; imported ones are
   stored as files in `enocean_eltako/custom_devices/`, your own file is never changed.
@@ -124,6 +126,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Neu
 
+- **Alte Integration am selben Gateway:** ein Reparaturhinweis nennt ein Gateway, das auch die
+  alte Integration `eltako` nutzt (derselbe USB-Port oder derselbe Host mit Port).
 - **Gerätedefinitionen weitergeben:** die Aktionen `enocean_eltako.export_custom_devices` und
   `enocean_eltako.import_custom_devices` übergeben Definitionen als YAML-Text; importierte liegen
   als Dateien in `enocean_eltako/custom_devices/`, deine eigene Datei bleibt unverändert.

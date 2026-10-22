@@ -1185,6 +1185,10 @@
     "gateway_silent": {
       "title": "{name} antwortet nicht",
       "description": "{name} ist verbunden ({connection}), antwortet aber nicht, deshalb kommen keine Telegramme an. Viele Netzwerk-Gateways wie das MGW-ETH bedienen nur eine Verbindung: andere Programme, die es nutzen (z. B. Symcon oder ein weiteres Home Assistant), beenden oder das Gateway neu starten. Die Reparatur verschwindet von selbst, sobald es antwortet."
+    },
+    "old_integration_shares_gateway": {
+      "title": "{name} wird auch von der alten eltako-Integration verwendet",
+      "description": "Die alte eltako-Integration ist auf derselben Verbindung ({connection}) eingerichtet wie {name}. Ein serieller Port lässt sich nur einmal öffnen und ein MGW-ETH bedient nur eine Sitzung; die beiden blockieren sich also, und eine verliert ihre Verbindung. Betreibe an diesem Gateway nur eine von beiden: deaktiviere den alten Eintrag oder binde das Gateway über die App Device Proxy ein, die es mehreren Programmen zugleich zur Verfügung stellt."
     }
   },
   "device_automation": {
