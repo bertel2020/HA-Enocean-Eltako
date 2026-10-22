@@ -9,6 +9,13 @@
           "model": "Gateway"
         }
       },
+      "reconfigure": {
+        "title": "Change gateway",
+        "description": "Currently {model}, base ID {base_id}. Choose the model of the gateway to use from now on, for example when a defective gateway is replaced or a USB gateway is exchanged for a network one. Devices and sender IDs stay as they are. The next steps read the base ID of the new gateway; it has to be {base_id}, otherwise the actuators would not know it.",
+        "data": {
+          "model": "Gateway"
+        }
+      },
       "connection": {
         "title": "Connection",
         "description": "How is the gateway connected?",

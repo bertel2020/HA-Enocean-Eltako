@@ -144,17 +144,45 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Change how the gateway is reached (port, ser2net host); it must stay the same gateway."""
+        """Change the model and how the gateway is reached; the base ID must stay the same.
+
+        Bus gateways only swap among themselves: the bus group belongs to the entry.
+        """
         entry = self._get_reconfigure_entry()
-        self._model = MODELS[entry.data[CONF_MODEL]]
-        device = entry.data[CONF_DEVICE]
-        if device.get("type") == "serial":
-            self._suggested = {CONF_PATH: device["path"], CONF_BAUDRATE: str(device["baudrate"])}
-        else:
-            self._suggested = {CONF_HOST: device["host"], CONF_PORT: device["port"]}
-        if self._model.usb:
-            return await self.async_step_connection()
-        return await self.async_step_tcp()
+        current = MODELS[entry.data[CONF_MODEL]]
+        if user_input is not None:
+            self._model = MODELS[user_input[CONF_MODEL]]
+            device = entry.data[CONF_DEVICE]
+            if self._model is not current:
+                self._suggested = {}
+            elif device.get("type") == "serial":
+                self._suggested = {
+                    CONF_PATH: device["path"],
+                    CONF_BAUDRATE: str(device["baudrate"]),
+                }
+            else:
+                self._suggested = {CONF_HOST: device["host"], CONF_PORT: device["port"]}
+            if self._model.usb:
+                return await self.async_step_connection()
+            return await self.async_step_tcp()
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MODEL, default=current.key): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[k for k, m in MODELS.items() if m.bus == current.bus],
+                            translation_key=CONF_MODEL,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    )
+                }
+            ),
+            description_placeholders={
+                "model": current.name,
+                "base_id": _base_part(entry) or entry.data[CONF_BASE_ID],
+            },
+        )
 
     async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
         """A PioTek MGW-ETH announced itself (_bsc-sc-socket._tcp)."""
@@ -486,9 +514,10 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     @callback
     def _async_update_connection(self) -> ConfigFlowResult:
-        assert self._connection is not None
+        assert self._connection is not None and self._model is not None
         return self.async_update_reload_and_abort(
-            self._get_reconfigure_entry(), data_updates={CONF_DEVICE: self._connection.as_dict()}
+            self._get_reconfigure_entry(),
+            data_updates={CONF_MODEL: self._model.key, CONF_DEVICE: self._connection.as_dict()},
         )
 
     async def async_step_bus_group(
