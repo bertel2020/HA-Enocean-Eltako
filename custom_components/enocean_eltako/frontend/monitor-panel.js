@@ -55,6 +55,14 @@ const LOGO = `<svg class="logo" viewBox="16 16 480 480" aria-hidden="true">
   </g>
 </svg>`;
 
+// a duration in its largest whole unit, rounded down: 3599 s is "59 min", not "60 min"
+function span(s, days) {
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h`;
+  return days(Math.floor(s / 86400));
+}
+
 const TEXT = {
   en: {
     title: "EnOcean",
@@ -193,8 +201,8 @@ const TEXT = {
     unconfirmed: "Unconfirmed",
     devices: "Devices",
     freeSenders: "Free sender IDs",
-    ago: (s) => (s < 60 ? `${s} s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`),
-    since: (s) => (s < 3600 ? `for ${Math.round(s / 60)} min` : `for ${Math.round(s / 3600)} h`),
+    ago: (s) => `${span(s, (n) => (n === 1 ? "1 day" : `${n} days`))} ago`,
+    since: (s) => `for ${span(s, (n) => (n === 1 ? "1 day" : `${n} days`))}`,
     cardHint: "Show only this gateway's telegrams",
     viaProxy: (app, version) => (version ? `via ${app || "proxy app"} ${version}` : `via ${app || "proxy app"}`),
     proxyUnreachable: "proxy status not reachable",
@@ -348,8 +356,8 @@ const TEXT = {
     unconfirmed: "Unbestätigt",
     devices: "Geräte",
     freeSenders: "Freie Sender-IDs",
-    ago: (s) => (s < 60 ? `vor ${s} s` : s < 3600 ? `vor ${Math.round(s / 60)} min` : `vor ${Math.round(s / 3600)} h`),
-    since: (s) => (s < 3600 ? `seit ${Math.round(s / 60)} min` : `seit ${Math.round(s / 3600)} h`),
+    ago: (s) => `vor ${span(s, (n) => (n === 1 ? "1 Tag" : `${n} Tagen`))}`,
+    since: (s) => `seit ${span(s, (n) => (n === 1 ? "1 Tag" : `${n} Tagen`))}`,
     cardHint: "Nur die Telegramme dieses Gateways zeigen",
     viaProxy: (app, version) => (version ? `über ${app || "Proxy-App"} ${version}` : `über ${app || "Proxy-App"}`),
     proxyUnreachable: "Proxy-Status nicht erreichbar",
