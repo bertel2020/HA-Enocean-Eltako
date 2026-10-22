@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import time
 from datetime import timedelta
 from pathlib import Path
 
@@ -272,6 +273,7 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     ]
     # senders hidden from discovery: the panel does not offer them as new devices
     assert status["hidden"] == []
+    assert abs(status["server_time"] - time.time()) < 5
 
     async def send(msg_id: int, **fields):
         base = {"type": "enocean_eltako/send", "entry_id": entry.entry_id, "rorg": "F6"}

@@ -974,6 +974,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     this._gateways = gateways;
+    // the browser's clock may be off: times from the server are measured against the server's
+    const server = gateways.find((g) => g.server_time != null)?.server_time;
+    if (server != null) this._skew = server * 1000 - Date.now();
     // a remembered gateway filter for a gateway that is gone would hide everything
     if (this._filter.gateway && !gateways.some((g) => g.entry_id === this._filter.gateway)) {
       this._set("gateway", "");
@@ -1276,6 +1279,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     notice.querySelector("span").textContent = text;
   }
 
+  _now() {
+    // now on the server's clock (milliseconds), see _refreshStatus
+    return Date.now() + (this._skew || 0);
+  }
+
   _isHidden(gateway, sender) {
     // a sender hidden from the gateway's discovery is not offered as a new device here either
     return !!this._gateways.find((g) => g.entry_id === gateway)?.hidden?.includes(sender);
@@ -1457,7 +1465,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._replace(cards, `<div class="hint">${esc(t.noGateways)}</div>`);
       return;
     }
-    const now = Date.now() / 1000;
+    const now = this._now() / 1000;
     this._replace(cards, this._gateways
       .map((gw) => {
         let pill = ["", t.notLoaded];
@@ -1567,7 +1575,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     if (best !== null) return r.dir === "tx" ? this._t.answerAfter(best) : this._t.answerTo(best);
     // the newest telegrams may still be waiting for their answer: only call it missing when old
-    return r.dir === "tx" && Date.now() - at > ANSWER_WINDOW ? this._t.noAnswer : "";
+    return r.dir === "tx" && this._now() - at > ANSWER_WINDOW ? this._t.noAnswer : "";
   }
 
   _row(r) {
@@ -1799,7 +1807,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     // one entry per sender: the latest telegram of each sender heard, joined with the set-up device
     // of that ID (area, entities, model), plus the set-up devices without a telegram in the buffer
     const f = this._filter;
-    const since = Date.now() - 60000;
+    const since = this._now() - 60000;
     const setup = new Map();
     for (const g of this._gateways) {
       for (const d of g.radio_devices || []) setup.set(d.id, { ...d, gateway: g.entry_id, gateway_name: g.title });
@@ -1920,7 +1928,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       }</div>`);
       return;
     }
-    const now = Date.now();
+    const now = this._now();
     const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard]];
     const head = `<div class="dev-head">${cols
       .map(([key, label, cls]) => {
