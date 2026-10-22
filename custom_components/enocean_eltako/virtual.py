@@ -49,6 +49,7 @@ from .catalog import (
 )
 from .device import EnOceanDevice
 from .protocol.eep import virtual
+from .protocol.eep.eltako import virtual as eltako_virtual
 from .protocol.send_queue import Priority
 
 _LOGGER = logging.getLogger(__name__)
@@ -193,7 +194,7 @@ class VirtualSensor:
         if self.kind == "virtual_motion":
             return virtual.encode_motion(value == MOTION)
         if self.kind == "virtual_brightness":
-            return virtual.encode_brightness(float(value))
+            return eltako_virtual.encode_brightness(float(value))
         return virtual.encode_temperature(float(value))
 
     def _send_weather(self) -> str | None:
@@ -204,14 +205,14 @@ class VirtualSensor:
         lux = float(values[OPT_WEATHER_BRIGHTNESS])
         klx = lux / 1000
         telegrams = (
-            virtual.encode_weather(
+            eltako_virtual.encode_weather(
                 lux,
                 values[OPT_WEATHER_TEMPERATURE],
                 values[OPT_WEATHER_WIND],
                 night=OPT_WEATHER_BRIGHTNESS in self.weather and lux < NIGHT_BELOW_LUX,
                 rain=values[OPT_WEATHER_RAIN],
             ),
-            virtual.encode_sun(klx, klx, klx),
+            eltako_virtual.encode_sun(klx, klx, klx),
         )
         for key, data in zip(("value", "sun"), telegrams, strict=True):
             self.device.send(data, priority=Priority.AUTOMATION, key=key, confirm=False)

@@ -289,7 +289,7 @@ MORE_VIRTUALS = [
 
 
 def test_brightness_encoding() -> None:
-    from custom_components.enocean_eltako.protocol.eep import virtual
+    from custom_components.enocean_eltako.protocol.eep.eltako import virtual
 
     assert virtual.encode_brightness(50).hex() == "3200000f"  # twilight byte
     assert virtual.encode_brightness(150).hex() == "6400000f"  # 100...300 lx: 100 lx
@@ -299,7 +299,7 @@ def test_brightness_encoding() -> None:
 
 @pytest.mark.parametrize("gateway", [MORE_VIRTUALS], indirect=True)
 async def test_brightness_weather_and_scenes(hass: HomeAssistant, gateway) -> None:  # noqa: F811
-    from custom_components.enocean_eltako.protocol.eep import virtual
+    from custom_components.enocean_eltako.protocol.eep.eltako import virtual
 
     entry, server = gateway
     hass.states.async_set("sensor.lux", "15150", {"unit_of_measurement": "lx"})
