@@ -427,10 +427,17 @@ const STYLE = `
   .meta .chip { height: 26px; font-size: 12px; }
   .meta .chip[hidden] { display: none; }
 
+  /* empty states: an icon in a soft circle, a title, one sentence and the action that helps */
   .empty { display: grid; justify-items: center; gap: 6px; padding: 48px 16px; text-align: center; color: var(--muted); }
-  .empty svg { width: 48px; height: 48px; opacity: .5; }
+  .empty .ico { display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: 6px; border-radius: 50%;
+    color: var(--accent); background: var(--accent-soft); }
+  .empty .ico svg { width: 30px; height: 30px; }
   .empty b { color: var(--text); font-weight: 500; font-size: 16px; }
+  .empty span { max-width: 420px; }
   .empty .chip { margin-top: 8px; }
+  .empty.small { padding: 28px 16px; }
+  .empty.small .ico { width: 48px; height: 48px; }
+  .empty.small .ico svg { width: 24px; height: 24px; }
 
   @media (max-width: 760px) {
     main { padding: 16px 16px 32px; }
@@ -839,6 +846,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
     });
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
+    // the empty state without a gateway: to the integration, where one is added
+    this.shadowRoot.addEventListener("click", (e) => {
+      if (e.target.closest("[data-open-integration]")) this._navigate("/config/integrations/integration/enocean_eltako");
+    });
     $("takeover").addEventListener("change", (e) => this._takeoverChange(e));
     $("takeover").addEventListener("input", (e) => this._takeoverInput(e));
     $("senders").addEventListener("change", (e) => {
@@ -1274,6 +1285,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._resetFilters();
       return;
     }
+    if (e.target.closest("[data-empty-send]")) {
+      this._toggleSend(true);
+      this.shadowRoot.getElementById("sendData").focus();
+      return;
+    }
     if (e.target.closest(".details") || this._selecting(this.shadowRoot.getElementById("list"))) return;
     const row = e.target.closest(".row");
     if (row) this._toggleRow(row.dataset.key);
@@ -1638,7 +1654,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const cards = this.shadowRoot.getElementById("cards");
     if (!cards || this._hold("cards", cards, background)) return;
     if (!this._gateways.length) {
-      this._replace(cards, `<div class="hint">${esc(t.noGateways)}</div>`);
+      this._replace(cards, `<div class="panel">${this._noGateway()}</div>`);
       return;
     }
     const now = this._now() / 1000;
@@ -1847,9 +1863,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (this._hold("list", list, background)) return;
     if (!page.length) {
       const filtered = this._rows.length > 0;
-      this._replace(list, `<tr class="empty-row"><td colspan="8"><div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.emptyTitle)}</b><span>${esc(filtered ? t.noMatchText : t.emptyText)}</span>${
-        filtered ? `<button class="chip reset">${esc(t.resetFilters)}</button>` : ""
-      }</div></td></tr>`);
+      const empty = filtered
+        ? this._emptyState(ICON.search, t.noMatchTitle, t.noMatchText, `<button class="chip reset">${esc(t.resetFilters)}</button>`)
+        : this._emptyState(ICON.tower, t.emptyTitle, t.emptyText, this._gateways.some((g) => g.loaded) ? `<button class="chip" data-empty-send>${svg(ICON.send)}${esc(t.send)}</button>` : "");
+      this._replace(list, `<tr class="empty-row"><td colspan="${this._multi ? 8 : 7}">${empty}</td></tr>`);
     } else {
       this._replace(list, page.map((r) => this._row(r)).join(""));
     }
@@ -1875,7 +1892,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const container = this.shadowRoot.getElementById("senders");
     const pool = this._pools.find((p) => p.id === this._pool);
     if (!pool) {
-      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noGateways)}</b></div>`);
+      this._replace(container, this._noGateway());
       return;
     }
     const blocked = pool.rows.filter((r) => r.state === "blocked");
@@ -1946,7 +1963,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       </div>
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
       <div class="legend" aria-hidden="true">${legend}</div>
-      ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
+      ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true)}`);
   }
 
   _sendersClick(e) {
@@ -2108,9 +2125,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (this._hold("devices", container, background)) return;
     if (!page.length) {
       const filtered = all.length > 0;
-      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.noDevices)}</b>${
-        filtered ? `<span>${esc(t.noMatchText)}</span><button class="chip reset">${esc(t.resetFilters)}</button>` : ""
-      }</div>`);
+      this._replace(container, filtered
+        ? this._emptyState(ICON.search, t.noMatchTitle, t.noMatchText, `<button class="chip reset">${esc(t.resetFilters)}</button>`)
+        : this._emptyState(ICON.tower, t.noDevices, t.noDevicesText));
       return;
     }
     const now = this._now();
@@ -2123,6 +2140,14 @@ class EnOceanEltakoPanel extends HTMLElement {
       })
       .join("")}<span></span></div>`;
     this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
+  }
+
+  _emptyState(icon, title, text = "", action = "", small = false) {
+    return `<div class="empty${small ? " small" : ""}"><span class="ico">${svg(icon)}</span><b>${esc(title)}</b>${text ? `<span>${esc(text)}</span>` : ""}${action}</div>`;
+  }
+
+  _noGateway() {
+    return this._emptyState(ICON.plus, this._t.noGateways, this._t.noGatewaysText, `<button class="chip primary" data-open-integration>${esc(this._t.openIntegration)}</button>`);
   }
 
   _sparkline(dbm) {
