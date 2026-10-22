@@ -17,6 +17,7 @@ from .const import CONF_CUSTOM, CONF_EEP, CONF_MODEL
 from .custom_devices import DEFINITIONS, CustomDevice
 from .protocol.eep import EEPRef, virtual, vld
 from .protocol.eep.eltako import heating, shutter, switching
+from .protocol.eep.eltako import virtual as eltako_virtual
 from .protocol.eep.model import Field, encode
 from .protocol.eep.std.profiles import PROFILES
 from .protocol.telegram import Rorg
@@ -133,10 +134,10 @@ VIRTUAL_MOTION = SenderProfile(
     "motion", EEPRef("A5-07-01", "std"), Rorg.BS4, virtual.MOTION_TEACH_IN
 )
 VIRTUAL_BRIGHTNESS = SenderProfile(
-    "brightness", EEPRef("A5-06-01", "eltako"), Rorg.BS4, virtual.BRIGHTNESS_TEACH_IN
+    "brightness", EEPRef("A5-06-01", "eltako"), Rorg.BS4, eltako_virtual.BRIGHTNESS_TEACH_IN
 )
 VIRTUAL_WEATHER = SenderProfile(
-    "weather", EEPRef("A5-13-01", "eltako"), Rorg.BS4, virtual.WEATHER_TEACH_IN
+    "weather", EEPRef("A5-13-01", "eltako"), Rorg.BS4, eltako_virtual.WEATHER_TEACH_IN
 )
 
 
