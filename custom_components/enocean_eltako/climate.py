@@ -154,10 +154,12 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     @callback
     def _async_cycle(self, _now: Any) -> None:
+        before = self._attr_current_temperature
         self._read_sensor()
         self._send()
         self._check_silence()
-        self.async_write_ha_state()
+        if self._attr_current_temperature != before:
+            self.async_write_ha_state()
 
     def _read_sensor(self) -> None:
         """No temperature while the sensor has none: nothing is sent, so the actuator falls
