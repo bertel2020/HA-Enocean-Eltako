@@ -80,7 +80,9 @@ const STYLE = `
   * { box-sizing: border-box; }
   svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
   button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  /* checkboxes in the accent colour, at one size */
+  input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; flex: none; cursor: pointer; }
 
   .header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
     gap: 0 24px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
@@ -220,8 +222,14 @@ const STYLE = `
   .notice span { flex: 1; }
 
   /* telegram table: sortable columns, one page at a time */
-  .select { height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface);
-    color: var(--text); font: inherit; font-size: 13px; padding: 0 8px; max-width: 220px; }
+  /* own look for the lists: the browser's arrow replaced by a chevron that follows the theme */
+  .select { height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background-color: var(--surface);
+    color: var(--text); font: inherit; font-size: 13px; padding: 0 30px 0 10px; max-width: 220px; cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 16px) 55%, calc(100% - 11px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
+  .select:hover { border-color: var(--muted); }
+  .select option { background: var(--surface); color: var(--text); }
   .select[hidden] { display: none; }
   .telegrams { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
   .telegrams col.c-time { width: 128px; } /* room for "10:04:40 PM" */
