@@ -371,7 +371,12 @@ aus**; solange die alte Integration noch aktiv ist, öffnet dieser Schritt ihre 
   (in Home Assistant vergebene Namen), **Symbole** und **Ausgeblendet / deaktiviert**, jeweils
   mit der Zahl der gewählten Geräte, die es betrifft. Anfangs ist nichts gewählt; das Panel
   merkt sich deine Wahl in diesem Browser. Jedes Gerät zeigt, was es mitbringen kann und an wie
-  vielen Stellen es verwendet wird.
+  vielen Stellen es verwendet wird. Der Knopf darunter übernimmt noch nicht: Er zeigt zuerst
+  eine Bestätigung mit der Zahl der Geräte, Entitäten und danach umzustellenden Fundstellen,
+  den gewählten Optionen und je Gerät jeder alten Entity-ID neben der, die die neue Entität
+  voraussichtlich bekommt (Home Assistant vergibt die ID erst beim Anlegen; für die
+  Hauptentität und den ID-Sensor wird sie vorhergesagt, eine belegte ID bekommt „_2“). Erst
+  **Jetzt übernehmen** legt die Geräte an; **Zurück zur Auswahl** behält die Auswahl.
 - **Prüfen** ist die Übersicht aller hier eingerichteten Geräte, die die alte Integration
   kannte, ob übernommen oder von Hand angelegt. Je Gerät: was die alte Integration hatte und dem
   neuen noch fehlt, und an wie vielen Fundstellen seine alten IDs stehen; aufgeklappt die alte

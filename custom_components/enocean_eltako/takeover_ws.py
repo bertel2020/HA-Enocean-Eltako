@@ -19,6 +19,7 @@ from .takeover import (
     Carried,
     apply_carried,
     async_old_config,
+    async_predicted_ids,
     async_take_over,
     async_takeover_available,
     carried_from,
@@ -100,10 +101,14 @@ async def ws_takeover_preview(
     usage = await async_usage(
         hass, [e.entity_id for d in devices for e in old.get(d.device_id, [])]
     )
+    predicted = await async_predicted_ids(hass, entry, devices, old)
     result = []
     for device in devices:
         entries = old.get(device.device_id, [])
+        main = primary_entity(entries)
+        entries = sorted(entries, key=lambda e: (e is not main, e.entity_id))
         carried = carried_from(hass, entries)
+        places = _places([usage[e.entity_id] for e in entries])
         labels = carried.labels.union(*(e.labels for e in entries))
         result.append(
             {
@@ -115,7 +120,12 @@ async def ws_takeover_preview(
                 "area": _area_name(hass, carried.area_id) if carried.area_id else None,
                 "labels": sorted(_label_names(hass, labels)),
                 "carry": sorted(carried.available()),
-                "used": _place_count([usage[e.entity_id] for e in entries]),
+                "used": len(places),
+                # the confirmation: old -> probable new entity ID (None: known only afterwards)
+                "entities": [
+                    {"old": e.entity_id, "new": predicted.get(e.entity_id)} for e in entries
+                ],
+                "places": places,
             }
         )
     connection.send_result(
@@ -123,9 +133,9 @@ async def ws_takeover_preview(
     )
 
 
-def _place_count(usages: list[Usage]) -> int:
-    """How many automations, scripts, scenes and dashboards use any of these entities."""
-    return len({(k, p["name"]) for u in usages for k, places in u.items() for p in places})
+def _places(usages: list[Usage]) -> list[str]:
+    """The automations, scripts, scenes and dashboards using any of these entities."""
+    return sorted({f"{k}:{p['name']}" for u in usages for k, places in u.items() for p in places})
 
 
 def _area_name(hass: HomeAssistant, area_id: str) -> str:

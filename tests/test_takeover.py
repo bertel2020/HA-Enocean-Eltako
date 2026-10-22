@@ -1,5 +1,6 @@
 """Takeover from the old eltako integration's YAML configuration."""
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +13,9 @@ from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.takeover import (
+    async_predicted_ids,
     find_gateway,
+    old_entities,
     plan,
     registered_device,
     subentry_data,
@@ -330,6 +333,13 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert devices["FF-C2-4A-8F"]["labels"] == ["matter_hub"]
     assert devices["FF-C2-4A-8F"]["carry"] == ["area", "icons", "labels", "names"]
     assert devices["FF-C2-4A-8F"]["used"] == 0
+    old_id = old_light.replace("light.", "sensor.") + "_id"
+    # the confirmation: the main entity first, with the IDs the new entities will probably get
+    assert devices["FF-C2-4A-8F"]["entities"] == [
+        {"old": old_light, "new": "light.licht_buro"},
+        {"old": old_id, "new": "sensor.licht_buro_enocean_id"},
+    ]
+    assert devices["FF-C2-4A-8F"]["places"] == []
     assert not devices["05-00-00-12"]["ready"]  # already set up
     assert devices["05-00-00-12"]["reason"] == "takeover_exists"
     assert devices["FF-C2-4A-96"]["ready"]  # a button: becomes a virtual rocker
@@ -370,10 +380,11 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     mapping = (await _ws(hass_ws_client, hass, 3, "mapping", entry_id=entry.entry_id))["result"]
     assert mapping["old_active"] is True
     rows = {r["old"]: r for r in mapping["rows"]}
-    assert rows[old_light]["new"] == main.entity_id and rows[old_light]["primary"]
+    assert rows[old_light]["new"] == main.entity_id == "light.licht_buro"  # as predicted
+    assert rows[old_light]["primary"]
     assert rows[old_light]["taken"] and rows[old_light]["area"] == "Büro"
     assert rows[old_light]["device"] == "Licht Büro"
-    id_row = rows[old_light.replace("light.", "sensor.") + "_id"]
+    id_row = rows[old_id]
     # the new ID sensor replaces it, although it is disabled by default
     assert id_row["new"] == "sensor.licht_buro_enocean_id"
     assert id_row["usage"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
@@ -523,3 +534,19 @@ def test_carry_changes_fill_in_and_never_overwrite() -> None:
     ]
     assert [c.values for c in changes["voice"]] == [{"assistant": "conversation", "should": False}]
     assert Carried().available() == set()
+
+
+async def test_predicted_ids_taken_and_prefixed(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, _ = gateway
+    old = MockConfigEntry(domain="eltako")
+    old.add_to_hass(hass)
+    old_light = _old_device(hass, old, "Licht Büro", "FF-C2-4A-8F", None)
+    old_id = old_light.replace("light.", "sensor.") + "_id"
+    hass.states.async_set("light.licht_buro", "on")  # taken, as by the old integration's name
+    devices = plan(OLD_GATEWAY)
+    predicted = await async_predicted_ids(hass, entry, devices, old_entities(hass))
+    assert predicted == {old_light: "light.licht_buro_2", old_id: "sensor.licht_buro_enocean_id"}
+
+    prefixed = SimpleNamespace(options={"entity_prefix": True, "gateway_number": 2})
+    predicted = await async_predicted_ids(hass, prefixed, devices, old_entities(hass))
+    assert predicted[old_light] == "light.eno_gw2_licht_buro"

@@ -34,7 +34,7 @@ function saveCarry(carry) {
 // the view's state when the panel starts
 export const takeoverState = () => ({
   entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: loadCarry(),
-  open: new Set(), busy: false, filter: "ready", mfilter: "all", mview: "device", later: false, q: "", folded: new Set(),
+  open: new Set(), busy: false, confirm: false, filter: "ready", mfilter: "all", mview: "device", later: false, q: "", folded: new Set(),
 });
 
 export const TAKEOVER_STYLE = `
@@ -102,7 +102,22 @@ export const TAKEOVER_STYLE = `
   .takeover .chip-s.avail { color: var(--muted); border: 1px dashed var(--line); background: none; }
   .takeover button.chip-s { font: inherit; font-size: 11px; border: 0; cursor: pointer; text-align: left; }
   .takeover button.chip-s:hover { text-decoration: underline; }
+  .takeover .confirm-head { padding: 12px 16px 10px; }
+  .takeover .confirm-head b { display: block; font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+  .takeover .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 16px 10px; }
+  .takeover .stat { border-radius: 8px; padding: 6px 12px; background: var(--soft); font-size: 12px; color: var(--muted); }
+  .takeover .stat b { display: block; font-size: 20px; font-weight: 500; color: var(--text); }
+  .takeover .stat.warn b { color: var(--warn); }
+  .takeover .confirm-carry { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; padding: 0 16px 10px; font-size: 12px; }
+  .takeover .idhead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 6px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .takeover .confirm-dev { border-top: 1px solid var(--line); padding: 8px 16px; font-size: 13px; }
+  .takeover .confirm-dev > b { font-weight: 500; }
+  .takeover .idrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2px 12px; padding: 3px 0; font-size: 12px; overflow-wrap: anywhere; }
+  .takeover .confirm-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--soft); }
   @media (max-width: 760px) {
+    .takeover .idhead { display: none; }
+    .takeover .idrow { grid-template-columns: minmax(0, 1fr); padding: 4px 0; }
+    .takeover .confirm-bar button { flex: 1; justify-content: center; }
     /* phones: the main button gets the whole width */
     .takeover .actionbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "count all" "carry carry" "run run"; }
     .takeover .actionbar.later { grid-template-areas: "count all" "carry carry"; }
@@ -264,6 +279,8 @@ export const takeover = {
     const t = this._t;
     const tk = this._tk;
     if (tk.previewError) return `<p class="banner">${esc(t.tkErrors[tk.previewError] || t.tkErrors.unknown)}</p>`;
+    const chosen = ready.filter((d) => tk.selected.has(d.id));
+    if (tk.confirm && chosen.length) return this._tkRenderConfirm(chosen);
     // devices already set up are not offered here: they are in the overview of step 2
     const exists = devices.filter((d) => d.reason === "takeover_exists").length;
     const lists = { ready, not: devices.filter((d) => !d.ready && d.reason !== "takeover_exists") };
@@ -303,7 +320,6 @@ export const takeover = {
         .map((d) => `<div class="skiprow"><span>${esc(d.name)} <span class="mono">${esc(d.id)}</span></span><span>${esc(t.tkReasons[d.reason] || d.reason || "")}</span></div>`)
         .join("");
     }
-    const chosen = ready.filter((d) => tk.selected.has(d.id));
     const picked = chosen.length;
     const counts = Object.fromEntries(CARRY_OPTIONS.map((o) => [o, chosen.filter((d) => (d.carry || []).includes(o)).length]));
     const bar = ready.length
@@ -342,6 +358,40 @@ export const takeover = {
     const banner = `<p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>`;
     const body = tk.mview === "place" ? this._tkRenderPlaces(rows) : this._tkRenderDevices(blocks, usedIds, missing);
     return `${toolbar}${banner}${body}${this._tkRenderLater(missing)}`;
+  },
+
+  _tkRenderConfirm(chosen) {
+    // what "take over now" will do, before anything is written
+    const t = this._t;
+    const tk = this._tk;
+    const entities = chosen.reduce((n, d) => n + (d.entities || []).length, 0);
+    const places = new Set(chosen.flatMap((d) => d.places || [])).size;
+    const carry = CARRY_OPTIONS.filter((o) => tk.carry.has(o) && chosen.some((d) => (d.carry || []).includes(o)));
+    const devices = chosen
+      .map((d) => {
+        const meta = [d.area, d.used ? t.tkPlaces(d.used) : t.tkUnused].filter(Boolean).join(" · ");
+        const rows = (d.entities || []).length
+          ? d.entities
+              .map((e) => `<div class="idrow"><span class="mono old">${esc(e.old)}</span>${e.new ? `<span class="mono">→ ${esc(e.new)}</span>` : `<span class="old">→ ${esc(t.tkNewLater)}</span>`}</div>`)
+              .join("")
+          : `<div class="idrow"><span class="old">${esc(t.tkNoOldEntities)}</span></div>`;
+        return `<div class="confirm-dev"><b>${esc(d.name)}</b> <span class="sub"><span class="mono">${esc(d.id)}</span> · ${esc(meta)}</span>${rows}</div>`;
+      })
+      .join("");
+    return `<div class="confirm-head"><b>${esc(t.tkConfirmTitle)}</b><span class="sub">${esc(t.tkConfirmNote)}</span></div>
+      <div class="stats">
+        <div class="stat">${esc(t.tkStatDevices)}<b>${chosen.length}</b></div>
+        <div class="stat">${esc(t.tkStatEntities)}<b>${entities}</b></div>
+        <div class="stat${places ? " warn" : ""}">${esc(t.tkStatPlaces)}<b>${places}</b></div>
+      </div>
+      <div class="confirm-carry"><span class="sub">${esc(t.tkConfirmCarry)}</span>${
+        carry.length ? carry.map((o) => `<span class="chip-s">${esc(t.tkCarryOpt[o])}</span>`).join("") : `<span>${esc(t.tkCarryNone)}</span>`
+      }</div>
+      <div class="idhead"><span>${esc(t.tkColOldEntity)}</span><span>${esc(t.tkColNewProbable)}</span></div>
+      ${devices}
+      <p class="banner${places ? "" : " ok"}" style="margin-top:10px">${esc(t.tkConfirmPlaces(places))}</p>
+      <div class="confirm-bar"><button class="chip" data-tk-back>${esc(t.tkBack)}</button>
+        <button class="chip primary" data-tk-confirm ${tk.busy ? "disabled" : ""}>${esc(tk.busy ? t.tkBusy : t.tkRunNow)}</button></div>`;
   },
 
   _tkIdLine(r) {
@@ -450,6 +500,7 @@ export const takeover = {
     if (e.target.id === "tkGateway") {
       tk.entry = e.target.value;
       tk.tab = "";
+      tk.confirm = false;
       this._loadTakeover();
     } else if (e.target.dataset.tkCarry) {
       if (e.target.checked) tk.carry.add(e.target.dataset.tkCarry);
@@ -481,6 +532,7 @@ export const takeover = {
       this._navigate(e.target.closest("[data-tk-go]").dataset.tkGo);
     } else if (tab) {
       if (tk.tab !== tab.dataset.tkTab) tk.q = "";
+      tk.confirm = false;
       tk.tab = tab.dataset.tkTab;
       this._renderTakeover();
     } else if (mview) {
@@ -500,6 +552,13 @@ export const takeover = {
       tk.selected = new Set(all ? this._tkDevices().filter((d) => d.ready).map((d) => d.id) : []);
       this._renderTakeover();
     } else if (e.target.closest("[data-tk-run]")) {
+      // first the confirmation: nothing is written before "take over now"
+      tk.confirm = true;
+      this._renderTakeover();
+    } else if (e.target.closest("[data-tk-back]")) {
+      tk.confirm = false;
+      this._renderTakeover();
+    } else if (e.target.closest("[data-tk-confirm]")) {
       this._takeOver();
     } else if (e.target.closest("[data-tk-later]")) {
       tk.later = !tk.later;
@@ -541,6 +600,7 @@ export const takeover = {
       this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
     }
     tk.busy = false;
+    tk.confirm = false;
     // something taken over: on to step 2, the old IDs that still need switching over
     tk.tab = result?.count ? "mapping" : "";
     tk.mfilter = "all";

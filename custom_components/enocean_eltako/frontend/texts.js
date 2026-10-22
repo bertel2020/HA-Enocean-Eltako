@@ -98,6 +98,15 @@ export const TEXT = {
     },
     tkDone: (n, carried) => `${n === 1 ? "1 device" : `${n} devices`} taken over${carried ? `, settings carried over for ${carried}` : ""}`,
     tkSkipped: "Sender IDs not taken over", tkBusy: "Taking over…",
+    tkConfirmTitle: "Confirm the takeover", tkConfirmNote: "Nothing has changed yet. Only “Take over now” sets the devices up.",
+    tkStatDevices: "Devices", tkStatEntities: "Entities", tkStatPlaces: "Places to switch over afterwards",
+    tkConfirmCarry: "Carried over:", tkCarryNone: "nothing, only the devices",
+    tkColOldEntity: "Old entity ID", tkColNewProbable: "New entity ID (probably)",
+    tkNewLater: "known afterwards", tkNoOldEntities: "No entities of the old integration",
+    tkConfirmPlaces: (n) => (n
+      ? `The old IDs stay for now. Afterwards switch ${n === 1 ? "1 place" : `${n} places`} over to the new IDs under Check.`
+      : "No old ID is used anywhere: nothing to switch over afterwards."),
+    tkBack: "← Back to the selection", tkRunNow: "Take over now",
     tkOldActive: "The old integration is still active, so its entity IDs are taken. Switch the references over, turn the old integration off and remove its entities.",
     tkOldGone: "The old integration is switched off.",
     tkColDevice: "Device", tkColOld: "Old ID", tkColNew: "New ID",
@@ -285,6 +294,15 @@ export const TEXT = {
     },
     tkDone: (n, carried) => `${n === 1 ? "1 Gerät" : `${n} Geräte`} übernommen${carried ? `, Einstellungen für ${carried} übertragen` : ""}`,
     tkSkipped: "Sender-IDs nicht übernommen", tkBusy: "Übernehme…",
+    tkConfirmTitle: "Übernahme bestätigen", tkConfirmNote: "Noch ist nichts geändert. Erst „Jetzt übernehmen“ legt die Geräte an.",
+    tkStatDevices: "Geräte", tkStatEntities: "Entitäten", tkStatPlaces: "Fundstellen danach umzustellen",
+    tkConfirmCarry: "Wird mitgenommen:", tkCarryNone: "nichts, nur die Geräte",
+    tkColOldEntity: "Alte Entity-ID", tkColNewProbable: "Neue Entity-ID (voraussichtlich)",
+    tkNewLater: "steht danach fest", tkNoOldEntities: "Keine Entitäten der alten Integration",
+    tkConfirmPlaces: (n) => (n
+      ? `Die alten IDs bleiben erst mal bestehen. ${n === 1 ? "1 Fundstelle" : `${n} Fundstellen`} danach unter Prüfen auf die neuen IDs umstellen.`
+      : "Keine alte ID wird verwendet: danach ist nichts umzustellen."),
+    tkBack: "← Zurück zur Auswahl", tkRunNow: "Jetzt übernehmen",
     tkOldActive: "Die alte Integration ist noch aktiv, ihre Entity-IDs sind belegt. Stelle die Verweise um, schalte die alte Integration ab und entferne ihre Entitäten.",
     tkOldGone: "Die alte Integration ist abgeschaltet.",
     tkColDevice: "Gerät", tkColOld: "Alte ID", tkColNew: "Neue ID",
