@@ -296,6 +296,9 @@
     "gateway_not_connected": {
       "message": "{gateway} is not connected."
     },
+    "device_no_sender": {
+      "message": "{device} has no sender ID for this command. Add one in the device's settings."
+    },
     "room_controller_read_only": {
       "message": "This room controller is operated on site; its setpoint cannot be changed from Home Assistant."
     },

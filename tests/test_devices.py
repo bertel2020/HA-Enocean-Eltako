@@ -343,6 +343,12 @@ async def test_options_of_a_loaded_gateway(hass: HomeAssistant, gateway) -> None
     assert entry.options["message_delay"] == 20 and entry.options["discovery"] is False
     assert entry.state is ConfigEntryState.LOADED
 
+    # a receive-only actuator: switching it says why it cannot
+    light = _entity(hass, "light", f"{BASE}_05-10-A2-B8_1_light")
+    with pytest.raises(HomeAssistantError) as err:
+        await hass.services.async_call("light", "turn_on", {"entity_id": light}, blocking=True)
+    assert err.value.translation_key == "device_no_sender"
+
 
 async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
     entry, _ = gateway
