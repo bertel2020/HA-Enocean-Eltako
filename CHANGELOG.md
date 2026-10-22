@@ -84,6 +84,8 @@ All notable changes to this project are documented here, in English and German
   unknown protocol) ends the discovery with a message instead of an error.
 - **Measuring travel times, hidden senders:** when the gateway is reloaded, unloaded or offline
   while the form is open, the flow ends with a hint instead of an error.
+- **Heating actuator:** the repair issue that it has not been controlled goes when the device is
+  removed or the gateway unloaded.
 
 ### [0.1.6] - 2026-10-22
 
@@ -357,6 +359,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Fahrzeiten messen, ausgeblendete Sender:** wird das Gateway neu geladen, entladen oder ist
   es offline, während das Formular offen ist, endet der Ablauf mit einem Hinweis statt mit einem
   Fehler.
+- **Heizungsaktor:** der Reparaturhinweis, dass er nicht mehr geregelt wird, verschwindet, wenn das
+  Gerät entfernt oder das Gateway entladen wird.
 
 ### [0.1.6] - 2026-10-22
 

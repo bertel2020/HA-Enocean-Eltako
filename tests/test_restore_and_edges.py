@@ -153,7 +153,7 @@ async def test_heating_cycle_and_silence_repair(hass: HomeAssistant, restored, m
     issue_id = f"climate_silent_{BASE}_05-00-00-06"
     assert _sent(server, Rorg.BS4, heating.encode_controller(0, 20.0), 0xFFB74486)  # off
 
-    hass.states.async_set("sensor.raum", "not a number")  # ignored, last value stays
+    hass.states.async_set("sensor.raum", "not a number")  # read at the next cycle only
     await hass.services.async_call(
         "climate", "set_hvac_mode", {"entity_id": heater, "hvac_mode": "heat"}, blocking=True
     )
@@ -167,6 +167,9 @@ async def test_heating_cycle_and_silence_repair(hass: HomeAssistant, restored, m
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=61))
     await hass.async_block_till_done()
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+    await hass.config_entries.async_unload(_entry.entry_id)  # or the device removed
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
 
 
 def test_eltako_switching_telegrams() -> None:
