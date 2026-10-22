@@ -22,6 +22,7 @@ const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
 const TREND_POINTS = 30; // telegrams in a sender's signal curve
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
+const TAKEOVER_CHECK = 12; // status updates between checks whether the Takeover view is needed
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
 // what the send form accepts per telegram type (as websocket.py SEND_LENGTHS), with an example
 const SEND_TYPES = { F6: { bytes: [1, 1], example: "70", status: "30" }, D5: { bytes: [1, 1], example: "09", status: "00" },
@@ -975,6 +976,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._gateways = gateways;
     // the browser's clock may be off: times from the server are measured against the server's
+    // the Takeover view comes and goes with the old configuration: checked about once a minute
+    this._statusCount = (this._statusCount || 0) + 1;
+    if (this._statusCount % TAKEOVER_CHECK === 0) this._checkTakeover();
     const server = gateways.find((g) => g.server_time != null)?.server_time;
     if (server != null) this._skew = server * 1000 - Date.now();
     // a remembered gateway filter for a gateway that is gone would hide everything

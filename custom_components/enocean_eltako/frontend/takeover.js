@@ -391,6 +391,7 @@ export const takeover = {
     tk.q = "";
     await this._refreshStatus();
     await this._loadTakeover();
+    this._checkTakeover(); // nothing left to take over or to look up: the view goes
     if (!result) return;
     const stillUsed = result.count ? (tk.mapping?.rows || []).filter(isUsed).length : 0;
     this._notice(
