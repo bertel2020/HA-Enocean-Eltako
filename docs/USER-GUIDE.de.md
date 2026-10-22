@@ -460,6 +460,10 @@ Umstiegs, eo_man oder PCT14.
   ändert sich, Geräte und Entitäten bleiben.
 - Die Gateways sind nur aus Home Assistant und den anderen Apps erreichbar, solange in der App
   keine weiteren Adressen erlaubt sind.
+- Die App kann einem Gateway einen Ersatz geben: ein zweites Gateway mit derselben Base-ID, das
+  einspringt, wenn das erste ausfällt. Die Integration bleibt verbunden und merkt nichts; ihre
+  Gateway-Karte zeigt solange gelb „Verbunden über Ersatz …“, und die Details sagen, ob der
+  Ersatz bereit ist.
 
 ## Bekannte Einschränkungen
 

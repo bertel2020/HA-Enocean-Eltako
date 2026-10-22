@@ -3,7 +3,9 @@
 The Device Proxy serves a read-only status on STATUS_PORT inside the Supervisor network. The
 integration polls it every POLL_INTERVAL and keeps the part about its own gateway (matched by
 TCP port): app version, other programs connected, air time against the 1 % duty cycle,
-replayed telegrams, a program that currently has the gateway alone.
+replayed telegrams, a program that currently has the gateway alone, and whether a fallback
+gateway of the app stands in (the integration stays connected to the app then, so it would not
+see the outage of its gateway otherwise).
 """
 
 from __future__ import annotations
@@ -40,6 +42,8 @@ def summarize(status: dict[str, Any], port: int) -> dict[str, Any] | None:
     duty = gateway.get("duty_cycle", {})
     stats = gateway.get("stats", {})
     api = status.get("api")
+    fallback = gateway.get("fallback")  # Device Proxy with a fallback gateway; older ones: none
+    fallback = fallback if isinstance(fallback, dict) else None
     return {
         "app": APP_NAME,
         "api": api if isinstance(api, int) else None,
@@ -51,6 +55,9 @@ def summarize(status: dict[str, Any], port: int) -> dict[str, Any] | None:
         "telegrams_sent": duty.get("telegrams"),
         "replayed": stats.get("replayed"),
         "exclusive_peer": gateway.get("exclusive_peer"),
+        "via_fallback": fallback is not None and gateway.get("active") == "fallback",
+        "fallback_name": fallback.get("name") if fallback else None,
+        "fallback_ready": bool(fallback.get("ready")) if fallback else None,
     }
 
 

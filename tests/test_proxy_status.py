@@ -43,8 +43,28 @@ def test_summarize_picks_the_gateway_by_port() -> None:
         "telegrams_sent": 41,
         "replayed": 7,
         "exclusive_peer": None,
+        "via_fallback": False,
+        "fallback_name": None,
+        "fallback_ready": None,
     }
     assert summarize(status, 9101) is None
+
+
+def test_summarize_tells_when_a_fallback_gateway_stands_in() -> None:
+    gateway = {**STATUS["gateways"][0], "port": 9100, "active": "fallback"}
+    fallback = {"name": "FAM-USB 2", "ready": True, "not_ready": None, "base_id": "FF-B7-44-80"}
+    result = summarize({**STATUS, "gateways": [{**gateway, "fallback": fallback}]}, 9100)
+    assert result is not None
+    assert (result["via_fallback"], result["fallback_name"], result["fallback_ready"]) == (
+        True,
+        "FAM-USB 2",
+        True,
+    )
+    resting = summarize(
+        {**STATUS, "gateways": [{**gateway, "active": "main", "fallback": {"ready": False}}]}, 9100
+    )
+    assert resting is not None and resting["via_fallback"] is False
+    assert resting["fallback_ready"] is False
 
 
 async def test_panel_status_includes_the_proxy(
