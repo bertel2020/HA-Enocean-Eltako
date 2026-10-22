@@ -174,6 +174,19 @@ def test_plan_button_side() -> None:
     assert (right.senders, right.data) == ({"rocker": 0xFFB744C0}, {"buttons": ["b0"]})  # 0x70
 
 
+def test_plan_buttons_on_one_sender() -> None:
+    sender = {"eep": "F6-02-01"}
+    buttons = [
+        {"id": "FF-C2-4A-AE", "eep": "F6-02-01", "sender": {**sender, "id": "FF-B7-44-C0 left"}},
+        {"id": "FF-C2-4A-AF", "eep": "F6-02-01", "sender": {**sender, "id": "FF-B7-44-C0 right"}},
+        {"id": "FF-C2-4A-B0", "eep": "F6-02-01", "sender": {**sender, "id": "FF-C2-4A-AE"}},
+    ]
+    first, second, third = plan({"devices": {"button": buttons}})
+    assert first.model == "virtual_rocker"
+    assert (second.model, second.reason) == (None, "takeover_duplicate")
+    assert (third.model, third.reason) == ("virtual_rocker", None)
+
+
 def test_plan_button_without_usable_sender() -> None:
     assert plan(_old_button())[0].reason == "takeover_no_sender"
     broken = plan(_old_button(sender={"id": "nonsense"}))[0]
