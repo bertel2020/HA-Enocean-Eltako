@@ -133,6 +133,8 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
             if (target := last.attributes.get(ATTR_TEMPERATURE)) is not None:
                 self._attr_target_temperature = float(target)
         self._read_sensor()
+        # unload, reload or the device removed: the issue goes, the next setup checks again
+        self.async_on_remove(lambda: ir.async_delete_issue(self.hass, DOMAIN, self._issue_id))
         self.async_on_remove(
             async_track_time_interval(
                 self.hass, self._async_cycle, timedelta(seconds=self._interval)
