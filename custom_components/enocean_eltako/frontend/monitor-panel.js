@@ -159,6 +159,14 @@ const STYLE = `
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent-hover); }
   .icon-btn[hidden] { display: none; }
   .icon-btn.on { color: var(--accent); }
+  /* phones: export and clear sit in the "more" menu, so the bar stays on one line */
+  .more { position: relative; }
+  .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; display: grid; min-width: 220px; padding: 6px 0;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%); }
+  .menu[hidden] { display: none; }
+  .menu button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; text-align: left; white-space: nowrap; }
+  .menu button:hover, .menu button:focus-visible { background: var(--accent-soft); }
+  .menu svg { color: var(--muted); }
 
   .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .search { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 6px 0 12px;
@@ -376,6 +384,12 @@ const STYLE = `
     tr.detail-row > td { padding: 0 12px 12px; }
     tr.empty-row, tr.empty-row > td { display: block; }
     .m-only { display: inline; }
+    .d-only { display: none; }
+    /* the bar stays on one line: title, badge and at most three buttons */
+    .bar { flex-wrap: nowrap; gap: 6px; padding-right: 6px; }
+    .bar h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar .live { flex: none; }
+    .bar .icon-btn { width: 38px; height: 38px; flex: none; }
     select.m-only { display: block; }
     .time small { display: none; }
     .pager { justify-content: space-between; gap: 4px; padding: 8px; }
@@ -494,6 +508,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._drawn = new WeakMap(); // last HTML per container: unchanged status costs nothing
     this._stale = { list: false, cards: false, devices: false }; // redraw held back while text is selected
     this._onKey = (e) => this._keydown(e);
+    // a click anywhere outside the "more" menu closes it
+    this._onPointer = (e) => {
+      const more = this.shadowRoot.querySelector(".more");
+      if (more && !e.composedPath().includes(more) && !this.shadowRoot.getElementById("moreMenu").hidden) this._toggleMenu(false);
+    };
     // a hidden tab asks for no status; back in view it catches up at once
     this._onVisible = () => {
       if (!document.hidden && this._hass) this._refreshStatus();
@@ -552,6 +571,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     window.addEventListener("keydown", this._onKey);
     document.addEventListener("selectionchange", this._onSelection);
     document.addEventListener("visibilitychange", this._onVisible);
+    document.addEventListener("pointerdown", this._onPointer);
     if (this._hass) this._watchConnection();
     if (this._hass && !this._unsub) this._subscribe();
   }
@@ -560,6 +580,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     window.removeEventListener("keydown", this._onKey);
     document.removeEventListener("selectionchange", this._onSelection);
     document.removeEventListener("visibilitychange", this._onVisible);
+    document.removeEventListener("pointerdown", this._onPointer);
     clearInterval(this._timer);
     this._timer = null;
     clearTimeout(this._tkTyping);
@@ -596,8 +617,15 @@ class EnOceanEltakoPanel extends HTMLElement {
             <span class="spacer"></span>
             <button class="icon-btn list-only" id="pause"></button>
             <button class="icon-btn tg-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
-            <button class="icon-btn list-only" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
-            <button class="icon-btn tg-only" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
+            <button class="icon-btn list-only d-only" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
+            <button class="icon-btn tg-only d-only" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
+            <span class="more m-only list-only">
+              <button class="icon-btn" id="more" title="${esc(t.more)}" aria-label="${esc(t.more)}" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">${svg(ICON.more)}</button>
+              <span class="menu" id="moreMenu" role="menu" hidden>
+                <button role="menuitem" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
+                <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
+              </span>
+            </span>
           </div>
           <div class="filters list-only">
             <label class="search" title="${esc(t.searchKey)}">
@@ -760,6 +788,27 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._render();
     });
     $("export").addEventListener("click", () => this._export());
+    $("more").addEventListener("click", () => this._toggleMenu());
+    $("moreMenu").addEventListener("click", (e) => {
+      const item = e.target.closest("[data-act]");
+      if (!item) return;
+      this._toggleMenu(false);
+      if (item.dataset.act === "export") this._export();
+      else $("clear").click();
+    });
+    $("moreMenu").addEventListener("keydown", (e) => {
+      // arrow keys move through the items, Escape closes and returns to the button
+      const items = [...$("moreMenu").querySelectorAll("button")].filter((b) => b.offsetParent);
+      const at = items.indexOf(this.shadowRoot.activeElement);
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this._toggleMenu(false);
+        $("more").focus();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        items[(at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+      }
+    });
     $("send").addEventListener("click", () => this._toggleSend());
     $("sendCancel").addEventListener("click", () => this._toggleSend(false));
     $("sendGateway").addEventListener("change", () => this._renderSenders());
@@ -959,6 +1008,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewaySection").hidden = view === "senders" || view === "takeover";
     // export saves what the view shows: telegrams, or the sender list
     const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
+    $("moreExport").textContent = view === "devices" ? this._t.exportDevicesShort : this._t.exportShort;
+    this._toggleMenu(false);
     $("export").title = exportLabel;
     $("export").setAttribute("aria-label", exportLabel);
     if (view !== "telegrams") this._toggleSend(false);
@@ -1062,6 +1113,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     history.pushState(null, "", path);
     window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
     if (path.includes("#")) window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+
+  _toggleMenu(open = this.shadowRoot.getElementById("moreMenu").hidden) {
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    $("moreMenu").hidden = !open;
+    $("more").setAttribute("aria-expanded", String(open));
+    if (open) [...$("moreMenu").querySelectorAll("button")].find((b) => b.offsetParent)?.focus();
   }
 
   _toggleSend(open = this.shadowRoot.getElementById("sendForm").hidden) {
