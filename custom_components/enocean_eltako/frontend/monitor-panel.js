@@ -1065,7 +1065,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pause").addEventListener("click", () => this._togglePause());
     $("clear").addEventListener("click", () => {
       this._offset = 0;
-      this._cleared = this._keys;
+      // added up: a second clear must not bring back what the first one removed
+      for (const key of this._keys) this._cleared.add(key);
+      // the server repeats at most HISTORY telegrams: older keys are no longer needed
+      for (const key of [...this._cleared].slice(0, Math.max(0, this._cleared.size - MAX_ROWS))) this._cleared.delete(key);
       this._keys = new Set();
       this._rows = [];
       this._pending = [];
