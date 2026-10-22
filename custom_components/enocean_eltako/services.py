@@ -18,6 +18,7 @@ from homeassistant.core import (
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
@@ -162,21 +163,25 @@ def async_setup_services(hass: HomeAssistant) -> None:
         schema=EXPORT_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
-    hass.services.async_register(
+    # these write files below the configuration directory or the Energy settings: admins only
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_IMPORT_DEFINITIONS,
         import_custom_devices,
         schema=IMPORT_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
-    hass.services.async_register(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_ADD_ENERGY,
         add_energy_devices,
         schema=ADD_ENERGY_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL,
     )
-    hass.services.async_register(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_CAPTURE,
         capture,

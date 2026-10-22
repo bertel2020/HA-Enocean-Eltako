@@ -302,3 +302,18 @@ async def test_actions_return_yaml(hass: HomeAssistant, tmp_path: Path) -> None:
         return_response=True,
     )
     assert imported["imported"] == ["acme_two"]
+
+
+async def test_writing_actions_need_an_admin(hass: HomeAssistant, hass_read_only_user) -> None:
+    from homeassistant.core import Context
+    from homeassistant.exceptions import Unauthorized
+
+    await async_setup_component(hass, DOMAIN, {})
+    context = Context(user_id=hass_read_only_user.id)
+    for service, data in (
+        ("import_custom_devices", {"yaml": "devices: []"}),
+        ("capture", {"duration": 5}),
+        ("add_energy_devices", {}),
+    ):
+        with pytest.raises(Unauthorized):
+            await hass.services.async_call(DOMAIN, service, data, blocking=True, context=context)
