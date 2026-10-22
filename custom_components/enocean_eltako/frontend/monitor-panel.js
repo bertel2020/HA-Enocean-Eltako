@@ -388,7 +388,22 @@ const STYLE = `
     --accent: light-dark(#0a6aa8, #5bb2ea); --accent-hover: light-dark(#07507f, #8ccaf2); --accent-soft: light-dark(#eaf3fa, #16324a);
     --on-accent: light-dark(#ffffff, #0b1a26); --focus: #7db8e0;
     --ok: light-dark(#1e6b34, #7fd49a); --warn: light-dark(#8a4b00, #f2c27a); --bad: light-dark(#a1261b, #f2a29a);
+    --tag-bg: light-dark(#eef1f4, #2a3038); --tag-text: light-dark(#3a414c, #c5ccd5);
     --radius: 16px;
+  }
+  /* older browsers (iOS before 17.5, Chrome before 123) know no light-dark(): the same tokens,
+     the scheme from the dark attribute */
+  @supports not (color: light-dark(#000, #fff)) {
+    :host {
+      --bg: #f3f4f6; --surface: #ffffff; --soft: #f5f7f9; --line: #e1e5ea; --line-2: #eef0f3; --input-line: #c3cbd5;
+      --text: #1b1f24; --muted: #5b6270; --accent: #0a6aa8; --accent-hover: #07507f; --accent-soft: #eaf3fa; --on-accent: #ffffff;
+      --ok: #1e6b34; --warn: #8a4b00; --bad: #a1261b; --tag-bg: #eef1f4; --tag-text: #3a414c;
+    }
+    :host([dark]) {
+      --bg: #111418; --surface: #1b1f24; --soft: #22272e; --line: #2d333b; --line-2: #262c33; --input-line: #3a424c;
+      --text: #e6e9ed; --muted: #9aa4b1; --accent: #5bb2ea; --accent-hover: #8ccaf2; --accent-soft: #16324a; --on-accent: #0b1a26;
+      --ok: #7fd49a; --warn: #f2c27a; --bad: #f2a29a; --tag-bg: #2a3038; --tag-text: #c5ccd5;
+    }
   }
   /* a theme or primary colour of the user's own: its colour is the accent */
   :host([themed]) {
@@ -548,7 +563,7 @@ const STYLE = `
   .who .name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who .name.unknown { font-weight: 400; color: var(--muted); }
   .who .line2 { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
-  .tag { flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: light-dark(#eef1f4, #2a3038); color: light-dark(#3a414c, #c5ccd5); white-space: nowrap; }
+  .tag { flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: var(--tag-bg); color: var(--tag-text); white-space: nowrap; }
   .tag.teach, .tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
   .values { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
   .value { white-space: nowrap; }
@@ -883,6 +898,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     this.style.colorScheme = hass.themes?.darkMode ? "dark" : "light";
+    this.toggleAttribute("dark", !!hass.themes?.darkMode);
     // the default theme keeps the panel's own accent; any other theme or colour sets it
     const theme = hass.selectedTheme?.theme || hass.themes?.theme;
     this.toggleAttribute("themed", !!((theme && theme !== "default") || hass.selectedTheme?.primaryColor));
