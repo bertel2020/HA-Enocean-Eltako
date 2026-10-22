@@ -6,6 +6,21 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Discovered devices:** senders a gateway hears but no device listens to are listed under
+  **Add device → Discovered devices** of that gateway instead of as cards on the integration
+  page and in the "Add hub" list. One notification per gateway announces new ones.
+- **Panel:** "Add device" on an unknown sender opens the integration page and highlights its
+  gateway.
+
+#### Added
+
+- **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
+  again under **Configure → Hidden senders**. The list keeps the newest 100 senders.
+
 ### [0.1.3] - 2026-10-22
 
 #### Added
@@ -91,6 +106,22 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Entdeckte Geräte:** Sender, die ein Gateway hört und auf die kein Gerät hört, stehen beim
+  Gateway unter **Gerät hinzufügen → Entdeckte Geräte** statt als Karten auf der Integrationsseite
+  und in der Liste bei „Hub hinzufügen“. Eine Benachrichtigung pro Gateway meldet neue.
+- **Panel:** „Gerät hinzufügen“ bei einem unbekannten Sender öffnet die Integrationsseite und
+  hebt sein Gateway hervor.
+
+#### Neu
+
+- **Sender ausblenden:** fremde Sender lassen sich ausblenden (pro Gateway gemerkt) und unter
+  **Konfigurieren → Ausgeblendete Sender** wieder anzeigen. Die Liste behält die neuesten 100
+  Sender.
 
 ### [0.1.3] - 2026-10-22
 
