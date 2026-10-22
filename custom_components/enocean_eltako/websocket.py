@@ -242,6 +242,20 @@ def own_senders(runtime: Any) -> list[dict[str, str]]:
     ]
 
 
+def radio_devices(runtime: Any) -> list[dict[str, Any]]:
+    """The gateway's devices that send by radio or bus: the panel lists those not heard."""
+    return [
+        {
+            "id": format_id(device.device_id),
+            "device": device.subentry.title,
+            "last_seen": device.stats.last_seen,
+            "silent": device.silent,
+        }
+        for device in runtime.devices.values()
+        if device.virtual is None  # I9: a virtual sensor has no telegrams of its own
+    ]
+
+
 def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
     model = MODELS.get(entry.data.get(CONF_MODEL, ""))
     status: dict[str, Any] = {
@@ -266,6 +280,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "devices": len(runtime.devices),
             "free_senders": runtime.senders.pool.free_count(),
             "senders": own_senders(runtime),
+            "radio_devices": radio_devices(runtime),
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),

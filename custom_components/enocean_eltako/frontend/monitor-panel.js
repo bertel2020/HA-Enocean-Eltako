@@ -170,6 +170,9 @@ const TEXT = {
     weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
     trend: (n, lo, hi) => `Signal of the last ${n} telegrams: ${lo} to ${hi} dBm`,
     noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
+    quiet: (n) => `Set up, not in the monitor (${n})`, quietHint: "Devices of this gateway with no telegram among the newest ones in the monitor",
+    seenNever: "nothing heard since the start", seenAgo: (s) => `last heard ${s}`,
+    silent: "silent", silentHint: "No telegram for three times its usual interval",
     devSort: "Sort senders", devSorts: { name: "Name A–Z", recent: "Last heard", weak: "Weakest signal", busy: "Most telegrams" },
     maybe: "Could be", maybeHint: "These profiles decode the telegram; a single telegram cannot tell for sure",
     change: "Change", previous: "Previous telegram", noChange: "same as the previous telegram",
@@ -326,6 +329,9 @@ const TEXT = {
     weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
     trend: (n, lo, hi) => `Signal der letzten ${n} Telegramme: ${lo} bis ${hi} dBm`,
     noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
+    quiet: (n) => `Eingerichtet, nicht im Monitor (${n})`, quietHint: "Geräte des Gateways ohne Telegramm unter den neuesten im Monitor",
+    seenNever: "seit dem Start nichts gehört", seenAgo: (s) => `zuletzt ${s}`,
+    silent: "still", silentHint: "Kein Telegramm seit dem Dreifachen seines üblichen Abstands",
     devSort: "Sender sortieren", devSorts: { name: "Name A–Z", recent: "Zuletzt gehört", weak: "Schwächstes Signal", busy: "Meiste Telegramme" },
     maybe: "Könnte sein", maybeHint: "Diese Profile dekodieren das Telegramm; ein einzelnes Telegramm sagt es nicht sicher",
     change: "Änderung", previous: "Vorheriges Telegramm", noChange: "wie das vorherige Telegramm",
@@ -703,6 +709,10 @@ const STYLE = `
   .devices .dev .acts .chip { height: 30px; padding: 0 10px; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
+  .devices .quiet-head { grid-column: 1 / -1; padding: 10px 16px 6px; border-top: 1px solid var(--line); background: var(--soft);
+    font-size: 12px; font-weight: 500; color: var(--muted); }
+  .devices .dev.quiet { cursor: default; }
+  .devices .dev.quiet .name { color: var(--muted); }
   .spark { display: block; }
   .spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
@@ -1084,7 +1094,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         this._addDevice(add.dataset.id);
         return;
       }
-      const dev = e.target.closest(".dev");
+      const dev = e.target.closest(".dev:not(.quiet)"); // a device not heard has no telegrams to show
       if (!dev || this._selecting($("devices"))) return;
       this._setText(dev.dataset.only);
       this._setView("telegrams");
@@ -2377,9 +2387,40 @@ class EnOceanEltakoPanel extends HTMLElement {
     this.shadowRoot.getElementById("count").textContent = t.deviceCount(devices.length);
     if (this._hold("devices", container, background)) return;
     const now = Date.now();
-    this._replace(container, devices.length
+    const quiet = this._quietDevices();
+    const heard = devices.length
       ? devices.map((d) => this._deviceRow(d, now)).join("")
-      : `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noDevices)}</b></div>`);
+      : quiet.length ? "" : `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noDevices)}</b></div>`;
+    this._replace(container, heard + (quiet.length
+      ? `<div class="quiet-head" title="${esc(t.quietHint)}">${esc(t.quiet(quiet.length))}</div>${quiet.map((d) => this._quietRow(d, now)).join("")}`
+      : ""));
+  }
+
+  _quietDevices() {
+    // set-up devices without a telegram in the buffer (any gateway may have heard them)
+    const f = this._filter;
+    if (f.unknown) return [];
+    const heard = new Set(this._rows.filter((r) => r.dir === "rx").map((r) => r.sender));
+    const text = f.text.toLowerCase();
+    const compact = text.replace(/[-:\s]/g, "");
+    return this._gateways
+      .filter((g) => !f.gateway || g.entry_id === f.gateway)
+      .flatMap((g) => (g.radio_devices || []).map((d) => ({ ...d, gateway_name: g.title })))
+      .filter((d) => !heard.has(d.id))
+      .filter((d) => !text || d.device.toLowerCase().includes(text) || (!!compact && d.id.replace(/-/g, "").toLowerCase().includes(compact)))
+      .sort((a, b) => b.silent - a.silent || collator.compare(a.device, b.device));
+  }
+
+  _quietRow(d, now) {
+    const t = this._t;
+    const seen = d.last_seen != null ? t.seenAgo(t.ago(Math.max(0, Math.round(now / 1000 - d.last_seen)))) : t.seenNever;
+    const sub = [`<span class="mono">${esc(d.id)}</span>`, this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    return `<div class="dev quiet" data-key="${esc(`quiet|${d.id}`)}">
+      <div class="ident"><div class="line1"><span class="name">${esc(d.device)}</span></div><div class="sub">${sub}</div></div>
+      <div class="values">${d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : ""}</div>
+      <div class="stats"><span>${esc(seen)}</span></div>
+      <div class="acts"></div>
+    </div>`;
   }
 
   _sparkline(dbm) {
