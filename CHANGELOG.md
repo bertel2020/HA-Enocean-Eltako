@@ -64,6 +64,8 @@ All notable changes to this project are documented here, in English and German
   cover moving.
 - **Covers:** the higher inaccuracy after an anchor run without an answer shows in the cover's
   state at once and survives a restart.
+- **ESP3 gateways:** a stray sync byte with an implausible packet length no longer holds back
+  every telegram behind it (possible after a reconnect in the middle of a packet).
 
 ### [0.1.6] - 2026-10-22
 
@@ -314,6 +316,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   losfahren ließ.
 - **Rollläden:** die höhere Ungenauigkeit nach einer Ankerfahrt ohne Antwort steht sofort im
   Zustand des Rollladens und übersteht einen Neustart.
+- **ESP3-Gateways:** ein verirrtes Sync-Byte mit unplausibler Paketlänge hält nicht mehr alle
+  folgenden Telegramme zurück (möglich nach einem Reconnect mitten in einem Paket).
 
 ### [0.1.6] - 2026-10-22
 
