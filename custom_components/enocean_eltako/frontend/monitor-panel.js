@@ -1363,6 +1363,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._options($("sendGateway"), loaded.map((g) => [g.entry_id, g.title]), this._filter.gateway || loaded[0]?.entry_id || "");
       $("sendGatewayRow").hidden = loaded.length < 2;
       this._renderSenders();
+    } else if ($("notice").querySelector("span").textContent === this._t.noSenders) {
+      this._notice(""); // the hint belongs to the form
     }
   }
 
