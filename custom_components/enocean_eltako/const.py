@@ -25,7 +25,7 @@ CONF_DISCOVERY: Final = "discovery"  # offer unknown senders as discovered devic
 CONF_PROXY_REPLAY: Final = "proxy_replay"  # TCP gateway is the EnOcean Proxy app: replay
 # telegrams missed while HA was away, each with its reception time (EnOcean Proxy >= 0.4)
 PROXY_REPLAY_REQUEST: Final = b"EOPX REPLAY TS\n"
-CONF_ENTITY_PREFIX: Final = "entity_prefix"  # new entity IDs start with enocean_gw<number>
+CONF_ENTITY_PREFIX: Final = "entity_prefix"  # new entity IDs start with eno_gw<number>
 CONF_GATEWAY_NUMBER: Final = "gateway_number"
 CONF_RENAME_ENTITIES: Final = "rename_entities"  # form only: rename existing entities now
 

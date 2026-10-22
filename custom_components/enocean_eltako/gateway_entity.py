@@ -24,7 +24,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_BASE_ID, CONF_DEVICE, DOMAIN
-from .entity_ids import PrefixedEntityId
+from .entity_ids import PrefixedEntityId, gateway_prefix
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry, GatewayRuntime
@@ -71,6 +71,7 @@ class GatewaySensorDescription(SensorEntityDescription):
     value_fn: Callable[[GatewayRuntime, EnOceanEltakoConfigEntry], Any]
     bus_only: bool = False
     tcp_only: bool = False
+    prefix_only: bool = False  # only while the gateway's entity IDs carry its prefix
 
 
 def _last_telegram(runtime: GatewayRuntime, _entry: Any) -> datetime | None:
@@ -125,6 +126,12 @@ GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (
         key="base_id",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda _r, e: e.data[CONF_BASE_ID],
+    ),
+    GatewaySensorDescription(
+        key="entity_prefix",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        prefix_only=True,
+        value_fn=lambda _r, e: gateway_prefix(e.options),
     ),
     GatewaySensorDescription(
         key="free_senders",

@@ -1,4 +1,4 @@
-"""Optional gateway prefix in entity IDs (enocean_gw1, enocean_gw2 ...)."""
+"""Optional gateway prefix in entity IDs (eno_gw1, eno_gw2 ...)."""
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -44,6 +44,11 @@ def _ids(hass: HomeAssistant, entry: MockConfigEntry) -> set[str]:
     }
 
 
+def _prefix_sensor(hass: HomeAssistant, entry: MockConfigEntry) -> str | None:
+    unique_id = f"{entry.entry_id}_gateway_entity_prefix"
+    return er.async_get(hass).async_get_entity_id("sensor", DOMAIN, unique_id)
+
+
 async def _teardown(hass: HomeAssistant, entry: MockConfigEntry, server: FakeGateway) -> None:
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
@@ -55,17 +60,21 @@ async def test_without_prefix_home_assistant_names_entities(hass: HomeAssistant)
     assert "light.licht_flur" in ids
     assert "sensor.licht_flur_enocean_id" in ids
     assert "binary_sensor.fam_usb_connection" in ids
-    assert not any("enocean_gw" in i for i in ids)
+    assert not any("eno_gw" in i for i in ids)
+    assert _prefix_sensor(hass, entry) is None  # the gateway shows a prefix only when it has one
     await _teardown(hass, entry, server)
 
 
 async def test_prefix_on_new_entities(hass: HomeAssistant) -> None:
     entry, server = await _setup(hass, {"entity_prefix": True, "gateway_number": 2})
     ids = _ids(hass, entry)
-    assert "light.enocean_gw2_licht_flur" in ids
-    assert "sensor.enocean_gw2_licht_flur_enocean_id" in ids
-    assert "binary_sensor.enocean_gw2_fam_usb_connection" in ids
-    assert hass.states.get("light.enocean_gw2_licht_flur") is not None
+    assert "light.eno_gw2_licht_flur" in ids
+    assert "sensor.eno_gw2_licht_flur_enocean_id" in ids
+    assert "binary_sensor.eno_gw2_fam_usb_connection" in ids
+    assert hass.states.get("light.eno_gw2_licht_flur") is not None
+    sensor = _prefix_sensor(hass, entry)
+    assert sensor == "sensor.eno_gw2_fam_usb_entity_id_prefix"
+    assert hass.states.get(sensor).state == "eno_gw2"
     await _teardown(hass, entry, server)
 
 
@@ -88,10 +97,11 @@ async def test_options_rename_existing_entities(hass: HomeAssistant) -> None:
     assert "rename_entities" not in entry.options
     await hass.async_block_till_done()
     ids = _ids(hass, entry)
-    assert "light.enocean_gw1_licht_flur" in ids
-    assert "binary_sensor.enocean_gw1_fam_usb_connection" in ids
+    assert "light.eno_gw1_licht_flur" in ids
+    assert "binary_sensor.eno_gw1_fam_usb_connection" in ids
     assert "light.licht_flur" not in ids
-    assert hass.states.get("light.enocean_gw1_licht_flur") is not None
+    assert hass.states.get("light.eno_gw1_licht_flur") is not None
+    assert hass.states.get(_prefix_sensor(hass, entry)).state == "eno_gw1"
 
     # and back: prefix off, renamed again
     result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -107,6 +117,7 @@ async def test_options_rename_existing_entities(hass: HomeAssistant) -> None:
     )
     await hass.async_block_till_done()
     assert "light.licht_flur" in _ids(hass, entry)
+    assert _prefix_sensor(hass, entry) is None  # removed with the prefix
     await _teardown(hass, entry, server)
 
 

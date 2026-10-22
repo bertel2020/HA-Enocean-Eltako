@@ -382,8 +382,8 @@
           "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect.",
           "discovery": "Offer unknown senders this gateway receives as discovered devices.",
           "proxy_replay": "Only when this gateway is reached through the Device Proxy or EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting.",
-          "entity_prefix": "New entities of this gateway get entity IDs like light.enocean_gw1_kitchen instead of light.kitchen. Useful with several gateways.",
-          "gateway_number": "The number in the prefix (enocean_gw1, enocean_gw2 ...). Each gateway with a prefix needs its own.",
+          "entity_prefix": "New entities of this gateway get entity IDs like light.eno_gw1_kitchen instead of light.kitchen. Useful with several gateways.",
+          "gateway_number": "The number in the prefix (eno_gw1, eno_gw2 ...). Each gateway with a prefix needs its own.",
           "rename_entities": "Gives the entities this gateway already has entity IDs following the setting above. Automations, scripts and dashboards are not adapted: check them afterwards."
         }
       },
@@ -972,6 +972,9 @@
       },
       "gateway_base_id": {
         "name": "Base ID"
+      },
+      "gateway_entity_prefix": {
+        "name": "Entity ID prefix"
       },
       "gateway_free_senders": {
         "name": "Free sender IDs"
