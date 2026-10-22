@@ -415,7 +415,7 @@ const STYLE = `
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
-  .devices .dev .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
+  .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   @media (max-width: 760px) {
     .devices { grid-template-columns: minmax(0, 1fr) auto; }
     .devices .dev-head { display: none; }
