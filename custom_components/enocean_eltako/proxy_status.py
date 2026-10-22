@@ -61,6 +61,13 @@ def summarize(status: dict[str, Any], port: int) -> dict[str, Any] | None:
     }
 
 
+def fallback_state(proxy: dict[str, Any] | None) -> tuple[Any, ...]:
+    """What the connection sensor shows of the app's fallback gateway."""
+    if not proxy:
+        return ()
+    return (proxy.get("via_fallback"), proxy.get("fallback_name"), proxy.get("fallback_ready"))
+
+
 @callback
 def async_setup_proxy_status(
     hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
@@ -75,6 +82,7 @@ def async_setup_proxy_status(
 
     async def poll(_now: Any = None) -> None:
         runtime = entry.runtime_data
+        before = fallback_state(runtime.proxy)
         try:
             async with session.get(url, timeout=TIMEOUT) as response:
                 response.raise_for_status()
@@ -83,6 +91,9 @@ def async_setup_proxy_status(
             if runtime.proxy is not None:
                 _LOGGER.debug("Proxy app status from %s unavailable: %s", url, err)
             runtime.proxy = None
+        if fallback_state(runtime.proxy) != before:  # the connection sensor's attributes
+            for listener in list(runtime.connection_listeners):
+                listener()
 
     @callback
     def schedule(_now: Any = None) -> None:

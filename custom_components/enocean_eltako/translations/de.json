@@ -1065,7 +1065,18 @@
         "name": "Regen"
       },
       "gateway_connection": {
-        "name": "Verbindung"
+        "name": "Verbindung",
+        "state_attributes": {
+          "via_fallback": {
+            "name": "Über Ersatz"
+          },
+          "fallback": {
+            "name": "Ersatz-Gateway"
+          },
+          "fallback_ready": {
+            "name": "Ersatz bereit"
+          }
+        }
       },
       "contact": {
         "name": "Kontakt"

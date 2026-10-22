@@ -65,6 +65,19 @@ class GatewayConnectionSensor(GatewayEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         return self._runtime.gateway.connected
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Through the Device Proxy app with a fallback gateway: whether it stands in. The
+        connection to the app stays meanwhile, so "on" alone does not tell."""
+        proxy = self._runtime.proxy
+        if not proxy or proxy.get("fallback_ready") is None:
+            return None
+        return {
+            "via_fallback": proxy["via_fallback"],
+            "fallback": proxy["fallback_name"],
+            "fallback_ready": proxy["fallback_ready"],
+        }
+
 
 @dataclass(frozen=True, kw_only=True)
 class GatewaySensorDescription(SensorEntityDescription):
