@@ -1991,12 +1991,20 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _takeoverInput(e) {
     if (e.target.id !== "tkSearch" || e.isComposing) return;
-    const pos = e.target.selectionStart;
     this._tk.q = e.target.value;
-    this._renderTakeover();
-    const input = this.shadowRoot.getElementById("tkSearch");
-    input.focus();
-    input.setSelectionRange(pos, pos);
+    // drawn once typing pauses, not on every key
+    clearTimeout(this._tkTyping);
+    this._tkTyping = setTimeout(() => {
+      const before = this.shadowRoot.getElementById("tkSearch");
+      const focused = this.shadowRoot.activeElement === before;
+      const pos = before?.selectionStart ?? 0;
+      this._renderTakeover();
+      const input = this.shadowRoot.getElementById("tkSearch");
+      if (focused && input) {
+        input.focus();
+        input.setSelectionRange(pos, pos);
+      }
+    }, 150);
   }
 
   _takeoverChange(e) {
