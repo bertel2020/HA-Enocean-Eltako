@@ -1,6 +1,7 @@
 // "EnOcean" sidebar panel of the enocean_eltako integration: gateway overview and live
-// telegram monitor. Plain web component, no build step; uses HA theme variables, so light
-// and dark mode follow Home Assistant. Data: websocket enocean_eltako/telegrams/subscribe,
+// telegram monitor. Plain web component, no build step. Own colours (the look of the Device
+// Proxy app); light and dark mode follow Home Assistant, and a theme or primary colour of the
+// user's own replaces the accent colour. Data: websocket enocean_eltako/telegrams/subscribe,
 // enocean_eltako/gateways and enocean_eltako/discover.
 
 const MAX_ROWS = 1000;
@@ -388,6 +389,11 @@ const STYLE = `
     --on-accent: light-dark(#ffffff, #0b1a26); --focus: #7db8e0;
     --ok: light-dark(#1e6b34, #7fd49a); --warn: light-dark(#8a4b00, #f2c27a); --bad: light-dark(#a1261b, #f2a29a);
     --radius: 16px;
+  }
+  /* a theme or primary colour of the user's own: its colour is the accent */
+  :host([themed]) {
+    --accent: var(--primary-color); --accent-hover: color-mix(in srgb, var(--primary-color) 75%, var(--text));
+    --accent-soft: color-mix(in srgb, var(--primary-color) 14%, var(--surface)); --on-accent: var(--text-primary-color, #ffffff);
   }
   * { box-sizing: border-box; }
   svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
@@ -877,6 +883,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const first = !this._hass;
     this._hass = hass;
     this.style.colorScheme = hass.themes?.darkMode ? "dark" : "light";
+    // the default theme keeps the panel's own accent; any other theme or colour sets it
+    const theme = hass.selectedTheme?.theme || hass.themes?.theme;
+    this.toggleAttribute("themed", !!((theme && theme !== "default") || hass.selectedTheme?.primaryColor));
     if (first) {
       this._t = TEXT[(hass.language || "en").startsWith("de") ? "de" : "en"];
       this._build();
