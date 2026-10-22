@@ -64,6 +64,8 @@ All notable changes to this project are documented here, in English and German
   cover moving.
 - **Covers:** the higher inaccuracy after an anchor run without an answer shows in the cover's
   state at once and survives a restart.
+- **Covers:** the travel time fields of the add dialog point to the travel time assistant
+  (Reconfigure → Measure travel times), so default times are not left unmeasured by accident.
 - **ESP3 gateways:** a stray sync byte with an implausible packet length no longer holds back
   every telegram behind it (possible after a reconnect in the middle of a packet).
 - **ESP3 gateways:** the answer to a radio telegram is no longer taken for the answer to the
@@ -341,6 +343,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   losfahren ließ.
 - **Rollläden:** die höhere Ungenauigkeit nach einer Ankerfahrt ohne Antwort steht sofort im
   Zustand des Rollladens und übersteht einen Neustart.
+- **Rollläden:** die Laufzeitfelder im Dialog zum Anlegen verweisen auf den Laufzeit-Assistenten
+  (Neu konfigurieren → Laufzeiten messen), damit Standardzeiten nicht versehentlich ungemessen
+  bleiben.
 - **ESP3-Gateways:** ein verirrtes Sync-Byte mit unplausibler Paketlänge hält nicht mehr alle
   folgenden Telegramme zurück (möglich nach einem Reconnect mitten in einem Paket).
 - **ESP3-Gateways:** die Antwort auf ein Funktelegramm gilt nicht mehr als Antwort auf den
