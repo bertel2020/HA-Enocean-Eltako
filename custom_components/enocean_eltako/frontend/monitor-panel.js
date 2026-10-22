@@ -374,7 +374,9 @@ const STYLE = `
   .spark { display: block; }
   .spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-  .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
+  /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
+  .devices .dev .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   @media (max-width: 760px) {
     .devices { grid-template-columns: minmax(0, 1fr) auto; }
     .devices .dev-head { display: none; }
@@ -2078,7 +2080,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const stats = d.quiet
       ? `<span title="${esc(t.quietHint)}">${esc(heard)}</span>`
       : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
-        <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span>`;
+        <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}`;
     const only = d.name || d.id;
     // the device's page in Home Assistant: an icon only, the row has buttons enough
     const page = d.page ? `<button class="chip only-icon" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
