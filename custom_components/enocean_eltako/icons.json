@@ -133,6 +133,9 @@
       "gateway_base_id": {
         "default": "mdi:identifier"
       },
+      "gateway_entity_prefix": {
+        "default": "mdi:form-textbox"
+      },
       "gateway_failed": {
         "default": "mdi:message-alert-outline"
       },

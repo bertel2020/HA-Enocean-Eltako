@@ -1,7 +1,7 @@
-"""Optional gateway prefix in entity IDs: light.enocean_gw1_kitchen instead of light.kitchen.
+"""Optional gateway prefix in entity IDs: light.eno_gw1_kitchen instead of light.kitchen.
 
 Off by default: Home Assistant then builds entity IDs from device and entity name. With the
-prefix on, new entities suggest "enocean_gw<number> <device> <entity>" as their entity ID;
+prefix on, new entities suggest "eno_gw<number> <device> <entity>" as their entity ID;
 Home Assistant keeps it from then on like any other. Existing entities are renamed only on
 request (rename_entities), since automations and dashboards are not adapted with them.
 """
@@ -23,10 +23,10 @@ from .const import CONF_ENTITY_PREFIX, CONF_GATEWAY_NUMBER, DOMAIN
 
 
 def gateway_prefix(options: Mapping[str, Any]) -> str | None:
-    """The prefix ("enocean_gw1") when the gateway's entity IDs carry it, else None."""
+    """The prefix ("eno_gw1") when the gateway's entity IDs carry it, else None."""
     if not options.get(CONF_ENTITY_PREFIX):
         return None
-    return f"enocean_gw{int(options.get(CONF_GATEWAY_NUMBER, 1))}"
+    return f"eno_gw{int(options.get(CONF_GATEWAY_NUMBER, 1))}"
 
 
 def taken_gateway_numbers(hass: HomeAssistant, entry: ConfigEntry) -> set[int]:

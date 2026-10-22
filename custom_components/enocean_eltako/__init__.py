@@ -61,6 +61,7 @@ from .const import (
 from .custom_devices import async_load as async_load_custom_devices
 from .device import EnOceanDevice
 from .discovery import async_load_hidden, async_remove_hidden, async_setup_discovery
+from .entity_ids import gateway_prefix
 from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .old_integration import async_check_old_integration
@@ -392,7 +393,8 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
 
 
 def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Drop entities of choices no longer made: light vs. switch, removed sender profiles."""
+    """Drop entities of choices no longer made: light vs. switch, removed sender profiles,
+    the gateway prefix switched off."""
     registry = er.async_get(hass)
     stale: list[tuple[str, str]] = []
     for device in entry.runtime_data.devices.values():
@@ -411,6 +413,8 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
             if profile.id not in device.senders:
                 stale.append((Platform.SENSOR, f"{prefix}_sender_id_{profile.id}"))
                 stale.append((Platform.BUTTON, f"{prefix}_teach_in_{profile.id}"))
+    if gateway_prefix(entry.options) is None:
+        stale.append((Platform.SENSOR, f"{entry.entry_id}_gateway_entity_prefix"))
     for platform, unique_id in stale:
         if entity_id := registry.async_get_entity_id(platform, DOMAIN, unique_id):
             registry.async_remove(entity_id)
