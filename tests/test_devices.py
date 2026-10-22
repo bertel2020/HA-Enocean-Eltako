@@ -1855,6 +1855,12 @@ async def test_device_form_shows_teach_in_hint(hass: HomeAssistant, gateway) -> 
     result = await _choose_model(hass, result["flow_id"], "contact")
     result = await configure(result["flow_id"], {"next_step_id": "device"})
     assert result["description_placeholders"]["hint"] == ""  # sensors need no teach-in
+    for kind, needle in (("switch", "FSR14"), ("dimmer", "FUD14"), ("cover", "FSB14")):
+        result = await _init_flow(hass, entry)
+        result = await _choose_model(hass, result["flow_id"], kind)
+        result = await configure(result["flow_id"], {"next_step_id": "device"})
+        hint = result["description_placeholders"]["hint"]
+        assert needle in hint and "LRN" in hint  # the learn function and switch positions
 
 
 async def test_unstable_connection_repair(hass: HomeAssistant, gateway, monkeypatch) -> None:
