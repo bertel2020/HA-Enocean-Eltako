@@ -290,9 +290,13 @@ class EnOceanDevice:
         telegram in the background and repeats the command if it does not come; raises
         HomeAssistantError when the gateway is offline.
         """
-        if not self.senders:
-            raise RuntimeError(f"{self.subentry.title} has no sender")
-        profile = profile or next(iter(self.senders))
+        profile = profile or next(iter(self.senders), None)
+        if profile not in self.senders:  # a receive-only device, or none for this command
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="device_no_sender",
+                translation_placeholders={"device": self.subentry.title},
+            )
         sender_id = self.senders[profile]
         rorg = rorg or self.model.sender_profile(profile).rorg
         telegram = RadioTelegram(rorg, data, sender_id, status, destination)

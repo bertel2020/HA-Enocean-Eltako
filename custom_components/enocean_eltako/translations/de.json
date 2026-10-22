@@ -296,6 +296,9 @@
     "gateway_not_connected": {
       "message": "{gateway} ist nicht verbunden."
     },
+    "device_no_sender": {
+      "message": "{device} hat für diesen Befehl keine Sender-ID. Sie lässt sich in den Einstellungen des Geräts hinzufügen."
+    },
     "room_controller_read_only": {
       "message": "Dieser Raumregler wird vor Ort bedient; sein Sollwert lässt sich nicht aus Home Assistant ändern."
     },

@@ -86,6 +86,8 @@ All notable changes to this project are documented here, in English and German
   while the form is open, the flow ends with a hint instead of an error.
 - **Heating actuator:** the repair issue that it has not been controlled goes when the device is
   removed or the gateway unloaded.
+- **Actuators without a sender ID:** switching them shows that a sender ID is missing instead of
+  an unknown error.
 
 ### [0.1.6] - 2026-10-22
 
@@ -361,6 +363,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Fehler.
 - **Heizungsaktor:** der Reparaturhinweis, dass er nicht mehr geregelt wird, verschwindet, wenn das
   Gerät entfernt oder das Gateway entladen wird.
+- **Aktoren ohne Sender-ID:** beim Schalten erscheint, dass die Sender-ID fehlt, statt eines
+  unbekannten Fehlers.
 
 ### [0.1.6] - 2026-10-22
 
