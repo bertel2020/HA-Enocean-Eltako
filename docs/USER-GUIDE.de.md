@@ -205,9 +205,11 @@ Die Definitionen stehen sofort unter **Gerät hinzufügen → Eigene Definition*
 
 ## Das Panel EnOcean
 
-Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) zeigt oben eine kompakte
+Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) hat die Ansichten **Telegramme**,
+**Geräte**, **Sender-IDs** und, solange es etwas zu übernehmen gibt, **Übernahme** (Tabs; die
+Pfeiltasten wechseln zwischen ihnen). Über Telegramme und Geräte steht eine kompakte
 Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
-und freie Sender-IDs. **Telegramme** filtert auf das jeweilige Gateway. **Details** zeigt
+und freie Sender-IDs. Bei mehreren Gateways filtert **Telegramme** auf das jeweilige Gateway. **Details** zeigt
 Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über Device Proxy oder EnOcean Proxy
 stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
 und eine Sendesperre während eines Mitschnitts.
@@ -242,14 +244,19 @@ Suchen nach Gerät, ID (mit oder ohne Bindestriche), Wertname oder Daten (Taste 
 Empfangenes oder Gesendetes, ein Gateway oder ein Telegrammtyp (RPS, 1BS, 4BS, VLD …), nur
 unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt alles auf. Das Panel
 merkt sich die Filter im Browser. Anhalten (Taste `P`) sammelt weiter (bis zu 1.000) und zeigt,
-wie viele Telegramme eingetroffen sind; Exportieren speichert die sichtbaren als JSON-Zeilen.
+wie viele Telegramme eingetroffen sind; Exportieren speichert alle Telegramme, die zum Filter
+passen (alle Seiten), als JSON-Zeilen. Das Kennzeichen neben dem Titel zeigt **Live**,
+**Pausiert**, **Verbinde…** oder **Keine Verbindung** (dann fehlen Telegramme, bis Home Assistant
+wieder erreichbar ist).
 Solange in der Liste Text markiert ist, etwa um eine ID zu kopieren, warten neue Telegramme,
 bis die Markierung endet.
 
 Das Panel lädt die letzten 200 Telegramme der laufenden Sitzung und hält bis zu 1.000; nach
 einem Verbindungsabbruch oder langer Zeit im Hintergrund-Tab ergänzt es nur, was fehlt. Anzeige
 leeren setzt die Telegramme pro Minute nicht zurück, sie kommen vom Gateway. Das Panel folgt dem
-Home-Assistant-Design, hell und dunkel.
+Home-Assistant-Design, hell und dunkel; mit einem eigenen Design oder einer eigenen Hauptfarbe
+wird diese Farbe zur Akzentfarbe des Panels. In einem verborgenen Browser-Tab pausiert es seine
+Statusabfragen.
 
 ### Ansicht Geräte
 
@@ -260,14 +267,22 @@ dem ein Repeater oder ein besserer Gateway-Standort hilft. Bei einem unbekannten
 der Telegrammtyp dazu und was seine Telegramme verraten: ein Lerntelegramm-Profil oder die
 Profile, die passen könnten. **Telegramme** öffnet die Telegramme dieses Senders, **Gerät
 hinzufügen** richtet einen unbekannten Sender ein. Die Liste sortiert nach Name, nach dem
-letzten Empfang, nach dem schwächsten Signal oder nach den meisten Telegrammen.
+letzten Empfang, nach dem schwächsten Signal oder nach den meisten Telegrammen. Die
+Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000 Telegramme), nicht
+auf die Zeit seit dem Start.
+
+Darunter listet **Eingerichtet, nicht im Monitor** deine Geräte ohne Telegramm in diesem Puffer,
+mit dem letzten Empfang (oder „seit dem Start nichts gehört“) und **still** bei einem Gerät,
+dessen üblicher Abstand dreimal verstrichen ist.
 
 ### Telegramm senden
 
 Die Schaltfläche **Telegramm senden** schickt ein rohes Telegramm (Typ, Daten und Status als
 Hex) über die Sendewarteschlange, nur von einer Sender-ID, die eines deiner Geräte schon
-nutzt, etwa um einen Aktor auszuprobieren. Aktoren reagieren darauf wie auf jedes Telegramm;
-es erscheint in der Liste als gesendet.
+nutzt, etwa um einen Aktor auszuprobieren. Das Datenfeld zeigt ein Beispiel in der richtigen
+Länge für den Typ (RPS und 1BS ein Byte, 4BS vier, VLD eins bis vierzehn); Länge und Hex werden
+vor dem Senden geprüft, Escape schließt das Formular. Aktoren reagieren darauf wie auf jedes
+Telegramm; es erscheint in der Liste als gesendet.
 
 ## Sender-IDs
 
@@ -300,7 +315,9 @@ Reparaturen weisen darauf hin, wo etwas zu tun ist:
 Die Ansicht **Übernahme** des Panels (sie erscheint, solange es eine alte Konfiguration oder
 alte Entitäten gibt) liest die Geräte der alten Integration `eltako` aus der
 `configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
-IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen.
+IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Drei Schritte oben
+zeigen, wo du stehst: **Übernehmen**, **Prüfen** (die Zuordnung unten) und **Alte Integration
+aus**; solange die alte Integration noch aktiv ist, öffnet dieser Schritt ihre Integrationsseite.
 
 - Bereich, Labels und Sprachsteuerungs-Freigabe des alten Geräts gehen auf das neue über,
   sofern du das nicht abschaltest.

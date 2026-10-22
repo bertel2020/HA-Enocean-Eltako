@@ -197,9 +197,11 @@ skipped; imported ones are only replaced with `overwrite: true`.
 
 ## The EnOcean panel
 
-The **EnOcean** sidebar panel (admins only) starts with a compact summary per gateway:
+The **EnOcean** sidebar panel (admins only) has the views **Telegrams**, **Devices**, **Sender
+IDs** and, while there is something to take over, **Takeover** (tabs; the arrow keys move
+between them). Above Telegrams and Devices it shows a compact summary per gateway:
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
-Use **Telegrams** to filter by gateway. **Details** expands the connection, send queue
+With several gateways, **Telegrams** on a gateway filters by it. **Details** expands the connection, send queue
 and unconfirmed commands. For a gateway through the Device Proxy or EnOcean Proxy it also shows the app and its version,
 connected programs, air time against the 1 % limit and any capture send lock.
 
@@ -232,13 +234,16 @@ Search by device, ID (with or without dashes), value name or data (key `/`), cho
 or sent, a gateway or a telegram type (RPS, 1BS, 4BS, VLD …), show unknown senders only or
 include repetitions; **Reset filters** clears them. The panel remembers the filters in the
 browser. Pause (key `P`) keeps collecting (up to 1,000) and shows how many telegrams arrived;
-export saves the visible ones as JSON lines. While text in the list is selected, for example
+export saves all telegrams matching the filter (every page) as JSON lines. The badge next to
+the title says **Live**, **Paused**, **Connecting…** or **No connection** (then telegrams are
+missing until Home Assistant is reachable again). While text in the list is selected, for example
 to copy an ID, new telegrams wait until the selection ends.
 
 The panel loads the last 200 telegrams of the running session and keeps up to 1,000; after a
 lost connection or a long time in a background tab it adds only what it missed. Clearing the
 display does not reset telegrams per minute, which come from the gateway. The panel follows
-the Home Assistant theme, light and dark.
+the Home Assistant theme, light and dark; with a theme or primary colour of your own, that
+colour becomes the panel's accent. In a hidden browser tab it pauses its status requests.
 
 ### Devices view
 
@@ -248,13 +253,21 @@ signal of its last telegrams with a note for weak reception (below -85 dBm), whi
 or a better gateway position helps. For an unknown sender it adds the telegram type and what
 its telegrams tell: a teach-in profile or the profiles that could fit. **Telegrams** opens that
 sender's telegrams, **Add device** sets up an unknown sender. The list sorts by name, by when
-a sender was last heard, by the weakest signal or by the most telegrams.
+a sender was last heard, by the weakest signal or by the most telegrams. Telegram counts refer
+to the monitor's buffer (the newest 1,000 telegrams), not to the time since the start.
+
+Below, **Set up, not in the monitor** lists your devices with no telegram in that buffer, with
+when they were last heard (or "nothing heard since the start") and **silent** for a device
+whose usual interval has passed three times.
 
 ### Send a telegram
 
 The **Send a telegram** button sends a raw telegram (type, data, status as hex) through the
 send queue, only from a sender ID that one of your devices already uses, to try out an
-actuator. Actuators react to it as to any telegram; the telegram appears in the list as sent.
+actuator. The data field shows an example of the right length for the type (RPS and 1BS one
+byte, 4BS four, VLD one to fourteen); length and hex are checked before anything is sent, and
+Escape closes the form. Actuators react to it as to any telegram; the telegram appears in the
+list as sent.
 
 ## Sender IDs
 
@@ -286,7 +299,9 @@ Repairs point out what needs a hand:
 The **Takeover** view of the panel (shown while there is an old configuration or there are old
 entities) reads the devices of the old `eltako` integration from `configuration.yaml` (the
 gateway with the same base ID) and sets up the chosen ones with their IDs, names and sender IDs,
-so the actuators need no new teach-in.
+so the actuators need no new teach-in. Three steps across the top show where you are:
+**Take over**, **Check** (the mapping below) and **Old integration off**; while the old
+integration is still active, that step opens its integration page.
 
 - Area, labels and voice assistant exposure of the old device go over to the new one unless
   you turn that off.
