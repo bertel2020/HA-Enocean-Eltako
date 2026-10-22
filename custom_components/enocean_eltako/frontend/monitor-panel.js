@@ -93,7 +93,7 @@ const TEXT = {
       invalid_sender: "This is not the sender ID of a device", not_found: "Gateway not loaded", unknown: "Sending failed" },
     copy: "Copy as capture line", copied: "Capture line copied", copyFailed: "Copying failed",
     search: "Search device, ID or data",
-    searchKey: "Press / to search",
+    searchKey: "Press / to search", clearSearch: "Clear search", closeNotice: "Close message",
     dirAll: "All",
     rx: "Received",
     tx: "Sent",
@@ -252,7 +252,7 @@ const TEXT = {
       invalid_sender: "Das ist nicht die Sender-ID eines Geräts", not_found: "Gateway nicht geladen", unknown: "Senden fehlgeschlagen" },
     copy: "Als Capture-Zeile kopieren", copied: "Capture-Zeile kopiert", copyFailed: "Kopieren fehlgeschlagen",
     search: "Gerät, ID oder Daten suchen",
-    searchKey: "Taste / zum Suchen",
+    searchKey: "Taste / zum Suchen", clearSearch: "Suche leeren", closeNotice: "Meldung schließen",
     dirAll: "Alle",
     rx: "Empfangen",
     tx: "Gesendet",
@@ -1010,7 +1010,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <label class="search" title="${esc(t.searchKey)}">
               ${svg(ICON.search)}
               <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off">
-              <button class="icon-btn" id="clearText" aria-label="✕" hidden>${svg(ICON.close)}</button>
+              <button class="icon-btn" id="clearText" aria-label="${esc(t.clearSearch)}" title="${esc(t.clearSearch)}" hidden>${svg(ICON.close)}</button>
             </label>
             <div class="segmented tg-only" role="group" id="dir">
               <button data-dir="" aria-pressed="true">${esc(t.dirAll)}</button>
@@ -1038,7 +1038,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             </div>
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
-          <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="✕">${svg(ICON.close)}</button></div>
+          <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
           <div class="meta list-only"><span id="count"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
