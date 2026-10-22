@@ -46,6 +46,19 @@ jobs:
       - name: Run tests
         run: python -m pytest -q --cov=custom_components/enocean_eltako --cov-fail-under=95
 
+  panel:
+    name: Panel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Panel files load, texts complete in en and de
+        run: node scripts/check_panel.mjs
+
   hassfest:
     name: Hassfest
     runs-on: ubuntu-latest
