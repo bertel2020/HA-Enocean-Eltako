@@ -75,7 +75,7 @@ const TEXT = {
     firstPage: "First page", prevPage: "Previous page", nextPage: "Next page", lastPage: "Last page",
     newAbove: (n) => (n === 1 ? "1 new above" : `${n} new above`),
     telegrams: "Telegrams",
-    live: "Live",
+    live: "Live", connecting: "Connecting…", offline: "No connection",
     paused: (n) => (n ? `Paused · ${n} new` : "Paused"),
     pause: "Pause",
     resume: "Resume",
@@ -230,7 +230,7 @@ const TEXT = {
     firstPage: "Erste Seite", prevPage: "Vorherige Seite", nextPage: "Nächste Seite", lastPage: "Letzte Seite",
     newAbove: (n) => (n === 1 ? "1 neues oben" : `${n} neue oben`),
     telegrams: "Telegramme",
-    live: "Live",
+    live: "Live", connecting: "Verbinde…", offline: "Keine Verbindung",
     paused: (n) => (n ? `Pausiert · ${n} neu` : "Pausiert"),
     pause: "Anhalten",
     resume: "Fortsetzen",
@@ -487,7 +487,8 @@ const STYLE = `
   .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; min-height: 24px; padding: 0 10px;
     border-radius: 12px; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
   .live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .live.paused { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  .live.paused, .live.connecting { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  .live.offline { color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, transparent); }
   .spacer { flex: 1; }
   .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent-hover); }
@@ -861,6 +862,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pending = [];
     this._missed = 0; // telegrams while paused, also those beyond the held-back ones
     this._paused = false;
+    this._link = "connecting"; // the telegram stream: "connecting", "live" or "offline"
+    this._conn = null; // the websocket connection whose events are followed
+    this._onReady = () => this._setLink(this._unsub ? "live" : "connecting");
+    this._onDisconnected = () => this._setLink("offline");
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
     this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false, filter: "ready", mfilter: "all", q: "", folded: new Set(), more: new Set() };
     this._pools = [];
@@ -907,7 +912,29 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._build();
     }
     if (this._menu) this._menu.hass = hass;
+    if (this.isConnected) this._watchConnection();
     if (this.isConnected && !this._unsub) this._subscribe();
+  }
+
+  _watchConnection() {
+    // the websocket resubscribes by itself after a reconnect; the badge follows its state
+    const conn = this._hass?.connection;
+    if (conn === this._conn) return;
+    this._unwatchConnection();
+    this._conn = conn;
+    conn?.addEventListener("ready", this._onReady);
+    conn?.addEventListener("disconnected", this._onDisconnected);
+  }
+
+  _unwatchConnection() {
+    this._conn?.removeEventListener?.("ready", this._onReady);
+    this._conn?.removeEventListener?.("disconnected", this._onDisconnected);
+    this._conn = null;
+  }
+
+  _setLink(state) {
+    this._link = state;
+    this._renderBar();
   }
 
   set narrow(narrow) {
@@ -918,6 +945,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   connectedCallback() {
     window.addEventListener("keydown", this._onKey);
     document.addEventListener("selectionchange", this._onSelection);
+    if (this._hass) this._watchConnection();
     if (this._hass && !this._unsub) this._subscribe();
   }
 
@@ -926,6 +954,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     document.removeEventListener("selectionchange", this._onSelection);
     clearInterval(this._timer);
     this._timer = null;
+    clearTimeout(this._tkTyping);
+    this._unwatchConnection();
     if (this._unsub) {
       this._unsub.then((unsub) => unsub()).catch(() => {});
       this._unsub = null;
@@ -1172,10 +1202,17 @@ class EnOceanEltakoPanel extends HTMLElement {
       history: HISTORY,
     });
     this._unsub = unsub;
-    // failed (e.g. connection lost while subscribing): the next hass update tries again
-    unsub.catch(() => {
-      if (this._unsub === unsub) this._unsub = null;
-    });
+    this._setLink(this._hass.connection.connected === false ? "offline" : "connecting");
+    unsub.then(
+      () => {
+        if (this._unsub === unsub) this._setLink("live");
+      },
+      () => {
+        // failed (e.g. connection lost while subscribing): the next hass update tries again
+        if (this._unsub === unsub) this._unsub = null;
+        this._setLink("offline");
+      }
+    );
     await this._refreshStatus();
     this._checkTakeover();
     clearInterval(this._timer);
@@ -1503,8 +1540,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const live = this.shadowRoot.getElementById("live");
     if (!live) return;
-    live.classList.toggle("paused", this._paused);
-    live.querySelector("span").textContent = this._paused ? t.paused(this._missed) : t.live;
+    // pausing is the user's choice; a lost stream matters more and shows through it
+    const state = this._link !== "live" ? this._link : this._paused ? "paused" : "live";
+    live.classList.toggle("paused", state === "paused");
+    live.classList.toggle("connecting", state === "connecting");
+    live.classList.toggle("offline", state === "offline");
+    live.querySelector("span").textContent = { live: t.live, paused: t.paused(this._missed), connecting: t.connecting, offline: t.offline }[state];
     const pause = this.shadowRoot.getElementById("pause");
     const label = `${this._paused ? t.resume : t.pause} (P)`;
     pause.innerHTML = svg(this._paused ? ICON.play : ICON.pause);
