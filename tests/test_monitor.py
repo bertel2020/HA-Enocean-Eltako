@@ -110,6 +110,8 @@ async def test_diagnostics(hass: HomeAssistant, setup):
     assert diag["send_queue"]["length"] == 0
     assert diag["sender_pool"]["start"] == "FF-B7-44-81"
     assert diag["telegrams"][-1]["sender"] == "00-21-63-43"
+    assert diag["entry"]["data"]["device"]["host"] == "**REDACTED**"
+    assert diag["gateway"]["connection"].startswith("**REDACTED**:")
 
 
 async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, hass_ws_client):

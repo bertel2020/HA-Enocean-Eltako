@@ -617,8 +617,8 @@
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
-            "time_opens": "Volle Laufzeit von zu nach auf.",
-            "time_closes": "Volle Laufzeit von auf nach zu.",
+            "time_opens": "Volle Laufzeit von zu nach auf. Unsicher? Standard lassen und danach messen: Menü des Geräts → Neu konfigurieren → Laufzeiten messen.",
+            "time_closes": "Volle Laufzeit von auf nach zu. Messen ist genauer als Eintippen.",
             "routing": "Welcher Sender den Rollladen fährt. Positionen nutzen immer den Controller, wenn er eingetragen ist.",
             "temperature_sensor": "Sensor, dessen Temperatur an den Aktor gesendet wird (beliebiger Temperatursensor in Home Assistant). Leer: Home Assistant sendet nur den Sollwert, der im Aktor eingelernte Thermostat misst.",
             "send_interval": "Wie oft gesendet wird. Heizungsaktor: mindestens alle 10 min, sonst geht er nach 1 h in den Störbetrieb. Virtueller Sensor: Wiederholung zusätzlich zu jeder Änderung, 0 = nur bei Änderung.",

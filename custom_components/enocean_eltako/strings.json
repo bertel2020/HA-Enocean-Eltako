@@ -617,8 +617,8 @@
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
-            "time_opens": "Full travel time from closed to open.",
-            "time_closes": "Full travel time from open to closed.",
+            "time_opens": "Full travel time from closed to open. Not sure? Keep the default and measure it afterwards: the device's menu → Reconfigure → Measure travel times.",
+            "time_closes": "Full travel time from open to closed. Measuring is more exact than typing it in.",
             "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
             "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant). Empty: Home Assistant sends only the setpoint, the thermostat taught into the actuator measures.",
             "send_interval": "How often it sends. Heating actuator: at least every 10 min, otherwise it goes into fault mode after 1 h. Virtual sensor: repetition on top of every change, 0 = only on change.",
