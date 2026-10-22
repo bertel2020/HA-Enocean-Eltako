@@ -1185,6 +1185,10 @@
     "gateway_silent": {
       "title": "{name} does not answer",
       "description": "{name} is connected ({connection}) but does not answer, so no telegrams arrive. Many network gateways such as the MGW-ETH serve only one connection: close the other programs that use it (for example Symcon or another Home Assistant), or restart the gateway. The repair goes away by itself once it answers."
+    },
+    "old_integration_shares_gateway": {
+      "title": "{name} is also used by the old eltako integration",
+      "description": "The old eltako integration is set up on the same connection ({connection}) as {name}. A serial port opens only once and an MGW-ETH serves one session, so the two block each other and one of them loses its connection. Run only one of them on this gateway: disable the old entry, or reach the gateway through the Device Proxy app, which lets several programs share it."
     }
   },
   "device_automation": {

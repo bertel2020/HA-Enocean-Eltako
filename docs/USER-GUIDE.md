@@ -70,7 +70,9 @@ sender IDs they learned; teach them out on the actuator if a new controller shou
 The old `eltako` integration keeps running in parallel; this one uses its own domain
 `enocean_eltako`. A serial gateway can only be opened by one program at a time: remove it
 from the old integration before adding it here, or share it through the
-[Device Proxy app](#device-proxy-app).
+[Device Proxy app](#device-proxy-app). When the old integration is set up on the same USB
+port or host and port as a gateway here, a repair issue names the gateway and says so; it goes
+away once the old entry is off.
 
 ## Setting up a gateway
 

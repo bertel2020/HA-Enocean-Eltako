@@ -75,7 +75,9 @@ behalten die gelernten Sender-IDs; am Aktor ablernen, wenn ein neuer Regler sie 
 Die alte Integration `eltako` läuft parallel weiter; diese hier hat die eigene Domain
 `enocean_eltako`. Einen seriellen Port kann nur ein Programm gleichzeitig öffnen: das Gateway
 vorher aus der alten Integration entfernen oder über die [App Device Proxy](#app-device-proxy)
-teilen.
+teilen. Ist die alte Integration auf demselben USB-Port oder
+Host und Port wie ein Gateway hier eingerichtet, nennt ein Reparaturhinweis das Gateway; er
+verschwindet, sobald der alte Eintrag aus ist.
 
 ## Gateway einrichten
 
