@@ -403,7 +403,8 @@
       }
     },
     "abort": {
-      "senders_shown": "Die gewählten Sender werden wieder aufgelistet, sobald sie gehört werden."
+      "senders_shown": "Die gewählten Sender werden wieder aufgelistet, sobald sie gehört werden.",
+      "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist."
     },
     "error": {
       "gateway_number_taken": "Diese Nummer nutzt schon ein anderes Gateway."
@@ -888,6 +889,7 @@
         "reconfigure_successful": "Gerät aktualisiert.",
         "measure_needs_controller": "Zum Messen braucht der Rollladen den Controller-Sender (H5-3F-7F).",
         "measure_failed": "Der Rollladen hat die obere Endlage nicht gemeldet.",
+        "measure_interrupted": "Messung abgebrochen: das Gateway wurde neu geladen oder ist nicht verbunden. Bitte neu starten.",
         "no_discovered": "Es wurden noch keine unbekannten Sender gehört.",
         "sender_hidden": "Der Sender ist ausgeblendet."
       },

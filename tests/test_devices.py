@@ -1335,6 +1335,41 @@ async def test_cover_full_run_rounds_up(hass: HomeAssistant, gateway) -> None:
     ],
     indirect=True,
 )
+async def test_travel_time_assistant_gateway_reloaded(hass: HomeAssistant, gateway) -> None:
+    """The entry reloads while measuring: the flow stops with a hint instead of an error."""
+    entry, server = gateway
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "measure"}
+    )
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    await asyncio.sleep(0.05)
+    _push(server, 0x05, b"\x70", 0x05000025, 0x30)  # upper end reached
+    await asyncio.sleep(0.05)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"])
+    assert result["step_id"] == "measure_down"
+    await hass.config_entries.async_unload(entry.entry_id)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    assert result["reason"] == "measure_interrupted"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-25",
+                "Rollladen Gast",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-94"}],
+                time_opens=30,
+                time_closes=30,
+            )
+        ]
+    ],
+    indirect=True,
+)
 async def test_travel_time_assistant(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     actuator = 0x05000025

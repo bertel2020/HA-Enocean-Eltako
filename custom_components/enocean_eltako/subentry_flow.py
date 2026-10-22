@@ -8,10 +8,15 @@ from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 import probatio as vol
-from homeassistant.config_entries import ConfigSubentryFlow, SubentryFlowResult
+from homeassistant.config_entries import (
+    ConfigEntryState,
+    ConfigSubentryFlow,
+    SubentryFlowResult,
+)
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import section
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -946,7 +951,10 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
 
     def _cover_device(self) -> Any:
         subentry = self._get_reconfigure_subentry()
-        return self._get_entry().runtime_data.devices.get(subentry.subentry_id)
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return None  # reloaded or unloaded while the flow was open
+        return entry.runtime_data.devices.get(subentry.subentry_id)
 
     async def async_step_measure(
         self, user_input: dict[str, Any] | None = None
@@ -1074,19 +1082,27 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         next_step: Callable[[], Awaitable[SubentryFlowResult]],
     ) -> SubentryFlowResult:
         """Start the run when the form shows; the click stops it and takes the driven time."""
-        device = self._cover_device()
+        if (device := self._cover_device()) is None:  # the gateway was reloaded meanwhile
+            return self.async_abort(reason="measure_interrupted")
         if user_input is None:
             self._run_started = time.monotonic()
-            device.send(
-                shutter.encode_command(shutter.DOWN if down else shutter.UP, MEASURE_MAX_RUN),
-                profile=CONTROLLER.id,
-                key="move",
-                confirm=False,
-            )
+            try:
+                device.send(
+                    shutter.encode_command(shutter.DOWN if down else shutter.UP, MEASURE_MAX_RUN),
+                    profile=CONTROLLER.id,
+                    key="move",
+                    confirm=False,
+                )
+            except HomeAssistantError:
+                return self.async_abort(reason="measure_interrupted")
             return self.async_show_form(step_id=step_id, data_schema=vol.Schema({}))
         wall = time.monotonic() - self._run_started
         waiter = self._wait_for(device, lambda v: "driven_time" in v)
-        device.send(shutter.encode_command(shutter.STOP), profile=CONTROLLER.id, confirm=False)
+        try:
+            device.send(shutter.encode_command(shutter.STOP), profile=CONTROLLER.id, confirm=False)
+        except HomeAssistantError:
+            waiter.cancel()
+            return self.async_abort(reason="measure_interrupted")
         try:
             async with asyncio.timeout(DRIVEN_TIME_WAIT):
                 driven = (await waiter)["driven_time"]
@@ -1122,6 +1138,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         return await self._async_drive_to_end(device, up=True)
 
     async def _async_drive_to_end(self, device: Any, up: bool) -> bool:
+        if device is None:  # the gateway was reloaded meanwhile
+            return False
         end, direction = ("open", "up") if up else ("closed", "down")
         waiter = self._wait_for(
             device,
@@ -1129,12 +1147,16 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 v.get("state") == end or (v.get("direction") == direction and "driven_time" in v)
             ),
         )
-        device.send(
-            shutter.encode_command(shutter.UP if up else shutter.DOWN, MEASURE_MAX_RUN),
-            profile=CONTROLLER.id,
-            key="move",
-            confirm=False,
-        )
+        try:
+            device.send(
+                shutter.encode_command(shutter.UP if up else shutter.DOWN, MEASURE_MAX_RUN),
+                profile=CONTROLLER.id,
+                key="move",
+                confirm=False,
+            )
+        except HomeAssistantError:
+            waiter.cancel()
+            return False
         try:
             async with asyncio.timeout(MEASURE_MAX_RUN + 10):
                 await waiter

@@ -642,6 +642,8 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
         """Show hidden discovered senders again (they are listed once the gateway hears them)."""
         hidden = self._hidden()
         if user_input is not None:
+            if self.config_entry.state is not ConfigEntryState.LOADED:
+                return self.async_abort(reason="gateway_not_loaded")  # unloaded meanwhile
             again = {parse_id(s) for s in user_input.get("again", [])}
             await async_set_hidden(self.hass, self.config_entry, hidden - again)
             return self.async_abort(reason="senders_shown")
