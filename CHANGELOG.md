@@ -69,6 +69,8 @@ All notable changes to this project are documented here, in English and German
 - **ESP3 gateways:** the answer to a radio telegram is no longer taken for the answer to the
   base ID or repeater command: after a reconnect the base ID was sometimes not read and the
   gateway wrongly counted as silent, and a refused repeater setting counted as accepted.
+- **Actions:** Import custom devices, Capture telegrams and Add energy devices write files or
+  the Energy settings and are now for administrators only.
 
 ### [0.1.6] - 2026-10-22
 
@@ -325,6 +327,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Base-ID- oder Repeater-Befehl: nach einem Reconnect wurde die Base-ID manchmal nicht gelesen
   und das Gateway fälschlich als stumm gewertet, und eine abgelehnte Repeater-Einstellung galt als
   übernommen.
+- **Aktionen:** Eigene Geräte importieren, Telegramme aufzeichnen und Energie-Geräte hinzufügen
+  schreiben Dateien oder die Energie-Einstellungen und sind jetzt nur noch für Administratoren.
 
 ### [0.1.6] - 2026-10-22
 
