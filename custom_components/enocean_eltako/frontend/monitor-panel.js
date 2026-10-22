@@ -1776,7 +1776,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       .map((gw) => {
         let pill = ["", t.notLoaded];
         if (gw.loaded) {
-          if (gw.connected) pill = ["ok", t.connected];
+          if (gw.connected && gw.proxy?.via_fallback) pill = ["idle", t.viaFallback(gw.proxy.fallback_name)];
+          else if (gw.connected) pill = ["ok", t.connected];
           else if (gw.on_demand) pill = ["idle", t.onDemand];
           else pill = ["bad", gw.disconnected_since ? `${t.disconnected} ${t.since(Math.round(now - gw.disconnected_since))}` : t.disconnected];
         }
@@ -1804,7 +1805,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     mini.hidden = !show;
     if (!show) return;
     const t = this._t;
-    const state = (gw) => (!gw.loaded ? ["", t.notLoaded] : gw.connected ? ["ok", t.connected] : gw.on_demand ? ["idle", t.onDemand] : ["bad", t.disconnected]);
+    const state = (gw) => (!gw.loaded ? ["", t.notLoaded] : gw.connected && gw.proxy?.via_fallback ? ["idle", t.viaFallback(gw.proxy.fallback_name)]
+      : gw.connected ? ["ok", t.connected] : gw.on_demand ? ["idle", t.onDemand] : ["bad", t.disconnected]);
     const html = this._gateways
       .map((gw) => {
         const [cls, label] = state(gw);
@@ -1829,6 +1831,9 @@ class EnOceanEltakoPanel extends HTMLElement {
         <span class="tag">${esc(t.viaProxy(p.app, p.version))}</span>
         <span>${esc(t.programs(p.programs ?? 0))}</span>
         ${p.exclusive_peer ? `<span class="tag warn">${esc(t.alone(p.exclusive_peer))}</span>` : ""}
+        ${p.via_fallback ? `<span class="tag warn">${esc(t.fallbackActive(p.fallback_name))}</span>`
+          : p.fallback_ready === true ? `<span class="tag">${esc(t.fallbackReady(p.fallback_name))}</span>`
+          : p.fallback_ready === false ? `<span class="tag warn">${esc(t.fallbackNotReady(p.fallback_name))}</span>` : ""}
       </div>
       <div class="airtime" title="${esc(t.airtimeHint)}">
         <span>${esc(t.airtime)}</span>
