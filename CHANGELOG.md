@@ -59,6 +59,9 @@ All notable changes to this project are documented here, in English and German
 - **Covers with a controller:** a full run is sent in whole seconds rounded up, so the driven
   time the actuator reports reaches the full run and renews the position anchor (a travel time
   of 15.3 s sent 17 s instead of 18 s).
+- **Covers with controller and direction rocker:** Stop after the actuator has stopped and
+  reported its driven time no longer presses the direction rocker again, which started the
+  cover moving.
 
 ### [0.1.6] - 2026-10-22
 
@@ -304,6 +307,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Rollläden mit Controller:** eine Vollfahrt wird in ganzen, aufgerundeten Sekunden gesendet,
   damit die gemeldete Fahrzeit die Vollfahrt erreicht und den Positionsanker erneuert (bei 15,3 s
   Fahrzeit wurden 17 statt 18 s gesendet).
+- **Rollläden mit Controller und Richtungstaster:** Stopp, nachdem der Aktor angehalten und seine
+  Fahrzeit gemeldet hat, drückt den Richtungstaster nicht mehr erneut, was den Rollladen wieder
+  losfahren ließ.
 
 ### [0.1.6] - 2026-10-22
 

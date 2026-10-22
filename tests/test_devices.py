@@ -561,6 +561,15 @@ async def test_cover_with_controller_and_direction_rocker(hass: HomeAssistant, g
     for key in ("controller", "direction_rocker"):
         assert _entity(hass, "button", f"{BASE}_05-00-00-22_1_teach_in_{key}")
 
+    # the actuator stopped and reports its driven time: Stop no longer presses the rocker,
+    # which would start the cover again
+    _push(server, 0x07, bytes.fromhex("0064010A"), 0x05000022)  # drove 10.0 s up
+    await _settle(hass)
+    server.received.clear()
+    await hass.services.async_call("cover", "stop_cover", {"entity_id": entity_id})
+    await _settle(hass)
+    assert rocker_up not in bytes(server.received)
+
 
 async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     entry, _ = gateway
