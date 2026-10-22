@@ -288,9 +288,13 @@ const STYLE = `
   .senders .sid-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px 2px; min-width: 0; }
   .senders .sid-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
   .senders .sid-head .sub { font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .senders .sid-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 96px auto; gap: 2px 12px; align-items: center;
+  .senders .sid-row { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; align-items: center;
     min-height: 34px; padding: 2px 16px 2px 28px; font-size: 13px; }
   .senders .sid-profile { color: var(--muted); overflow-wrap: anywhere; }
+  .senders .sid-dec { color: var(--muted); }
+  .senders .sid-cols { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; padding: 8px 16px 6px 28px;
+    border-top: 1px solid var(--line); font-size: 12px; font-weight: 500; color: var(--muted); }
+  .senders .sid-cols span:last-child { width: 0; }
   .senders .act { text-align: right; }
   .senders .act .chip { height: 30px; }
   .senders .deleted { color: var(--muted); font-weight: 400; }
@@ -303,7 +307,9 @@ const STYLE = `
   .senders .pick { padding: 12px 16px 0; }
   @media (max-width: 760px) {
     /* phones: ID and status on top, profile and button below */
-    .senders .sid-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id state" "profile act"; padding: 6px 16px; }
+    .senders .sid-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id state" "dec act" "profile profile"; padding: 6px 16px; }
+    .senders .sid-cols { display: none; }
+    .senders .sid-dec { grid-area: dec; }
     .senders .sid-id { grid-area: id; }
     .senders .sid-state { grid-area: state; }
     .senders .sid-profile { grid-area: profile; }
@@ -1636,7 +1642,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           : `<span class="sid-name deleted" title="${esc(g.ref || "")}">${esc(t.deletedDevice)}</span>`;
         const rows = g.rows
           .map((r) => `<div class="sid-row${isBlocked(r) ? " blocked" : ""}" data-key="${esc(r.id)}">
-            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
+            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-dec mono" title="${esc(t.colDecimal)}">${esc(r.decimal)}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
             <span class="sid-state"><span class="tag ${isBlocked(r) ? "warn" : "ok"}">${esc(isBlocked(r) ? t.stateBlocked : t.stateAssigned)}</span></span>
             <span class="act">${isBlocked(r) ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</span>
           </div>`)
@@ -1656,7 +1662,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${pool.size ? Math.round((used / pool.size) * 100) : 0}%"></i></span>
           <div class="range"><span class="mono">${esc(pool.start)} – ${esc(pool.end)}</span> · ${esc(t.poolSummary(pool.rows.length - blocked.length, blocked.length))}</div></div>
       </div>
-      ${pool.rows.length ? `<div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
+      ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
   }
 
   _sendersClick(e) {

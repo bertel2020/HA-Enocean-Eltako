@@ -328,6 +328,7 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
     assert result["rows"] == [
         {
             "id": "FF-B7-44-81",
+            "decimal": 0xFFB74481,
             "device": "Licht Diele",
             "ref": "05-10-A2-B3",
             "profile": "central",
@@ -335,6 +336,7 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
         },
         {
             "id": "FF-B7-44-82",
+            "decimal": 0xFFB74482,
             "device": None,
             "ref": "gone",
             "profile": "controller",

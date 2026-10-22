@@ -635,6 +635,7 @@ class EnOceanIdSensor(EnOceanEntity, SensorEntity):
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "enocean_id")
         self._attr_native_value = format_id(device.device_id)
+        self._attr_extra_state_attributes = {"decimal": device.device_id}
 
     @property
     def available(self) -> bool:
@@ -653,6 +654,7 @@ class SenderIdSensor(EnOceanEntity, SensorEntity):
         super().__init__(device, f"sender_id_{profile}")
         self._attr_translation_key = f"sender_id_{profile}"
         self._attr_native_value = format_id(device.senders[profile])
+        self._attr_extra_state_attributes = {"decimal": device.senders[profile]}
 
     @property
     def available(self) -> bool:
