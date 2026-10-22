@@ -420,10 +420,6 @@ export const takeover = {
 
   _downloadMapping() {
     const csv = this._mappingTable().map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([csv + "\n"], { type: "text/csv" }));
-    link.download = "enocean-entity-mapping.csv";
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    this._download(csv + "\n", "text/csv", "enocean-entity-mapping.csv");
   },
 };
