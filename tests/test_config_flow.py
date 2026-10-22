@@ -470,21 +470,20 @@ async def test_reconfigure_fam14_keeps_its_base_id(hass: HomeAssistant, fake_esp
     assert entry.data["base_id"] == "FF-AA-00-00"
 
 
-async def test_enocean_proxy_app_discovery(hass: HomeAssistant) -> None:
-    """Phase 6: the EnOcean Proxy app announces a gateway; replay is switched on."""
+async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
+    """Phase 6: the Device Proxy app announces a gateway; replay is switched on."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
     server = await FakeGateway(Protocol.ESP2).start()
     info = HassioServiceInfo(
         config={
             "host": "127.0.0.1",
-            "port": server.port,
-            "name": "FAM-USB",
-            "protocol": "esp2",
             "replay": True,
+            "app": "device_proxy",
+            "gateways": [{"name": "FAM-USB", "port": server.port, "protocol": "esp2"}],
         },
-        name="EnOcean Proxy",
-        slug="enocean_proxy",
+        name="Device Proxy",
+        slug="abc_device_proxy",
         uuid="1234",
     )
     try:
@@ -512,17 +511,17 @@ async def test_enocean_proxy_app_discovery(hass: HomeAssistant) -> None:
     assert again["reason"] == "already_configured"
 
 
-async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> None:
+async def test_device_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> None:
     """One app message lists every gateway; each unconfigured one gets its own flow."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
     MockConfigEntry(
         domain=DOMAIN,
-        data={"device": {"type": "tcp", "host": "abc-enocean-proxy", "port": 9100}},
+        data={"device": {"type": "tcp", "host": "abc-device-proxy", "port": 9100}},
     ).add_to_hass(hass)
     info = HassioServiceInfo(
         config={
-            "host": "abc-enocean-proxy",
+            "host": "abc-device-proxy",
             "status_port": 9199,
             "replay": True,
             "gateways": [
@@ -531,8 +530,8 @@ async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> 
                 {"name": "USB 300", "port": 9102, "protocol": "esp3"},
             ],
         },
-        name="EnOcean Proxy",
-        slug="enocean_proxy",
+        name="Device Proxy",
+        slug="abc_device_proxy",
         uuid="1234",
     )
     with patch(
@@ -546,14 +545,14 @@ async def test_enocean_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> 
     assert result["step_id"] == "proxy_confirm"
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert sorted(f["context"]["unique_id"] for f in flows) == [
-        "proxy_abc-enocean-proxy_9101",
-        "proxy_abc-enocean-proxy_9102",
+        "proxy_abc-device-proxy_9101",
+        "proxy_abc-device-proxy_9102",
     ]
     names = sorted(f["context"]["title_placeholders"]["name"] for f in flows)
-    assert names == ["MGW-LAN (EnOcean Proxy)", "USB 300 (EnOcean Proxy)"]
+    assert names == ["MGW-LAN (Device Proxy)", "USB 300 (Device Proxy)"]
 
 
-async def test_enocean_proxy_app_port_change_updates_entry(hass: HomeAssistant) -> None:
+async def test_device_proxy_app_port_change_updates_entry(hass: HomeAssistant) -> None:
     """discovery-update-info: the app moved a gateway to another port."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
@@ -570,8 +569,8 @@ async def test_enocean_proxy_app_port_change_updates_entry(hass: HomeAssistant) 
             "replay": True,
             "gateways": [{"name": "FAM", "port": server.port, "protocol": "esp2"}],
         },
-        name="EnOcean Proxy",
-        slug="enocean_proxy",
+        name="Device Proxy",
+        slug="abc_device_proxy",
         uuid="1234",
     )
     try:
@@ -584,9 +583,10 @@ async def test_enocean_proxy_app_port_change_updates_entry(hass: HomeAssistant) 
     assert entry.data["device"]["port"] == server.port
 
 
-async def test_moving_to_the_device_proxy_keeps_the_entry(hass: HomeAssistant) -> None:
-    """A gateway set up through the EnOcean Proxy comes back from the Device Proxy: the
-    entry is found by the base ID and gets the new address, no new gateway is offered."""
+async def test_device_proxy_under_a_new_address_keeps_the_entry(hass: HomeAssistant) -> None:
+    """A gateway set up through the Device Proxy comes back under another address (the app
+    installed again, from another repository): the entry is found by the base ID and gets
+    the new address, no new gateway is offered."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
     server = await FakeGateway(Protocol.ESP2).start()
@@ -595,7 +595,7 @@ async def test_moving_to_the_device_proxy_keeps_the_entry(hass: HomeAssistant) -
         unique_id="FF-B7-44-80",
         data={
             "model": "fam_usb",
-            "device": {"type": "tcp", "host": "abc-enocean-proxy", "port": 9100},
+            "device": {"type": "tcp", "host": "abc-device-proxy", "port": 9100},
             "proxy_status_port": 9199,
         },
         options={"proxy_replay": True},
@@ -643,6 +643,5 @@ async def test_a_new_gateway_of_the_device_proxy(hass: HomeAssistant) -> None:
         DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
     )
     assert result["step_id"] == "proxy_confirm"
-    assert result["description_placeholders"]["app"] == "Device Proxy"
     (flow,) = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     assert flow["context"]["title_placeholders"]["name"] == "MGW (Device Proxy)"

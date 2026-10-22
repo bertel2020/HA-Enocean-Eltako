@@ -21,6 +21,12 @@ All notable changes to this project are documented here, in English and German
 - **Panel, Sender IDs:** the map of the pool uses the full width and labels every row with the
   last byte of its first ID.
 
+#### Removed
+
+- **EnOcean Proxy app:** no longer supported, the Device Proxy app is the proxy app. Gone are
+  its discovery format with a single gateway and the repair issue for its old versions; texts
+  name the Device Proxy only.
+
 #### Added
 
 - **Panel, Takeover:** Carry over… fills in later what devices already set up still lack;
@@ -235,6 +241,12 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Fundstelle mit Links in die Editoren, Filter Noch verwendet und Erledigt, und Neu prüfen.
 - **Panel, Sender-IDs:** die Karte des Pools nutzt die volle Breite und beschriftet jede Reihe
   mit dem letzten Byte ihrer ersten ID.
+
+#### Entfernt
+
+- **App EnOcean Proxy:** nicht mehr unterstützt, die Proxy-App ist der Device Proxy. Entfallen
+  sind ihr Discovery-Format mit nur einem Gateway und der Reparaturhinweis für ihre alten
+  Versionen; die Texte nennen nur noch den Device Proxy.
 
 #### Hinzugefügt
 

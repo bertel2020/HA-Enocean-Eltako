@@ -111,7 +111,7 @@ class Dispatcher:
     ) -> ReceivedTelegram:
         """Feed one received telegram; returns it with the duplicate flag set.
 
-        timestamp: when it was really received (replayed by the EnOcean Proxy app).
+        timestamp: when it was really received (replayed by the Device Proxy app).
         """
         now = self._clock()
         received_at = timestamp or time.time()

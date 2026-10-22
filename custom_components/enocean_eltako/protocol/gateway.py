@@ -23,7 +23,7 @@ STABLE_AFTER = 30.0
 Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.StreamWriter]]]
 
 
-REPLAY_BLOCK = b"EOPX TS "  # start of the EnOcean Proxy replay with reception times
+REPLAY_BLOCK = b"EOPX TS "  # start of the Device Proxy replay with reception times
 REPLAY_END = b"EOPX END\n"
 
 
@@ -89,7 +89,7 @@ class Gateway:
         self._on_telegram = on_telegram
         self._on_connection_change = on_connection_change
         self._opener = opener
-        self._hello = hello  # sent first after every connect (EnOcean Proxy replay request)
+        self._hello = hello  # sent first after every connect (Device Proxy replay request)
         self._on_replayed = on_replayed
         self._codec = _Codec(protocol)
         self._writer: asyncio.StreamWriter | None = None
@@ -253,7 +253,7 @@ class Gateway:
             await self._disconnect()
 
     def _take_replay(self, buffer: bytearray) -> tuple[bytes, bool]:
-        """EnOcean Proxy replay with reception times: "EOPX TS <n>", n lines
+        """Device Proxy replay with reception times: "EOPX TS <n>", n lines
         "<unix time> <hex frame>", "EOPX END". Returns the bytes after the block and whether
         the start of the stream is settled (no block, or the block complete)."""
         head = bytes(buffer[: len(REPLAY_BLOCK)])
@@ -281,7 +281,7 @@ class Gateway:
                     self._on_replayed(telegram, received_at)
                 elif self._on_telegram is not None:
                     self._on_telegram(telegram)
-        _LOGGER.info("%s: %d telegrams replayed by the EnOcean Proxy", self.connection, replayed)
+        _LOGGER.info("%s: %d telegrams replayed by the Device Proxy", self.connection, replayed)
         return rest, True
 
     def _log_outage(self, message: str, *args: object) -> None:

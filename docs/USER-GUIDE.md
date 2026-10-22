@@ -81,8 +81,8 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
 
 - **USB gateways** are picked with Home Assistant's port selector. The port is stored with
   the entry, so Home Assistant attributes it to the integration.
-- **Network gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, Device Proxy or EnOcean Proxy app) are added by
-  host and port. A MGW-ETH and the Proxy app's gateways are found automatically and show up as
+- **Network gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, Device Proxy app) are added by
+  host and port. A MGW-ETH and the Device Proxy's gateways are found automatically and show up as
   discovered; a MGW-ETH that gets a new IP address is updated by itself.
 - **FGW14-USB and FAM14 on the same bus** form a bus group with failover. The FAM14 can stay
   disconnected until it is needed.
@@ -208,7 +208,7 @@ IDs** and, while there is something to take over, **Takeover** (tabs; the arrow 
 between them). Above Telegrams and Devices it shows a compact summary per gateway:
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
 With several gateways, **Telegrams** on a gateway filters by it. **Details** expands the connection, send queue
-and unconfirmed commands. For a gateway through the Device Proxy or EnOcean Proxy it also shows the app and its version,
+and unconfirmed commands. For a gateway through the Device Proxy it also shows the app and its version,
 connected programs, air time against the 1 % limit and any capture send lock. Once the summary
 is scrolled away, the bar of the list (it stays on top) shows each gateway's state and telegrams
 per minute; a click on it scrolls back to the cards.
@@ -336,7 +336,6 @@ Repairs point out what needs a hand:
   replaced): the actuators know the old sender IDs, so commands would not arrive
 - bus actuators that confirm commands after more than 3 s on average: the FAM14 passes
   confirmations on right away only in operating mode 5 with a device list made by PCT14
-- an EnOcean Proxy app older than this integration needs (0.5.2; the Device Proxy is always fine)
 
 ## Taking over the old eltako integration
 
@@ -404,11 +403,10 @@ Rockers report short, long and double presses per button. Ready-made automations
 The optional [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app (Home Assistant OS or Supervised) keeps the gateways'
 serial ports and offers each EnOcean gateway on a TCP port, so several programs can use one
 gateway at the same time, for example the old `eltako` integration while moving over, eo_man
-or PCT14. It replaces the older [EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy)
-app; the integration works with both in the same way.
+or PCT14.
 
 - The app announces its gateways: each one shows up here as discovered (**Device Proxy**);
-  pick the model and the gateway is set up with **Replay over the proxy app** switched on.
+  pick the model and the gateway is set up with **Replay over the Device Proxy** switched on.
 - After a Home Assistant restart the app delivers the telegrams that arrived meanwhile (radio
   telegrams only, up to 15 minutes old by default) with their reception time, so cover
   positions, meter readings and "last seen" stay right. If wanted, the app keeps them over its
@@ -416,10 +414,8 @@ app; the integration works with both in the same way.
 - Its web interface shows every frame live, tests the gateway, sends a single frame, records
   captures (for example PCT14 with a FAM14) and shows the air time against the 1 % limit.
 - A gateway the app moves to another port is found again by its base ID and updated by itself.
-- **Moving from the EnOcean Proxy:** in the Device Proxy choose *Import / Export* → *Fetch
-  from the EnOcean Proxy app*, stop the EnOcean Proxy, take the gateways over. Each gateway is
-  announced again; the integration finds its entry by the base ID and only changes the
-  address, so devices and entities stay as they are.
+- A gateway the app announces under another address (the app installed again, from another
+  repository) is found by its base ID too: only the address changes, devices and entities stay.
 - The gateways are reachable from Home Assistant and the other apps only, unless you allow
   more addresses in the app.
 

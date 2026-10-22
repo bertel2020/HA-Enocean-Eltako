@@ -87,8 +87,8 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
 
 - **USB-Gateways** werden mit der Port-Auswahl von Home Assistant gewählt. Der Port wird am
   Eintrag gespeichert, damit Home Assistant ihn der Integration zuordnet.
-- **Netzwerk-Gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, App Device Proxy oder EnOcean Proxy) werden mit
-  Host und Port angelegt. Ein MGW-ETH und die Gateways der Proxy-App werden automatisch
+- **Netzwerk-Gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, App Device Proxy) werden mit
+  Host und Port angelegt. Ein MGW-ETH und die Gateways des Device Proxy werden automatisch
   gefunden und erscheinen als entdeckt; ein MGW-ETH mit neuer IP-Adresse wird selbst angepasst.
 - **FGW14-USB und FAM14 am selben Bus** bilden eine Bus-Gruppe mit Failover. Der FAM14 kann
   getrennt bleiben, bis er gebraucht wird.
@@ -216,7 +216,7 @@ Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) hat die Ansichten
 Pfeiltasten wechseln zwischen ihnen). Über Telegramme und Geräte steht eine kompakte
 Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
 und freie Sender-IDs. Bei mehreren Gateways filtert **Telegramme** auf das jeweilige Gateway. **Details** zeigt
-Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über Device Proxy oder EnOcean Proxy
+Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über den Device Proxy
 stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
 und eine Sendesperre während eines Mitschnitts. Ist die Zusammenfassung weggescrollt, zeigt die
 Leiste der Liste (sie bleibt oben stehen) Zustand und Telegramme pro Minute je Gateway; ein Klick
@@ -355,7 +355,6 @@ Reparaturen weisen darauf hin, wo etwas zu tun ist:
   die Aktoren kennen die alten Sender-IDs, Befehle kämen nicht an
 - Bus-Aktoren bestätigen Befehle im Mittel erst nach mehr als 3 s: der FAM14 gibt
   Bestätigungen nur in Betriebsart 5 mit einer per PCT14 erstellten Geräteliste sofort weiter
-- eine App EnOcean Proxy, die älter ist, als diese Integration braucht (0.5.2; der Device Proxy passt immer)
 
 ## Übernahme der alten Integration eltako
 
@@ -427,12 +426,10 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 Die optionale App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) (Home Assistant OS oder Supervised) hält die seriellen
 Ports der Gateways und bietet jedes EnOcean-Gateway auf einem TCP-Port an. So können mehrere
 Programme ein Gateway gleichzeitig nutzen, z. B. die alte Integration `eltako` während des
-Umstiegs, eo_man oder PCT14. Sie löst die ältere App
-[EnOcean Proxy](https://github.com/bertel2020/HA-Enocean-Proxy) ab; die Integration arbeitet mit
-beiden gleich.
+Umstiegs, eo_man oder PCT14.
 
 - Die App meldet ihre Gateways an: Jedes erscheint hier als entdeckt (**Device Proxy**);
-  Modell wählen, und das Gateway ist mit **Nachlieferung über die Proxy-App** eingerichtet.
+  Modell wählen, und das Gateway ist mit **Nachlieferung über den Device Proxy** eingerichtet.
 - Nach einem Neustart von Home Assistant liefert die App die Telegramme nach, die inzwischen
   ankamen (nur Funktelegramme, standardmäßig höchstens 15 Minuten alt), mit ihrer
   Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Auf
@@ -442,10 +439,9 @@ beiden gleich.
   1-%-Limit.
 - Legt die App ein Gateway auf einen anderen Port, findet die Integration es über die Base-ID
   wieder und passt den Eintrag selbst an.
-- **Umstieg vom EnOcean Proxy:** im Device Proxy *Import / Export* → *Aus der EnOcean Proxy App
-  holen*, den EnOcean Proxy stoppen, die Gateways übernehmen. Jedes Gateway wird neu
-  angemeldet; die Integration findet seinen Eintrag über die Base-ID und ändert nur die
-  Adresse, Geräte und Entitäten bleiben, wie sie sind.
+- Meldet die App ein Gateway unter einer anderen Adresse an (App neu installiert, aus einem
+  anderen Repository), findet die Integration es ebenfalls über die Base-ID: Nur die Adresse
+  ändert sich, Geräte und Entitäten bleiben.
 - Die Gateways sind nur aus Home Assistant und den anderen Apps erreichbar, solange in der App
   keine weiteren Adressen erlaubt sind.
 
