@@ -193,6 +193,8 @@ const STYLE = `
   .chip.primary:hover:not(:disabled) { background: var(--accent-hover); color: var(--on-accent); }
   .chip:disabled { opacity: .5; cursor: default; }
   .chip.only-icon { padding: 0; width: 36px; }
+  /* three ranks of buttons: filled for the main action, outlined for others, text only for minor ones */
+  .chip.text { border-color: transparent; background: none; padding: 0 10px; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; padding: 8px 16px; font-size: 12px; color: var(--muted); }
   .meta .active { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .meta .active:empty { display: none; }
@@ -377,25 +379,15 @@ const STYLE = `
   .devices .dev-head [aria-sort] svg { opacity: 1; }
   .devices .dev-head [aria-sort="ascending"] svg { transform: rotate(180deg); }
   .devices .dev { border-top: 1px solid var(--line); cursor: pointer; }
-  .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-  .devices .dev .acts .chip { height: 30px; padding: 0 10px; }
+  .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px; }
+  .devices .dev .acts .icon-btn { width: 36px; height: 36px; }
+  .devices .dev .acts .icon-btn svg { width: 18px; height: 18px; }
+  .devices .dev .acts .chip { height: 32px; padding: 0 12px; margin-left: 4px; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
   .devices .dev .c-area, .devices .dev .c-ent { font-size: 13px; overflow-wrap: anywhere; }
   .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
   .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
-  /* the buttons are icons; the label of "add" stays, and all labels show on wide screens */
-  .devices .dev .acts .lbl { display: none; }
-  .devices .dev .acts .chip { width: 34px; padding: 0; justify-content: center; }
-  @media (min-width: 761px) {
-    .devices .dev .acts .chip.add { width: auto; padding: 0 10px; }
-    .devices .dev .acts .chip.add .lbl { display: inline; }
-  }
-  @media (min-width: 1300px) {
-    .devices .dev .acts .chip { width: auto; padding: 0 10px; }
-    .devices .dev .acts .lbl { display: inline; }
-  }
-  .devices .dev .acts .chip.only-icon { width: 34px; padding: 0; } /* the device page: always an icon */
   .devices .dev .none { color: var(--muted); }
   .devices .dev .msub { display: none; }
   .devices .dev.quiet { cursor: default; }
@@ -416,9 +408,9 @@ const STYLE = `
     .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
     .devices .dev .values { grid-column: 1; grid-row: 2; }
-    /* phones: the buttons shrink to their icons, next to the values */
+    /* phones: "add" shrinks to its icon, next to the values */
     .devices .dev .acts { grid-column: 2; grid-row: 2; flex-wrap: nowrap; }
-    .devices .dev .acts .chip { width: 34px; padding: 0; justify-content: center; }
+    .devices .dev .acts .chip { width: 32px; padding: 0; }
     .devices .dev .acts .lbl { display: none; }
   }
 
@@ -788,7 +780,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
           <div class="takeover" id="takeover"></div>
@@ -1669,7 +1661,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-icon">${svg(ICON.tower)}</div>
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(gw.devices ?? "–")} ${esc(t.devices)}</b><span>${esc(gw.free_senders ?? "–")} ${esc(t.freeSenders)}</span></div>` : ""}
-          <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
+          <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
           ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
         </article>`;
       })
@@ -2173,10 +2165,10 @@ class EnOceanEltakoPanel extends HTMLElement {
         <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}`;
     const only = d.name || d.id;
     // the device's page in Home Assistant: an icon only, the row has buttons enough
-    const page = d.page ? `<button class="chip only-icon" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
+    const page = d.page ? `<button class="icon-btn" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
     const acts = d.quiet
       ? page
-      : `${page}<button class="chip" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
+      : `${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
           d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     return `<div class="dev${d.quiet ? " quiet" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}">
