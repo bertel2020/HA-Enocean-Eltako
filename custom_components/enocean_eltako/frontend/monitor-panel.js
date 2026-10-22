@@ -206,6 +206,8 @@ const STYLE = `
   .chip.only-icon { padding: 0; width: 36px; }
   /* three ranks of buttons: filled for the main action, outlined for others, text only for minor ones */
   .chip.text { border-color: transparent; background: none; padding: 0 10px; }
+  .chip.text.warn { color: var(--warn); }
+  .chip[hidden] { display: none; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; padding: 8px 16px; font-size: 12px; color: var(--muted); }
   .meta .active { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .meta .active:empty { display: none; }
@@ -550,7 +552,7 @@ const DEV_SORTERS = {
   busy: (a, b) => a.count - b.count || byName(a, b),
 };
 const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
-const DEV_STATUS = ["", "known", "unknown", "silent"];
+const DEV_STATUS = ["", "known", "unknown", "silent", "weak"];
 const OLD_DEV_SORTS = { name: { key: "name", desc: false }, recent: { key: "heard", desc: true }, weak: { key: "signal", desc: false }, busy: { key: "busy", desc: true } };
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
@@ -809,7 +811,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
           <div class="takeover" id="takeover"></div>
@@ -945,6 +947,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._setDevSort(key, dir === "desc");
     });
     $("devStatus").addEventListener("change", (e) => this._set("devStatus", e.target.value));
+    $("weakHint").addEventListener("click", () => {
+      this._set("devStatus", "weak");
+      this._setDevSort("signal", false);
+    });
     $("devArea").addEventListener("change", (e) => this._set("area", e.target.value));
     $("sortSelect").addEventListener("change", (e) => {
       const [key, dir] = e.target.value.split(":");
@@ -2156,6 +2162,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (f.devStatus === "known" && d.unknown) return false;
     if (f.devStatus === "unknown" && (!d.unknown || d.hidden)) return false;
     if (f.devStatus === "silent" && !d.silent) return false;
+    if (f.devStatus === "weak" && !(d.dbm != null && d.dbm < WEAK_DBM)) return false;
     const text = f.text.toLowerCase();
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
@@ -2208,6 +2215,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._options(areaSelect, [["", t.allAreas], ...areas.map((a) => [a, a])], this._filter.area);
     this.shadowRoot.getElementById("devAreaRow").hidden = !areas.length && !this._filter.area;
     this.shadowRoot.getElementById("devStatus").value = this._filter.devStatus;
+    // senders at the edge of the range, at a glance: a click shows only them, weakest first
+    const weak = all.filter((d) => d.dbm != null && d.dbm < WEAK_DBM).length;
+    const weakHint = this.shadowRoot.getElementById("weakHint");
+    weakHint.hidden = !weak || this._filter.devStatus === "weak";
+    weakHint.innerHTML = `${svg(ICON.signal)}${esc(t.weakCount(weak))}`;
+    weakHint.title = t.weakHint;
     if (this._hold("devices", container, background)) return;
     if (!page.length) {
       const filtered = all.length > 0;
