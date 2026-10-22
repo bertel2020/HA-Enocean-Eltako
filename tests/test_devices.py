@@ -910,7 +910,11 @@ def room_sensor(hass: HomeAssistant):
     indirect=True,
 )
 async def test_heating_actuator_controlled_by_ha(hass: HomeAssistant, room_sensor, gateway) -> None:
+    from datetime import timedelta
+
     from homeassistant.helpers import issue_registry as ir
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
     from custom_components.enocean_eltako.protocol.eep.eltako import heating
 
@@ -942,6 +946,14 @@ async def test_heating_actuator_controlled_by_ha(hass: HomeAssistant, room_senso
     off = esp2.encode_radio(RadioTelegram(Rorg.BS4, heating.encode_controller(0, 20.0), 0xFFB744A0))
     assert off in bytes(server.received)
     assert not ir.async_get(hass).issues
+
+    # the room sensor fails: nothing more is sent, the actuator falls back to its fault mode
+    hass.states.async_set("sensor.bad_temperatur", "unavailable")
+    server.received.clear()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=61))
+    await _settle(hass)
+    assert hass.states.get(entity_id).attributes["current_temperature"] is None
+    assert not server.received
 
 
 @pytest.mark.parametrize(
