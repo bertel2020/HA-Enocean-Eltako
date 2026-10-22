@@ -2,7 +2,7 @@
 // mapping of old to new entity IDs. Its methods are added to the panel class (this = the panel).
 
 const VERSION = new URL(import.meta.url).search;
-const { ICON, esc, svg } = await import(`./shared.js${VERSION}`);
+const { ICON, csv, esc, svg } = await import(`./shared.js${VERSION}`);
 
 // where an old entity ID of the takeover mapping is still used
 const USAGE_KINDS = ["automation", "script", "scene", "dashboard"];
@@ -420,7 +420,6 @@ export const takeover = {
   },
 
   _downloadMapping() {
-    const csv = this._mappingTable().map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    this._download(csv + "\n", "text/csv", "enocean-entity-mapping.csv");
+    this._download(csv(this._mappingTable()), "text/csv", "enocean-entity-mapping.csv");
   },
 };
