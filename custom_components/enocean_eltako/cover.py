@@ -239,6 +239,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
                 return True
         self.position.no_answer()
         self._changed()
+        self.async_write_ha_state()
         return False
 
     def _full_run(self, up: bool) -> None:
