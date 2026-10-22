@@ -68,6 +68,14 @@ for (const lang of ["en", "de"]) {
     root.querySelector("tr.row").click();
     await settle();
     expect("open details", root.querySelectorAll("tr.detail-row").length, 1);
+    // the sent telegram of the samples: "send again" sends it, a rocker press with its release
+    const sent = [...root.querySelectorAll("tr.row")].find((row) => row.querySelector(".dir.tx"));
+    sent.click();
+    await settle();
+    root.querySelector("[data-resend]").click();
+    await settle();
+    const resent = fake.sent.filter((m) => m.type === "enocean_eltako/send").map((m) => `${m.sender} ${m.rorg} ${m.data} ${m.status}`);
+    expect("sent again", resent.join(", "), "FF-B7-44-81 F6 70 30, FF-B7-44-81 F6 00 20");
     root.getElementById("filterBtn").click();
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     await view("devices");

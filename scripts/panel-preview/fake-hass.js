@@ -12,7 +12,7 @@ export function fakeHass(params = new URLSearchParams()) {
   const gateway = {
     entry_id: "gw1", title: "FAM-USB Keller", model: "Eltako FAM-USB", base_id: "FF-B7-44-80", loaded: true, connected: true,
     on_demand: false, connection: "tcp 127.0.0.1:9100", per_minute: 4, last_telegram: now - 3, queue: 0, unconfirmed: 0,
-    devices: 3, free_senders: 120, hidden: params.has("hide") ? ["01-99-88-77"] : [],
+    devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
     radio_devices: [
       { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14",
