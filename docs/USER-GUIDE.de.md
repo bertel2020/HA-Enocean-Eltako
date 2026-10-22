@@ -335,7 +335,15 @@ ist. **Freigeben** gibt sie nach einer Rückfrage frei, sobald der Aktor sie ver
 ## Gateway-Einstellungen und Reparaturen
 
 **Konfigurieren** an einem Gateway öffnet **Einstellungen**: Pause zwischen Telegrammen,
-Discovery, Bus-Verbindung und ESP3-Repeater.
+Discovery, Bus-Verbindung, ESP3-Repeater und Gateway-Präfix in Entitäts-IDs.
+
+Ohne Präfix bildet Home Assistant Entitäts-IDs aus Geräte- und Entitätsname (`light.kuche`,
+`sensor.kuche_signalstarke`). **Gateway-Präfix in Entitäts-IDs** stellt `enocean_gw` und die
+**Gateway-Nummer** davor (`light.enocean_gw1_kuche`); so lassen sich die Entitäten mehrerer
+Gateways unterscheiden. Jedes Gateway mit Präfix braucht eine eigene Nummer. Die Einstellung
+gilt für Entitäten, die ab dann dazukommen. **Bestehende Entitäten jetzt umbenennen** benennt
+die Entitäten des Gateways sofort um, in beide Richtungen; Automationen, Skripte und Dashboards
+werden nicht angepasst, danach also prüfen.
 
 Reparaturen weisen darauf hin, wo etwas zu tun ist:
 

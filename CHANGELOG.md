@@ -23,6 +23,9 @@ All notable changes to this project are documented here, in English and German
 
 - **Panel, Takeover:** Carry over… fills in later what devices already set up still lack;
   values set on the new device stay (websocket `enocean_eltako/takeover/carry`).
+- **Gateway settings:** optional gateway prefix in entity IDs: new entities get IDs like
+  `light.enocean_gw1_kitchen`, with a gateway number of their own per gateway; existing entities
+  are renamed on request (automations and dashboards are not adapted). Off by default.
 
 ### [0.1.6] - 2026-10-22
 
@@ -232,6 +235,10 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 - **Panel, Übernahme:** Nachträglich übernehmen… ergänzt, was schon eingerichteten Geräten
   noch fehlt; am neuen Gerät gesetzte Werte bleiben (Websocket `enocean_eltako/takeover/carry`).
+- **Gateway-Einstellungen:** optionaler Gateway-Präfix in Entitäts-IDs: neue Entitäten bekommen
+  IDs wie `light.enocean_gw1_kuche`, mit einer eigenen Gateway-Nummer je Gateway; bestehende
+  Entitäten werden auf Wunsch umbenannt (Automationen und Dashboards werden nicht angepasst).
+  Standardmäßig aus.
 
 ### [0.1.6] - 2026-10-22
 

@@ -371,14 +371,20 @@
           "mode": "Verbindung",
           "repeater": "Repeater",
           "discovery": "Geräte entdecken",
-          "proxy_replay": "Nachlieferung über die Proxy-App"
+          "proxy_replay": "Nachlieferung über die Proxy-App",
+          "entity_prefix": "Gateway-Präfix in Entitäts-IDs",
+          "gateway_number": "Gateway-Nummer",
+          "rename_entities": "Bestehende Entitäten jetzt umbenennen"
         },
         "data_description": {
           "message_delay": "Mindestabstand zwischen zwei Telegrammen, die dieses Gateway sendet.",
           "mode": "Bei Bedarf: nur verbunden, wenn die Bus-Gruppe dieses Gateway braucht (Failover, Import); dazwischen kann der PCT14 es nutzen.",
           "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt.",
           "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten.",
-          "proxy_replay": "Nur wenn dieses Gateway über die App Device Proxy oder EnOcean Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen."
+          "proxy_replay": "Nur wenn dieses Gateway über die App Device Proxy oder EnOcean Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen.",
+          "entity_prefix": "Neue Entitäten dieses Gateways bekommen Entitäts-IDs wie light.enocean_gw1_kuche statt light.kuche. Nützlich bei mehreren Gateways.",
+          "gateway_number": "Die Nummer im Präfix (enocean_gw1, enocean_gw2 ...). Jedes Gateway mit Präfix braucht eine eigene.",
+          "rename_entities": "Gibt den Entitäten, die dieses Gateway schon hat, Entitäts-IDs nach der Einstellung oben. Automationen, Skripte und Dashboards werden nicht angepasst: danach prüfen."
         }
       },
       "init": {
@@ -397,6 +403,9 @@
     },
     "abort": {
       "senders_shown": "Die gewählten Sender werden wieder aufgelistet, sobald sie gehört werden."
+    },
+    "error": {
+      "gateway_number_taken": "Diese Nummer nutzt schon ein anderes Gateway."
     }
   },
   "config_subentries": {

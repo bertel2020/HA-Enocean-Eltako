@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.core import callback
-from homeassistant.helpers.entity import Entity
 
 from .catalog import OPT_UNAVAILABLE_WHEN_SILENT
 from .device import EnOceanDevice
+from .entity_ids import PrefixedEntityId
 
 
-class EnOceanEntity(Entity):
+class EnOceanEntity(PrefixedEntityId):
     _attr_has_entity_name = True
     _attr_should_poll = False
     # E2: actuator states restored after a restart count as assumed until the device reports
@@ -20,6 +20,7 @@ class EnOceanEntity(Entity):
 
     def __init__(self, device: EnOceanDevice, key: str) -> None:
         self._device = device
+        self._gateway_entry = device.entry
         self._attr_unique_id = f"{device.entity_prefix}_{key}"
         self._attr_device_info = device.device_info
 

@@ -316,7 +316,15 @@ After a device is deleted its ID stays **blocked** until it is taught out of eve
 ## Gateway settings and repairs
 
 **Configure** on a gateway opens **Settings**: pause between telegrams, discovery, bus
-connection and the ESP3 repeater.
+connection, the ESP3 repeater and the gateway prefix in entity IDs.
+
+Without the prefix Home Assistant builds entity IDs from device and entity name
+(`light.kitchen`, `sensor.kitchen_signal_strength`). **Gateway prefix in entity IDs** puts
+`enocean_gw` and the **Gateway number** in front (`light.enocean_gw1_kitchen`), which tells
+apart the entities of several gateways; every gateway with a prefix needs a number of its own.
+The setting applies to entities added from then on. **Rename existing entities now** renames
+the gateway's entities right away, in both directions; automations, scripts and dashboards are
+not adapted, so check them afterwards.
 
 Repairs point out what needs a hand:
 

@@ -43,12 +43,15 @@ from .const import (
     CONF_BUS_GROUP,
     CONF_DEVICE,
     CONF_DISCOVERY,
+    CONF_ENTITY_PREFIX,
+    CONF_GATEWAY_NUMBER,
     CONF_MESSAGE_DELAY,
     CONF_MODE,
     CONF_MODEL,
     CONF_NAME,
     CONF_PATH,
     CONF_PROXY_REPLAY,
+    CONF_RENAME_ENTITIES,
     CONF_REPEATER,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
@@ -58,6 +61,7 @@ from .const import (
     REPEATER_UNCHANGED,
 )
 from .discovery import async_set_hidden
+from .entity_ids import free_gateway_number, rename_entities, taken_gateway_numbers
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
@@ -617,7 +621,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
 
 class EnOceanEltakoOptionsFlow(OptionsFlow):
-    """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater).
+    """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater;
+    gateway prefix in entity IDs).
 
     Sender IDs and the takeover from the old eltako integration live in the panel.
 
@@ -662,10 +667,19 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(
-                data={**user_input, CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY])}
-            )
+            data = {**user_input, CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY])}
+            data[CONF_GATEWAY_NUMBER] = int(data[CONF_GATEWAY_NUMBER])
+            rename = data.pop(CONF_RENAME_ENTITIES, False)
+            if data[CONF_ENTITY_PREFIX] and data[CONF_GATEWAY_NUMBER] in taken_gateway_numbers(
+                self.hass, self.config_entry
+            ):
+                errors[CONF_GATEWAY_NUMBER] = "gateway_number_taken"
+            else:
+                if rename:
+                    rename_entities(self.hass, self.config_entry, data)
+                return self.async_create_entry(data=data)
         schema: dict[Any, Any] = {
             vol.Required(CONF_MESSAGE_DELAY, default=DEFAULT_MESSAGE_DELAY): NumberSelector(
                 NumberSelectorConfig(
@@ -692,9 +706,15 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
                     mode=SelectSelectorMode.LIST,
                 )
             )
+        schema[vol.Required(CONF_ENTITY_PREFIX, default=False)] = BooleanSelector()
+        number = free_gateway_number(self.hass, self.config_entry)
+        schema[vol.Required(CONF_GATEWAY_NUMBER, default=number)] = NumberSelector(
+            NumberSelectorConfig(min=1, max=99, step=1, mode=NumberSelectorMode.BOX)
+        )
+        schema[vol.Required(CONF_RENAME_ENTITIES, default=False)] = BooleanSelector()
+        suggested = {**self.config_entry.options, **(user_input or {})}
         return self.async_show_form(
             step_id="settings",
-            data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(schema), self.config_entry.options
-            ),
+            data_schema=self.add_suggested_values_to_schema(vol.Schema(schema), suggested),
+            errors=errors,
         )
