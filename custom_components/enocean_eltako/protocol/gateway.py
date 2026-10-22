@@ -25,6 +25,9 @@ Opener = Callable[[Connection], Awaitable[tuple[asyncio.StreamReader, asyncio.St
 
 REPLAY_BLOCK = b"EOPX TS "  # start of the Device Proxy replay with reception times
 REPLAY_END = b"EOPX END\n"
+# a replay that does not end within these is skipped, so live telegrams are not held back
+REPLAY_MAX_BYTES = 1 << 20
+REPLAY_MAX_WAIT = 30.0
 # ESP3 answers every radio telegram with a RESPONSE; a command waits this long after the last
 # one so that answer cannot be taken for the command's
 RESPONSE_SETTLE = 0.3
@@ -245,12 +248,21 @@ class Gateway:
 
     async def _read_loop(self, reader: asyncio.StreamReader) -> None:
         pending = bytearray() if self._hello else None  # a replay block may come first
+        started = time.monotonic()
         try:
             while chunk := await reader.read(1024):
                 self.bytes_received += len(chunk)
                 if pending is not None:
                     pending += chunk
                     chunk, done = self._take_replay(pending)
+                    if not done and (
+                        len(pending) > REPLAY_MAX_BYTES
+                        or time.monotonic() - started > REPLAY_MAX_WAIT
+                    ):
+                        _LOGGER.warning(
+                            "%s: the Device Proxy replay did not end, skipped", self.connection
+                        )
+                        chunk, done = bytes(pending), True  # the decoder finds the frames
                     if not done:
                         continue
                     pending = None

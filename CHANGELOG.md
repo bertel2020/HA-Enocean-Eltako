@@ -88,6 +88,8 @@ All notable changes to this project are documented here, in English and German
   removed or the gateway unloaded.
 - **Actuators without a sender ID:** switching them shows that a sender ID is missing instead of
   an unknown error.
+- **Device Proxy:** a replay of received telegrams that never ends (above 1 MB or 30 s) is
+  skipped, so it no longer holds back the live telegrams for the rest of the connection.
 
 ### [0.1.6] - 2026-10-22
 
@@ -365,6 +367,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Gerät entfernt oder das Gateway entladen wird.
 - **Aktoren ohne Sender-ID:** beim Schalten erscheint, dass die Sender-ID fehlt, statt eines
   unbekannten Fehlers.
+- **Device Proxy:** eine Wiedergabe empfangener Telegramme, die nicht endet (über 1 MB oder
+  30 s), wird übersprungen und hält die Live-Telegramme nicht mehr für den Rest der Verbindung
+  zurück.
 
 ### [0.1.6] - 2026-10-22
 

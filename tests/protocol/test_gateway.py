@@ -207,6 +207,37 @@ async def test_proxy_replay_with_reception_times(block: bool) -> None:
         assert replayed == []
 
 
+async def test_proxy_replay_without_end_is_skipped(monkeypatch) -> None:
+    """A replay block that never ends must not swallow the live telegrams behind it."""
+    monkeypatch.setattr(gateway, "REPLAY_MAX_BYTES", 64)
+    live = esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x50, 0, 0, 0]), 0x00216343, 0x30)
+
+    async def proxy(reader, writer) -> None:
+        await reader.readline()
+        writer.write(b"EOPX TS 5\n1700000000.250 a55a0b05\n" + bytes(64) + live.encode())
+        await writer.drain()
+        await reader.read()
+        writer.close()
+
+    server = await asyncio.start_server(proxy, "127.0.0.1", 0)
+    received: list[RadioTelegram] = []
+    gw = Gateway(
+        Protocol.ESP2,
+        TcpConnection("127.0.0.1", server.sockets[0].getsockname()[1]),
+        on_telegram=received.append,
+        hello=b"EOPX REPLAY TS\n",
+    )
+    await gw.connect()
+    for _ in range(100):
+        if received:
+            break
+        await asyncio.sleep(0.01)
+    await gw.close()
+    server.close()
+    await server.wait_closed()
+    assert [t.data for t in received] == [b"\x50"]
+
+
 async def test_flapping_connection_warns_once_and_backs_off(monkeypatch, caplog) -> None:
     """A port that opens and drops at once (held by another program): one warning, no
     "restored", and the attempts slow down instead of reconnecting at once."""
