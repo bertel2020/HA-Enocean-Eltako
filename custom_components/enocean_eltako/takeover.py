@@ -321,11 +321,6 @@ def old_active(hass: HomeAssistant) -> bool:
     )
 
 
-async def async_takeover_available(hass: HomeAssistant) -> bool:
-    """There is an old configuration or there are old entities: the panel offers the view."""
-    return await async_old_config(hass) is not None or bool(old_entities(hass))
-
-
 def primary_entity(entries: list[er.RegistryEntry]) -> er.RegistryEntry | None:
     """The entity that is the device itself (light, switch ...): it has no name of its own."""
     return next((e for e in entries if e.original_name is None), None)
