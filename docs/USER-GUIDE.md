@@ -275,8 +275,18 @@ telegram type and what its telegrams tell: a teach-in profile or the profiles th
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.
 
+**Teach in** (graduation cap icon, for devices with a sender ID of their own) teaches the device
+into its actuator without opening the device page: put the actuator into learn mode (on Eltako
+actuators usually the rotary switch to LRN), then **Send teach-in**. A device with several sender
+IDs (for example central command and rocker) offers a choice. It sends the same as the device's
+teach-in button; for a VLD actuator (UTE) send first, then put the actuator into learn mode
+within 60 s.
+
+Above the list a hint counts the senders with a weak signal; a click shows only them, weakest
+first (also the status **Weak signal** under **Filter**).
+
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
-search box and, under **Filter**, the gateway, the status (**All devices / Set up / Unknown / Silent**) and the area narrow the list,
+search box and, under **Filter**, the gateway, the status (**All devices / Set up / Unknown / Silent / Weak signal**) and the area narrow the list,
 and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
 newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
 as CSV; sending and clearing belong to the telegram list and are not offered here.
@@ -289,7 +299,8 @@ actuator. The data field shows an example of the right length for the type (RPS 
 byte, 4BS four, VLD one to fourteen); length and hex are checked before anything is sent, and
 Escape closes the form. For a rocker telegram (RPS) **Press and release** (on by default) sends
 the release (data 00, status 20) right after, as a wall switch does. Actuators react to it as
-to any telegram; the telegram appears in the list as sent.
+to any telegram; the telegram appears in the list as sent. In the details of a sent telegram,
+**Send again** sends it once more (a rocker press with its release) without typing it again.
 
 ## Sender IDs
 
