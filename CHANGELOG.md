@@ -18,6 +18,8 @@ All notable changes to this project are documented here, in English and German
   leading to Check, which became the overview of every device set up: what it still lacks from
   the old integration, the places using its old IDs, a view by place with links to the editors,
   filters Still in use and Done, and Check again.
+- **Panel, Sender IDs:** the map of the pool uses the full width and labels every row with the
+  last byte of its first ID.
 
 #### Added
 
@@ -231,6 +233,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   ein Hinweis, der zu Prüfen führt; Prüfen ist die Übersicht aller eingerichteten Geräte: was
   ihnen aus der alten Integration noch fehlt, die Fundstellen ihrer alten IDs, eine Ansicht nach
   Fundstelle mit Links in die Editoren, Filter Noch verwendet und Erledigt, und Neu prüfen.
+- **Panel, Sender-IDs:** die Karte des Pools nutzt die volle Breite und beschriftet jede Reihe
+  mit dem letzten Byte ihrer ersten ID.
 
 #### Hinzugefügt
 

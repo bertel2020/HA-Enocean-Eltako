@@ -339,9 +339,12 @@ const STYLE = `
     min-height: 34px; padding: 2px 16px 2px 28px; font-size: 13px; }
   .senders .sid-profile { color: var(--muted); overflow-wrap: anywhere; }
   .senders .sid-dec { color: var(--muted); }
-  /* the pool map: small squares, 32 to a row (16 on phones); details in the tooltip */
-  .senders .map { display: grid; grid-template-columns: repeat(32, 16px); gap: 3px; padding: 4px 16px 8px; }
-  .senders .map button { all: unset; box-sizing: border-box; aspect-ratio: 1; border-radius: 3px; border: 1px solid var(--line); cursor: default; }
+  /* the pool map: the full width, 32 to a row (16 on phones), each row labelled with its first
+     ID's last byte; details in the tooltip */
+  .senders .map { display: grid; grid-template-columns: 22px repeat(32, minmax(0, 1fr)); gap: 3px; align-items: center; padding: 4px 16px 8px; }
+  .senders .map button { all: unset; box-sizing: border-box; height: 18px; border-radius: 3px; border: 1px solid var(--line); cursor: default; }
+  .senders .map .row-id { font: 11px/1 var(--code-font-family, ui-monospace, monospace); color: var(--muted); }
+  .senders .map .row-id.half { display: none; }
   .senders .map button[data-goto]:hover { transform: scale(1.25); }
   .senders .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0 16px 14px; font-size: 12px; color: var(--muted); }
   .senders .legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -350,7 +353,8 @@ const STYLE = `
   .senders .legend .t-blocked { background: var(--warn); border-color: var(--warn); }
   .senders .legend .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
   @media (max-width: 760px) {
-    .senders .map { grid-template-columns: repeat(16, minmax(0, 1fr)); }
+    .senders .map { grid-template-columns: 22px repeat(16, minmax(0, 1fr)); }
+    .senders .map .row-id.half { display: block; }
   }
   .senders .map button[data-goto] { cursor: pointer; }
   .senders .map button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -2073,7 +2077,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       const label = { assigned: t.stateAssigned, blocked: t.stateBlocked, unavailable: t.stateUnavailable, free: t.stateFree }[state];
       const who = r?.device ? ` · ${r.device}` : "";
       const text = `${hex} (${n}) · ${label}${who}`;
-      return `<button class="t-${state}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
+      // a label starts every row: every 32 IDs, and in between where phones break after 16
+      const row = i % 16 ? "" : `<span class="row-id${i % 32 ? " half" : ""}" aria-hidden="true" title="${esc(hex)}">${hex.slice(-2)}</span>`;
+      return `${row}<button class="t-${state}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
     }).join("");
     // the legend names the states the map shows; free is always there to compare with
     const shown = new Set(["free", ...pool.rows.map((r) => r.state), ...(away.size ? ["unavailable"] : [])]);
