@@ -267,21 +267,23 @@ Statusabfragen.
 
 ### Ansicht Geräte
 
-Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Sender: die letzten Werte,
-wann er zuletzt gehört wurde, Telegramme in der Liste und pro Minute sowie eine Kurve der
-Signalstärke seiner letzten Telegramme, mit einem Hinweis bei schwachem Empfang (unter -85 dBm),
-dem ein Repeater oder ein besserer Gateway-Standort hilft. Bei einem unbekannten Sender kommen
-der Telegrammtyp dazu und was seine Telegramme verraten: ein Lerntelegramm-Profil oder die
-Profile, die passen könnten. **Telegramme** öffnet die Telegramme dieses Senders, **Gerät
-hinzufügen** richtet einen unbekannten Sender ein. Die Liste sortiert nach Name, nach dem
-letzten Empfang, nach dem schwächsten Signal oder nach den meisten Telegrammen. Die
-Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000 Telegramme), nicht
-auf die Zeit seit dem Start.
+Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Gerät: Name und ID, das
+EEP, den Bereich, die Zahl der Entitäten, die letzten Werte, wann es zuletzt gehört wurde,
+Telegramme in der Liste und pro Minute sowie eine Kurve der Signalstärke seiner letzten
+Telegramme, mit einem Hinweis bei schwachem Empfang (unter -85 dBm), dem ein Repeater oder ein
+besserer Gateway-Standort hilft. Auch deine Geräte ohne Telegramm im Puffer des Monitors stehen
+in der Liste (**nicht gehört**, und **still** bei einem Gerät, dessen üblicher Abstand dreimal
+verstrichen ist). Bei einem unbekannten Sender kommen der Telegrammtyp dazu und was seine
+Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könnten.
+**Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
+unbekannten Sender ein.
 
-Darunter listet **Eingerichtet, nicht im Monitor** deine Geräte ohne Telegramm in diesem Puffer,
-mit dem letzten Empfang (oder „seit dem Start nichts gehört“) und **still** bei einem Gerät,
-dessen üblicher Abstand dreimal verstrichen ist. Exportieren speichert hier diese Liste (beide
-Teile) als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
+Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
+übernimmt das eine Auswahl. Die Suche, das Gateway, **Alle Geräte / Eingerichtet / Unbekannt /
+Still** und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
+gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
+Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
+Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
 
 ### Telegramm senden
 

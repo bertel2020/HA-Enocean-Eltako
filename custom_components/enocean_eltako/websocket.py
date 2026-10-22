@@ -18,6 +18,9 @@ from homeassistant.config_entries import (
     ConfigEntryState,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
@@ -243,17 +246,30 @@ def own_senders(runtime: Any) -> list[dict[str, str]]:
 
 
 def radio_devices(runtime: Any) -> list[dict[str, Any]]:
-    """The gateway's devices that send by radio or bus: the panel lists those not heard."""
-    return [
-        {
-            "id": format_id(device.device_id),
-            "device": device.subentry.title,
-            "last_seen": device.stats.last_seen,
-            "silent": device.silent,
-        }
-        for device in runtime.devices.values()
-        if device.virtual is None  # I9: a virtual sensor has no telegrams of its own
-    ]
+    """The gateway's devices that send by radio or bus: the panel's list of set-up devices."""
+    rows = []
+    for device in runtime.devices.values():
+        if device.virtual is not None:  # I9: a virtual sensor has no telegrams of its own
+            continue
+        hass = device.hass
+        entry = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, device.unique_prefix)})
+        area = ar.async_get(hass).async_get_area(entry.area_id) if entry and entry.area_id else None
+        rows.append(
+            {
+                "id": format_id(device.device_id),
+                "device": device.subentry.title,
+                "last_seen": device.stats.last_seen,
+                "silent": device.silent,
+                "eep": str(device.model.receive) if device.model.receive else None,
+                "model": device.device_info.get("model"),
+                "category": device.model.category,
+                "area": area.name if area else None,
+                "entities": (
+                    len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
+                ),
+            }
+        )
+    return rows
 
 
 def gateway_status(entry: ConfigEntry) -> dict[str, Any]:

@@ -330,16 +330,38 @@ const STYLE = `
   }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto auto; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: minmax(170px, 2fr) 96px minmax(64px, 1fr) 76px minmax(0, 1.6fr) 140px auto; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
-  .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr) auto auto;
-    grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+  .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
+  .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .devices .dev-head button { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border-radius: 4px; }
+  .devices .dev-head button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .devices .dev-head button:hover { color: var(--text); }
+  .devices .dev-head button svg { width: 12px; height: 12px; opacity: 0; transition: transform .15s; }
+  .devices .dev-head [aria-sort] { color: var(--text); }
+  .devices .dev-head [aria-sort] svg { opacity: 1; }
+  .devices .dev-head [aria-sort="ascending"] svg { transform: rotate(180deg); }
+  .devices .dev { border-top: 1px solid var(--line); cursor: pointer; }
   .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
   .devices .dev .acts .chip { height: 30px; padding: 0 10px; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
-  .devices .quiet-head { grid-column: 1 / -1; padding: 10px 16px 6px; border-top: 1px solid var(--line); background: var(--soft);
-    font-size: 12px; font-weight: 500; color: var(--muted); }
+  .devices .dev .c-area, .devices .dev .c-ent { font-size: 13px; overflow-wrap: anywhere; }
+  .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
+  .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
+  /* the buttons are icons; the label of "add" stays, and all labels show on wide screens */
+  .devices .dev .acts .lbl { display: none; }
+  .devices .dev .acts .chip { width: 34px; padding: 0; justify-content: center; }
+  @media (min-width: 761px) {
+    .devices .dev .acts .chip.add { width: auto; padding: 0 10px; }
+    .devices .dev .acts .chip.add .lbl { display: inline; }
+  }
+  @media (min-width: 1300px) {
+    .devices .dev .acts .chip { width: auto; padding: 0 10px; }
+    .devices .dev .acts .lbl { display: inline; }
+  }
+  .devices .dev .none { color: var(--muted); }
+  .devices .dev .msub { display: none; }
   .devices .dev.quiet { cursor: default; }
   .devices .dev.quiet .name { color: var(--muted); }
   .spark { display: block; }
@@ -348,7 +370,13 @@ const STYLE = `
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; }
   @media (max-width: 760px) {
     .devices { grid-template-columns: minmax(0, 1fr) auto; }
-    .devices .dev { grid-template-columns: minmax(0, 1fr) auto; grid-template-columns: subgrid; }
+    .devices .dev-head { display: none; }
+    .devices .dev { grid-template-columns: subgrid; }
+    .devices .dev .c-type, .devices .dev .c-area, .devices .dev .c-ent { display: none; }
+    .devices .dev .msub { display: block; }
+    .devices .dev .sub { overflow-wrap: break-word; }
+    .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
+    .devices .dev .values { min-width: 0; flex-wrap: wrap; }
     .devices .dev .values { grid-column: 1; grid-row: 2; }
     /* phones: the buttons shrink to their icons, next to the values */
     .devices .dev .acts { grid-column: 2; grid-row: 2; flex-wrap: nowrap; }
@@ -449,19 +477,25 @@ const SORTERS = {
   gateway: (a, b) => collator.compare(a.gateway_name || "", b.gateway_name || ""),
 };
 const DESC_FIRST = new Set(["time", "dbm"]); // first click: newest, strongest
-// order of the Devices view; senders without a signal (bus) sort last by signal
-const byName = (a, b) => collator.compare(a.last.device || `\uffff${a.last.sender}`, b.last.device || `\uffff${b.last.sender}`);
+// Devices view: column sort on the merged list; equal rows by name, a missing value sorts as the lowest
+const byName = (a, b) => collator.compare(a.name || `\uffff${a.id}`, b.name || `\uffff${b.id}`);
 const DEV_SORTERS = {
   name: byName,
-  recent: (a, b) => SORTERS.time(b.last, a.last) || byName(a, b),
-  weak: (a, b) => (a.last.dbm == null) - (b.last.dbm == null) || (a.last.dbm ?? 0) - (b.last.dbm ?? 0) || byName(a, b),
-  busy: (a, b) => b.count - a.count || byName(a, b),
+  type: (a, b) => collator.compare(a.eep || "\uffff", b.eep || "\uffff") || byName(a, b),
+  area: (a, b) => collator.compare(a.area || "\uffff", b.area || "\uffff") || byName(a, b),
+  entities: (a, b) => (a.entities ?? -1) - (b.entities ?? -1) || byName(a, b),
+  heard: (a, b) => (a.time ?? -1) - (b.time ?? -1) || byName(a, b),
+  signal: (a, b) => (a.dbm ?? 0) - (b.dbm ?? 0) || byName(a, b), // no signal (bus): as the strongest
+  busy: (a, b) => a.count - b.count || byName(a, b),
 };
+const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
+const DEV_STATUS = ["", "known", "unknown", "silent"];
+const OLD_DEV_SORTS = { name: { key: "name", desc: false }, recent: { key: "heard", desc: true }, weak: { key: "signal", desc: false }, busy: { key: "busy", desc: true } };
 
-const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
+const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
 
 function loadView() {
-  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, devSort: "name", filter: { ...NO_FILTER } };
+  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, devSort: { key: "name", desc: false }, filter: { ...NO_FILTER } };
   try {
     const view = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const saved = view.filter || {};
@@ -469,7 +503,7 @@ function loadView() {
     return {
       pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
       sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : fallback.sort,
-      devSort: DEV_SORTERS[view.devSort] ? view.devSort : "name",
+      devSort: DEV_SORTERS[view.devSort?.key] ? { key: view.devSort.key, desc: !!view.devSort.desc } : OLD_DEV_SORTS[view.devSort] || fallback.devSort,
       filter: {
         gateway: text(saved.gateway),
         text: text(saved.text),
@@ -477,6 +511,8 @@ function loadView() {
         type: text(saved.type),
         repeats: saved.repeats === true,
         unknown: saved.unknown === true,
+        devStatus: DEV_STATUS.includes(saved.devStatus) ? saved.devStatus : "",
+        area: text(saved.area),
       },
     };
   } catch (err) {
@@ -659,12 +695,14 @@ class EnOceanEltakoPanel extends HTMLElement {
             </div>
             <select class="select" id="gatewayFilter" aria-label="${esc(t.gateway)}" hidden></select>
             <select class="select tg-only" id="typeFilter" aria-label="${esc(t.type)}"></select>
-            <button class="chip" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
+            <button class="chip tg-only" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
             <button class="chip tg-only" id="repeats" aria-pressed="false">${esc(t.repeats)}</button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
-            <select class="select dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}">${Object.entries(t.devSorts)
+            <select class="select dev-only" id="devStatus" aria-label="${esc(t.devStatus[""])}">${Object.entries(t.devStatus)
               .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
               .join("")}</select>
+            <select class="select dev-only" id="devArea" aria-label="${esc(t.devCols.area)}" hidden></select>
+            <select class="select m-only dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}"></select>
           </div>
           <form class="sendform tg-only" id="sendForm" hidden>
             <h3>${esc(t.sendTitle)}</h3>
@@ -684,7 +722,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="senders" id="senders"></div>
           <div class="takeover" id="takeover"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
-          <div class="pager tg-only" id="pager">
+          <div class="pager list-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
             <label><span>${esc(t.rowsPerPage)}</span><select class="select" id="pageSize" aria-label="${esc(t.rowsPerPage)}">${PAGE_SIZES.map((n) => `<option value="${n}">${n}</option>`).join("")}</select></label>
             <span class="range" id="range" aria-live="polite"></span>
@@ -745,6 +783,16 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderSenderIds();
     });
     $("devices").addEventListener("click", (e) => {
+      if (e.target.closest(".reset")) {
+        this._resetFilters();
+        return;
+      }
+      const head = e.target.closest("[data-dsort]");
+      if (head) {
+        const key = head.dataset.dsort;
+        this._setDevSort(key, this._devSort.key === key ? !this._devSort.desc : DEV_DESC_FIRST.has(key));
+        return;
+      }
       const add = e.target.closest(".add");
       if (add) {
         this._addDevice(add.dataset.id);
@@ -767,10 +815,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._setSort(key, this._sort.key === key ? !this._sort.desc : DESC_FIRST.has(key));
     });
     $("devSort").addEventListener("change", (e) => {
-      this._devSort = e.target.value;
-      this._saveView();
-      this._render();
+      const [key, dir] = e.target.value.split(":");
+      this._setDevSort(key, dir === "desc");
     });
+    $("devStatus").addEventListener("change", (e) => this._set("devStatus", e.target.value));
+    $("devArea").addEventListener("change", (e) => this._set("area", e.target.value));
     $("sortSelect").addEventListener("change", (e) => {
       const [key, dir] = e.target.value.split(":");
       this._setSort(key, dir === "desc");
@@ -862,7 +911,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("list").addEventListener("click", (e) => this._listClick(e));
     $("pageSize").value = String(this._pageSize);
-    $("devSort").value = this._devSort;
+    this._renderDevSort();
     $("text").value = this._filter.text;
     $("clearText").hidden = !this._filter.text;
     this._renderHead();
@@ -1035,6 +1084,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
     $("moreExport").textContent = view === "devices" ? this._t.exportDevicesShort : this._t.exportShort;
     this._toggleMenu(false);
+    this._renderFilters();
     $("export").title = exportLabel;
     $("export").setAttribute("aria-label", exportLabel);
     if (view !== "telegrams") this._toggleSend(false);
@@ -1280,21 +1330,19 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _exportDevices() {
-    // the sender list as shown (filter and order), one CSV row per sender, then the silent ones
+    // the device list as shown (filter and order, all pages), one CSV row per device
     const t = this._t;
     // like the list: a switch state as its value alone, raw data where nothing is decoded
     const values = (fields, data) => (fields?.length
       ? fields.map((f) => (f.label === "on" || f.label === "state" ? this._value(f.value) : `${this._label(f.label)} ${this._value(f.value)}${f.unit ? ` ${f.unit}` : ""}`)).join("; ")
       : data);
-    const head = [t.sender, "ID", t.eep, t.gateway, t.lastHeardAt, t.telegrams, t.perMinute, "dBm", t.content];
-    const heard = this._deviceList().map(({ last: r, fields, count, perMinute }) => [
-      r.device || t.unknownDevice, r.sender, r.eep || RORG[r.rorg] || r.rorg, r.gateway_name, r.time, count, perMinute, r.dbm ?? "", values(fields, r.data),
+    const head = [t.devCols.name, "ID", t.eep, t.devCols.area, t.devCols.entities, t.gateway, t.lastHeardAt, t.telegrams, t.perMinute, "dBm", t.content];
+    const lines = this._deviceList().map((d) => [
+      d.name || t.unknownDevice, d.id, d.eepFull || d.eep, d.area ?? "", d.entities ?? "", d.gateway_name,
+      d.time != null ? new Date(d.time).toISOString() : "", d.count, d.perMinute, d.dbm ?? "", d.silent ? t.silent : values(d.fields, d.data),
     ]);
-    const quiet = this._quietDevices().map((d) => [
-      d.device, d.id, "", d.gateway_name, d.last_seen != null ? new Date(d.last_seen * 1000).toISOString() : "", 0, 0, "", d.silent ? t.silent : "",
-    ]);
-    const csv = [head, ...heard, ...quiet].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    this._download(csv + "\n", "text/csv", `enocean-senders-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
+    const csv = [head, ...lines].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    this._download(csv + "\n", "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
   }
 
   _download(text, type, name) {
@@ -1336,7 +1384,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const gateways = $("gatewayFilter");
     this._options(gateways, [["", this._t.allGateways], ...this._gateways.map((g) => [g.entry_id, g.title])], f.gateway);
     gateways.hidden = !this._multi && !f.gateway;
-    $("resetTop").hidden = !(f.gateway || f.text || f.dir || f.type || f.repeats || f.unknown);
+    const devices = this._view === "devices";
+    $("resetTop").hidden = !(f.gateway || f.text || (devices ? f.devStatus || f.area : f.dir || f.type || f.repeats || f.unknown));
   }
 
   _options(select, options, value) {
@@ -1739,18 +1788,26 @@ class EnOceanEltakoPanel extends HTMLElement {
     await this._loadPools();
   }
 
-  _deviceList() {
-    // the latest telegram of each sender, with its values, count and rate
+  _deviceItems() {
+    // one entry per sender: the latest telegram of each sender heard, joined with the set-up device
+    // of that ID (area, entities, model), plus the set-up devices without a telegram in the buffer
     const f = this._filter;
     const since = Date.now() - 60000;
-    const senders = new Map();
+    const setup = new Map();
+    for (const g of this._gateways) {
+      for (const d of g.radio_devices || []) setup.set(d.id, { ...d, gateway: g.entry_id, gateway_name: g.title });
+    }
+    const heard = new Map();
+    const heardIds = new Set();
     for (const r of this._rows) {
-      if (r.dir !== "rx" || r.duplicate || (f.gateway && r.gateway !== f.gateway) || (f.unknown && r.device)) continue;
+      if (r.dir !== "rx" || r.duplicate) continue;
+      heardIds.add(r.sender);
+      if (f.gateway && r.gateway !== f.gateway) continue;
       const key = `${r.gateway}|${r.sender}`;
-      let d = senders.get(key);
+      let d = heard.get(key);
       if (!d) {
         d = { last: r, fields: null, teach: null, candidates: null, count: 0, perMinute: 0, dbm: [] };
-        senders.set(key, d);
+        heard.set(key, d);
       }
       d.count += 1;
       if (!d.fields && (r.fields || r.values)) d.fields = r.fields || Object.entries(r.values).map(([label, value]) => ({ label, value }));
@@ -1760,53 +1817,111 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (Date.parse(r.time) >= since) d.perMinute += 1;
       if (r.dbm != null && d.dbm.length < TREND_POINTS) d.dbm.unshift(r.dbm); // oldest first
     }
-    return [...senders.values()]
-      // what older telegrams of the sender told (teach-in, candidates) counts as well
-      .filter((d) => this._textMatches(d.last, [d.teach, ...(d.candidates || [])]))
-      .sort(DEV_SORTERS[this._devSort]);
+    const items = [];
+    for (const [key, d] of heard) {
+      const r = d.last;
+      const info = setup.get(r.sender);
+      items.push({
+        key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
+        eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
+        model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null,
+        gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
+        dbm: r.dbm, trend: d.dbm, fields: d.fields, data: r.data, teach: d.teach, candidates: d.candidates, rorg: r.rorg,
+      });
+    }
+    for (const d of setup.values()) {
+      if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
+      items.push({
+        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true,
+        eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities,
+        gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
+        dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
+      });
+    }
+    return items;
+  }
+
+  _eepLabel(eep) {
+    // "A5-08-01:std" -> "A5-08-01"; the Eltako variant is named in the tooltip
+    return String(eep || "").replace(/:(std|eltako)$/, "");
+  }
+
+  _devMatches(d) {
+    const f = this._filter;
+    if (f.area && d.area !== f.area) return false;
+    if (f.devStatus === "known" && d.unknown) return false;
+    if (f.devStatus === "unknown" && !d.unknown) return false;
+    if (f.devStatus === "silent" && !d.silent) return false;
+    const text = f.text.toLowerCase();
+    if (!text) return true;
+    const compact = text.replace(/[-:\s]/g, "");
+    return (
+      [d.name, d.eepFull, d.model, d.area, d.gateway_name, d.data, d.teach, ...(d.candidates || [])].some((v) => v && String(v).toLowerCase().includes(text)) ||
+      (d.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
+      (!!compact && d.id.replace(/-/g, "").toLowerCase().includes(compact))
+    );
+  }
+
+  _deviceList() {
+    // filtered and in the chosen order
+    const { key, desc } = this._devSort;
+    const sorter = DEV_SORTERS[key];
+    return this._deviceItems().filter((d) => this._devMatches(d)).sort((a, b) => (desc ? sorter(b, a) : sorter(a, b)));
+  }
+
+  _setDevSort(key, desc) {
+    this._devSort = { key, desc };
+    this._offset = 0;
+    this._saveView();
+    this._renderDevSort();
+    this._render();
+  }
+
+  _renderDevSort() {
+    const t = this._t;
+    const current = `${this._devSort.key}:${this._devSort.desc ? "desc" : "asc"}`;
+    const options = Object.entries(t.devSorts);
+    // a column order without a preset (a second click on a header): named after the column
+    if (!options.some(([v]) => v === current) && t.devCols[this._devSort.key]) options.push([current, `${t.devCols[this._devSort.key]} ${this._devSort.desc ? "↓" : "↑"}`]);
+    this._options(this.shadowRoot.getElementById("devSort"), options, current);
   }
 
   _renderDevices(background) {
     const t = this._t;
     const container = this.shadowRoot.getElementById("devices");
+    const all = this._deviceItems();
     const devices = this._deviceList();
-    this.shadowRoot.getElementById("count").textContent = t.deviceCount(devices.length);
+    const total = devices.length;
+    this._total = total;
+    this._newAbove = 0;
+    if (this._offset >= total) this._offset = total ? Math.floor((total - 1) / this._pageSize) * this._pageSize : 0;
+    const page = devices.slice(this._offset, this._offset + this._pageSize);
+    this.shadowRoot.getElementById("count").textContent = t.devCount(total, all.length);
+    this._renderPager(total, page.length);
+    // the area filter offers the areas in use (and a chosen one that has just emptied)
+    const areas = [...new Set([...all.map((d) => d.area).filter(Boolean), ...(this._filter.area ? [this._filter.area] : [])])].sort(collator.compare);
+    const areaSelect = this.shadowRoot.getElementById("devArea");
+    this._options(areaSelect, [["", t.allAreas], ...areas.map((a) => [a, a])], this._filter.area);
+    areaSelect.hidden = !areas.length;
+    this.shadowRoot.getElementById("devStatus").value = this._filter.devStatus;
     if (this._hold("devices", container, background)) return;
+    if (!page.length) {
+      const filtered = all.length > 0;
+      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(filtered ? t.noMatchTitle : t.noDevices)}</b>${
+        filtered ? `<span>${esc(t.noMatchText)}</span><button class="chip reset">${esc(t.resetFilters)}</button>` : ""
+      }</div>`);
+      return;
+    }
     const now = Date.now();
-    const quiet = this._quietDevices();
-    const heard = devices.length
-      ? devices.map((d) => this._deviceRow(d, now)).join("")
-      : quiet.length ? "" : `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noDevices)}</b></div>`;
-    this._replace(container, heard + (quiet.length
-      ? `<div class="quiet-head" title="${esc(t.quietHint)}">${esc(t.quiet(quiet.length))}</div>${quiet.map((d) => this._quietRow(d, now)).join("")}`
-      : ""));
-  }
-
-  _quietDevices() {
-    // set-up devices without a telegram in the buffer (any gateway may have heard them)
-    const f = this._filter;
-    if (f.unknown) return [];
-    const heard = new Set(this._rows.filter((r) => r.dir === "rx").map((r) => r.sender));
-    const text = f.text.toLowerCase();
-    const compact = text.replace(/[-:\s]/g, "");
-    return this._gateways
-      .filter((g) => !f.gateway || g.entry_id === f.gateway)
-      .flatMap((g) => (g.radio_devices || []).map((d) => ({ ...d, gateway_name: g.title })))
-      .filter((d) => !heard.has(d.id))
-      .filter((d) => !text || d.device.toLowerCase().includes(text) || (!!compact && d.id.replace(/-/g, "").toLowerCase().includes(compact)))
-      .sort((a, b) => b.silent - a.silent || collator.compare(a.device, b.device));
-  }
-
-  _quietRow(d, now) {
-    const t = this._t;
-    const seen = d.last_seen != null ? t.seenAgo(t.ago(Math.max(0, Math.round(now / 1000 - d.last_seen)))) : t.seenNever;
-    const sub = [`<span class="mono">${esc(d.id)}</span>`, this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
-    return `<div class="dev quiet" data-key="${esc(`quiet|${d.id}`)}">
-      <div class="ident"><div class="line1"><span class="name">${esc(d.device)}</span></div><div class="sub">${sub}</div></div>
-      <div class="values">${d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : ""}</div>
-      <div class="stats"><span>${esc(seen)}</span></div>
-      <div class="acts"></div>
-    </div>`;
+    const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard]];
+    const head = `<div class="dev-head">${cols
+      .map(([key, label, cls]) => {
+        if (!DEV_SORTERS[key]) return `<span>${esc(label)}</span>`;
+        const state = this._devSort.key === key ? ` aria-sort="${this._devSort.desc ? "descending" : "ascending"}"` : "";
+        return `<span class="${cls || ""}"><button data-dsort="${key}"${state} title="${esc(t.sortHint)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></span>`;
+      })
+      .join("")}<span></span></div>`;
+    this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
   }
 
   _sparkline(dbm) {
@@ -1820,37 +1935,46 @@ class EnOceanEltakoPanel extends HTMLElement {
     return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><polyline points="${points}"/></svg>`;
   }
 
-  _deviceRow({ last: r, fields, teach, candidates, count, perMinute, dbm }, now) {
+  _deviceRow(d, now) {
     const t = this._t;
-    const unknown = !r.device;
-    const name = unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(r.device)}</span>`;
-    // without a profile the telegram type says what kind of sender it is
-    const sub = [`<span class="mono">${esc(r.sender)}</span>`, esc(r.eep || RORG[r.rorg] || r.rorg), r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : "", this._multi ? esc(r.gateway_name) : ""]
-      .filter(Boolean)
-      .join(" · ");
-    const values = fields && fields.length
-      ? fields
+    const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(d.name)}</span>`;
+    const none = `<span class="none">${esc(t.noValue)}</span>`;
+    const sub = [`<span class="mono">${esc(d.id)}</span>`, d.model ? esc(d.model) : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    // phones have no columns: type, area and entities go below the ID
+    const msub = [d.eep ? `<span class="mono">${esc(d.eep)}</span>` : "", d.area ? esc(d.area) : "", d.entities != null ? esc(t.entitiesN(d.entities)) : ""].filter(Boolean).join(" · ");
+    const values = d.fields && d.fields.length
+      ? d.fields
           .map((f) =>
             f.label === "on" || f.label === "state"
               ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>`
               : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
           )
           .join("")
-      : `<span class="raw mono">${esc(r.data)}</span>`;
-    const hints = unknown
-      ? (teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(teach)}</span>` : "") +
-        (candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(candidates.join(", "))}</span>` : "")
-      : "";
-    const weak = r.dbm != null && r.dbm < WEAK_DBM;
-    const heard = t.ago(Math.max(0, Math.round((now - Date.parse(r.time)) / 1000)));
-    return `<div class="dev" data-key="${esc(`${r.gateway}|${r.sender}`)}" data-only="${esc(r.device || r.sender)}">
-      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div></div>
+      : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
+    const hints = d.unknown
+      ? (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "") +
+        (d.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span>` : "")
+      : d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "";
+    const weak = d.dbm != null && d.dbm < WEAK_DBM;
+    const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
+    const stats = d.quiet
+      ? `<span title="${esc(t.quietHint)}">${esc(heard)}</span>`
+      : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
+        <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span>`;
+    const only = d.name || d.id;
+    const acts = d.quiet
+      ? ""
+      : `<button class="chip" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
+          d.unknown ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
+        }`;
+    return `<div class="dev${d.quiet ? " quiet" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}">
+      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}</div>
+      <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
+      <div class="c-area">${d.area ? esc(d.area) : none}</div>
+      <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>
       <div class="values">${hints}${values}</div>
-      <div class="stats"><span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span>
-        <span class="signal">${this._sparkline(dbm)}${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span></div>
-      <div class="acts"><button class="chip" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
-        unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
-      }</div>
+      <div class="stats">${stats}</div>
+      <div class="acts">${acts}</div>
     </div>`;
   }
 
