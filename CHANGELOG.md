@@ -17,6 +17,11 @@ All notable changes to this project are documented here, in English and German
   positions for switching actuators, dimmers and cover actuators (Eltako series 14).
 - **Panel:** "Add device" on an unknown sender opens the integration page and highlights its
   gateway.
+- **Panel:** the gateway cards stand only above Telegrams and Devices, a single gateway has no
+  filter button; the views are tabs (arrow keys); the export button says it saves every
+  telegram matching the filter; a theme or primary colour of your own becomes the accent
+  colour; the takeover shows three steps (the never usable "Old IDs" step is gone), and
+  "Old integration off" opens the old integration's page; durations know days.
 
 #### Added
 
@@ -29,6 +34,18 @@ All notable changes to this project are documented here, in English and German
   meters of your devices (with their power sensor) to the Energy dashboard.
 - **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
   again under **Configure → Hidden senders**. The list keeps the newest 100 senders.
+- **Panel:** Devices lists your devices with no telegram in the monitor, with when they were
+  last heard and whether they are silent; the Live badge shows Connecting and No connection;
+  the send form gives an example of the right length per telegram type and checks the data
+  before sending.
+
+#### Fixed
+
+- **Panel:** clearing the display twice no longer brings back the telegrams of the first clear
+  after a reconnect; `/` and `P` no longer act in Sender IDs and Takeover; closing the send
+  form hides its hint; Devices searches data and values like Telegrams; older browsers without
+  `light-dark()` (iOS before 17.5) get the panel's colours; no status requests while the
+  browser tab is hidden.
 
 ### [0.1.3] - 2026-10-22
 
@@ -127,6 +144,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   (Eltako Baureihe 14) die Lernfunktion und die Drehschalterstellungen.
 - **Panel:** „Gerät hinzufügen“ bei einem unbekannten Sender öffnet die Integrationsseite und
   hebt sein Gateway hervor.
+- **Panel:** die Gateway-Karten stehen nur über Telegramme und Geräte, ein einzelnes Gateway hat
+  keinen Filterknopf; die Ansichten sind Tabs (Pfeiltasten); der Export-Knopf sagt, dass er alle
+  Telegramme zum Filter speichert; ein eigenes Design oder eine eigene Hauptfarbe wird zur
+  Akzentfarbe; die Übernahme zeigt drei Schritte (der nie nutzbare Schritt „Alte IDs“ ist weg),
+  und „Alte Integration aus“ öffnet die Seite der alten Integration; Zeitangaben kennen Tage.
 
 #### Neu
 
@@ -140,6 +162,18 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Sender ausblenden:** fremde Sender lassen sich ausblenden (pro Gateway gemerkt) und unter
   **Konfigurieren → Ausgeblendete Sender** wieder anzeigen. Die Liste behält die neuesten 100
   Sender.
+- **Panel:** Geräte listet deine Geräte ohne Telegramm im Monitor, mit dem letzten Empfang und
+  ob sie still sind; das Live-Kennzeichen zeigt Verbinde… und Keine Verbindung; das
+  Sendeformular zeigt ein Beispiel in der richtigen Länge je Telegrammtyp und prüft die Daten vor
+  dem Senden.
+
+#### Behoben
+
+- **Panel:** zweimal Anzeige leeren holt nach einem Reconnect die Telegramme des ersten Leerens
+  nicht mehr zurück; `/` und `P` wirken nicht mehr in Sender-IDs und Übernahme; Schließen des
+  Sendeformulars blendet seinen Hinweis aus; Geräte durchsucht Daten und Werte wie Telegramme;
+  ältere Browser ohne `light-dark()` (iOS vor 17.5) bekommen die Farben des Panels; keine
+  Statusabfragen, solange der Browser-Tab verborgen ist.
 
 ### [0.1.3] - 2026-10-22
 
