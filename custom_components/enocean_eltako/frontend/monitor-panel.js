@@ -15,6 +15,9 @@ const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeat
 const TREND_POINTS = 30; // telegrams in a sender's signal curve
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
+// what the send form accepts per telegram type (as websocket.py SEND_LENGTHS), with an example
+const SEND_TYPES = { F6: { bytes: [1, 1], example: "70", status: "30" }, D5: { bytes: [1, 1], example: "09", status: "00" },
+  A5: { bytes: [4, 4], example: "02640009", status: "00" }, D2: { bytes: [1, 14], example: "0100", status: "00" } };
 
 // Material Design Icons (Apache 2.0), inlined so the panel needs no icon loading
 const ICON = {
@@ -1145,9 +1148,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("send").addEventListener("click", () => this._toggleSend());
     $("sendCancel").addEventListener("click", () => this._toggleSend(false));
     $("sendGateway").addEventListener("change", () => this._renderSenders());
-    $("sendType").addEventListener("change", (e) => {
-      // a rocker telegram carries its button state in the status byte
-      $("sendStatus").value = e.target.value === "F6" ? "30" : "00";
+    $("sendType").addEventListener("change", () => this._sendTypeChanged());
+    $("sendForm").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this._toggleSend(false);
+        $("send").focus();
+      }
     });
     $("sendForm").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -1443,9 +1450,29 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._options($("sendGateway"), loaded.map((g) => [g.entry_id, g.title]), this._filter.gateway || loaded[0]?.entry_id || "");
       $("sendGatewayRow").hidden = loaded.length < 2;
       this._renderSenders();
+      this._sendTypeChanged(false);
     } else if ($("notice").querySelector("span").textContent === this._t.noSenders) {
       this._notice(""); // the hint belongs to the form
     }
+  }
+
+  _sendTypeChanged(status = true) {
+    // a rocker telegram carries its button state in the status byte; the example shows the length
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const type = SEND_TYPES[$("sendType").value];
+    if (status) $("sendStatus").value = type.status;
+    $("sendData").placeholder = type.example;
+    $("sendData").maxLength = type.bytes[1] * 3; // room for spaces between the bytes
+  }
+
+  _sendCheck() {
+    // the same checks as the server, before anything goes out
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const [min, max] = SEND_TYPES[$("sendType").value].bytes;
+    const data = $("sendData").value.replace(/\s/g, "");
+    const status = $("sendStatus").value.replace(/\s/g, "");
+    if (!/^([0-9a-f]{2})+$/i.test(data) || !/^[0-9a-f]{2}$/i.test(status)) return "invalid_format";
+    return data.length / 2 < min || data.length / 2 > max ? "invalid_length" : "";
   }
 
   _renderSenders() {
@@ -1464,6 +1491,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const $ = (id) => this.shadowRoot.getElementById(id);
     if (!$("sendSender").value) return;
+    const invalid = this._sendCheck();
+    if (invalid) {
+      this._notice(t.sendResult[invalid]);
+      return;
+    }
     $("sendGo").disabled = true;
     try {
       const result = await this._hass.callWS({
