@@ -234,7 +234,8 @@ Search by device, ID (with or without dashes), value name or data (key `/`), cho
 or sent, a gateway or a telegram type (RPS, 1BS, 4BS, VLD …), show unknown senders only or
 include repetitions; **Reset filters** clears them. The panel remembers the filters in the
 browser. Pause (key `P`) keeps collecting (up to 1,000) and shows how many telegrams arrived;
-export saves all telegrams matching the filter (every page) as JSON lines. The badge next to
+export saves all telegrams matching the filter (every page) as JSON lines; on a phone, export
+and **Clear display** sit in the **⋮** menu. The badge next to
 the title says **Live**, **Paused**, **Connecting…** or **No connection** (then telegrams are
 missing until Home Assistant is reachable again). While text in the list is selected, for example
 to copy an ID, new telegrams wait until the selection ends.
@@ -258,7 +259,8 @@ to the monitor's buffer (the newest 1,000 telegrams), not to the time since the 
 
 Below, **Set up, not in the monitor** lists your devices with no telegram in that buffer, with
 when they were last heard (or "nothing heard since the start") and **silent** for a device
-whose usual interval has passed three times.
+whose usual interval has passed three times. Export here saves this list (both parts) as CSV;
+sending and clearing belong to the telegram list and are not offered here.
 
 ### Send a telegram
 

@@ -21,7 +21,9 @@ All notable changes to this project are documented here, in English and German
   filter button; the views are tabs (arrow keys); the export button says it saves every
   telegram matching the filter; a theme or primary colour of your own becomes the accent
   colour; the takeover shows three steps (the never usable "Old IDs" step is gone), and
-  "Old integration off" opens the old integration's page; durations know days.
+  "Old integration off" opens the old integration's page; durations know days; on phones
+  export and clear sit in a ⋮ menu; Devices offers no send and clear, its export is a CSV of
+  the sender list.
 
 #### Added
 
@@ -148,7 +150,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   keinen Filterknopf; die Ansichten sind Tabs (Pfeiltasten); der Export-Knopf sagt, dass er alle
   Telegramme zum Filter speichert; ein eigenes Design oder eine eigene Hauptfarbe wird zur
   Akzentfarbe; die Übernahme zeigt drei Schritte (der nie nutzbare Schritt „Alte IDs“ ist weg),
-  und „Alte Integration aus“ öffnet die Seite der alten Integration; Zeitangaben kennen Tage.
+  und „Alte Integration aus“ öffnet die Seite der alten Integration; Zeitangaben kennen Tage;
+  auf dem Handy stehen Exportieren und Leeren in einem ⋮-Menü; Geräte bietet kein Senden und
+  Leeren, sein Export ist eine CSV der Senderliste.
 
 #### Neu
 

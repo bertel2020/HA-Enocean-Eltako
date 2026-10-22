@@ -245,7 +245,8 @@ Empfangenes oder Gesendetes, ein Gateway oder ein Telegrammtyp (RPS, 1BS, 4BS, V
 unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt alles auf. Das Panel
 merkt sich die Filter im Browser. Anhalten (Taste `P`) sammelt weiter (bis zu 1.000) und zeigt,
 wie viele Telegramme eingetroffen sind; Exportieren speichert alle Telegramme, die zum Filter
-passen (alle Seiten), als JSON-Zeilen. Das Kennzeichen neben dem Titel zeigt **Live**,
+passen (alle Seiten), als JSON-Zeilen; auf dem Handy stehen Exportieren und **Anzeige leeren** im
+Menü **⋮**. Das Kennzeichen neben dem Titel zeigt **Live**,
 **Pausiert**, **Verbinde…** oder **Keine Verbindung** (dann fehlen Telegramme, bis Home Assistant
 wieder erreichbar ist).
 Solange in der Liste Text markiert ist, etwa um eine ID zu kopieren, warten neue Telegramme,
@@ -273,7 +274,8 @@ auf die Zeit seit dem Start.
 
 Darunter listet **Eingerichtet, nicht im Monitor** deine Geräte ohne Telegramm in diesem Puffer,
 mit dem letzten Empfang (oder „seit dem Start nichts gehört“) und **still** bei einem Gerät,
-dessen üblicher Abstand dreimal verstrichen ist.
+dessen üblicher Abstand dreimal verstrichen ist. Exportieren speichert hier diese Liste (beide
+Teile) als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
 
 ### Telegramm senden
 
