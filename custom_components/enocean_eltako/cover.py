@@ -304,6 +304,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
                 self.position.anchor(100 if state == "open" else 0)
                 self._mark_anchor()
         elif "driven_time" in values:
+            self._rocker_direction = None  # stopped: a further press would start it again
             self._attr_is_opening = self._attr_is_closing = False
             self.position.driven(values["driven_time"], up=values["direction"] == "up")
             if self.position.inaccuracy == 0:
