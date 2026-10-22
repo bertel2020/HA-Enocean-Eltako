@@ -66,6 +66,9 @@ All notable changes to this project are documented here, in English and German
   state at once and survives a restart.
 - **ESP3 gateways:** a stray sync byte with an implausible packet length no longer holds back
   every telegram behind it (possible after a reconnect in the middle of a packet).
+- **ESP3 gateways:** the answer to a radio telegram is no longer taken for the answer to the
+  base ID or repeater command: after a reconnect the base ID was sometimes not read and the
+  gateway wrongly counted as silent, and a refused repeater setting counted as accepted.
 
 ### [0.1.6] - 2026-10-22
 
@@ -318,6 +321,10 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Zustand des Rollladens und übersteht einen Neustart.
 - **ESP3-Gateways:** ein verirrtes Sync-Byte mit unplausibler Paketlänge hält nicht mehr alle
   folgenden Telegramme zurück (möglich nach einem Reconnect mitten in einem Paket).
+- **ESP3-Gateways:** die Antwort auf ein Funktelegramm gilt nicht mehr als Antwort auf den
+  Base-ID- oder Repeater-Befehl: nach einem Reconnect wurde die Base-ID manchmal nicht gelesen
+  und das Gateway fälschlich als stumm gewertet, und eine abgelehnte Repeater-Einstellung galt als
+  übernommen.
 
 ### [0.1.6] - 2026-10-22
 

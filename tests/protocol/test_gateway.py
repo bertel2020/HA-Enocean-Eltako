@@ -31,6 +31,25 @@ async def test_read_base_id(fake: FakeGateway) -> None:
     assert not gw.connected
 
 
+@pytest.mark.parametrize("fake", [Protocol.ESP3], indirect=True)
+async def test_commands_ignore_radio_responses(fake: FakeGateway, monkeypatch) -> None:
+    """ESP3 answers each radio telegram with RET_OK; that is no answer to a command."""
+    monkeypatch.setattr(gateway, "RESPONSE_SETTLE", 0.05)
+    gw = Gateway(fake.protocol, TcpConnection("127.0.0.1", fake.port))
+    await gw.connect()
+    await fake.connected.wait()
+    radio_ok = esp3.Esp3Packet(esp3.PacketType.RESPONSE, b"\x00")
+    assert not gw._codec.answers_base_id(radio_ok)
+    assert await gw.read_base_id() == 0xFFB74480
+
+    await gw.send(RadioTelegram(Rorg.RPS, b"\x30", 0xFFB74481))
+    started = asyncio.get_running_loop().time()
+    fake.push(radio_ok.encode())
+    assert await gw.write_repeater(1)
+    assert asyncio.get_running_loop().time() - started >= 0.04  # waited for the radio answer
+    await gw.close()
+
+
 @pytest.mark.parametrize("fake", [Protocol.ESP2], indirect=True)
 async def test_read_base_id_times_out(fake: FakeGateway) -> None:
     fake.base_id = None
