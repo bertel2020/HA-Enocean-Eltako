@@ -1,51 +1,49 @@
-"""Discovery: a sender no device listens to shows up as a discovered device card.
+"""Discovery: senders no device listens to are offered under "Add device" of the gateway.
 
-Each unknown sender starts one integration_discovery flow (unique ID "device_<ID>"), so the
-card names the ID and the receiving gateway and offers the kinds that fit. HA's "Ignore"
-stores the ID as an ignored entry, so it never shows again. Our own sender IDs (pools) are
-skipped; a gateway can switch discovery off in its options.
+The hub keeps the last telegram of each unknown sender; the device flow lists them as
+"Discovered devices". One notification per gateway announces new ones. Our own sender IDs
+(pools) are skipped; a gateway can switch discovery off in its options.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
+from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import discovery_flow
 
 from .const import CONF_DISCOVERY, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
-from .protocol.ids import format_id
-from .protocol.telegram import RadioTelegram
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
 
-DISCOVERY_PREFIX = "device_"
+
+_MESSAGES = {
+    "en": 'Discovered devices: {count}. Add them under "Add device" of this gateway.',
+    "de": "Entdeckte Geräte: {count}. Füge sie beim Gateway unter „Gerät hinzufügen“ hinzu.",
+}
 
 
-def discovery_unique_id(device_id: int) -> str:
-    return f"{DISCOVERY_PREFIX}{format_id(device_id)}"
+def pending(entry: EnOceanEltakoConfigEntry) -> list[ReceivedTelegram]:
+    """Unknown senders this gateway heard that are not set up as devices (newest first)."""
+    from .protocol.ids import format_id
 
-
-def discovery_data(gateway: str, sender: int, telegram: RadioTelegram) -> dict[str, Any]:
-    """What the discovery flow needs: the receiving gateway, the ID and the telegram."""
-    return {
-        "gateway": gateway,
-        "device_id": format_id(sender),
-        "rorg": telegram.rorg,
-        "data": telegram.data.hex(),
-        "dbm": telegram.dbm,
-    }
+    configured = {s.unique_id.split("_")[0] for s in entry.subentries.values() if s.unique_id}
+    heard = [
+        t
+        for t in entry.runtime_data.hub.discovered.values()
+        if t.gateway == entry.entry_id and format_id(t.sender) not in configured
+    ]
+    return sorted(heard, key=lambda t: t.timestamp, reverse=True)
 
 
 @callback
 def async_setup_discovery(
     hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
 ) -> Callable[[], None]:
-    """Start a discovery flow for each unknown sender this gateway hears (once per run)."""
+    """Remember each unknown sender this gateway hears; tell when a new one shows up."""
     hub = entry.runtime_data.hub
 
     @callback
@@ -54,27 +52,19 @@ def async_setup_discovery(
         if (
             received.gateway != entry.entry_id
             or not entry.options.get(CONF_DISCOVERY, True)
-            or sender in hub.discovered
             or hub.senders.in_pool(sender)
         ):
             return
-        hub.discovered.add(sender)
-        discovery_flow.async_create_flow(
-            hass,
-            DOMAIN,
-            {"source": SOURCE_INTEGRATION_DISCOVERY},
-            discovery_data(entry.entry_id, sender, received.telegram),
-        )
+        new = sender not in hub.discovered
+        hub.discovered[sender] = received
+        if new:
+            persistent_notification.async_create(
+                hass,
+                _MESSAGES.get(hass.config.language, _MESSAGES["en"]).format(
+                    count=len(pending(entry))
+                ),
+                title=entry.title,
+                notification_id=f"{DOMAIN}_discovered_{entry.entry_id}",
+            )
 
     return hub.dispatcher.add_unknown_listener(heard)
-
-
-@callback
-def async_abort_configured(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Drop discovery cards of senders that were added as devices in the meantime."""
-    configured = {f"{DISCOVERY_PREFIX}{s.unique_id}" for s in entry.subentries.values()}
-    for flow in hass.config_entries.flow.async_progress_by_handler(
-        DOMAIN, include_uninitialized=True
-    ):
-        if flow["context"].get("unique_id") in configured:
-            hass.config_entries.flow.async_abort(flow["flow_id"])

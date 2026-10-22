@@ -204,7 +204,7 @@ const TEXT = {
     alone: (peer) => `only ${peer} may send (capture)`,
     noGateways: "No gateway set up yet.",
     addResult: {
-      already_configured: "This sender is already set up or ignored (see ignored integrations).",
+      already_configured: "This sender is already set up.",
       no_matching_kind: "No device kind fits this telegram. Add it on the gateway with Add device → By EEP.",
       gateway_not_loaded: "The gateway that heard it is not loaded.",
       not_found: "No telegram from this sender in the monitor any more.",
@@ -359,7 +359,7 @@ const TEXT = {
     alone: (peer) => `nur ${peer} darf senden (Mitschnitt)`,
     noGateways: "Noch kein Gateway eingerichtet.",
     addResult: {
-      already_configured: "Dieser Sender ist schon eingerichtet oder ignoriert (siehe ignorierte Integrationen).",
+      already_configured: "Dieser Sender ist schon eingerichtet.",
       no_matching_kind: "Zu diesem Telegramm passt keine Geräteart. Am Gateway über Gerät hinzufügen → Per EEP anlegen.",
       gateway_not_loaded: "Das Gateway, das ihn gehört hat, ist nicht geladen.",
       not_found: "Kein Telegramm dieses Senders mehr im Monitor.",
@@ -1339,8 +1339,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._notice(this._t.addResult[err.code] || this._t.addResult.failed);
       return;
     }
-    if (result.flow_id || result.reason === "already_in_progress") {
-      // the discovered card waits on the integration page
+    if (result.entry_id) {
+      // the sender waits under "Add device" of its gateway on the integration page
       history.pushState(null, "", "/config/integrations/integration/enocean_eltako");
       window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
       return;

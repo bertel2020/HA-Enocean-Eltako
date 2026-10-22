@@ -71,8 +71,8 @@ mit denen Home Assistant es steuert, je mit eigener Sender-ID aus dem Pool des G
   Hardware geprüft.
 - **Eigene Definition**: Sensoren, die du in `/config/enocean_eltako/custom_devices.yaml`
   beschreibst.
-- **Entdeckte Sender**: jeder unbekannte Sender, den ein Gateway hört, erscheint als Karte
-  mit einem Vorschlag für die Geräteart.
+- **Entdeckte Sender**: jeder unbekannte Sender, den ein Gateway hört, steht unter **Gerät hinzufügen →
+  Entdeckte Geräte** und bekommt einen Vorschlag für die Geräteart.
 
 Wie jede Art angelegt wird: [Benutzerhandbuch](USER-GUIDE.de.md). Welche Einlernfunktion am
 Eltako-Aktor der Baureihe 14 zu welchem Einlern-Button gehört: [teach_in.de.md](teach_in.de.md).

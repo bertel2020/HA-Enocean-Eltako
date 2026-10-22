@@ -97,6 +97,7 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .custom_devices import DEFINITIONS
+from .discovery import pending
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
@@ -607,8 +608,40 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             return self.async_abort(reason="gateway_not_loaded")
         self._device_model = None  # also when coming back: learning then suggests the kind
         custom = [CUSTOM] if DEFINITIONS else []  # I8: the user's own definitions
+        found = ["discovered"] if pending(self._get_entry()) else []
         return self.async_show_menu(
-            step_id="user", menu_options=["learn", *GROUPS, GROUP_VIRTUAL, "eep", *custom]
+            step_id="user",
+            menu_options=[*found, "learn", *GROUPS, GROUP_VIRTUAL, "eep", *custom],
+        )
+
+    async def async_step_discovered(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Pick one of the senders this gateway heard; the kind is suggested from its telegram."""
+        heard = {format_id(t.sender): t for t in pending(self._get_entry())}
+        if user_input is not None:
+            self._learned = heard.get(user_input[CONF_DEVICE_ID])
+            if self._learned is None:
+                return self.async_abort(reason="already_configured")
+            return await self.async_step_learned()
+        if not heard:
+            return self.async_abort(reason="no_discovered")
+        options = []
+        for sender_id, t in heard.items():
+            data = t.telegram.data
+            teach_in = decode_teach_in_4bs(data) if t.telegram.rorg == Rorg.BS4 else None
+            dbm = f"{t.telegram.dbm} dBm" if t.telegram.dbm is not None else "-"
+            eep = teach_in.eep if teach_in else f"{t.telegram.rorg:02X}"
+            options.append(SelectOptionDict(value=sender_id, label=f"{sender_id} ({eep}, {dbm})"))
+        return self.async_show_form(
+            step_id="discovered",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_ID): SelectSelector(
+                        SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST)
+                    )
+                }
+            ),
         )
 
     async def async_step_custom(

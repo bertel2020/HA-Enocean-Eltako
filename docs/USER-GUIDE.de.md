@@ -109,9 +109,10 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
 - **Eigene Definition**: Sensoren, die du selbst beschreibst, siehe unten.
 
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
-erscheint als **entdeckt**-Karte auf der Integrationsseite. **Hinzufügen** schlägt die
-Geräteart vor und trägt die ID ein; **Ignorieren** blendet fremde Sender (z. B. vom
-Nachbarn) dauerhaft aus. In den Einstellungen des Gateways lässt sich die Discovery abschalten.
+steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Benachrichtigung
+meldet neue). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
+vom Nachbarn) bleiben einfach unbenutzt; nach einem Neustart beginnt die Liste leer. In den
+Einstellungen des Gateways lässt sich die Discovery abschalten.
 
 Eltako-Aktoren der Baureihe 14 lernen eine Sender-ID über eine Einlernfunktion am Aktor; welche
 Funktion zu welchem Einlern-Button gehört, steht in [teach_in.de.md](teach_in.de.md).
@@ -213,8 +214,8 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
 - Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
   Senders steht die EEP dabei.
 - Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und Signal in dBm oder filtert auf
-  diesen Sender. Bei unbekannten Sendern öffnet dort **Gerät hinzufügen** die zugehörige
-  Entdeckt-Karte.
+  diesen Sender. Bei unbekannten Sendern öffnet dort **Gerät hinzufügen** die Integrationsseite,
+  wo sie unter **Gerät hinzufügen → Entdeckte Geräte** warten.
 - Die Details zeigen außerdem die EEP (mit Variante) und bei Eltako-Geräten den Gerätetyp; was
   sich gegenüber dem vorigen Telegramm des Senders geändert hat (geänderte Bytes und Werte); einen
   Befehl und die Antwort des Geräts mit der Laufzeit; die Repeater-Stufen und wie viele Kopien
