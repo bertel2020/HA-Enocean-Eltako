@@ -72,6 +72,11 @@ for (const lang of ["en", "de"]) {
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 4);
+    root.getElementById("weakHint").click();
+    await settle();
+    expect("weak-signal devices", root.querySelectorAll(".dev").length, 1);
+    root.querySelector('[data-unset="devStatus"]').click();
+    await settle();
     root.querySelector("[data-teach]").click();
     await settle();
     expect("teach-in form open", root.getElementById("teachForm").hidden, false);
