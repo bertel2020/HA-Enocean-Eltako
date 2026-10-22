@@ -56,6 +56,9 @@ All notable changes to this project are documented here, in English and German
 - **Heating actuator:** when the room temperature sensor becomes unavailable, Home Assistant
   stops sending instead of repeating the last temperature, so the actuator falls back to its
   fault mode rather than heating to a frozen value.
+- **Covers with a controller:** a full run is sent in whole seconds rounded up, so the driven
+  time the actuator reports reaches the full run and renews the position anchor (a travel time
+  of 15.3 s sent 17 s instead of 18 s).
 
 ### [0.1.6] - 2026-10-22
 
@@ -298,6 +301,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Heizungsaktor:** ist der Raumtemperaturfühler nicht verfügbar, sendet Home Assistant nichts
   mehr, statt die letzte Temperatur zu wiederholen; der Aktor geht so in seinen Störbetrieb,
   statt auf einen eingefrorenen Wert zu heizen.
+- **Rollläden mit Controller:** eine Vollfahrt wird in ganzen, aufgerundeten Sekunden gesendet,
+  damit die gemeldete Fahrzeit die Vollfahrt erreicht und den Positionsanker erneuert (bei 15,3 s
+  Fahrzeit wurden 17 statt 18 s gesendet).
 
 ### [0.1.6] - 2026-10-22
 
