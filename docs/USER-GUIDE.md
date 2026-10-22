@@ -209,7 +209,9 @@ between them). Above Telegrams and Devices it shows a compact summary per gatewa
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
 With several gateways, **Telegrams** on a gateway filters by it. **Details** expands the connection, send queue
 and unconfirmed commands. For a gateway through the Device Proxy or EnOcean Proxy it also shows the app and its version,
-connected programs, air time against the 1 % limit and any capture send lock.
+connected programs, air time against the 1 % limit and any capture send lock. Once the summary
+is scrolled away, the bar of the list (it stays on top) shows each gateway's state and telegrams
+per minute; a click on it scrolls back to the cards.
 
 ### Telegram list
 
@@ -236,9 +238,10 @@ several gateways, the gateway.
 
 ### Search, filters, pause
 
-Search by device, ID (with or without dashes), value name or data (key `/`), choose received
-or sent, a gateway or a telegram type (RPS, 1BS, 4BS, VLD …), show unknown senders only or
-include repetitions; **Reset filters** clears them. The panel remembers the filters in the
+Search by device, ID (with or without dashes), value name or data (key `/`) and received or
+sent are right above the list. **Filter** opens the others: a gateway, a telegram type (RPS, 1BS,
+4BS, VLD …), unknown senders only or with repetitions. Set filters show as chips above the list;
+their cross removes one, **Reset filters** clears them all. The panel remembers the filters in the
 browser. Pause (key `P`) keeps collecting (up to 1,000) and shows how many telegrams arrived;
 export saves all telegrams matching the filter (every page) as JSON lines; on a phone, export
 and **Clear display** sit in the **⋮** menu. The badge next to
@@ -273,7 +276,7 @@ telegram type and what its telegrams tell: a teach-in profile or the profiles th
 arrow icon opens the device's page in Home Assistant.
 
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
-search box, the gateway, **All devices / Set up / Unknown / Silent** and the area narrow the list,
+search box and, under **Filter**, the gateway, the status (**All devices / Set up / Unknown / Silent**) and the area narrow the list,
 and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
 newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
 as CSV; sending and clearing belong to the telegram list and are not offered here.
@@ -292,7 +295,9 @@ to any telegram; the telegram appears in the list as sent.
 
 The **Sender IDs** switch of the panel shows who uses which sender ID: per gateway (and per bus
 group) the free IDs of the pool, and each device with its IDs, their profile and status, blocked
-IDs first. Radio gateways hand out base ID + 1…127.
+IDs first. Radio gateways hand out base ID + 1…127. The pool map shows every ID as a small
+square (free, assigned, blocked, used elsewhere; the legend below names the colours); the tooltip
+names ID and device, a click jumps to its row.
 
 After a device is deleted its ID stays **blocked** until it is taught out of every actuator.
 **Free** releases it once the actuator has forgotten it, after a confirmation.
