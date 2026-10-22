@@ -122,7 +122,7 @@ export const takeover = {
     const container = this.shadowRoot.getElementById("takeover");
     const gateways = this._tkGateways();
     if (!gateways.length) {
-      this._replace(container, `<div class="empty">${svg(ICON.tower)}<b>${esc(t.noGateways)}</b></div>`);
+      this._replace(container, this._noGateway());
       return;
     }
     const devices = this._tkDevices();
@@ -199,7 +199,7 @@ export const takeover = {
     const toolbar = this._tkToolbar(select, pills, "data-tk-filter", active);
     let list;
     if (!visible.length) {
-      list = `<div class="hint">${esc(t.tkNoMatch)}</div>`;
+      list = this._emptyState(ICON.search, t.tkNoMatch, "", "", true);
     } else if (active === "ready") {
       const q = tk.q.trim();
       list = this._tkGroups(visible)
@@ -236,7 +236,7 @@ export const takeover = {
   _renderMapping(rows, oldActive, select) {
     const t = this._t;
     const tk = this._tk;
-    if (!rows.length) return `<div class="hint">${esc(t.tkEmpty)}</div>`;
+    if (!rows.length) return this._emptyState(ICON.check, t.tkEmpty, "", "", true);
     const used = rows.filter(isUsed).length;
     const pills = [["all", t.tkFilterAll, rows.length], ["used", t.tkFilterUsed, used], ["unused", t.tkFilterUnused, rows.length - used]];
     const active = tk.mfilter;
@@ -282,7 +282,7 @@ export const takeover = {
     return `${this._tkToolbar(select, pills, "data-tk-mfilter", active, extra)}
       <p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>
       ${visible.length ? `<table><colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
-        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead>${body}</table>` : `<div class="hint">${esc(t.tkNoMatch)}</div>`}`;
+        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead>${body}</table>` : this._emptyState(ICON.search, t.tkNoMatch, "", "", true)}`;
   },
 
   _takeoverInput(e) {
