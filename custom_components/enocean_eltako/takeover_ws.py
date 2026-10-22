@@ -1,4 +1,5 @@
-"""Websocket API of the panel's takeover view: preview, take over, old -> new entity IDs."""
+"""Websocket API of the panel's takeover view: preview, take over, old -> new entity IDs,
+and carrying settings of the old integration over to devices already set up."""
 
 from __future__ import annotations
 
@@ -14,20 +15,25 @@ from homeassistant.helpers import entity_registry as er
 from .const import CONF_BASE_ID, DOMAIN
 from .protocol.ids import format_id, parse_id
 from .takeover import (
+    CARRY_OPTIONS,
     Carried,
+    apply_carried,
     async_old_config,
     async_take_over,
     async_takeover_available,
     carried_from,
     find_gateway,
+    missing_carried,
+    new_entity,
     old_active,
     old_entities,
-    old_suffix,
     plan,
     primary_entity,
     registered_device,
 )
-from .usage import KINDS, async_usage
+from .usage import KINDS, Usage, async_usage
+
+CARRY = [vol.In(CARRY_OPTIONS)]
 
 
 @callback
@@ -36,6 +42,7 @@ def async_setup_takeover_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_takeover_preview)
     websocket_api.async_register_command(hass, ws_takeover_run)
     websocket_api.async_register_command(hass, ws_takeover_mapping)
+    websocket_api.async_register_command(hass, ws_takeover_carry)
 
 
 def _loaded_entry(hass: HomeAssistant, entry_id: str) -> Any:
@@ -90,9 +97,14 @@ async def ws_takeover_preview(
         connection.send_error(msg["id"], error or "no_config", "nothing to take over")
         return
     old = old_entities(hass)
+    usage = await async_usage(
+        hass, [e.entity_id for d in devices for e in old.get(d.device_id, [])]
+    )
     result = []
     for device in devices:
-        carried = carried_from(hass, old.get(device.device_id, []))
+        entries = old.get(device.device_id, [])
+        carried = carried_from(hass, entries)
+        labels = carried.labels.union(*(e.labels for e in entries))
         result.append(
             {
                 "id": format_id(device.device_id),
@@ -101,12 +113,19 @@ async def ws_takeover_preview(
                 "ready": device.model is not None,
                 "reason": device.reason,
                 "area": _area_name(hass, carried.area_id) if carried.area_id else None,
-                "labels": sorted(_label_names(hass, carried.labels | carried.entity_labels)),
+                "labels": sorted(_label_names(hass, labels)),
+                "carry": sorted(carried.available()),
+                "used": _place_count([usage[e.entity_id] for e in entries]),
             }
         )
     connection.send_result(
         msg["id"], {"devices": result, "old_active": old_active(hass), "old_devices": len(old)}
     )
+
+
+def _place_count(usages: list[Usage]) -> int:
+    """How many automations, scripts, scenes and dashboards use any of these entities."""
+    return len({(k, p["name"]) for u in usages for k, places in u.items() for p in places})
 
 
 def _area_name(hass: HomeAssistant, area_id: str) -> str:
@@ -128,7 +147,7 @@ def _label_names(hass: HomeAssistant, label_ids: set[str]) -> list[str]:
         vol.Required("type"): "enocean_eltako/takeover/run",
         vol.Required("entry_id"): str,
         vol.Required("devices"): [str],
-        vol.Optional("carry_over", default=True): bool,
+        vol.Optional("carry", default=[]): CARRY,
     }
 )
 @websocket_api.require_admin
@@ -146,29 +165,11 @@ async def ws_takeover_run(
         return
     chosen = set(msg["devices"])
     ready = [d for d in devices if d.model is not None and format_id(d.device_id) in chosen]
-    result = await async_take_over(hass, entry, ready, carry_over=msg["carry_over"])
+    result = await async_take_over(hass, entry, ready, carry=set(msg["carry"]))
     connection.send_result(
         msg["id"],
         {"count": result.count, "skipped": result.skipped, "carried": result.carried},
     )
-
-
-def _new_entity(
-    old: er.RegistryEntry, old_primary: er.RegistryEntry | None, new: list[er.RegistryEntry]
-) -> er.RegistryEntry | None:
-    """The new entity that replaces an old one: the main one, the ID sensor, or the same kind."""
-    if old is old_primary:
-        return primary_entity(new)
-    if old_suffix(old) == "id":
-        return next((e for e in new if e.translation_key == "enocean_id"), None)
-    same = [
-        e
-        for e in new
-        if e.domain == old.domain
-        and old.original_device_class
-        and e.original_device_class == old.original_device_class
-    ]
-    return same[0] if len(same) == 1 else None
 
 
 @websocket_api.websocket_command(
@@ -190,16 +191,21 @@ async def ws_takeover_mapping(
             continue
         if (registered := registered_device(hass, entry, device)) is None:
             continue
-        taken[device.device_id] = er.async_entries_for_device(registry, registered.id)
+        taken[device.device_id] = er.async_entries_for_device(
+            registry, registered.id, include_disabled_entities=True
+        )
     titles = {d.device_id: d.subentry.title for d in entry.runtime_data.devices.values()}
     rows: list[dict[str, Any]] = []
+    olds: dict[int, Carried] = {}
     for device_id, entries in sorted(old_entities(hass).items()):
         new = taken.get(device_id)
         main = primary_entity(entries)
         carried: Carried = carried_from(hass, entries)
+        if new is not None:
+            olds[device_id] = carried
         name = titles.get(device_id) or _old_device_name(hass, entries) or format_id(device_id)
         for old in sorted(entries, key=lambda e: (e is not main, e.entity_id)):
-            replacement = _new_entity(old, main, new) if new is not None else None
+            replacement = new_entity(old, main, new) if new is not None else None
             rows.append(
                 {
                     "device": name,
@@ -215,8 +221,36 @@ async def ws_takeover_mapping(
     for row in rows:
         row["usage"] = usage[row["old"]]
     totals = {kind: len({n for u in usage.values() for n in u[kind]}) for kind in KINDS}
+    # per set-up device what the old integration had that it still lacks
+    missing = {
+        format_id(device_id): sorted(changes)
+        for device_id, changes in missing_carried(hass, entry, olds).items()
+    }
     connection.send_result(
-        msg["id"], {"rows": rows, "totals": totals, "old_active": old_active(hass)}
+        msg["id"],
+        {"rows": rows, "totals": totals, "missing": missing, "old_active": old_active(hass)},
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/takeover/carry",
+        vol.Required("entry_id"): str,
+        vol.Required("carry"): CARRY,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_takeover_carry(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Carry the chosen settings over to the devices already set up; set values stay."""
+    if (entry := _loaded_entry(hass, msg["entry_id"])) is None:
+        connection.send_error(msg["id"], "gateway_not_loaded", "gateway not loaded")
+        return
+    carried = {i: carried_from(hass, entries) for i, entries in old_entities(hass).items()}
+    connection.send_result(
+        msg["id"], {"carried": apply_carried(hass, entry, carried, set(msg["carry"]))}
     )
 
 

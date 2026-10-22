@@ -315,6 +315,10 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     old = MockConfigEntry(domain="eltako", state=ConfigEntryState.LOADED)
     old.add_to_hass(hass)
     old_light = _old_device(hass, old, "Licht Büro", "FF-C2-4A-8F", "Büro")
+    registry = er.async_get(hass)
+    old_device = dr.async_get(hass).async_get(registry.async_get(old_light).device_id)
+    dr.async_get(hass).async_update_device(old_device.id, name_by_user="Schreibtisch")
+    registry.async_update_entity(old_light, icon="mdi:desk-lamp")
     entry.runtime_data.senders.pool.assign(0xFFB744BA, "device:FF-00-00-99:rocker")  # taken
 
     preview = (await _ws(hass_ws_client, hass, 1, "preview", entry_id=entry.entry_id))["result"]
@@ -324,6 +328,8 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
         devices.setdefault(d["id"], d)  # an ID listed twice: the first entry is the device
     assert devices["FF-C2-4A-8F"]["ready"] and devices["FF-C2-4A-8F"]["area"] == "Büro"
     assert devices["FF-C2-4A-8F"]["labels"] == ["matter_hub"]
+    assert devices["FF-C2-4A-8F"]["carry"] == ["area", "icons", "labels", "names"]
+    assert devices["FF-C2-4A-8F"]["used"] == 0
     assert not devices["05-00-00-12"]["ready"]  # already set up
     assert devices["05-00-00-12"]["reason"] == "takeover_exists"
     assert devices["FF-C2-4A-96"]["ready"]  # a button: becomes a virtual rocker
@@ -336,9 +342,11 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
             "run",
             entry_id=entry.entry_id,
             devices=["FF-C2-4A-8F", "FF-C2-4A-91", "01-00-00-07", "05-00-00-12", "FF-C2-4A-96"],
+            carry=["area", "labels"],
         )
     )["result"]
-    assert (ran["count"], ran["carried"]) == (4, 4)  # the meter was already there
+    # the meter was already there; only Licht Büro had something to carry over
+    assert (ran["count"], ran["carried"]) == (4, 1)
     assert "FF-B7-44-BA (Steckdose): in_use" in ran["skipped"][0]
     await server.connected.wait()
     assert entry.state is ConfigEntryState.LOADED
@@ -357,6 +365,7 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
         if e.original_name is None
     )
     assert main.labels == {"matter_hub"}
+    assert registered.name_by_user is None and main.icon is None  # not chosen
 
     mapping = (await _ws(hass_ws_client, hass, 3, "mapping", entry_id=entry.entry_id))["result"]
     assert mapping["old_active"] is True
@@ -365,8 +374,24 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert rows[old_light]["taken"] and rows[old_light]["area"] == "Büro"
     assert rows[old_light]["device"] == "Licht Büro"
     id_row = rows[old_light.replace("light.", "sensor.") + "_id"]
-    assert id_row["new"] is None  # this device has no ID sensor to replace it
+    # the new ID sensor replaces it, although it is disabled by default
+    assert id_row["new"] == "sensor.licht_buro_enocean_id"
     assert id_row["usage"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
+    assert mapping["missing"]["FF-C2-4A-8F"] == ["icons", "names"]
+
+    # carried over later: what is missing gets filled in, set values stay
+    reply = await _ws(
+        hass_ws_client, hass, 4, "carry", entry_id=entry.entry_id, carry=["names", "icons"]
+    )
+    assert reply["result"] == {"carried": 1}
+    assert dr.async_get(hass).async_get(registered.id).name_by_user == "Schreibtisch"
+    assert er.async_get(hass).async_get(main.entity_id).icon == "mdi:desk-lamp"
+    mapping = (await _ws(hass_ws_client, hass, 5, "mapping", entry_id=entry.entry_id))["result"]
+    assert mapping["missing"]["FF-C2-4A-8F"] == []
+    reply = await _ws(hass_ws_client, hass, 6, "carry", entry_id=entry.entry_id, carry=["names"])
+    assert reply["result"] == {"carried": 0}  # nothing left to do
+    reply = await _ws(hass_ws_client, hass, 7, "carry", entry_id=entry.entry_id, carry=["x"])
+    assert reply["error"]["code"] == "invalid_format"
 
 
 async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant) -> None:
@@ -375,6 +400,7 @@ async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant
         "automation",
         {
             "automation": {
+                "id": "abends",
                 "alias": "Licht abends",
                 "trigger": {"platform": "state", "entity_id": "input_boolean.x", "to": "on"},
                 "action": {"service": "light.turn_on", "target": {"entity_id": "light.alt"}},
@@ -400,8 +426,10 @@ async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant
 
     hass.data[LOVELACE_DATA] = Data()
     usage = await async_usage(hass, ["light.alt", "light.alt_2", "light.unused"])
-    assert usage["light.alt"]["automation"] == ["Licht abends"]
-    assert usage["light.alt"]["dashboard"] == ["Unser Zuhause"]
+    assert usage["light.alt"]["automation"] == [
+        {"name": "Licht abends", "path": "/config/automation/edit/abends"}
+    ]
+    assert usage["light.alt"]["dashboard"] == [{"name": "Unser Zuhause", "path": "/home"}]
     assert usage["light.alt"]["scene"] == usage["light.alt"]["script"] == []
     assert usage["light.alt_2"]["dashboard"] == []  # no prefix match
     assert usage["light.unused"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
@@ -410,7 +438,7 @@ async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant
 def test_new_entity_for_an_old_one() -> None:
     from types import SimpleNamespace as Entry
 
-    from custom_components.enocean_eltako.takeover_ws import _new_entity
+    from custom_components.enocean_eltako.takeover import new_entity as _new_entity
 
     light = Entry(
         domain="light", original_name=None, original_device_class=None, translation_key=None
@@ -451,3 +479,47 @@ def test_new_entity_for_an_old_one() -> None:
     assert _new_entity(old_id, None, new) is id_sensor  # the old "Id" sensor
     assert _new_entity(old_temp, None, new) is temp  # the one sensor of its kind
     assert _new_entity(old_temp, None, [temp, other_temp]) is None  # two: not guessed
+
+
+def test_carry_changes_fill_in_and_never_overwrite() -> None:
+    from types import SimpleNamespace as Entry
+
+    from custom_components.enocean_eltako.takeover import Carried, carry_changes
+
+    hidden, disabled = er.RegistryEntryHider.USER, er.RegistryEntryDisabler.USER
+    old_main = Entry(
+        entity_id="light.alt",
+        labels={"a"},
+        name="Schreibtisch",
+        icon=None,
+        hidden_by=None,
+        disabled_by=None,
+        options={"conversation": {"should_expose": False}, "cloud.alexa": {}},
+    )
+    new_main = Entry(
+        entity_id="light.neu",
+        original_name=None,
+        labels=set(),
+        name="Eigener",  # set on the new one: stays
+        icon=None,
+        hidden_by=None,
+        disabled_by=None,
+        options={"conversation": {"should_expose": True}},
+    )
+    carried = Carried(area_id="kitchen", entities=[old_main], main=old_main)
+    old_main.icon = "mdi:lamp"
+    old_main.hidden_by, old_main.disabled_by = hidden, disabled
+    assert carried.available() == {"area", "labels", "voice", "names", "icons", "visibility"}
+
+    device = Entry(id="dev", area_id="living_room", labels=set(), name_by_user=None)
+    changes = carry_changes(carried, device, [new_main])
+    assert "area" not in changes  # the new device has an area of its own
+    assert "names" not in changes  # and its entity a name of its own
+    assert [c.values for c in changes["labels"]] == [{"labels": {"a"}}]
+    assert [c.values for c in changes["icons"]] == [{"icon": "mdi:lamp"}]
+    assert [c.values for c in changes["visibility"]] == [
+        {"hidden_by": hidden},
+        {"disabled_by": disabled},
+    ]
+    assert [c.values for c in changes["voice"]] == [{"assistant": "conversation", "should": False}]
+    assert Carried().available() == set()

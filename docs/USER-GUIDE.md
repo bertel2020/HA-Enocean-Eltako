@@ -338,14 +338,22 @@ so the actuators need no new teach-in. Three steps across the top show where you
 **Take over**, **Check** (the mapping below) and **Old integration off**; while the old
 integration is still active, that step opens its integration page.
 
-- Area, labels and voice assistant exposure of the old device go over to the new one unless
-  you turn that off.
-- Once devices are taken over, **Mapping old → new** lists the old entity ID next to the new
-  one and where the old ID is still used (automations, scripts, scenes, dashboards), with a copy
-  and a CSV export, so the references can be switched over. The mapping reads the old
-  integration's entity registry, so it works while the old integration is still installed.
-  After a takeover the panel moves on to it and says how many old IDs are still in use. Side
-  entities with no counterpart and no use are folded away per device.
+- **Take over** offers only devices not set up yet; a hint counts those already set up and
+  leads to the overview. Below the list you choose on its own what to carry over from the old
+  integration: **Area**, **Labels**, **Voice assistants**, **Own names** (names given in Home
+  Assistant), **Icons** and **Hidden / disabled**, each with the number of chosen devices it
+  concerns. Nothing is chosen at first; the panel remembers your choice in this browser. Each
+  device shows what it has to carry over and in how many places it is used.
+- **Check** is the overview of every device set up here that the old integration had, taken over
+  or set up by hand alike. Per device: what the old integration had that it still lacks, and in
+  how many places its old IDs are used; opened, the old entity ID next to the new one and the
+  places. **By place** turns it round: each automation, script, scene and dashboard with all old
+  IDs in it and a link to its editor, so you switch it over in one go. Filters **Still in use**
+  and **Done**, **Check again** after editing, copy and CSV export. **Carry over…** fills in later
+  what a device still lacks; values already set on the new device stay. The overview reads the
+  old integration's entity registry, so it works while the old integration is still installed.
+  Places written in YAML, templates and other tools such as Node-RED are not found: search them
+  yourself with the CSV.
 - A rocker sender's `left`/`right` becomes the rocker buttons it presses, `invert_signal` of
   switches and window handles becomes **Invert**, cover times are carried over. Covers get whole
   seconds as with the old integration; **Run times in 100 ms** is for actuators that know that

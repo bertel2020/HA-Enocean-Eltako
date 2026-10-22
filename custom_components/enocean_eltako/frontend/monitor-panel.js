@@ -7,7 +7,7 @@
 // the parts load with this file's version (?v=<hash> from panel.py), so an update never mixes
 // old and new files from the browser cache
 const VERSION = new URL(import.meta.url).search;
-const [{ ICON, MAX_ROWS, csv, esc, svg }, { TEXT }, { TAKEOVER_STYLE, takeover }] = await Promise.all([
+const [{ ICON, MAX_ROWS, csv, esc, svg }, { TEXT }, { TAKEOVER_STYLE, takeover, takeoverState }] = await Promise.all([
   import(`./shared.js${VERSION}`),
   import(`./texts.js${VERSION}`),
   import(`./takeover.js${VERSION}`),
@@ -604,7 +604,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._onReady = () => this._setLink(this._unsub ? "live" : "connecting");
     this._onDisconnected = () => this._setLink("offline");
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
-    this._tk = { entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: true, open: new Set(), busy: false, filter: "ready", mfilter: "all", q: "", folded: new Set(), more: new Set() };
+    this._tk = takeoverState();
     this._pools = [];
     this._pool = ""; // shown pool
     this._freeing = null; // blocked sender ID waiting for its confirmation
