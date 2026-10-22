@@ -403,6 +403,7 @@ def _pool_rows(hass: HomeAssistant, store: Any) -> list[dict[str, Any]]:
         rows.append(
             {
                 "id": format_id(sender),
+                "decimal": sender,
                 "device": titles.get(device),  # None: the device was deleted, the ID is blocked
                 "ref": device,
                 "profile": profile,
