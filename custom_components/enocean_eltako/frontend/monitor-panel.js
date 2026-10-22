@@ -7,7 +7,7 @@
 // the parts load with this file's version (?v=<hash> from panel.py), so an update never mixes
 // old and new files from the browser cache
 const VERSION = new URL(import.meta.url).search;
-const [{ ICON, MAX_ROWS, esc, svg }, { TEXT }, { TAKEOVER_STYLE, takeover }] = await Promise.all([
+const [{ ICON, MAX_ROWS, csv, esc, svg }, { TEXT }, { TAKEOVER_STYLE, takeover }] = await Promise.all([
   import(`./shared.js${VERSION}`),
   import(`./texts.js${VERSION}`),
   import(`./takeover.js${VERSION}`),
@@ -1454,8 +1454,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       d.name || t.unknownDevice, d.id, d.eepFull || d.eep, d.area ?? "", d.entities ?? "", d.gateway_name,
       d.time != null ? new Date(d.time).toISOString() : "", d.count, d.perMinute, d.dbm ?? "", d.silent ? t.silent : values(d.fields, d.data),
     ]);
-    const csv = [head, ...lines].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    this._download(csv + "\n", "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
+    this._download(csv([head, ...lines]), "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
   }
 
   _download(text, type, name) {

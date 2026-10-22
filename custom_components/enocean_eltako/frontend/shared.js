@@ -40,3 +40,14 @@ export function esc(value) {
 export function svg(path, cls = "") {
   return `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"></path></svg>`;
 }
+
+// CSV for spreadsheets: every cell quoted; text that a spreadsheet would run as a formula
+// (=, +, -, @, tab or CR first) gets a leading apostrophe, numbers like -62 stay numbers
+export function csv(rows) {
+  const cell = (v) => {
+    let text = String(v ?? "");
+    if (/^[=+\-@\t\r]/.test(text) && !/^-?\d+([.,]\d+)?$/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+  return rows.map((row) => row.map(cell).join(",")).join("\n") + "\n";
+}
