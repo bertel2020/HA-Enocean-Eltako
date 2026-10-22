@@ -201,7 +201,7 @@ const STYLE = `
     color: var(--text); font: inherit; font-size: 13px; padding: 0 8px; max-width: 220px; }
   .select[hidden] { display: none; }
   .telegrams { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
-  .telegrams col.c-time { width: 112px; }
+  .telegrams col.c-time { width: 128px; } /* room for "10:04:40 PM" */
   .telegrams col.c-dir { width: 48px; }
   .telegrams col.c-who { width: 30%; }
   .telegrams col.c-type { width: 76px; }
@@ -1279,6 +1279,27 @@ class EnOceanEltakoPanel extends HTMLElement {
     notice.querySelector("span").textContent = text;
   }
 
+  _number(value, options = {}) {
+    // as the user's profile says: number format ("language", "system", "comma_decimal" ...)
+    const locale = this._hass.locale || {};
+    const language = locale.language || this._hass.language;
+    const locales = { system: undefined, comma_decimal: ["en-US", "en"], decimal_comma: ["de", "es", "it"], space_comma: ["fr", "sv", "cs"] };
+    const format = locale.number_format;
+    return value.toLocaleString(format in locales ? locales[format] : language, { ...options, ...(format === "none" ? { useGrouping: false } : {}) });
+  }
+
+  _time(date, withDate = false) {
+    // as the user's profile says: 12 or 24 hours, and the browser's or the server's time zone
+    const locale = this._hass.locale || {};
+    const options = {
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: locale.time_format === "12" ? true : locale.time_format === "24" ? false : undefined,
+      timeZone: locale.time_zone === "server" ? this._hass.config?.time_zone : undefined,
+      ...(withDate ? { year: "numeric", month: "2-digit", day: "2-digit" } : {}),
+    };
+    return date.toLocaleString(locale.time_format === "system" ? undefined : locale.language || this._hass.language, options);
+  }
+
   _now() {
     // now on the server's clock (milliseconds), see _refreshStatus
     return Date.now() + (this._skew || 0);
@@ -1508,14 +1529,14 @@ class EnOceanEltakoPanel extends HTMLElement {
       <div class="airtime" title="${esc(t.airtimeHint)}">
         <span>${esc(t.airtime)}</span>
         <span class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${share}" aria-label="${esc(t.airtimeHint)}"><i class="${level}" style="width:${Math.min(100, share)}%"></i></span>
-        <b>${esc(share.toLocaleString(this._hass.language, { maximumFractionDigits: 1 }))} %</b>
+        <b>${esc(this._number(share, { maximumFractionDigits: 1 }))} %</b>
       </div>`;
   }
 
   _value(value) {
     if (value === true) return this._t.on;
     if (value === false) return this._t.off;
-    if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toLocaleString(this._hass.language, { maximumFractionDigits: 2 });
+    if (typeof value === "number") return this._number(value, { maximumFractionDigits: 2 });
     return String(value);
   }
 
@@ -1583,7 +1604,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const key = rowKey(r);
     const expanded = this._expanded.has(key);
     const time = new Date(r.time);
-    const clock = time.toLocaleTimeString(this._hass.language, { hour12: false });
+    const clock = this._time(time);
     const ms = String(time.getMilliseconds()).padStart(3, "0");
     const unknown = !r.device && r.dir === "rx";
     const hidden = unknown && this._isHidden(r.gateway, r.sender);
@@ -1615,7 +1636,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const hops = parseInt(r.status, 16) & 0x0f; // low nibble of the status byte: repeater count
     const details = expanded
       ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
-          <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(time.toLocaleString(this._hass.language))}.${ms}</dd></div>
+          <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true))}.${ms}</dd></div>
           <div><dt>${esc(t.gateway)}</dt><dd>${esc(r.gateway_name)}</dd></div>
           <div><dt>${esc(t.type)}</dt><dd>${esc(type)} (${esc(r.rorg)})</dd></div>
           <div><dt>${esc(t.raw)}</dt><dd class="mono">${diff ? diff.raw : esc(r.data)}</dd></div>
