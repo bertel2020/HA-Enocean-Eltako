@@ -1114,6 +1114,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     );
     await this._refreshStatus();
     await this._checkTakeover();
+    if (this._unsub !== unsub) return; // removed from the page (or subscribed anew) meanwhile
     if (!this._restored) {
       this._restored = true;
       const takeover = this.shadowRoot.querySelector('#view button[data-view="takeover"]');
