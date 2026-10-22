@@ -16,6 +16,8 @@ from .fake_gateway import FakeGateway
 
 pytestmark = pytest.mark.usefixtures("socket_enabled")
 
+PREFIX = {"entity_prefix", "gateway_number", "rename_entities"}  # gateway prefix in entity IDs
+
 PORT = "/dev/serial/by-id/usb-EnOcean_FAM-USB"
 
 
@@ -226,19 +228,25 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["step_id"] == "settings"  # no menu: sender IDs and takeover are in the panel
-    assert set(result["data_schema"].schema) == {"message_delay", "discovery", "mode"}
+    assert set(result["data_schema"].schema) == {"message_delay", "discovery", "mode", *PREFIX}
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"message_delay": 25.0, "discovery": False, "mode": "on_demand"}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options == {"message_delay": 25, "discovery": False, "mode": "on_demand"}
+    assert entry.options == {
+        "message_delay": 25,
+        "discovery": False,
+        "mode": "on_demand",
+        "entity_prefix": False,
+        "gateway_number": 1,
+    }
 
 
 async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert set(result["data_schema"].schema) == {"message_delay", "discovery"}
+    assert set(result["data_schema"].schema) == {"message_delay", "discovery", *PREFIX}
 
 
 def _zeroconf(host: str, port: int):

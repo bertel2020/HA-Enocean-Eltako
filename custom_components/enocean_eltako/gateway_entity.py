@@ -21,21 +21,21 @@ from homeassistant.components.sensor import (
 from homeassistant.const import EntityCategory, UnitOfInformation
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import Entity
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_BASE_ID, CONF_DEVICE, DOMAIN
+from .entity_ids import PrefixedEntityId
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry, GatewayRuntime
 
 
-class GatewayEntity(Entity):
+class GatewayEntity(PrefixedEntityId):
     _attr_has_entity_name = True
     _attr_should_poll = False
 
     def __init__(self, entry: EnOceanEltakoConfigEntry, key: str) -> None:
-        self._entry = entry
+        self._entry = self._gateway_entry = entry
         self._attr_translation_key = f"gateway_{key}"
         self._attr_unique_id = f"{entry.entry_id}_gateway_{key}"
         self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)})

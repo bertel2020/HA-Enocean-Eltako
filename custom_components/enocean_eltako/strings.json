@@ -370,14 +370,20 @@
           "mode": "Connection",
           "repeater": "Repeater",
           "discovery": "Discover devices",
-          "proxy_replay": "Replay over the proxy app"
+          "proxy_replay": "Replay over the proxy app",
+          "entity_prefix": "Gateway prefix in entity IDs",
+          "gateway_number": "Gateway number",
+          "rename_entities": "Rename existing entities now"
         },
         "data_description": {
           "message_delay": "Minimum time between two telegrams sent by this gateway.",
           "mode": "On demand: connected only when the bus group needs this gateway (failover, import), so PCT14 can use it in between.",
           "repeater": "Whether the gateway repeats telegrams of other devices (ESP3 only). Set on every connect.",
           "discovery": "Offer unknown senders this gateway receives as discovered devices.",
-          "proxy_replay": "Only when this gateway is reached through the Device Proxy or EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting."
+          "proxy_replay": "Only when this gateway is reached through the Device Proxy or EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting.",
+          "entity_prefix": "New entities of this gateway get entity IDs like light.enocean_gw1_kitchen instead of light.kitchen. Useful with several gateways.",
+          "gateway_number": "The number in the prefix (enocean_gw1, enocean_gw2 ...). Each gateway with a prefix needs its own.",
+          "rename_entities": "Gives the entities this gateway already has entity IDs following the setting above. Automations, scripts and dashboards are not adapted: check them afterwards."
         }
       },
       "init": {
@@ -396,6 +402,9 @@
     },
     "abort": {
       "senders_shown": "The selected senders are listed again when heard."
+    },
+    "error": {
+      "gateway_number_taken": "Another gateway already uses this number."
     }
   },
   "config_subentries": {
