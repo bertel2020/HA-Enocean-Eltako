@@ -1523,18 +1523,25 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _matches(r) {
     const f = this._filter;
-    const text = f.text.toLowerCase();
-    const compact = text.replace(/[-:\s]/g, "");
     return (
       (!f.gateway || r.gateway === f.gateway) &&
       (!f.dir || r.dir === f.dir) &&
       (!f.type || r.rorg === f.type) &&
       (f.repeats || !r.duplicate) &&
       !(f.unknown && (r.device || r.dir === "tx")) &&
-      (!text ||
-        [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name, ...(r.candidates || [])].some((v) => v && String(v).toLowerCase().includes(text)) ||
-        (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
-        (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact)))
+      this._textMatches(r)
+    );
+  }
+
+  _textMatches(r, extra = []) {
+    // the search box, the same in Telegrams and Devices: names, data, profiles, values, the ID
+    const text = this._filter.text.toLowerCase();
+    if (!text) return true;
+    const compact = text.replace(/[-:\s]/g, "");
+    return (
+      [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name, ...(r.candidates || []), ...extra].some((v) => v && String(v).toLowerCase().includes(text)) ||
+      (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
+      (!!compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact))
     );
   }
 
@@ -2339,8 +2346,6 @@ class EnOceanEltakoPanel extends HTMLElement {
   _deviceList() {
     // the latest telegram of each sender, with its values, count and rate
     const f = this._filter;
-    const text = f.text.toLowerCase();
-    const compact = text.replace(/[-:\s]/g, "");
     const since = Date.now() - 60000;
     const senders = new Map();
     for (const r of this._rows) {
@@ -2360,13 +2365,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (r.dbm != null && d.dbm.length < TREND_POINTS) d.dbm.unshift(r.dbm); // oldest first
     }
     return [...senders.values()]
-      .filter(({ last: r }) => {
-        if (!text) return true;
-        return (
-          [r.device, r.teach_in, r.profile, r.eep, r.model, r.gateway_name].some((v) => v && String(v).toLowerCase().includes(text)) ||
-          (compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact))
-        );
-      })
+      // what older telegrams of the sender told (teach-in, candidates) counts as well
+      .filter((d) => this._textMatches(d.last, [d.teach, ...(d.candidates || [])]))
       .sort(DEV_SORTERS[this._devSort]);
   }
 
