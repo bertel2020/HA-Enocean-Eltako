@@ -163,6 +163,12 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     assert event["device"] == "Licht Diele"
     light = next(s for s in entry.subentries.values() if s.title == "Licht Diele")
     assert event["device_key"] == light.subentry_id
+    from homeassistant.helpers import device_registry as dr
+
+    page = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, "FF-B7-44-80_05-10-A2-B3"), entry.entry_id
+    )
+    assert page is not None and event["ha_device"] == page.id
     assert event["values"] == {"on": True, "channel": 1}
     assert event["fields"] == [  # no sensors: the raw values
         {"label": "on", "value": True, "unit": None},
@@ -272,6 +278,7 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "category": "lighting",
             "area": None,
             "entities": 3,
+            "ha_device": registered.id,
         }
     ]
     # senders hidden from discovery: the panel does not offer them as new devices

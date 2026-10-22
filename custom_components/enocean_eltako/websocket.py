@@ -166,11 +166,13 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["device"] = device.subentry.title
                     # names need not be unique: the panel pairs command and answer by this key
                     data["device_key"] = device.subentry.subentry_id
+                    data["ha_device"] = ha_device_id(device)
                     data["profile"] = profile
                     return data
             elif device.device_id == telegram.sender:
                 data["device"] = device.subentry.title
                 data["device_key"] = device.subentry.subentry_id
+                data["ha_device"] = ha_device_id(device)
                 if device.model.examples:
                     data["model"] = device.model.examples.split(",")[0].strip()
                 for ref in (device.model.receive, *device.model.receive_extra):
@@ -248,6 +250,14 @@ def own_senders(runtime: Any) -> list[dict[str, str]]:
     ]
 
 
+def ha_device_id(device: Any) -> str | None:
+    """The device's entry in Home Assistant's device registry: the panel links to its page."""
+    entry = dr.async_get(device.hass).async_get_device_by_identifier(
+        (DOMAIN, device.unique_prefix), device.entry.entry_id
+    )
+    return entry.id if entry else None
+
+
 def radio_devices(runtime: Any) -> list[dict[str, Any]]:
     """The gateway's devices that send by radio or bus: the panel's list of set-up devices."""
     rows = []
@@ -272,6 +282,7 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
                 "entities": (
                     len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
                 ),
+                "ha_device": entry.id if entry else None,
             }
         )
     return rows

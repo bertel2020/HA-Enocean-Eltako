@@ -191,6 +191,7 @@ const STYLE = `
   .chip.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .chip.primary:hover:not(:disabled) { background: var(--accent-hover); color: var(--on-accent); }
   .chip:disabled { opacity: .5; cursor: default; }
+  .chip.only-icon { padding: 0; width: 36px; }
   .meta { display: flex; justify-content: space-between; gap: 8px; padding: 8px 16px; font-size: 12px; color: var(--muted); }
   .notice { margin: 8px 16px 0; padding: 12px 14px; border-radius: 12px; font-size: 13px;
     background: color-mix(in srgb, var(--warn) 14%, transparent); display: flex; gap: 8px; align-items: center; }
@@ -361,6 +362,7 @@ const STYLE = `
     .devices .dev .acts .chip { width: auto; padding: 0 10px; }
     .devices .dev .acts .lbl { display: inline; }
   }
+  .devices .dev .acts .chip.only-icon { width: 34px; padding: 0; } /* the device page: always an icon */
   .devices .dev .none { color: var(--muted); }
   .devices .dev .msub { display: none; }
   .devices .dev.quiet { cursor: default; }
@@ -809,6 +811,11 @@ class EnOceanEltakoPanel extends HTMLElement {
         this._addDevice(add.dataset.id);
         return;
       }
+      const page = e.target.closest("[data-device-page]");
+      if (page) {
+        this._navigate(`/config/devices/device/${page.dataset.devicePage}`);
+        return;
+      }
       const dev = e.target.closest(".dev:not(.quiet)"); // a device not heard has no telegrams to show
       if (!dev || this._selecting($("devices"))) return;
       this._setText(dev.dataset.only);
@@ -1171,6 +1178,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (add) {
       e.stopPropagation();
       this._addDevice(add.dataset.id);
+      return;
+    }
+    const page = e.target.closest("[data-device-page]");
+    if (page) {
+      this._navigate(`/config/devices/device/${page.dataset.devicePage}`);
       return;
     }
     const copy = e.target.closest("[data-copy]");
@@ -1689,7 +1701,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
@@ -1896,7 +1908,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const info = setup.get(r.sender);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
-        hidden: !r.device && this._isHidden(r.gateway, r.sender),
+        hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null,
         eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
@@ -1906,7 +1918,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     for (const d of setup.values()) {
       if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
-        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true,
+        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null,
         eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
@@ -2037,9 +2049,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
         <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span>`;
     const only = d.name || d.id;
+    // the device's page in Home Assistant: an icon only, the row has buttons enough
+    const page = d.page ? `<button class="chip only-icon" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
     const acts = d.quiet
-      ? ""
-      : `<button class="chip" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
+      ? page
+      : `${page}<button class="chip" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
           d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     return `<div class="dev${d.quiet ? " quiet" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}">
