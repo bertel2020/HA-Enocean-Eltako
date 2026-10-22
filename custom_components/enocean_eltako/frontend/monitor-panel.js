@@ -115,7 +115,7 @@ const TEXT = {
     tkSteps: ["Take over", "Check", "Old integration off"],
     tkStepState: {
       todo: (n) => (n === 1 ? "1 device to take over" : `${n} devices to take over`), done: (a, b) => `${a} of ${b} devices`, check: "Look at the mapping",
-      oldOn: "still active", oldOff: "switched off",
+      oldOn: "still active: open it", oldOff: "switched off",
     },
     tkReady: "Can be taken over", tkNot: "Cannot be taken over", tkExists: "Already set up",
     tkAutomations: "Automations", tkScenes: "Scenes", tkScripts: "Scripts", tkDashboards: "Dashboards",
@@ -270,7 +270,7 @@ const TEXT = {
     tkSteps: ["Übernehmen", "Prüfen", "Alte Integration aus"],
     tkStepState: {
       todo: (n) => (n === 1 ? "1 Gerät zu übernehmen" : `${n} Geräte zu übernehmen`), done: (a, b) => `${a} von ${b} Geräten`, check: "Zuordnung ansehen",
-      oldOn: "noch aktiv", oldOff: "abgeschaltet",
+      oldOn: "noch aktiv: öffnen", oldOff: "abgeschaltet",
     },
     tkReady: "Übernehmbar", tkNot: "Nicht übernehmbar", tkExists: "Schon eingerichtet",
     tkAutomations: "Automationen", tkScenes: "Szenen", tkScripts: "Skripte", tkDashboards: "Dashboards",
@@ -585,6 +585,8 @@ const STYLE = `
   .takeover .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
   .takeover .step { display: flex; gap: 8px; align-items: flex-start; text-align: left; font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; }
   .takeover button.step { cursor: pointer; }
+  .takeover button.step[data-tk-go] .num { border-color: var(--warn); color: var(--warn); }
+  .takeover button.step[data-tk-go]:hover b { color: var(--accent); }
   .takeover button.step:disabled { cursor: default; opacity: .6; }
   .takeover .step b { display: block; font-weight: 500; font-size: 13px; color: var(--text); }
   .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; }
@@ -797,6 +799,7 @@ const DEV_SORTERS = {
 
 // where an old entity ID of the takeover mapping is still used
 const USAGE_KINDS = ["automation", "script", "scene", "dashboard"];
+const OLD_INTEGRATION = "/config/integrations/integration/eltako";
 const isUsed = (row) => USAGE_KINDS.some((k) => row.usage[k].length);
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false };
@@ -1353,12 +1356,17 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (result.entry_id) {
       // the sender waits under "Add device" of its gateway on the integration page
       // the hash makes the integration page scroll to and highlight that gateway
-      history.pushState(null, "", `/config/integrations/integration/enocean_eltako#config_entry=${result.entry_id}`);
-      window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
-      window.dispatchEvent(new HashChangeEvent("hashchange"));
+      this._navigate(`/config/integrations/integration/enocean_eltako#config_entry=${result.entry_id}`);
       return;
     }
     this._notice(this._t.addResult[result.reason] || this._t.addResult.failed);
+  }
+
+  _navigate(path) {
+    // Home Assistant's own navigation: no page reload
+    history.pushState(null, "", path);
+    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+    if (path.includes("#")) window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
 
   _toggleSend(open = this.shadowRoot.getElementById("sendForm").hidden) {
@@ -1831,15 +1839,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     const steps = [
       { text: ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, devices.length || taken.size) : "–", done: !ready.length && taken.size > 0, cur: !mapping, tab: "preview" },
       { text: st.check, cur: mapping, tab: "mapping", off: !rows.length },
-      { text: oldActive ? st.oldOn : st.oldOff, done: !oldActive && taken.size > 0 },
+      // while the old integration runs, the step opens its page, where it can be switched off
+      { text: oldActive ? st.oldOn : st.oldOff, done: !oldActive && taken.size > 0, go: oldActive ? OLD_INTEGRATION : "" },
     ];
     const stepsHtml = steps
       .map((s, i) => {
         const cls = `step${s.done ? " done" : ""}${s.cur ? " cur" : ""}`;
         const inner = `<span class="num">${s.done ? "✓" : i + 1}</span><span><b>${esc(t.tkSteps[i])}</b>${esc(s.text)}</span>`;
-        return s.tab
-          ? `<button class="${cls}" data-tk-tab="${s.tab}"${s.cur ? ' aria-current="step"' : ""}${s.off ? " disabled" : ""}>${inner}</button>`
-          : `<div class="${cls}">${inner}</div>`;
+        if (s.tab) return `<button class="${cls}" data-tk-tab="${s.tab}"${s.cur ? ' aria-current="step"' : ""}${s.off ? " disabled" : ""}>${inner}</button>`;
+        if (s.go) return `<button class="${cls}" data-tk-go="${esc(s.go)}">${inner}</button>`;
+        return `<div class="${cls}">${inner}</div>`;
       })
       .join("");
     const select = gateways.length > 1
@@ -2041,6 +2050,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       const all = e.target.closest("[data-tk-all]").dataset.tkAll === "all";
       tk.selected = new Set(all ? this._tkDevices().filter((d) => d.ready).map((d) => d.id) : []);
       this._renderTakeover();
+    } else if (e.target.closest("[data-tk-go]")) {
+      this._navigate(e.target.closest("[data-tk-go]").dataset.tkGo);
     } else if (e.target.closest("[data-tk-run]")) {
       this._takeOver();
     } else if (e.target.closest("[data-tk-copy]")) {
