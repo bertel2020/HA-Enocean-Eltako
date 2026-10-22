@@ -4,23 +4,37 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.components.diagnostics import REDACTED, async_redact_data
+from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
 from . import EnOceanEltakoConfigEntry
 from .protocol.ids import format_id
+from .protocol.transport import TcpConnection
 
 TELEGRAMS = 100
+# the network address of a LAN gateway; IDs, serial port and counters are what an issue needs
+TO_REDACT = {CONF_HOST}
 
 
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
 ) -> dict[str, Any]:
     runtime = entry.runtime_data
+    connection = runtime.gateway.connection
     return {
-        "entry": {"title": entry.title, "data": dict(entry.data), "options": dict(entry.options)},
+        "entry": {
+            "title": entry.title,
+            "data": async_redact_data(dict(entry.data), TO_REDACT),
+            "options": dict(entry.options),
+        },
         "gateway": {
             "connected": runtime.gateway.connected,
-            "connection": str(runtime.gateway.connection),
+            "connection": (
+                f"{REDACTED}:{connection.port}"
+                if isinstance(connection, TcpConnection)
+                else str(connection)
+            ),
             "telegrams_received": runtime.gateway.telegrams_received,
             "polls_dropped": runtime.gateway.polls_dropped,
             "bytes_received": runtime.gateway.bytes_received,
