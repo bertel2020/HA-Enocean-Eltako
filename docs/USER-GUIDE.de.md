@@ -173,7 +173,7 @@ devices:
 Fehler erscheinen als Reparaturhinweis mit jeder einzelnen Stelle; die übrigen Definitionen
 werden trotzdem geladen. Fällt eine Definition weg, laufen ihre Geräte als generische
 EEP-Geräte weiter. Geräte per EEP oder Definition haben einen Diagnosesensor **Rohdaten**
-(standardmäßig deaktiviert) mit den um die Felder zu prüfen.
+(standardmäßig deaktiviert) mit den Bytes des letzten Telegramms, um die Felder zu prüfen.
 
 **Definitionen weitergeben:** Die Aktion `enocean_eltako.export_custom_devices` gibt deine
 Definitionen (alle oder die `ids`, die du nennst) als YAML-Text zurück. Jemand anderes fügt ihn
