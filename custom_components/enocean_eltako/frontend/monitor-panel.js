@@ -595,9 +595,9 @@ class EnOceanEltakoPanel extends HTMLElement {
             <span class="live list-only" id="live"><i></i><span></span></span>
             <span class="spacer"></span>
             <button class="icon-btn list-only" id="pause"></button>
-            <button class="icon-btn list-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
+            <button class="icon-btn tg-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
             <button class="icon-btn list-only" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
-            <button class="icon-btn list-only" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
+            <button class="icon-btn tg-only" id="clear" title="${esc(t.clear)}" aria-label="${esc(t.clear)}">${svg(ICON.clear)}</button>
           </div>
           <div class="filters list-only">
             <label class="search" title="${esc(t.searchKey)}">
@@ -619,7 +619,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
               .join("")}</select>
           </div>
-          <form class="sendform list-only" id="sendForm" hidden>
+          <form class="sendform tg-only" id="sendForm" hidden>
             <h3>${esc(t.sendTitle)}</h3>
             <p>${esc(t.sendHint)}</p>
             <div class="fields">
@@ -957,6 +957,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("panel").dataset.view = view;
     // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
     $("gatewaySection").hidden = view === "senders" || view === "takeover";
+    // export saves what the view shows: telegrams, or the sender list
+    const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
+    $("export").title = exportLabel;
+    $("export").setAttribute("aria-label", exportLabel);
+    if (view !== "telegrams") this._toggleSend(false);
     // the heading names the view; the section's label follows it
     const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover }[view];
     $("viewTitle").textContent = title;
@@ -1183,11 +1188,36 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _export() {
+    if (this._view === "devices") {
+      this._exportDevices();
+      return;
+    }
     const lines = this._visible().slice().reverse().map((r) => this._captureLine(r)).join("\n");
-    const blob = new Blob([lines + "\n"], { type: "application/x-ndjson" });
+    this._download(lines + "\n", "application/x-ndjson", `enocean-telegrams-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`);
+  }
+
+  _exportDevices() {
+    // the sender list as shown (filter and order), one CSV row per sender, then the silent ones
+    const t = this._t;
+    // like the list: a switch state as its value alone, raw data where nothing is decoded
+    const values = (fields, data) => (fields?.length
+      ? fields.map((f) => (f.label === "on" || f.label === "state" ? this._value(f.value) : `${this._label(f.label)} ${this._value(f.value)}${f.unit ? ` ${f.unit}` : ""}`)).join("; ")
+      : data);
+    const head = [t.sender, "ID", t.eep, t.gateway, t.lastHeardAt, t.telegrams, t.perMinute, "dBm", t.content];
+    const heard = this._deviceList().map(({ last: r, fields, count, perMinute }) => [
+      r.device || t.unknownDevice, r.sender, r.eep || RORG[r.rorg] || r.rorg, r.gateway_name, r.time, count, perMinute, r.dbm ?? "", values(fields, r.data),
+    ]);
+    const quiet = this._quietDevices().map((d) => [
+      d.device, d.id, "", d.gateway_name, d.last_seen != null ? new Date(d.last_seen * 1000).toISOString() : "", 0, 0, "", d.silent ? t.silent : "",
+    ]);
+    const csv = [head, ...heard, ...quiet].map((l) => l.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    this._download(csv + "\n", "text/csv", `enocean-senders-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
+  }
+
+  _download(text, type, name) {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `enocean-telegrams-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`;
+    link.href = URL.createObjectURL(new Blob([text], { type }));
+    link.download = name;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
