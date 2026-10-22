@@ -218,7 +218,9 @@ Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm
 und freie Sender-IDs. Bei mehreren Gateways filtert **Telegramme** auf das jeweilige Gateway. **Details** zeigt
 Anschluss, Sendewarteschlange und unbestätigte Befehle. Bei einem Gateway über Device Proxy oder EnOcean Proxy
 stehen dort auch Proxy-Version, verbundene Programme, Funkbelegung gegenüber dem 1-%-Limit
-und eine Sendesperre während eines Mitschnitts.
+und eine Sendesperre während eines Mitschnitts. Ist die Zusammenfassung weggescrollt, zeigt die
+Leiste der Liste (sie bleibt oben stehen) Zustand und Telegramme pro Minute je Gateway; ein Klick
+darauf führt zurück zu den Karten.
 
 ### Telegrammliste
 
@@ -248,9 +250,11 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
 
 ### Suchen, Filter, Anhalten
 
-Suchen nach Gerät, ID (mit oder ohne Bindestriche), Wertname oder Daten (Taste `/`), nur
-Empfangenes oder Gesendetes, ein Gateway oder ein Telegrammtyp (RPS, 1BS, 4BS, VLD …), nur
-unbekannte Sender oder mit Wiederholungen; **Filter zurücksetzen** hebt alles auf. Das Panel
+Suchen nach Gerät, ID (mit oder ohne Bindestriche), Wertname oder Daten (Taste `/`) und nur
+Empfangenes oder Gesendetes stehen direkt über der Liste. **Filter** öffnet die übrigen: ein
+Gateway, ein Telegrammtyp (RPS, 1BS, 4BS, VLD …), nur unbekannte Sender oder mit Wiederholungen.
+Gesetzte Filter stehen als Chips über der Liste, ihr Kreuz hebt sie einzeln auf, **Filter
+zurücksetzen** alle. Das Panel
 merkt sich die Filter im Browser. Anhalten (Taste `P`) sammelt weiter (bis zu 1.000) und zeigt,
 wie viele Telegramme eingetroffen sind; Exportieren speichert alle Telegramme, die zum Filter
 passen (alle Seiten), als JSON-Zeilen; auf dem Handy stehen Exportieren und **Anzeige leeren** im
@@ -288,8 +292,8 @@ Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könn
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
-übernimmt das eine Auswahl. Die Suche, das Gateway, **Alle Geräte / Eingerichtet / Unbekannt /
-Still** und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
+übernimmt das eine Auswahl. Die Suche und unter **Filter** das Gateway, der Status (**Alle Geräte /
+Eingerichtet / Unbekannt / Still**) und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
 gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
 Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
 Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
@@ -309,7 +313,9 @@ als gesendet.
 
 Der Schalter **Sender-IDs** im Panel zeigt, wer welche Sender-ID nutzt: je Gateway (und je
 Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
-gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127.
+gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127. Die Pool-Karte zeigt jede ID als
+kleines Feld (frei, zugewiesen, gesperrt, anderweitig belegt; die Legende darunter nennt die
+Farben); der Tooltip nennt ID und Gerät, ein Klick springt zur Zeile.
 
 Nach dem Löschen eines Geräts bleibt seine ID **gesperrt**, bis sie aus allen Aktoren abgelernt
 ist. **Freigeben** gibt sie nach einer Rückfrage frei, sobald der Aktor sie verlernt hat

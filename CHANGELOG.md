@@ -37,6 +37,12 @@ All notable changes to this project are documented here, in English and German
   and links like `/enocean-eltako?view=devices&sender=<ID>` open a filtered view; "Open
   device" leads to the device page; success messages disappear after 4 s; sending a rocker
   telegram can press and release; screen readers hear a lost connection and every message.
+- **Panel look:** one **Filter** button opens the rarer filters, and the set ones show as chips
+  with a cross above the list; the bar of the list stays on top while scrolling and shows the
+  gateways' state once their cards are out of view; empty views explain what to do (send a
+  telegram, reset the filters, open the integration); a compact pool map with a legend; one
+  button style (filled, outlined, text); own-styled lists and checkboxes; quieter column heads.
+  On phones the view tabs fit the width and the Takeover steps stand one below the other.
 
 #### Fixed
 
@@ -206,6 +212,13 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   `/enocean-eltako?view=devices&sender=<ID>` öffnen eine gefilterte Ansicht; „Gerät öffnen“
   führt zur Geräteseite; Erfolgsmeldungen verschwinden nach 4 s; ein Taster-Telegramm lässt
   sich drücken und loslassen; Screenreader hören einen Verbindungsverlust und jede Meldung.
+- **Panel-Optik:** ein Knopf **Filter** öffnet die selteneren Filter, gesetzte Filter stehen als
+  Chips mit Kreuz über der Liste; die Leiste der Liste bleibt beim Scrollen oben und zeigt den
+  Zustand der Gateways, sobald deren Karten aus dem Bild sind; leere Ansichten sagen, was zu tun
+  ist (Telegramm senden, Filter zurücksetzen, Integration öffnen); eine kompakte Pool-Karte mit
+  Legende; ein Knopfstil (gefüllt, umrandet, Text); eigene Auswahllisten und Checkboxen;
+  ruhigere Spaltenköpfe. Auf dem Handy passen die Reiter in die Breite, und die Schritte der
+  Übernahme stehen untereinander.
 
 #### Behoben
 
