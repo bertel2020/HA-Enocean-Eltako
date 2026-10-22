@@ -265,6 +265,9 @@
     },
     "calibrate_cover": {
       "service": "mdi:arrow-collapse-vertical"
+    },
+    "add_energy_devices": {
+      "service": "mdi:lightning-bolt-circle"
     }
   }
 }

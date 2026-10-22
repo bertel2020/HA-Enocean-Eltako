@@ -288,6 +288,9 @@
     },
     "room_controller_read_only": {
       "message": "This room controller is operated on site; its setpoint cannot be changed from Home Assistant."
+    },
+    "energy_not_loaded": {
+      "message": "The Energy dashboard is not set up in Home Assistant. Open Settings → Dashboards → Energy once, then try again."
     }
   },
   "services": {
@@ -312,6 +315,16 @@
         "only_if_inaccurate": {
           "name": "Only if inaccurate",
           "description": "Skip covers whose position is already known well (less than 10 points off)."
+        }
+      }
+    },
+    "add_energy_devices": {
+      "name": "Add meters to the Energy dashboard",
+      "description": "Adds the electricity meters of your devices as individual devices to the Energy dashboard (with their power sensor, when the device has one). Meters that are already there stay as they are; gas and water meters are not added.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Gateway",
+          "description": "Only the devices of this gateway; empty for all."
         }
       }
     }
