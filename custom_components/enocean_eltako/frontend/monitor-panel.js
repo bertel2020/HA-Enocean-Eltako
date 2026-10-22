@@ -166,6 +166,7 @@ const TEXT = {
     freeErrors: { not_blocked: "Only a blocked sender ID can be freed", not_found: "Pool not found", invalid_id: "Invalid sender ID", unknown: "Freeing failed" },
     deviceCount: (n) => (n === 1 ? "1 sender" : `${n} senders`),
     telegramsCount: (n) => (n === 1 ? "1 telegram" : `${n} telegrams`),
+    bufferHint: `Counted in the monitor's buffer (the newest ${MAX_ROWS.toLocaleString("en")} telegrams of all senders), not since the start`,
     weak: "weak signal", weakHint: "Reception is poor: a repeater or a better gateway position helps",
     trend: (n, lo, hi) => `Signal of the last ${n} telegrams: ${lo} to ${hi} dBm`,
     noDevices: "No senders heard yet", showTelegrams: "Show this sender's telegrams",
@@ -321,6 +322,7 @@ const TEXT = {
     freeErrors: { not_blocked: "Nur eine gesperrte Sender-ID lässt sich freigeben", not_found: "Pool nicht gefunden", invalid_id: "Ungültige Sender-ID", unknown: "Freigeben fehlgeschlagen" },
     deviceCount: (n) => (n === 1 ? "1 Sender" : `${n} Sender`),
     telegramsCount: (n) => (n === 1 ? "1 Telegramm" : `${n} Telegramme`),
+    bufferHint: `Gezählt im Puffer des Monitors (die neuesten ${MAX_ROWS.toLocaleString("de")} Telegramme aller Sender), nicht seit dem Start`,
     weak: "schwaches Signal", weakHint: "Der Empfang ist schlecht: ein Repeater oder ein besserer Gateway-Standort hilft",
     trend: (n, lo, hi) => `Signal der letzten ${n} Telegramme: ${lo} bis ${hi} dBm`,
     noDevices: "Noch keine Sender gehört", showTelegrams: "Telegramme dieses Senders zeigen",
@@ -2417,7 +2419,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     return `<div class="dev" data-key="${esc(`${r.gateway}|${r.sender}`)}" data-only="${esc(r.device || r.sender)}">
       <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div></div>
       <div class="values">${hints}${values}</div>
-      <div class="stats"><span>${esc(heard)}</span><span>${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span>
+      <div class="stats"><span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(count))} · ${esc(perMinute)}/min</span>
         <span class="signal">${this._sparkline(dbm)}${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span></div>
       <div class="acts"><button class="chip" data-only="${esc(r.device || r.sender)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
         unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
