@@ -62,6 +62,8 @@ All notable changes to this project are documented here, in English and German
 - **Covers with controller and direction rocker:** Stop after the actuator has stopped and
   reported its driven time no longer presses the direction rocker again, which started the
   cover moving.
+- **Covers:** the higher inaccuracy after an anchor run without an answer shows in the cover's
+  state at once and survives a restart.
 
 ### [0.1.6] - 2026-10-22
 
@@ -310,6 +312,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Rollläden mit Controller und Richtungstaster:** Stopp, nachdem der Aktor angehalten und seine
   Fahrzeit gemeldet hat, drückt den Richtungstaster nicht mehr erneut, was den Rollladen wieder
   losfahren ließ.
+- **Rollläden:** die höhere Ungenauigkeit nach einer Ankerfahrt ohne Antwort steht sofort im
+  Zustand des Rollladens und übersteht einen Neustart.
 
 ### [0.1.6] - 2026-10-22
 
