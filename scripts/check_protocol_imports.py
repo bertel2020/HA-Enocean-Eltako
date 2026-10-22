@@ -1,4 +1,5 @@
-"""Fail if any module in the protocol layer imports from homeassistant.
+"""Fail if any module in the protocol layer imports from homeassistant, or reaches out of
+the protocol package with a relative import (from ..hub import ...).
 
 The protocol layer must stay usable without Home Assistant (tests, tools,
 a later standalone library). Run: python scripts/check_protocol_imports.py
@@ -19,7 +20,12 @@ def find_violations(root: Path = PROTOCOL_DIR) -> list[str]:
     violations = []
     for path in sorted(root.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        depth = len(path.parent.relative_to(root).parts)  # packages between root and file
         for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level - 1 > depth:
+                target = "." * node.level + (node.module or "")
+                violations.append(f"{path.relative_to(root.parent)}:{node.lineno}: {target}")
+                continue
             if isinstance(node, ast.Import):
                 modules = [alias.name for alias in node.names]
             elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:

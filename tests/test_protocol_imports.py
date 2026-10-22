@@ -20,7 +20,12 @@ def test_checker_detects_forbidden_imports(tmp_path):
         "import homeassistantx\n"
     )
     (tmp_path / "ok.py").write_text("from . import homeassistant\nimport asyncio\n")
+    (tmp_path / "eep").mkdir()
+    (tmp_path / "eep" / "outside.py").write_text(
+        "from ..ids import format_id\nfrom ...hub import Hub\n"
+    )
     assert [v.split(": ")[1] for v in check.find_violations(tmp_path)] == [
         "homeassistant",
         "homeassistant.core",
+        "...hub",
     ]
