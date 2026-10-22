@@ -106,6 +106,8 @@ class SendQueue:
         self._running = asyncio.Event()
         self._running.set()
         self._task: asyncio.Task[None] | None = None
+        self._current: _Job | None = None  # the job being written
+        self._stopped = False
         self.stats = QueueStats()
 
     def __len__(self) -> int:
@@ -117,6 +119,8 @@ class SendQueue:
         return self._task
 
     async def stop(self) -> None:
+        """Cancel every job; works whether the worker runs via start() or run()."""
+        self._stopped = True
         if self._task is not None:
             self._task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -183,6 +187,14 @@ class SendQueue:
 
     async def run(self) -> None:
         """Worker loop; runs until cancelled."""
+        try:
+            await self._work()
+        finally:  # cancelled while writing: nobody waits for that job in vain
+            if self._current is not None:
+                self._current.finish(SendResult.CANCELLED)
+                self._current = None
+
+    async def _work(self) -> None:
         while True:
             await self._running.wait()
             if not self._heap:
@@ -194,7 +206,9 @@ class SendQueue:
                 continue
             if job.key is not None and self._by_key.get(job.key) is job and job.expect is None:
                 del self._by_key[job.key]
+            self._current = job
             await self._transmit(job)
+            self._current = None
             await asyncio.sleep(self.delay)
 
     async def _transmit(self, job: _Job) -> None:
@@ -216,6 +230,9 @@ class SendQueue:
             self._on_sent(job.telegram)
         if job.expect is None:
             job.finish(SendResult.SENT)
+            return
+        if self._stopped:  # stopped while writing: no confirmation, no retry
+            job.finish(SendResult.CANCELLED)
             return
         handle = asyncio.get_running_loop().call_later(job.timeout, self._timed_out, job)
         self._waiting.append((job, handle))
