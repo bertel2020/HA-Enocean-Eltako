@@ -10,6 +10,9 @@ from .telegram import RadioTelegram
 
 SYNC = 0x55
 HEADER_LEN = 4
+# far above any packet a gateway sends (radio telegrams, responses, events: below 100 bytes);
+# a false header with a larger length would hold back every packet behind it
+MAX_DATA_LEN = 512
 
 
 class PacketType(IntEnum):
@@ -98,6 +101,10 @@ class Esp3Decoder:
                 continue
             data_len = int.from_bytes(header[:2], "big")
             opt_len = header[2]
+            if data_len > MAX_DATA_LEN:
+                self.dropped += 1
+                del self._buf[:1]
+                continue
             total = 6 + data_len + opt_len + 1
             if len(self._buf) < total:
                 return packets

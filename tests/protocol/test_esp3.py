@@ -64,6 +64,17 @@ def test_decoder_resyncs_after_crc_error(corrupt: int) -> None:
     assert packets == [esp3.Esp3Packet(esp3.PacketType.COMMON_COMMAND, b"\x08")]
 
 
+def test_decoder_rejects_implausible_length() -> None:
+    """A stray 0x55 whose next bytes pass the header CRC must not hold back what follows."""
+    header = (0xF000).to_bytes(2, "big") + bytes([0, esp3.PacketType.RADIO_ERP1])
+    false_start = bytes([esp3.SYNC]) + header + bytes([esp3.crc8(header)])
+    good = esp3.encode_common_command(esp3.CO_RD_IDBASE)
+    decoder = esp3.Esp3Decoder()
+    assert decoder.feed(false_start + good) == [
+        esp3.Esp3Packet(esp3.PacketType.COMMON_COMMAND, b"\x08")
+    ]
+
+
 def test_encode_repeater() -> None:
     import pytest
 
