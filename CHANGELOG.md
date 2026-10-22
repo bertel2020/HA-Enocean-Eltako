@@ -31,6 +31,18 @@ All notable changes to this project are documented here, in English and German
 - **Sender IDs:** a radio gateway hands out base ID + 1 ... 127; the base ID itself is no
   longer used (127 IDs per gateway). A device that already sends from the base ID keeps
   working and is reported in the log: give it another sender ID.
+- **Panel:** senders hidden from a gateway's discovery are tagged "hidden" and not offered as a
+  new device; "x s ago" and last heard use the server's clock; times and numbers follow your
+  profile (time format, browser or server time zone, number format); the view is remembered,
+  and links like `/enocean-eltako?view=devices&sender=<ID>` open a filtered view; "Open
+  device" leads to the device page; success messages disappear after 4 s; sending a rocker
+  telegram can press and release; screen readers hear a lost connection and every message.
+
+#### Fixed
+
+- **Panel:** command and answer are paired by the device, not its name (two devices may share
+  a name); the Takeover view goes once nothing is left, without a reload; CSV exports guard
+  against spreadsheet formulas.
 
 ### [0.1.4] - 2026-10-22
 
@@ -187,6 +199,19 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Sender-IDs:** Ein Funk-Gateway vergibt Base-ID + 1 ... 127; die Base-ID selbst wird nicht
   mehr verwendet (127 IDs pro Gateway). Ein Gerät, das schon von der Base-ID sendet, läuft
   weiter und wird im Log gemeldet: ihm eine andere Sender-ID geben.
+- **Panel:** In der Discovery eines Gateways ausgeblendete Sender sind als „ausgeblendet“
+  markiert und werden nicht als neues Gerät angeboten; „vor x s“ und der letzte Empfang rechnen
+  mit der Serveruhr; Zeiten und Zahlen folgen deinem Profil (Zeitformat, Zeitzone von Browser
+  oder Server, Zahlenformat); die Ansicht wird gemerkt, und Links wie
+  `/enocean-eltako?view=devices&sender=<ID>` öffnen eine gefilterte Ansicht; „Gerät öffnen“
+  führt zur Geräteseite; Erfolgsmeldungen verschwinden nach 4 s; ein Taster-Telegramm lässt
+  sich drücken und loslassen; Screenreader hören einen Verbindungsverlust und jede Meldung.
+
+#### Behoben
+
+- **Panel:** Befehl und Antwort werden über das Gerät gepaart, nicht über seinen Namen (zwei
+  Geräte können gleich heißen); die Ansicht Übernahme verschwindet ohne Neuladen, sobald nichts
+  mehr übrig ist; CSV-Exporte sind gegen Tabellenformeln abgesichert.
 
 ### [0.1.4] - 2026-10-22
 
