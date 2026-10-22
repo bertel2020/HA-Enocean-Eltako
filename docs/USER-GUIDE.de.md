@@ -357,14 +357,24 @@ IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Drei S
 zeigen, wo du stehst: **Übernehmen**, **Prüfen** (die Zuordnung unten) und **Alte Integration
 aus**; solange die alte Integration noch aktiv ist, öffnet dieser Schritt ihre Integrationsseite.
 
-- Bereich, Labels und Sprachsteuerungs-Freigabe des alten Geräts gehen auf das neue über,
-  sofern du das nicht abschaltest.
-- Sind Geräte übernommen, listet **Zuordnung alt → neu** die alte Entity-ID neben der neuen und
-  wo die alte ID noch verwendet wird (Automationen, Skripte, Szenen, Dashboards), mit Kopieren
-  und CSV-Export, damit sich die Verweise umstellen lassen. Die Zuordnung liest die
-  Entity-Registry der alten Integration und funktioniert deshalb, solange sie noch installiert
-  ist. Nach einer Übernahme wechselt das Panel dorthin und nennt, wie viele alte IDs noch
-  verwendet werden. Nebenentitäten ohne Gegenstück und ohne Verwendung sind je Gerät eingeklappt.
+- **Übernehmen** bietet nur Geräte an, die noch nicht eingerichtet sind; ein Hinweis zählt die
+  schon eingerichteten und führt zur Übersicht. Unter der Liste wählst du einzeln, was aus der
+  alten Integration mitkommt: **Bereich**, **Labels**, **Sprachsteuerung**, **Eigene Namen**
+  (in Home Assistant vergebene Namen), **Symbole** und **Ausgeblendet / deaktiviert**, jeweils
+  mit der Zahl der gewählten Geräte, die es betrifft. Anfangs ist nichts gewählt; das Panel
+  merkt sich deine Wahl in diesem Browser. Jedes Gerät zeigt, was es mitbringen kann und an wie
+  vielen Stellen es verwendet wird.
+- **Prüfen** ist die Übersicht aller hier eingerichteten Geräte, die die alte Integration
+  kannte, ob übernommen oder von Hand angelegt. Je Gerät: was die alte Integration hatte und dem
+  neuen noch fehlt, und an wie vielen Fundstellen seine alten IDs stehen; aufgeklappt die alte
+  Entity-ID neben der neuen mit den Fundstellen. **Nach Fundstelle** dreht das um: jede
+  Automation, jedes Skript, jede Szene und jedes Dashboard mit allen alten IDs darin und einem
+  Link in den Editor, so stellst du sie in einem Zug um. Filter **Noch verwendet** und
+  **Erledigt**, **Neu prüfen** nach dem Bearbeiten, Kopieren und CSV-Export.
+  **Nachträglich übernehmen…** ergänzt, was einem Gerät noch fehlt; am neuen Gerät schon
+  gesetzte Werte bleiben. Die Übersicht liest die Entity-Registry der alten Integration und
+  funktioniert deshalb, solange sie noch installiert ist. Stellen in YAML, Templates und andere
+  Werkzeuge wie Node-RED findet sie nicht: die mit der CSV selbst durchsuchen.
 - `left`/`right` eines Taster-Senders wird zu den Tasten, die er drückt, `invert_signal` von
   Schaltern und Fenstergriffen zu **Umkehren**, Fahrzeiten von Rollläden werden übernommen.
   Rollläden bekommen wie bei der alten Integration ganze Sekunden; **Fahrzeiten in 100 ms** ist

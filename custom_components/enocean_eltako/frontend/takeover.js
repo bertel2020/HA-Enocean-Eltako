@@ -1,5 +1,6 @@
-// The Takeover view of the panel: devices of the old eltako integration set up here, then the
-// mapping of old to new entity IDs. Its methods are added to the panel class (this = the panel).
+// The Takeover view of the panel: devices of the old eltako integration set up here, then an
+// overview of the devices set up, with the mapping of old to new entity IDs and where the old
+// ones are still used. Its methods are added to the panel class (this = the panel).
 
 const VERSION = new URL(import.meta.url).search;
 const { ICON, csv, esc, svg } = await import(`./shared.js${VERSION}`);
@@ -8,6 +9,33 @@ const { ICON, csv, esc, svg } = await import(`./shared.js${VERSION}`);
 const USAGE_KINDS = ["automation", "script", "scene", "dashboard"];
 const OLD_INTEGRATION = "/config/integrations/integration/eltako";
 const isUsed = (row) => USAGE_KINDS.some((k) => row.usage[k].length);
+// what can be carried over from the old integration, each chosen on its own
+const CARRY_OPTIONS = ["area", "labels", "voice", "names", "icons", "visibility"];
+const CARRY_KEY = "enocean_eltako_takeover_carry"; // the chosen options, per browser
+
+function loadCarry() {
+  // nothing is carried over until it is chosen once; then the choice is remembered
+  try {
+    const saved = JSON.parse(localStorage.getItem(CARRY_KEY) || "[]");
+    return new Set(Array.isArray(saved) ? saved.filter((o) => CARRY_OPTIONS.includes(o)) : []);
+  } catch (err) {
+    return new Set();
+  }
+}
+
+function saveCarry(carry) {
+  try {
+    localStorage.setItem(CARRY_KEY, JSON.stringify([...carry]));
+  } catch (err) {
+    // private window or blocked storage: the choice just is not remembered
+  }
+}
+
+// the view's state when the panel starts
+export const takeoverState = () => ({
+  entry: "", tab: "", preview: null, previewError: "", mapping: null, selected: new Set(), carry: loadCarry(),
+  open: new Set(), busy: false, filter: "ready", mfilter: "all", mview: "device", later: false, q: "", folded: new Set(),
+});
 
 export const TAKEOVER_STYLE = `
   .takeover { padding-bottom: 8px; }
@@ -43,24 +71,42 @@ export const TAKEOVER_STYLE = `
   .takeover .bar-count { grid-area: count; font-size: 13px; font-weight: 500; }
   .takeover .bar-all { grid-area: all; }
   .takeover .bar-run { grid-area: run; }
-  .takeover .carry { grid-area: carry; display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
-  .takeover table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-  .takeover th { text-align: left; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; padding: 8px 12px; }
-  .takeover td { padding: 6px 12px; vertical-align: top; overflow-wrap: anywhere; }
-  .takeover tbody.block { border-top: 1px solid var(--line); }
-  .takeover tbody.block tr:first-child td { padding-top: 10px; }
-  .takeover tbody.block tr:last-child td { padding-bottom: 10px; }
-  .takeover tr.more .fold { font-size: 12px; font-weight: 400; color: var(--muted); }
-  .takeover tr.map { cursor: pointer; }
-  .takeover tr.map:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  .takeover .carry { grid-area: carry; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .takeover .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 16px; }
+  .takeover .opt { display: flex; gap: 6px; align-items: center; color: var(--text); }
+  .takeover .opt small { margin-left: auto; color: var(--muted); }
+  .takeover .opt.off { color: var(--muted); }
+  .takeover .actionbar.later { position: static; grid-template-areas: "count all all" "carry carry carry"; }
+  .takeover .actionbar.later .bar-all { justify-self: end; }
+  .takeover .actionbar.later .carry > .chip { align-self: flex-start; }
+  .takeover .hint { margin: 0 16px 10px; padding: 7px 12px; border-radius: 8px; font-size: 12px; color: var(--muted); background: var(--soft);
+    display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+  .takeover .link { margin-left: auto; font: inherit; font-weight: 500; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .takeover .link:hover { color: var(--accent-hover); text-decoration: underline; }
+  .takeover .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: 20px; overflow: hidden; }
+  .takeover .seg button { height: 30px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--muted); background: var(--surface); border: 0; cursor: pointer; }
+  .takeover .seg button[aria-pressed="true"] { color: var(--accent-hover); background: var(--accent-soft); font-weight: 500; }
+  .takeover .devblock { border-top: 1px solid var(--line); }
+  .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; font-size: 13px; }
+  .takeover .devhead[data-tk-open] { cursor: pointer; }
+  .takeover .devhead[data-tk-open]:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
+  .takeover .devhead b { font-weight: 500; }
+  .takeover .devchips { display: flex; flex-wrap: wrap; }
+  .takeover .devstate { margin-left: auto; }
+  .takeover .ents { padding: 0 16px 8px 34px; }
+  .takeover .ent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; padding: 6px 0; border-top: 1px dashed var(--line); font-size: 12px; overflow-wrap: anywhere; }
   .takeover .old { color: var(--muted); }
-  .takeover .chip-s { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--soft); }
+  .takeover .chip-s { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--soft); color: var(--text); }
   .takeover .chip-s.used { background: color-mix(in srgb, var(--warn) 25%, transparent); }
   .takeover .chip-s.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
-  .takeover .where td { background: var(--soft); font-size: 12px; }
+  .takeover .chip-s.avail { color: var(--muted); border: 1px dashed var(--line); background: none; }
+  .takeover button.chip-s { font: inherit; font-size: 11px; border: 0; cursor: pointer; text-align: left; }
+  .takeover button.chip-s:hover { text-decoration: underline; }
   @media (max-width: 760px) {
     /* phones: the main button gets the whole width */
     .takeover .actionbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "count all" "carry carry" "run run"; }
+    .takeover .actionbar.later { grid-template-areas: "count all" "carry carry"; }
+    .takeover .ent { grid-template-columns: minmax(0, 1fr); }
     .takeover .bar-run { justify-content: center; }
     /* the steps one below the other: name and state on one line */
     .takeover .steps { grid-template-columns: minmax(0, 1fr); gap: 10px; }
@@ -109,11 +155,32 @@ export const takeover = {
     this._renderTakeover();
   },
 
+  async _tkRecheck() {
+    // the overview again, after references were switched over elsewhere
+    const tk = this._tk;
+    try {
+      tk.mapping = await this._hass.callWS({ type: "enocean_eltako/takeover/mapping", entry_id: tk.entry });
+    } catch (err) {
+      this._notice(this._t.tkErrors[err.code] || this._t.tkErrors.unknown);
+    }
+    this._renderTakeover();
+  },
+
   _tkDevices() {
     // an ID listed twice in the old configuration: the first entry is the device
     const seen = new Map();
     for (const d of this._tk.preview?.devices || []) if (!seen.has(d.id)) seen.set(d.id, d);
     return [...seen.values()];
+  },
+
+  _tkBlocks(rows) {
+    // the overview's rows by device, in their order
+    const blocks = new Map();
+    for (const r of rows) {
+      if (!blocks.has(r.id)) blocks.set(r.id, []);
+      blocks.get(r.id).push(r);
+    }
+    return blocks;
   },
 
   _renderTakeover() {
@@ -129,12 +196,13 @@ export const takeover = {
     const ready = devices.filter((d) => d.ready);
     const rows = tk.mapping?.rows || [];
     const taken = new Set(rows.filter((r) => r.taken).map((r) => r.id));
+    const used = new Set(rows.filter(isUsed).map((r) => r.id)).size;
     const oldActive = !!(tk.mapping?.old_active ?? tk.preview?.old_active);
     const st = t.tkStepState;
     const mapping = tk.tab === "mapping";
     const steps = [
       { text: ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, devices.length || taken.size) : "–", done: !ready.length && taken.size > 0, cur: !mapping, tab: "preview" },
-      { text: st.check, cur: mapping, tab: "mapping", off: !rows.length },
+      { text: used ? st.used(used) : st.check, cur: mapping, tab: "mapping", off: !rows.length },
       // while the old integration runs, the step opens its page, where it can be switched off
       { text: oldActive ? st.oldOn : st.oldOff, done: !oldActive && taken.size > 0, go: oldActive ? OLD_INTEGRATION : "" },
     ];
@@ -152,7 +220,7 @@ export const takeover = {
           .map((g) => `<option value="${esc(g.entry_id)}"${g.entry_id === tk.entry ? " selected" : ""}>${esc(g.title)}</option>`)
           .join("")}</select>`
       : "";
-    const body = mapping ? this._renderMapping(rows, oldActive, select) : this._renderPreview(devices, ready, select);
+    const body = mapping ? this._renderMapping(rows, oldActive, select) : this._renderPreview(devices, ready, select, rows.length > 0);
     this._replace(container, `<div class="steps">${stepsHtml}</div>${body}`);
     container.querySelectorAll("[data-partial]").forEach((box) => { box.indeterminate = true; });
   },
@@ -162,12 +230,12 @@ export const takeover = {
     return !q || fields.some((f) => String(f || "").toLowerCase().includes(q));
   },
 
-  _tkToolbar(select, pills, attr, active, extra = "") {
+  _tkToolbar(select, pills, attr, active, extra = "", lead = "") {
     const t = this._t;
     const pillHtml = pills
       .map(([key, label, n]) => `<button class="pill" ${attr}="${key}" aria-pressed="${key === active}">${esc(label)} ${n}</button>`)
       .join("");
-    return `<div class="toolbar">${select}${pillHtml}<input class="search" id="tkSearch" type="search" placeholder="${esc(t.tkSearch)}" value="${esc(this._tk.q)}" aria-label="${esc(t.tkSearch)}">${extra}</div>`;
+    return `<div class="toolbar">${select}${lead}${pillHtml}<input class="search" id="tkSearch" type="search" placeholder="${esc(t.tkSearch)}" value="${esc(this._tk.q)}" aria-label="${esc(t.tkSearch)}">${extra}</div>`;
   },
 
   _tkGroups(list) {
@@ -183,20 +251,30 @@ export const takeover = {
       .map(([area, items]) => ({ area, items: items.sort((x, y) => x.name.localeCompare(y.name)) }));
   },
 
-  _renderPreview(devices, ready, select) {
+  _tkCarryOptions(counts, attr) {
+    // one checkbox per option with the number of devices it concerns; none to carry: greyed out
+    const t = this._t;
+    return `<div class="opts">${CARRY_OPTIONS.map((o) => {
+      const n = counts[o] || 0;
+      return `<label class="opt${n ? "" : " off"}"><input type="checkbox" ${attr}="${o}"${this._tk.carry.has(o) ? " checked" : ""}${n ? "" : " disabled"}>${esc(t.tkCarryOpt[o])}<small>${n}</small></label>`;
+    }).join("")}</div>`;
+  },
+
+  _renderPreview(devices, ready, select, overview) {
     const t = this._t;
     const tk = this._tk;
     if (tk.previewError) return `<p class="banner">${esc(t.tkErrors[tk.previewError] || t.tkErrors.unknown)}</p>`;
-    const lists = {
-      ready,
-      exists: devices.filter((d) => d.reason === "takeover_exists"),
-      not: devices.filter((d) => !d.ready && d.reason !== "takeover_exists"),
-    };
-    const labels = { ready: t.tkReady, exists: t.tkExists, not: t.tkNot };
+    // devices already set up are not offered here: they are in the overview of step 2
+    const exists = devices.filter((d) => d.reason === "takeover_exists").length;
+    const lists = { ready, not: devices.filter((d) => !d.ready && d.reason !== "takeover_exists") };
+    const labels = { ready: t.tkReady, not: t.tkNot };
     const pills = Object.keys(lists).filter((k) => k === "ready" || lists[k].length).map((k) => [k, labels[k], lists[k].length]);
     const active = pills.some(([k]) => k === tk.filter) ? tk.filter : "ready";
     const visible = lists[active].filter((d) => this._tkMatches(d.name, d.id, d.area, ...(d.labels || [])));
     const toolbar = this._tkToolbar(select, pills, "data-tk-filter", active);
+    const hint = exists
+      ? `<p class="hint">${esc(t.tkExistsHint(exists))}${overview ? `<button class="link" data-tk-tab="mapping">${esc(t.tkToOverview)}</button>` : ""}</p>`
+      : "";
     let list;
     if (!visible.length) {
       list = this._emptyState(ICON.search, t.tkNoMatch, "", "", true);
@@ -211,7 +289,9 @@ export const takeover = {
             : g.items
                 .map((d) => `<label class="pickrow"><input type="checkbox" data-tk-pick="${esc(d.id)}"${tk.selected.has(d.id) ? " checked" : ""}>
                   <span class="pick-name">${esc(d.name)} <span class="sub mono">${esc(d.id)}</span></span>
-                  ${(d.labels || []).map((l) => `<span class="chip-s">${esc(l)}</span>`).join("")}</label>`)
+                  ${(d.labels || []).map((l) => `<span class="chip-s">${esc(l)}</span>`).join("")}
+                  ${(d.carry || []).filter((o) => o !== "area" && o !== "labels").map((o) => `<span class="chip-s">${esc(t.tkCarryOpt[o])}</span>`).join("")}
+                  ${d.used ? `<span class="chip-s used">${esc(t.tkPlaces(d.used))}</span>` : ""}</label>`)
                 .join("");
           return `<div class="group"><input type="checkbox" data-tk-group="${esc(g.area)}" aria-label="${esc(g.area || t.tkNoArea)}"${picked === g.items.length ? " checked" : ""}${picked && picked < g.items.length ? " data-partial" : ""}>
             <button class="fold" data-tk-fold="${esc(g.area)}" aria-expanded="${!folded}"><span aria-hidden="true">${folded ? "▸" : "▾"}</span> ${esc(g.area || t.tkNoArea)}</button>
@@ -223,66 +303,128 @@ export const takeover = {
         .map((d) => `<div class="skiprow"><span>${esc(d.name)} <span class="mono">${esc(d.id)}</span></span><span>${esc(t.tkReasons[d.reason] || d.reason || "")}</span></div>`)
         .join("");
     }
-    const picked = ready.filter((d) => tk.selected.has(d.id)).length;
+    const chosen = ready.filter((d) => tk.selected.has(d.id));
+    const picked = chosen.length;
+    const counts = Object.fromEntries(CARRY_OPTIONS.map((o) => [o, chosen.filter((d) => (d.carry || []).includes(o)).length]));
     const bar = ready.length
       ? `<div class="actionbar"><b class="bar-count">${esc(t.tkSelected(picked, ready.length))}</b>
           <button class="chip bar-all" data-tk-all="${picked === ready.length ? "none" : "all"}">${esc(picked === ready.length ? t.tkSelectNone : t.tkSelectAll)}</button>
           <button class="chip primary bar-run" data-tk-run ${picked && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : picked ? t.tkRun(picked) : t.tkNothing)}</button>
-          <label class="carry"><input type="checkbox" id="tkCarry"${tk.carry ? " checked" : ""}>${esc(t.tkCarry)}</label></div>`
+          <div class="carry"><span class="sub">${esc(t.tkCarryTitle)}</span>${this._tkCarryOptions(counts, "data-tk-carry")}</div></div>`
       : "";
-    return `${toolbar}${list}${bar}`;
+    return `${toolbar}${hint}${list}${bar}`;
+  },
+
+  _tkPlaceChip(kind, place) {
+    // a place that uses an old ID; one with an editor opens it
+    const label = `${this._t.tkKind[kind]}: ${place.name}`;
+    return place.path
+      ? `<button class="chip-s used place" data-tk-go="${esc(place.path)}" title="${esc(this._t.tkEdit)}">${esc(label)}</button>`
+      : `<span class="chip-s used">${esc(label)}</span>`;
   },
 
   _renderMapping(rows, oldActive, select) {
     const t = this._t;
     const tk = this._tk;
     if (!rows.length) return this._emptyState(ICON.check, t.tkEmpty, "", "", true);
-    const used = rows.filter(isUsed).length;
-    const pills = [["all", t.tkFilterAll, rows.length], ["used", t.tkFilterUsed, used], ["unused", t.tkFilterUnused, rows.length - used]];
-    const active = tk.mfilter;
-    const visible = rows.filter((r) => (active === "all" || (active === "used") === isUsed(r)) && this._tkMatches(r.device, r.id, r.old, r.new, r.area));
-    const extra = `<button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button>`;
-    const usageChips = (r) => {
-      const chips = USAGE_KINDS
-        .filter((k) => r.usage[k].length)
-        .map((k) => `<span class="chip-s used">${esc(t.tkUsage[k](r.usage[k].length))}</span>`)
-        .join("");
-      return chips || `<span class="chip-s ok">${esc(t.tkUnused)}</span>`;
-    };
-    const line = (r, first) => {
-      const open = tk.open.has(r.old);
-      const where = open && isUsed(r)
-        ? `<tr class="where"><td colspan="3"><b>${esc(t.tkWhere)}:</b> ${USAGE_KINDS.filter((k) => r.usage[k].length).map((k) => `${esc(t.tkUsage[k](r.usage[k].length))}: ${esc(r.usage[k].join(", "))}`).join(" · ")}</td></tr>`
-        : "";
-      const target = r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? t.tkNoNew : t.tkNotTaken)}</span>`;
-      return `<tr class="map" data-tk-open="${esc(r.old)}">
-        <td>${first ? `${esc(r.device)}<div class="sub">${esc([r.area, r.taken ? "" : t.tkNotTaken].filter(Boolean).join(" · "))}</div>` : ""}</td>
-        <td class="mono"><span class="old">${esc(r.old)}</span><br>→ ${target}</td>
-        <td>${usageChips(r)}</td></tr>${where}`;
-    };
-    // one block per device; side entities with no counterpart and no use fold away while
-    // the whole, unsearched list is shown
-    const blocks = new Map();
-    for (const r of visible) {
-      if (!blocks.has(r.id)) blocks.set(r.id, []);
-      blocks.get(r.id).push(r);
-    }
-    const folding = active === "all" && !tk.q.trim();
-    const body = [...blocks.entries()]
+    const blocks = this._tkBlocks(rows);
+    const missing = tk.mapping?.missing || {};
+    const usedIds = new Set(rows.filter(isUsed).map((r) => r.id));
+    const doneIds = [...blocks.entries()].filter(([id, items]) => items[0].taken && !usedIds.has(id));
+    const lead = `<span class="seg" role="group">${["device", "place"]
+      .map((v) => `<button data-tk-mview="${v}" aria-pressed="${tk.mview === v}">${esc(t.tkByView[v])}</button>`)
+      .join("")}</span>`;
+    const pills = tk.mview === "device"
+      ? [["all", t.tkFilterAll, blocks.size], ["used", t.tkFilterUsed, usedIds.size], ["done", t.tkFilterDone, doneIds.length]]
+      : [];
+    const extra = `<button class="chip" data-tk-recheck>${esc(t.tkRecheck)}</button><button class="chip" data-tk-copy>${svg(ICON.copy)}${esc(t.tkCopy)}</button><button class="chip" data-tk-csv>${svg(ICON.download)}${esc(t.tkCsv)}</button>`;
+    const toolbar = this._tkToolbar(select, pills, "data-tk-mfilter", tk.mfilter, extra, lead);
+    const banner = `<p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>`;
+    const body = tk.mview === "place" ? this._tkRenderPlaces(rows) : this._tkRenderDevices(blocks, usedIds, missing);
+    return `${toolbar}${banner}${body}${this._tkRenderLater(missing)}`;
+  },
+
+  _tkIdLine(r) {
+    const target = r.new ? esc(r.new) : `<span class="old">${esc(r.taken ? this._t.tkNoNew : this._t.tkNotTaken)}</span>`;
+    return `<span class="mono"><span class="old">${esc(r.old)}</span><br>→ ${target}</span>`;
+  },
+
+  _tkRenderDevices(blocks, usedIds, missing) {
+    const t = this._t;
+    const tk = this._tk;
+    const q = tk.q.trim();
+    const html = [...blocks.entries()]
+      .filter(([id, items]) => {
+        const used = usedIds.has(id);
+        if (tk.mfilter === "used" && !used) return false;
+        if (tk.mfilter === "done" && (used || !items[0].taken)) return false;
+        return items.some((r) => this._tkMatches(r.device, r.id, r.old, r.new, r.area));
+      })
       .map(([id, items]) => {
-        const minor = folding ? items.filter((r) => !r.primary && !r.new && !isUsed(r)) : [];
-        const open = tk.more.has(id);
-        const shown = open ? items : items.filter((r) => !minor.includes(r));
-        const toggle = minor.length
-          ? `<tr class="more"><td></td><td colspan="2"><button class="fold" data-tk-more="${esc(id)}" aria-expanded="${open}"><span aria-hidden="true">${open ? "▾" : "▸"}</span> ${esc(open ? t.tkLess : t.tkMore(minor.length))}</button></td></tr>`
+        const first = items[0];
+        const open = tk.open.has(id) || !!q;
+        const places = new Set(items.flatMap((r) => USAGE_KINDS.flatMap((k) => r.usage[k].map((p) => `${k}:${p.name}`)))).size;
+        const state = !first.taken
+          ? `<span class="chip-s">${esc(t.tkNotTaken)}</span>`
+          : places ? `<span class="chip-s used">${esc(t.tkPlaces(places))}</span>` : `<span class="chip-s ok">${esc(t.tkDoneState)}</span>`;
+        const chips = [
+          first.area ? `<span class="chip-s">${esc(first.area)}</span>` : "",
+          ...(missing[id] || []).map((o) => `<span class="chip-s avail" title="${esc(t.tkAvailable)}">+ ${esc(t.tkCarryOpt[o])}</span>`),
+        ].join("");
+        const entities = open
+          ? `<div class="ents">${items
+              .map((r) => `<div class="ent">${this._tkIdLine(r)}<span>${USAGE_KINDS.flatMap((k) => r.usage[k].map((p) => this._tkPlaceChip(k, p))).join("") || `<span class="chip-s ok">${esc(t.tkUnused)}</span>`}</span></div>`)
+              .join("")}</div>`
           : "";
-        return `<tbody class="block">${shown.map((r, i) => line(r, i === 0)).join("")}${toggle}</tbody>`;
+        return `<div class="devblock"><div class="devhead" data-tk-open="${esc(id)}">
+            <button class="fold" aria-expanded="${open}"><span aria-hidden="true">${open ? "▾" : "▸"}</span> ${esc(first.device)}</button>
+            <span class="sub mono">${esc(id)}</span><span class="devchips">${chips}</span><span class="devstate">${state}</span></div>${entities}</div>`;
       })
       .join("");
-    return `${this._tkToolbar(select, pills, "data-tk-mfilter", active, extra)}
-      <p class="banner ${oldActive ? "" : "ok"}">${esc(oldActive ? t.tkOldActive : t.tkOldGone)}</p>
-      ${visible.length ? `<table><colgroup><col style="width:26%"><col style="width:40%"><col style="width:34%"></colgroup>
-        <thead><tr><th>${esc(t.tkColDevice)}</th><th>${esc(t.tkColOld)} → ${esc(t.tkColNew)}</th><th>${esc(t.tkColUsed)}</th></tr></thead>${body}</table>` : this._emptyState(ICON.search, t.tkNoMatch, "", "", true)}`;
+    return html || this._emptyState(ICON.search, t.tkNoMatch, "", "", true);
+  },
+
+  _tkRenderPlaces(rows) {
+    // the same rows by the automation, script, scene or dashboard that uses them: one place is
+    // edited once for all its old IDs
+    const t = this._t;
+    const places = new Map();
+    for (const r of rows) {
+      for (const k of USAGE_KINDS) {
+        for (const p of r.usage[k]) {
+          const key = `${k}\u0000${p.name}`;
+          if (!places.has(key)) places.set(key, { kind: k, place: p, rows: [] });
+          places.get(key).rows.push(r);
+        }
+      }
+    }
+    const html = [...places.values()]
+      .filter((e) => this._tkMatches(e.place.name, ...e.rows.flatMap((r) => [r.device, r.id, r.old, r.new])))
+      .sort((a, b) => USAGE_KINDS.indexOf(a.kind) - USAGE_KINDS.indexOf(b.kind) || a.place.name.localeCompare(b.place.name))
+      .map((e) => `<div class="devblock"><div class="devhead"><b>${esc(t.tkKind[e.kind])}: ${esc(e.place.name)}</b>
+          <span class="devstate">${e.place.path ? `<button class="link" data-tk-go="${esc(e.place.path)}">${esc(t.tkEdit)}</button>` : `<span class="sub">${esc(t.tkNoEditor)}</span>`}</span></div>
+          <div class="ents">${e.rows.map((r) => `<div class="ent">${this._tkIdLine(r)}<span class="sub">${esc(r.device)}</span></div>`).join("")}</div></div>`)
+      .join("");
+    if (html) return html;
+    return places.size ? this._emptyState(ICON.search, t.tkNoMatch, "", "", true) : this._emptyState(ICON.check, t.tkNoPlaces, "", "", true);
+  },
+
+  _tkRenderLater(missing) {
+    // what the old integration had and the devices set up still lack, to carry over now
+    const t = this._t;
+    const tk = this._tk;
+    const lists = Object.values(missing);
+    const counts = Object.fromEntries(CARRY_OPTIONS.map((o) => [o, lists.filter((m) => m.includes(o)).length]));
+    const found = CARRY_OPTIONS.filter((o) => counts[o]);
+    if (!found.length) return "";
+    const summary = `${t.tkAvailable}: ${found.map((o) => t.tkCarryCount(t.tkCarryOpt[o], counts[o])).join(", ")}`;
+    const devices = lists.filter((m) => m.some((o) => tk.carry.has(o))).length;
+    const panel = tk.later
+      ? `<div class="carry">${this._tkCarryOptions(counts, "data-tk-carry")}
+          <button class="chip primary" data-tk-later-run ${devices && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : devices ? t.tkCarryRun(devices) : t.tkNothing)}</button></div>`
+      : "";
+    return `<div class="actionbar later"><span class="sub bar-count">${esc(summary)}</span>
+      <button class="chip bar-all" data-tk-later aria-expanded="${tk.later}">${esc(t.tkCarryLater)}</button>${panel}</div>`;
   },
 
   _takeoverInput(e) {
@@ -309,8 +451,11 @@ export const takeover = {
       tk.entry = e.target.value;
       tk.tab = "";
       this._loadTakeover();
-    } else if (e.target.id === "tkCarry") {
-      tk.carry = e.target.checked;
+    } else if (e.target.dataset.tkCarry) {
+      if (e.target.checked) tk.carry.add(e.target.dataset.tkCarry);
+      else tk.carry.delete(e.target.dataset.tkCarry);
+      saveCarry(tk.carry);
+      this._renderTakeover();
     } else if (e.target.dataset.tkPick) {
       if (e.target.checked) tk.selected.add(e.target.dataset.tkPick);
       else tk.selected.delete(e.target.dataset.tkPick);
@@ -331,15 +476,15 @@ export const takeover = {
     const tab = e.target.closest("[data-tk-tab]");
     const fold = e.target.closest("[data-tk-fold]");
     const filter = e.target.closest("[data-tk-filter], [data-tk-mfilter]");
-    const more = e.target.closest("[data-tk-more]");
-    if (more) {
-      const id = more.dataset.tkMore;
-      if (tk.more.has(id)) tk.more.delete(id);
-      else tk.more.add(id);
-      this._renderTakeover();
+    const mview = e.target.closest("[data-tk-mview]");
+    if (e.target.closest("[data-tk-go]")) {
+      this._navigate(e.target.closest("[data-tk-go]").dataset.tkGo);
     } else if (tab) {
       if (tk.tab !== tab.dataset.tkTab) tk.q = "";
       tk.tab = tab.dataset.tkTab;
+      this._renderTakeover();
+    } else if (mview) {
+      tk.mview = mview.dataset.tkMview;
       this._renderTakeover();
     } else if (filter) {
       if (filter.dataset.tkFilter) tk.filter = filter.dataset.tkFilter;
@@ -354,10 +499,15 @@ export const takeover = {
       const all = e.target.closest("[data-tk-all]").dataset.tkAll === "all";
       tk.selected = new Set(all ? this._tkDevices().filter((d) => d.ready).map((d) => d.id) : []);
       this._renderTakeover();
-    } else if (e.target.closest("[data-tk-go]")) {
-      this._navigate(e.target.closest("[data-tk-go]").dataset.tkGo);
     } else if (e.target.closest("[data-tk-run]")) {
       this._takeOver();
+    } else if (e.target.closest("[data-tk-later]")) {
+      tk.later = !tk.later;
+      this._renderTakeover();
+    } else if (e.target.closest("[data-tk-later-run]")) {
+      this._tkCarryLater();
+    } else if (e.target.closest("[data-tk-recheck]")) {
+      this._tkRecheck();
     } else if (e.target.closest("[data-tk-copy]")) {
       this._copyMapping();
     } else if (e.target.closest("[data-tk-csv]")) {
@@ -385,7 +535,7 @@ export const takeover = {
         type: "enocean_eltako/takeover/run",
         entry_id: tk.entry,
         devices: [...tk.selected],
-        carry_over: tk.carry,
+        carry: [...tk.carry],
       });
     } catch (err) {
       this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
@@ -407,11 +557,29 @@ export const takeover = {
     );
   },
 
+  async _tkCarryLater() {
+    const t = this._t;
+    const tk = this._tk;
+    if (tk.busy || !tk.carry.size) return;
+    tk.busy = true;
+    this._renderTakeover();
+    try {
+      const { carried } = await this._hass.callWS({ type: "enocean_eltako/takeover/carry", entry_id: tk.entry, carry: [...tk.carry] });
+      tk.later = false;
+      this._notice(t.tkCarried(carried), true);
+    } catch (err) {
+      this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
+    }
+    tk.busy = false;
+    await this._tkRecheck();
+  },
+
   _mappingTable() {
     const t = this._t;
     const head = [t.tkColDevice, "ID", t.tkColOld, t.tkColNew, t.tkAutomations, t.tkScripts, t.tkScenes, t.tkDashboards];
+    const names = (places) => places.map((p) => p.name).join("; ");
     const lines = (this._tk.mapping?.rows || []).map((r) => [
-      r.device, r.id, r.old, r.new || "", r.usage.automation.join("; "), r.usage.script.join("; "), r.usage.scene.join("; "), r.usage.dashboard.join("; "),
+      r.device, r.id, r.old, r.new || "", names(r.usage.automation), names(r.usage.script), names(r.usage.scene), names(r.usage.dashboard),
     ]);
     return [head, ...lines];
   },

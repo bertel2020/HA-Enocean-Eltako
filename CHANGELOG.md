@@ -6,6 +6,24 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Panel, Takeover:** what to carry over from the old integration is chosen on its own
+  (area, labels, voice assistants, own names, icons, hidden / disabled), with the number of
+  devices each concerns; nothing is chosen at first and the choice is remembered per browser.
+  Own names, icons and hidden / disabled are new.
+- **Panel, Takeover:** devices already set up are no longer a list in Take over but a hint
+  leading to Check, which became the overview of every device set up: what it still lacks from
+  the old integration, the places using its old IDs, a view by place with links to the editors,
+  filters Still in use and Done, and Check again.
+
+#### Added
+
+- **Panel, Takeover:** Carry over… fills in later what devices already set up still lack;
+  values set on the new device stay (websocket `enocean_eltako/takeover/carry`).
+
 ### [0.1.6] - 2026-10-22
 
 #### Added
@@ -196,6 +214,24 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unveröffentlicht]
+
+#### Geändert
+
+- **Panel, Übernahme:** was aus der alten Integration mitkommt, wird einzeln gewählt (Bereich,
+  Labels, Sprachsteuerung, eigene Namen, Symbole, ausgeblendet / deaktiviert), mit der Zahl der
+  betroffenen Geräte; anfangs ist nichts gewählt, die Wahl merkt sich der Browser. Eigene Namen,
+  Symbole und ausgeblendet / deaktiviert sind neu.
+- **Panel, Übernahme:** schon eingerichtete Geräte sind in Übernehmen keine Liste mehr, sondern
+  ein Hinweis, der zu Prüfen führt; Prüfen ist die Übersicht aller eingerichteten Geräte: was
+  ihnen aus der alten Integration noch fehlt, die Fundstellen ihrer alten IDs, eine Ansicht nach
+  Fundstelle mit Links in die Editoren, Filter Noch verwendet und Erledigt, und Neu prüfen.
+
+#### Hinzugefügt
+
+- **Panel, Übernahme:** Nachträglich übernehmen… ergänzt, was schon eingerichteten Geräten
+  noch fehlt; am neuen Gerät gesetzte Werte bleiben (Websocket `enocean_eltako/takeover/carry`).
 
 ### [0.1.6] - 2026-10-22
 

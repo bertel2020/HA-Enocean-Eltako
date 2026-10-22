@@ -328,32 +328,134 @@ def primary_entity(entries: list[er.RegistryEntry]) -> er.RegistryEntry | None:
     return next((e for e in entries if e.original_name is None), None)
 
 
+# What the takeover can carry over, each chosen on its own in the panel
+CARRY_OPTIONS = ("area", "labels", "voice", "names", "icons", "visibility")
+
+
 @dataclass(slots=True)
 class Carried:
-    """What the old device and its main entity had set that should go on the new ones."""
+    """What the user had set on the old device and its entities."""
 
     area_id: str | None = None
     labels: set[str] = field(default_factory=set)
-    entity_labels: set[str] = field(default_factory=set)
-    exposed: dict[str, bool] = field(default_factory=dict)  # assistant -> should expose
+    name: str | None = None  # the device's name given in Home Assistant
+    entities: list[er.RegistryEntry] = field(default_factory=list)
+    main: er.RegistryEntry | None = None
+
+    def available(self) -> set[str]:
+        """The options this device has something for."""
+        found = set()
+        if self.area_id:
+            found.add("area")
+        if self.labels or any(e.labels for e in self.entities):
+            found.add("labels")
+        if any(_exposure(e) for e in self.entities):
+            found.add("voice")
+        if self.name or any(e.name for e in self.entities):
+            found.add("names")
+        if any(e.icon for e in self.entities):
+            found.add("icons")
+        if any(_user_hidden(e) for e in self.entities):
+            found.add("visibility")
+        return found
 
 
 def carried_from(hass: HomeAssistant, entries: list[er.RegistryEntry]) -> Carried:
-    carried = Carried()
+    carried = Carried(entities=list(entries), main=primary_entity(entries))
     devices = dr.async_get(hass)
     for entry in entries:
         if entry.device_id and (old := devices.async_get(entry.device_id)) is not None:
             carried.area_id = carried.area_id or old.area_id
             carried.labels |= set(old.labels)
-    if (main := primary_entity(entries)) is not None:
-        carried.area_id = carried.area_id or main.area_id
-        carried.entity_labels = set(main.labels)
-        options: Mapping[str, Any] = main.options  # typed by integration, assistants are no domains
-        for assistant in ASSISTANTS:
-            should = (options.get(assistant) or {}).get("should_expose")
-            if isinstance(should, bool):
-                carried.exposed[assistant] = should
+            carried.name = carried.name or old.name_by_user
+    if carried.main is not None:
+        carried.area_id = carried.area_id or carried.main.area_id
     return carried
+
+
+def _exposure(entry: er.RegistryEntry) -> dict[str, bool]:
+    """assistant -> should expose, as set for this entity."""
+    options: Mapping[str, Any] = entry.options  # typed by integration, assistants are no domains
+    found = {}
+    for assistant in ASSISTANTS:
+        should = (options.get(assistant) or {}).get("should_expose")
+        if isinstance(should, bool):
+            found[assistant] = should
+    return found
+
+
+def _user_hidden(entry: er.RegistryEntry) -> bool:
+    return entry.hidden_by is er.RegistryEntryHider.USER or (
+        entry.disabled_by is er.RegistryEntryDisabler.USER
+    )
+
+
+def new_entity(
+    old: er.RegistryEntry, old_primary: er.RegistryEntry | None, new: list[er.RegistryEntry]
+) -> er.RegistryEntry | None:
+    """The new entity that replaces an old one: the main one, the ID sensor, or the same kind."""
+    if old is old_primary:
+        return primary_entity(new)
+    if old_suffix(old) == "id":
+        return next((e for e in new if e.translation_key == "enocean_id"), None)
+    same = [
+        e
+        for e in new
+        if e.domain == old.domain
+        and old.original_device_class
+        and e.original_device_class == old.original_device_class
+    ]
+    return same[0] if len(same) == 1 else None
+
+
+@dataclass(slots=True)
+class Change:
+    """One registry update that carries something over."""
+
+    kind: str  # "device", "entity" or "expose"
+    target: str  # device ID, or entity ID
+    values: dict[str, Any]
+
+
+def carry_changes(
+    carried: Carried, device: dr.DeviceEntry, new: list[er.RegistryEntry]
+) -> dict[str, list[Change]]:
+    """Per option what is still missing on the new device; set values are never overwritten."""
+    changes: dict[str, list[Change]] = {option: [] for option in CARRY_OPTIONS}
+    if carried.area_id and device.area_id is None:
+        changes["area"].append(Change("device", device.id, {"area_id": carried.area_id}))
+    if carried.labels - device.labels:
+        changes["labels"].append(
+            Change("device", device.id, {"labels": set(device.labels) | carried.labels})
+        )
+    if carried.name and not device.name_by_user:
+        changes["names"].append(Change("device", device.id, {"name_by_user": carried.name}))
+    for old in carried.entities:
+        if (target := new_entity(old, carried.main, new)) is None:
+            continue
+        if old.labels - target.labels:
+            changes["labels"].append(
+                Change("entity", target.entity_id, {"labels": set(target.labels) | old.labels})
+            )
+        if old.name and not target.name:
+            changes["names"].append(Change("entity", target.entity_id, {"name": old.name}))
+        if old.icon and not target.icon:
+            changes["icons"].append(Change("entity", target.entity_id, {"icon": old.icon}))
+        if old.hidden_by is er.RegistryEntryHider.USER and target.hidden_by is None:
+            changes["visibility"].append(
+                Change("entity", target.entity_id, {"hidden_by": er.RegistryEntryHider.USER})
+            )
+        if old.disabled_by is er.RegistryEntryDisabler.USER and target.disabled_by is None:
+            changes["visibility"].append(
+                Change("entity", target.entity_id, {"disabled_by": er.RegistryEntryDisabler.USER})
+            )
+        now = _exposure(target)
+        for assistant, should in _exposure(old).items():
+            if now.get(assistant) is not should:
+                changes["voice"].append(
+                    Change("expose", target.entity_id, {"assistant": assistant, "should": should})
+                )
+    return {option: found for option, found in changes.items() if found}
 
 
 def registered_device(
@@ -371,38 +473,49 @@ def registered_device(
     )
 
 
-def apply_carried(
+def missing_carried(
     hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, carried: dict[int, Carried]
+) -> dict[int, dict[str, list[Change]]]:
+    """Per set-up device (by ID) what the old integration had that the new device lacks."""
+    entities = er.async_get(hass)
+    found = {}
+    for device in entry.runtime_data.devices.values():
+        if (what := carried.get(device.device_id)) is None or device.channel != 1:
+            continue
+        if (registered := registered_device(hass, entry, device)) is None:
+            continue
+        new = er.async_entries_for_device(entities, registered.id, include_disabled_entities=True)
+        found[device.device_id] = carry_changes(what, registered, new)
+    return found
+
+
+def apply_carried(
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    carried: dict[int, Carried],
+    options: set[str],
 ) -> int:
-    """Area and labels on the new device, labels and voice exposure on its main entity."""
+    """Carry the chosen options over to the new devices; the number of devices changed."""
     from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 
     devices = dr.async_get(hass)
     entities = er.async_get(hass)
     done = 0
-    for device in entry.runtime_data.devices.values():
-        if (what := carried.get(device.device_id)) is None or device.channel != 1:
-            continue
-        registered = registered_device(hass, entry, device)
-        if registered is None:
-            continue
-        devices.async_update_device(
-            registered.id,
-            area_id=what.area_id or registered.area_id,
-            labels=set(registered.labels) | what.labels,
-        )
-        if (
-            main := primary_entity(er.async_entries_for_device(entities, registered.id))
-        ) is not None:
-            entities.async_update_entity(
-                main.entity_id, labels=set(main.labels) | what.entity_labels
-            )
-            for assistant, should in what.exposed.items():
+    for changes in missing_carried(hass, entry, carried).values():
+        chosen = [c for option, found in changes.items() if option in options for c in found]
+        for change in chosen:
+            if change.kind == "device":
+                devices.async_update_device(change.target, **change.values)
+            elif change.kind == "entity":
+                entities.async_update_entity(change.target, **change.values)
+            else:
                 try:
-                    async_expose_entity(hass, assistant, main.entity_id, should)
+                    async_expose_entity(
+                        hass, change.values["assistant"], change.target, change.values["should"]
+                    )
                 except Exception:  # an assistant that is not set up: the rest still goes over
-                    _LOGGER.debug("Could not expose %s to %s", main.entity_id, assistant)
-        done += 1
+                    _LOGGER.debug("Could not expose %s to %s", change.target, change.values)
+        done += bool(chosen)
     return done
 
 
@@ -418,9 +531,9 @@ async def async_take_over(
     entry: EnOceanEltakoConfigEntry,
     devices: list[TakeoverDevice],
     *,
-    carry_over: bool,
+    carry: set[str],
 ) -> TakeoverResult:
-    """Subentries with the old sender IDs, one reload, then area, labels and exposure."""
+    """Subentries with the old sender IDs, one reload, then what is chosen to carry over."""
     if not devices:
         return TakeoverResult(0, [], 0)
     runtime = entry.runtime_data
@@ -450,9 +563,9 @@ async def async_take_over(
     await runtime.senders.async_save()
     await hass.config_entries.async_reload(entry.entry_id)
     done = 0
-    if carry_over and entry.state is ConfigEntryState.LOADED:
+    if carry and entry.state is ConfigEntryState.LOADED:
         try:
-            done = apply_carried(hass, entry, carried)
+            done = apply_carried(hass, entry, carried, carry)
         except Exception:
             _LOGGER.exception("Could not carry area and labels over from the old integration")
     return TakeoverResult(len(devices), skipped, done)

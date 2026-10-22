@@ -6,6 +6,19 @@
 // two (a second gateway), hide (an unknown sender hidden from discovery), skew=<s> (server clock
 // ahead of the browser), empty (no gateways and no telegrams).
 
+// the takeover view: two devices to take over, one already set up and still in use
+const none = { automation: [], script: [], scene: [], dashboard: [] };
+const takeoverDevices = [
+  { id: "05-10-A2-B3", name: "Licht Diele", ready: true, area: "Flur", labels: [], carry: ["area", "voice"], used: 2 },
+  { id: "05-10-A2-B4", name: "Rollladen Süd", ready: true, area: "Wohnzimmer", labels: ["Beschattung"], carry: ["area", "labels", "names"], used: 0 },
+  { id: "01-90-8C-14", name: "Zwischenstecker", ready: false, reason: "takeover_exists", area: "Küche", labels: [], carry: ["area"], used: 1 },
+];
+const takeoverRows = [
+  { device: "Zwischenstecker", id: "01-90-8C-14", area: "Küche", taken: true, primary: true, old: "switch.eltako_01908c14", new: "switch.zwischenstecker",
+    usage: { ...none, automation: [{ name: "Kaffee aus", path: "/config/automation/edit/1" }], dashboard: [{ name: "Küche", path: "/lovelace" }] } },
+  { device: "Zwischenstecker", id: "01-90-8C-14", area: "Küche", taken: true, primary: false, old: "sensor.eltako_01908c14_id", new: "sensor.zwischenstecker_enocean_id", usage: none },
+];
+
 export function fakeHass(params = new URLSearchParams()) {
   const now = Date.now() / 1000;
   const empty = params.has("empty");
@@ -68,9 +81,12 @@ export function fakeHass(params = new URLSearchParams()) {
         case "enocean_eltako/sender_pools":
           return empty ? [] : [pool];
         case "enocean_eltako/takeover/preview":
-          return { devices: [{ id: "05-10-A2-B3", name: "Licht Diele", ready: true, area: "Flur" }], old_active: true };
+          return { devices: takeoverDevices, old_active: true };
         case "enocean_eltako/takeover/mapping":
-          return { rows: [], old_active: true };
+          return { rows: takeoverRows, missing: { "01-90-8C-14": ["area", "names"] }, old_active: true };
+        case "enocean_eltako/takeover/run":
+        case "enocean_eltako/takeover/carry":
+          return { count: 1, carried: 1, skipped: [] };
         case "enocean_eltako/send":
           return { result: "sent" };
         case "enocean_eltako/teach_in":
