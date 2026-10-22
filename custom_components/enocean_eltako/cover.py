@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import math
 from collections.abc import Callable
 from typing import Any
 
@@ -241,7 +242,9 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         return False
 
     def _full_run(self, up: bool) -> None:
-        self._run(shutter.UP if up else shutter.DOWN, self.position.full_run_time(up), full=True)
+        # whole seconds, rounded up: a driven time reported below the full run anchors nothing
+        seconds = math.ceil(self.position.full_run_time(up))
+        self._run(shutter.UP if up else shutter.DOWN, seconds, full=True)
 
     def _partial_run(self, target: int) -> None:
         run = self.position.partial_run(target)

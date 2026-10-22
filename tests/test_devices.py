@@ -1274,6 +1274,36 @@ async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gatew
         [
             _subentry(
                 "cover",
+                "05-00-00-26",
+                "Rollladen Gaube",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-95"}],
+                time_opens=15.3,
+                time_closes=15.3,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_cover_full_run_rounds_up(hass: HomeAssistant, gateway) -> None:
+    """15.3 s travel + 2 s margin: 18 s, not 17 s, so the reported driven time anchors."""
+    _entry, server = gateway
+    cover = _entity(hass, "cover", f"{BASE}_05-00-00-26_1_cover")
+    await hass.services.async_call("cover", "open_cover", {"entity_id": cover})
+    await _settle(hass)
+    up = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00120108"), 0xFFB74495))
+    assert up in bytes(server.received)
+    _push(server, 0x07, bytes.fromhex("00B4010A"), 0x05000026)  # drove 18.0 s up
+    await _settle(hass)
+    state = hass.states.get(cover)
+    assert (state.attributes["current_position"], state.attributes["inaccuracy"]) == (100, 0)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
                 "05-00-00-25",
                 "Rollladen Gast",
                 senders=[{"profile": "controller", "sender_id": "FF-B7-44-94"}],
