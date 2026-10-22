@@ -71,8 +71,9 @@ const STYLE = `
   }
   /* a theme or primary colour of the user's own: its colour is the accent */
   :host([themed]) {
-    --accent: var(--primary-color); --accent-hover: color-mix(in srgb, var(--primary-color) 75%, var(--text));
-    --accent-soft: color-mix(in srgb, var(--primary-color) 14%, var(--surface)); --on-accent: var(--text-primary-color, #ffffff);
+    --theme-accent: var(--primary-color, #0a6aa8);
+    --accent: var(--theme-accent); --accent-hover: color-mix(in srgb, var(--theme-accent) 75%, var(--text));
+    --accent-soft: color-mix(in srgb, var(--theme-accent) 14%, var(--surface)); --on-accent: var(--text-primary-color, #ffffff);
   }
   * { box-sizing: border-box; }
   svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
