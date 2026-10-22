@@ -948,7 +948,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         </nav>
       </header>
       <main>
-        <section aria-label="${esc(t.gateways)}">
+        <section id="gatewaySection" aria-label="${esc(t.gateways)}">
           <div class="cards" id="cards"></div>
         </section>
         <section class="panel" id="panel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
@@ -1294,6 +1294,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._offset = 0;
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
+    // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
+    $("gatewaySection").hidden = view === "senders" || view === "takeover";
     // the heading names the view; the section's label follows it
     const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover }[view];
     $("viewTitle").textContent = title;
