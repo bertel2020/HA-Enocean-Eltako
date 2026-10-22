@@ -112,10 +112,10 @@ const TEXT = {
     repeated: "Repetitions", repeater: "Repeater hops",
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     viewTakeover: "Takeover",
-    tkSteps: ["Take over", "Check", "Old integration off", "Old IDs (optional)"],
+    tkSteps: ["Take over", "Check", "Old integration off"],
     tkStepState: {
       todo: (n) => (n === 1 ? "1 device to take over" : `${n} devices to take over`), done: (a, b) => `${a} of ${b} devices`, check: "Look at the mapping",
-      oldOn: "still active", oldOff: "switched off", later: "possible once step 3 is done",
+      oldOn: "still active", oldOff: "switched off",
     },
     tkReady: "Can be taken over", tkNot: "Cannot be taken over", tkExists: "Already set up",
     tkAutomations: "Automations", tkScenes: "Scenes", tkScripts: "Scripts", tkDashboards: "Dashboards",
@@ -267,10 +267,10 @@ const TEXT = {
     repeated: "Wiederholungen", repeater: "Repeater-Stufen",
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
     viewTakeover: "Übernahme",
-    tkSteps: ["Übernehmen", "Prüfen", "Alte Integration aus", "Alte IDs (optional)"],
+    tkSteps: ["Übernehmen", "Prüfen", "Alte Integration aus"],
     tkStepState: {
       todo: (n) => (n === 1 ? "1 Gerät zu übernehmen" : `${n} Geräte zu übernehmen`), done: (a, b) => `${a} von ${b} Geräten`, check: "Zuordnung ansehen",
-      oldOn: "noch aktiv", oldOff: "abgeschaltet", later: "möglich nach Schritt 3",
+      oldOn: "noch aktiv", oldOff: "abgeschaltet",
     },
     tkReady: "Übernehmbar", tkNot: "Nicht übernehmbar", tkExists: "Schon eingerichtet",
     tkAutomations: "Automationen", tkScenes: "Szenen", tkScripts: "Skripte", tkDashboards: "Dashboards",
@@ -582,12 +582,11 @@ const STYLE = `
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
   .panel:not([data-view="takeover"]) .takeover { display: none; }
   .takeover { padding-bottom: 8px; }
-  .takeover .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
+  .takeover .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px 16px 12px; border-bottom: 1px solid var(--line); }
   .takeover .step { display: flex; gap: 8px; align-items: flex-start; text-align: left; font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; }
   .takeover button.step { cursor: pointer; }
   .takeover button.step:disabled { cursor: default; opacity: .6; }
   .takeover .step b { display: block; font-weight: 500; font-size: 13px; color: var(--text); }
-  .takeover .step.opt b { color: var(--muted); }
   .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; }
   .takeover .step.cur .num { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .takeover .step.done .num { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
@@ -627,7 +626,6 @@ const STYLE = `
   .takeover .chip-s.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
   .takeover .where td { background: var(--soft); font-size: 12px; }
   @media (max-width: 760px) {
-    .takeover .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     /* phones: the main button gets the whole width */
     .takeover .actionbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "count all" "carry carry" "run run"; }
     .takeover .bar-run { justify-content: center; }
@@ -1834,11 +1832,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       { text: ready.length ? st.todo(ready.length) : taken.size ? st.done(taken.size, devices.length || taken.size) : "–", done: !ready.length && taken.size > 0, cur: !mapping, tab: "preview" },
       { text: st.check, cur: mapping, tab: "mapping", off: !rows.length },
       { text: oldActive ? st.oldOn : st.oldOff, done: !oldActive && taken.size > 0 },
-      { text: st.later, opt: true },
     ];
     const stepsHtml = steps
       .map((s, i) => {
-        const cls = `step${s.done ? " done" : ""}${s.cur ? " cur" : ""}${s.opt ? " opt" : ""}`;
+        const cls = `step${s.done ? " done" : ""}${s.cur ? " cur" : ""}`;
         const inner = `<span class="num">${s.done ? "✓" : i + 1}</span><span><b>${esc(t.tkSteps[i])}</b>${esc(s.text)}</span>`;
         return s.tab
           ? `<button class="${cls}" data-tk-tab="${s.tab}"${s.cur ? ' aria-current="step"' : ""}${s.off ? " disabled" : ""}>${inner}</button>`
