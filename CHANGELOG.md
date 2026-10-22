@@ -44,8 +44,9 @@ All notable changes to this project are documented here, in English and German
 - **Device Proxy, fallback gateway:** when the Device Proxy app runs a gateway on its fallback
   (a second gateway with the same base ID), the gateway card shows "Connected through the
   fallback …" in yellow instead of a green "Connected", also in the bar of gateways; the proxy
-  line in the details says whether the fallback stands in, is ready or not ready. Older app
-  versions without a fallback show as before.
+  line in the details says whether the fallback stands in, is ready or not ready. The gateway's
+  Connection sensor gets the attributes `via_fallback`, `fallback` and `fallback_ready` (for
+  automations, also without MQTT). Older app versions without a fallback show as before.
 - **Panel, Takeover:** Carry over… fills in later what devices already set up still lack;
   values set on the new device stay (websocket `enocean_eltako/takeover/carry`).
 - **Gateway settings:** optional gateway prefix in entity IDs: new entities get IDs like
@@ -328,8 +329,10 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Device Proxy, Ersatz-Gateway:** Läuft ein Gateway in der App Device Proxy über seinen
   Ersatz (ein zweites Gateway mit derselben Base-ID), zeigt die Gateway-Karte gelb „Verbunden
   über Ersatz …“ statt grün „Verbunden“, auch in der Leiste der Gateways; die Proxy-Zeile in den
-  Details sagt, ob der Ersatz einspringt, bereit oder nicht einsatzbereit ist. Ältere Versionen
-  der App ohne Ersatz zeigen sich wie bisher.
+  Details sagt, ob der Ersatz einspringt, bereit oder nicht einsatzbereit ist. Der Sensor
+  Verbindung des Gateways bekommt die Attribute `via_fallback`, `fallback` und `fallback_ready`
+  (für Automationen, auch ohne MQTT). Ältere Versionen der App ohne Ersatz zeigen sich wie
+  bisher.
 - **Panel, Übernahme:** Nachträglich übernehmen… ergänzt, was schon eingerichteten Geräten
   noch fehlt; am neuen Gerät gesetzte Werte bleiben (Websocket `enocean_eltako/takeover/carry`).
 - **Gateway-Einstellungen:** optionaler Gateway-Präfix in Entitäts-IDs: neue Entitäten bekommen

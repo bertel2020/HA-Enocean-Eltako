@@ -463,7 +463,8 @@ Umstiegs, eo_man oder PCT14.
 - Die App kann einem Gateway einen Ersatz geben: ein zweites Gateway mit derselben Base-ID, das
   einspringt, wenn das erste ausfällt. Die Integration bleibt verbunden und merkt nichts; ihre
   Gateway-Karte zeigt solange gelb „Verbunden über Ersatz …“, und die Details sagen, ob der
-  Ersatz bereit ist.
+  Ersatz bereit ist. Der Sensor Verbindung des Gateways trägt dasselbe als Attribute
+  (`via_fallback`, `fallback`, `fallback_ready`), für Automationen.
 
 ## Bekannte Einschränkungen
 

@@ -1065,7 +1065,18 @@
         "name": "Rain"
       },
       "gateway_connection": {
-        "name": "Connection"
+        "name": "Connection",
+        "state_attributes": {
+          "via_fallback": {
+            "name": "Through the fallback"
+          },
+          "fallback": {
+            "name": "Fallback gateway"
+          },
+          "fallback_ready": {
+            "name": "Fallback ready"
+          }
+        }
       },
       "contact": {
         "name": "Contact"

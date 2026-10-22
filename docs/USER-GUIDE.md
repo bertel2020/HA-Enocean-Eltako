@@ -436,7 +436,8 @@ or PCT14.
 - The app can give a gateway a fallback: a second gateway with the same base ID that stands in
   when the first one fails. The integration stays connected and notices nothing; its gateway
   card shows "Connected through the fallback …" in yellow meanwhile, and the details say
-  whether the fallback is ready.
+  whether the fallback is ready. The gateway's Connection sensor carries the same as attributes
+  (`via_fallback`, `fallback`, `fallback_ready`), for automations.
 
 ## Known limitations
 

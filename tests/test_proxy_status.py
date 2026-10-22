@@ -2,7 +2,9 @@
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
+from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.protocol.models import Protocol
 from custom_components.enocean_eltako.proxy_status import summarize
 
@@ -87,6 +89,55 @@ async def test_panel_status_includes_the_proxy(
     (gateway,) = (await client.receive_json())["result"]
     assert gateway["via_proxy"] is True
     assert gateway["proxy"]["duty_of_limit"] == 3.2
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_the_connection_sensor_tells_when_the_fallback_stands_in(
+    hass: HomeAssistant, aioclient_mock
+) -> None:
+    server = await FakeGateway(Protocol.ESP2).start()
+    gateway = {**STATUS["gateways"][0], "port": server.port, "active": "fallback"}
+    gateway["fallback"] = {"name": "FAM-USB 2", "ready": True}
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json={**STATUS, "gateways": [gateway]})
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, options={"proxy_replay": True})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    await hass.async_block_till_done()
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "binary_sensor", DOMAIN, f"{entry.entry_id}_gateway_connection"
+    )
+    assert entity_id is not None
+    state = hass.states.get(entity_id)
+    assert state is not None and state.state == "on"  # connected to the app all along
+    assert state.attributes["via_fallback"] is True
+    assert state.attributes["fallback"] == "FAM-USB 2"
+    assert state.attributes["fallback_ready"] is True
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_no_fallback_attributes_without_a_fallback(
+    hass: HomeAssistant, aioclient_mock
+) -> None:
+    server = await FakeGateway(Protocol.ESP2).start()
+    status = {**STATUS, "gateways": [{**STATUS["gateways"][0], "port": server.port}]}
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json=status)
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, options={"proxy_replay": True})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    await hass.async_block_till_done()
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "binary_sensor", DOMAIN, f"{entry.entry_id}_gateway_connection"
+    )
+    state = hass.states.get(entity_id or "")
+    assert state is not None and "via_fallback" not in state.attributes
 
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
