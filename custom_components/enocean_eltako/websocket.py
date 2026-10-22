@@ -164,10 +164,13 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                 profile = next((p for p, s in device.senders.items() if s == telegram.sender), None)
                 if profile is not None:
                     data["device"] = device.subentry.title
+                    # names need not be unique: the panel pairs command and answer by this key
+                    data["device_key"] = device.subentry.subentry_id
                     data["profile"] = profile
                     return data
             elif device.device_id == telegram.sender:
                 data["device"] = device.subentry.title
+                data["device_key"] = device.subentry.subentry_id
                 if device.model.examples:
                     data["model"] = device.model.examples.split(",")[0].strip()
                 for ref in (device.model.receive, *device.model.receive_extra):

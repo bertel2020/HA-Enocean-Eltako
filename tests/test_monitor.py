@@ -161,6 +161,8 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     event = (await client.receive_json())["event"]
     assert event["gateway_name"] == "FAM-USB Keller"
     assert event["device"] == "Licht Diele"
+    light = next(s for s in entry.subentries.values() if s.title == "Licht Diele")
+    assert event["device_key"] == light.subentry_id
     assert event["values"] == {"on": True, "channel": 1}
     assert event["fields"] == [  # no sensors: the raw values
         {"label": "on", "value": True, "unit": None},
@@ -196,6 +198,7 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     await entry.runtime_data.queue.submit(RadioTelegram(Rorg.BS4, bytes(4), 0xFFB74481))
     event = (await client.receive_json())["event"]
     assert (event["dir"], event["device"], event["profile"]) == ("tx", "Licht Diele", "central")
+    assert event["device_key"] == light.subentry_id  # the answer pairs with this command
 
     await client.send_json({"id": 2, "type": "enocean_eltako/gateways"})
     (status,) = (await client.receive_json())["result"]

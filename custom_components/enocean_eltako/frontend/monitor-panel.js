@@ -1590,7 +1590,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const at = Date.parse(r.time);
     let best = null;
     for (const o of this._rows) {
-      if (o.device !== r.device || o.dir === r.dir || o.duplicate) continue;
+      // the device's key, not its name: two devices may share a name (older servers: the name)
+      const same = r.device_key ? o.device_key === r.device_key : o.device === r.device;
+      if (!same || o.dir === r.dir || o.duplicate) continue;
       const delta = r.dir === "tx" ? Date.parse(o.time) - at : at - Date.parse(o.time);
       if (delta >= 0 && delta <= ANSWER_WINDOW && (best === null || delta < best)) best = delta;
     }
