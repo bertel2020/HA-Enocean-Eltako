@@ -1341,8 +1341,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     if (result.entry_id) {
       // the sender waits under "Add device" of its gateway on the integration page
-      history.pushState(null, "", "/config/integrations/integration/enocean_eltako");
+      // the hash makes the integration page scroll to and highlight that gateway
+      history.pushState(null, "", `/config/integrations/integration/enocean_eltako#config_entry=${result.entry_id}`);
       window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
       return;
     }
     this._notice(this._t.addResult[result.reason] || this._t.addResult.failed);
