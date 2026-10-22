@@ -1165,7 +1165,7 @@
   "issues": {
     "climate_silent": {
       "title": "{name} has not been controlled for 45 minutes",
-      "description": "Home Assistant could not send setpoint and temperature to {name} for 45 minutes (gateway offline?). After 1 hour without a telegram the heating actuator switches to its fault mode with a fixed heating cycle."
+      "description": "Home Assistant could not send setpoint and temperature to {name} for 45 minutes (gateway offline or room temperature sensor unavailable?). After 1 hour without a telegram the heating actuator switches to its fault mode with a fixed heating cycle."
     },
     "device_silent": {
       "title": "{name} not heard for {hours} h",

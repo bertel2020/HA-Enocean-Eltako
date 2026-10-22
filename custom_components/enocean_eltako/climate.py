@@ -160,17 +160,20 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
         self.async_write_ha_state()
 
     def _read_sensor(self) -> None:
-        if self._sensor is None or (state := self.hass.states.get(self._sensor)) is None:
+        """No temperature while the sensor has none: nothing is sent, so the actuator falls
+        back to its fault mode instead of heating to a frozen value."""
+        if self._sensor is None:
             return
+        state = self.hass.states.get(self._sensor)
         try:
-            self._attr_current_temperature = float(state.state)
+            self._attr_current_temperature = float(state.state) if state is not None else None
         except ValueError:
-            return
+            self._attr_current_temperature = None
 
     @callback
     def _send(self) -> None:
         if self._sensor is not None and self._attr_current_temperature is None:
-            return  # no room temperature yet; the actuator keeps its last values
+            return  # no room temperature; the actuator keeps its last values
         setpoint = (
             0.0 if self._attr_hvac_mode == HVACMode.OFF else self._attr_target_temperature or 0
         )

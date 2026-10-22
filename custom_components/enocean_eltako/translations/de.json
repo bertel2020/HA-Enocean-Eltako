@@ -1169,7 +1169,7 @@
   "issues": {
     "climate_silent": {
       "title": "{name} wird seit 45 Minuten nicht mehr geregelt",
-      "description": "Home Assistant konnte {name} seit 45 Minuten keine Soll- und Isttemperatur senden (Gateway offline?). Nach 1 Stunde ohne Telegramm schaltet der Heizungsaktor in den Störbetrieb mit festem Heiztakt."
+      "description": "Home Assistant konnte {name} seit 45 Minuten keine Soll- und Isttemperatur senden (Gateway offline oder Raumtemperaturfühler nicht verfügbar?). Nach 1 Stunde ohne Telegramm schaltet der Heizungsaktor in den Störbetrieb mit festem Heiztakt."
     },
     "device_silent": {
       "title": "{name} seit {hours} h nicht gehört",
