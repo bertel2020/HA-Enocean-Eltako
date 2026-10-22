@@ -1116,10 +1116,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const input = this.shadowRoot.getElementById("text");
     const target = e.composedPath()[0];
     const typing = target?.isContentEditable || target?.matches?.("input, textarea, select");
-    if (e.key === "/" && input && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    // search and pause exist only in the views with the telegram list
+    const shortcut = (this._view === "telegrams" || this._view === "devices") && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (e.key === "/" && input && shortcut) {
       e.preventDefault();
       input.focus();
-    } else if ((e.key === "p" || e.key === "P") && !typing && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    } else if ((e.key === "p" || e.key === "P") && shortcut) {
       e.preventDefault();
       this._togglePause();
     } else if (e.key === "Escape" && this.shadowRoot.activeElement === input) {
