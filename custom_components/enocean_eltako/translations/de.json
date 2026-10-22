@@ -9,6 +9,13 @@
           "model": "Gateway"
         }
       },
+      "reconfigure": {
+        "title": "Gateway wechseln",
+        "description": "Aktuell {model}, Base-ID {base_id}. Wähle das Modell des Gateways, das ab jetzt genutzt wird, zum Beispiel beim Ersatz eines defekten Gateways oder wenn ein USB-Gateway durch ein Netzwerk-Gateway ersetzt wird. Geräte und Sender-IDs bleiben unverändert. Die nächsten Schritte lesen die Base-ID des neuen Gateways; sie muss {base_id} sein, sonst würden die Aktoren es nicht kennen.",
+        "data": {
+          "model": "Gateway"
+        }
+      },
       "connection": {
         "title": "Verbindung",
         "description": "Wie ist das Gateway angeschlossen?",

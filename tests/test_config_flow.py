@@ -1,6 +1,6 @@
 """Gateway config flow."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant import config_entries
@@ -357,10 +357,19 @@ def _configured(port: int, base_id: str = "FF-B7-44-80", model: str = "fam_usb")
     )
 
 
+async def _reconfigure(hass: HomeAssistant, entry: MockConfigEntry, model: str | None = None):
+    """Start the reconfigure flow and answer its model step (default: keep the model)."""
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["step_id"] == "reconfigure"
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"model": model or entry.data["model"]}
+    )
+
+
 async def test_reconfigure_changes_the_connection(hass: HomeAssistant, fake_esp2) -> None:
     entry = _configured(4000)
     entry.add_to_hass(hass)
-    result = await entry.start_reconfigure_flow(hass)
+    result = await _reconfigure(hass, entry)
     assert result["type"] is FlowResultType.MENU
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "tcp"}
@@ -379,7 +388,7 @@ async def test_reconfigure_changes_the_connection(hass: HomeAssistant, fake_esp2
 async def test_reconfigure_refuses_another_gateway(hass: HomeAssistant, fake_esp2) -> None:
     entry = _configured(4000, base_id="FF-80-00-00")
     entry.add_to_hass(hass)
-    result = await entry.start_reconfigure_flow(hass)
+    result = await _reconfigure(hass, entry)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "tcp"}
     )
@@ -391,10 +400,58 @@ async def test_reconfigure_refuses_another_gateway(hass: HomeAssistant, fake_esp
     assert entry.data["device"]["port"] == 4000
 
 
+async def test_reconfigure_swaps_usb_for_a_network_gateway(hass: HomeAssistant, fake_esp2) -> None:
+    """FAM-USB replaced by a network gateway of the same base ID: model and connection change."""
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway",
+        AsyncMock(return_value=0xFFB74480),
+    ):
+        result = await _reconfigure(hass, entry, "mgw_eth")
+        assert result["step_id"] == "network"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "10.0.0.50", "port": 5100}
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["model"] == "mgw_eth"
+    assert entry.data["device"] == {"type": "tcp", "host": "10.0.0.50", "port": 5100}
+    assert entry.data["base_id"] == "FF-B7-44-80"
+    assert entry.unique_id == "FF-B7-44-80"
+
+
+async def test_reconfigure_model_change_refuses_another_base_id(hass: HomeAssistant) -> None:
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway",
+        AsyncMock(return_value=0xFF800000),
+    ):
+        result = await _reconfigure(hass, entry, "mgw_eth")
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "10.0.0.50", "port": 5100}
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_gateway"
+    assert entry.data["model"] == "fam_usb"
+    assert entry.data["device"]["port"] == 4000
+
+
+async def test_reconfigure_offers_only_models_of_the_same_kind(hass: HomeAssistant) -> None:
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    selector = next(iter(result["data_schema"].schema.values()))
+    options = selector.config["options"]
+    assert "mgw_eth" in options and "fam_usb" in options
+    assert "fam14" not in options and "fgw14_usb" not in options
+
+
 async def test_reconfigure_fam14_keeps_its_base_id(hass: HomeAssistant, fake_esp2) -> None:
     entry = _configured(4000, base_id="FF-AA-00-00", model="fam14")
     entry.add_to_hass(hass)
-    result = await entry.start_reconfigure_flow(hass)
+    result = await _reconfigure(hass, entry)
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"next_step_id": "tcp"}
     )

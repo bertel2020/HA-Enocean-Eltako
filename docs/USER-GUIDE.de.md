@@ -92,6 +92,12 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
   gefunden und erscheinen als entdeckt; ein MGW-ETH mit neuer IP-Adresse wird selbst angepasst.
 - **FGW14-USB und FAM14 am selben Bus** bilden eine Bus-Gruppe mit Failover. Der FAM14 kann
   getrennt bleiben, bis er gebraucht wird.
+- **Gateway tauschen:** Menü des Gateways → **Neu konfigurieren** fragt Modell und
+  Verbindung ab. Ein defektes Gateway oder ein FAM-USB lässt sich durch ein anderes Modell
+  ersetzen, z. B. ein Netzwerk-Gateway; Geräte, Sender-IDs und das Einlernen der Aktoren
+  bleiben. Das gelingt nur, wenn das neue Gateway dieselbe Base-ID meldet; bei einer anderen
+  wird der Wechsel abgelehnt (die Aktoren kennen nur die alten Sender-IDs). Bus-Gateways
+  (FGW14-USB, FAM14) tauschen nur untereinander.
 - **Zwei Gateways mit derselben Base-ID** (z. B. zwei Funkgateways einer Anlage): Das zweite
   wird nach einer Rückfrage als `<Basis-ID>#2` angelegt. Sender-IDs werden über beide hinweg nie
   doppelt vergeben. Ein gefundenes Gateway mit bekannter Base-ID gilt nur dann als umgezogen,

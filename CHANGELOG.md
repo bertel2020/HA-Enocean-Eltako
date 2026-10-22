@@ -6,6 +6,15 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Added
+
+- **Swap a gateway:** reconfiguring a gateway now also asks for the model, so a defective
+  gateway or a FAM-USB can be replaced by another model (for example a network gateway)
+  without losing devices or sender IDs. The new gateway has to report the same base ID,
+  otherwise the change is refused. Bus gateways (FGW14-USB, FAM14) swap among themselves.
+
 ### [0.1.4] - 2026-10-22
 
 #### Changed
@@ -134,6 +143,16 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Hinzugefügt
+
+- **Gateway tauschen:** Beim Neukonfigurieren eines Gateways wird jetzt auch das Modell
+  abgefragt. So lässt sich ein defektes Gateway oder ein FAM-USB durch ein anderes Modell
+  (z. B. ein Netzwerk-Gateway) ersetzen, ohne Geräte und Sender-IDs zu verlieren. Das neue
+  Gateway muss dieselbe Base-ID melden, sonst wird der Wechsel abgelehnt. Bus-Gateways
+  (FGW14-USB, FAM14) tauschen nur untereinander.
 
 ### [0.1.4] - 2026-10-22
 

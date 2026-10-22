@@ -86,6 +86,12 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
   discovered; a MGW-ETH that gets a new IP address is updated by itself.
 - **FGW14-USB and FAM14 on the same bus** form a bus group with failover. The FAM14 can stay
   disconnected until it is needed.
+- **Swapping a gateway:** the gateway's menu → **Reconfigure** asks for the model and the
+  connection. A defective gateway or a FAM-USB can be replaced by another model, for example
+  a network gateway; devices, sender IDs and the actuators' teach-in stay as they are. This
+  only works when the new gateway reports the same base ID; with another one the change is
+  refused (the actuators know only the old sender IDs). Bus gateways (FGW14-USB, FAM14) swap
+  among themselves.
 - **Two gateways with one base ID** (for example two radios of one installation): adding the
   second asks for confirmation and stores it as `<base ID>#2`. Sender IDs are never assigned
   twice across them. A discovered gateway with a known base ID counts as moved only if the
