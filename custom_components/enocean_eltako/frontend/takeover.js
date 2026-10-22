@@ -413,7 +413,7 @@ export const takeover = {
   async _copyMapping() {
     try {
       await navigator.clipboard.writeText(this._mappingTable().map((l) => l.join("\t")).join("\n"));
-      this._notice(this._t.tkCopied);
+      this._notice(this._t.tkCopied, true);
     } catch (err) {
       this._notice(this._t.copyFailed);
     }

@@ -22,6 +22,7 @@ const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
 const TREND_POINTS = 30; // telegrams in a sender's signal curve
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
+const NOTICE_TIME = 4000; // ms a success message stays
 const TAKEOVER_CHECK = 12; // status updates between checks whether the Takeover view is needed
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
 // what the send form accepts per telegram type (as websocket.py SEND_LENGTHS), with an example
@@ -652,6 +653,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     clearInterval(this._timer);
     this._timer = null;
     clearTimeout(this._tkTyping);
+    clearTimeout(this._noticeTimer);
     this._unwatchConnection();
     if (this._unsub) {
       this._unsub.then((unsub) => unsub()).catch(() => {});
@@ -1313,17 +1315,20 @@ class EnOceanEltakoPanel extends HTMLElement {
         data: $("sendData").value.trim(),
         status: $("sendStatus").value.trim(),
       });
-      this._notice(t.sendResult[result.result] || t.sendResult.unknown);
+      this._notice(t.sendResult[result.result] || t.sendResult.unknown, ["sent", "confirmed"].includes(result.result));
     } catch (err) {
       this._notice(t.sendResult[err.code] || t.sendResult.unknown);
     }
     $("sendGo").disabled = false;
   }
 
-  _notice(text) {
+  _notice(text, done = false) {
+    // a success ("done") goes after a few seconds; errors and hints stay until closed
     const notice = this.shadowRoot.getElementById("notice");
+    clearTimeout(this._noticeTimer);
     notice.hidden = !text;
     notice.querySelector("span").textContent = text;
+    if (text && done) this._noticeTimer = setTimeout(() => this._notice(""), NOTICE_TIME);
   }
 
   _number(value, options = {}) {
@@ -1395,7 +1400,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (!row) return;
     try {
       await navigator.clipboard.writeText(this._captureLine(row));
-      this._notice(this._t.copied);
+      this._notice(this._t.copied, true);
     } catch (err) {
       this._notice(this._t.copyFailed);
     }
@@ -1865,7 +1870,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const { id } = this._freeing;
     try {
       await this._hass.callWS({ type: "enocean_eltako/sender_pools/free", pool: this._pool, sender: id });
-      this._notice(t.freed);
+      this._notice(t.freed, true);
     } catch (err) {
       this._notice(t.freeErrors[err.code] || t.freeErrors.unknown);
     }
