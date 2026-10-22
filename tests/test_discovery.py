@@ -139,6 +139,10 @@ async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noq
     options = await hass.config_entries.options.async_configure(
         options["flow_id"], {"next_step_id": "hidden"}
     )
+    late = await hass.config_entries.options.async_init(entry.entry_id)  # still open at unload
+    late = await hass.config_entries.options.async_configure(
+        late["flow_id"], {"next_step_id": "hidden"}
+    )
     options = await hass.config_entries.options.async_configure(
         options["flow_id"], {"again": ["00-2A-0B-0F"]}
     )
@@ -148,6 +152,11 @@ async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noq
     await _settle(hass)
     result = await _menu(hass, entry)
     assert "discovered" in result["menu_options"]
+    hass.config_entries.subentries.async_abort(result["flow_id"])
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    late = await hass.config_entries.options.async_configure(late["flow_id"], {"again": []})
+    assert late["reason"] == "gateway_not_loaded"
 
 
 async def test_list_is_capped(hass: HomeAssistant, gateway) -> None:  # noqa: F811

@@ -82,6 +82,8 @@ All notable changes to this project are documented here, in English and German
   until the browser tab is closed.
 - **Device Proxy discovery:** gateway information that cannot be read (no host or port, an
   unknown protocol) ends the discovery with a message instead of an error.
+- **Measuring travel times, hidden senders:** when the gateway is reloaded, unloaded or offline
+  while the form is open, the flow ends with a hint instead of an error.
 
 ### [0.1.6] - 2026-10-22
 
@@ -352,6 +354,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Browser-Tabs alle 5 s eine Statusabfrage weiter.
 - **Device-Proxy-Erkennung:** nicht lesbare Gateway-Angaben (ohne Host oder Port, unbekanntes
   Protokoll) beenden die Erkennung mit einem Hinweis statt mit einem Fehler.
+- **Fahrzeiten messen, ausgeblendete Sender:** wird das Gateway neu geladen, entladen oder ist
+  es offline, während das Formular offen ist, endet der Ablauf mit einem Hinweis statt mit einem
+  Fehler.
 
 ### [0.1.6] - 2026-10-22
 

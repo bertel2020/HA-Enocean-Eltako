@@ -403,7 +403,8 @@
       }
     },
     "abort": {
-      "senders_shown": "The selected senders are listed again when heard."
+      "senders_shown": "The selected senders are listed again when heard.",
+      "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
     },
     "error": {
       "gateway_number_taken": "Another gateway already uses this number."
@@ -888,6 +889,7 @@
         "reconfigure_successful": "Device updated.",
         "measure_needs_controller": "Measuring needs the controller sender (H5-3F-7F).",
         "measure_failed": "The cover did not report the open end position.",
+        "measure_interrupted": "Measuring stopped: the gateway was reloaded or is not connected. Start it again.",
         "no_discovered": "No unknown senders were heard yet.",
         "sender_hidden": "The sender is hidden."
       },
