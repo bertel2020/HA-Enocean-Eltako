@@ -1604,13 +1604,14 @@ class EnOceanEltakoPanel extends HTMLElement {
         const rate = gw.per_minute ?? "–";
         const stat = (label, value, warn) => `<span>${esc(label)} <b class="${warn ? "warn" : ""}">${esc(value)}</b></span>`;
         const selected = this._filter.gateway === gw.entry_id;
+        // with a single gateway its filter would show the same list: no button (unless it is set)
         const expanded = this._gatewayDetails.has(gw.entry_id);
         const sub = [gw.model !== gw.title ? gw.model : "", gw.base_id].filter(Boolean).join(" · ");
         return `<article class="card${selected ? " selected" : ""}" data-entry="${esc(gw.entry_id)}">
           <div class="gateway-icon">${svg(ICON.tower)}</div>
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(gw.devices ?? "–")} ${esc(t.devices)}</b><span>${esc(gw.free_senders ?? "–")} ${esc(t.freeSenders)}</span></div>` : ""}
-          <div class="gateway-actions"><button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button><button class="chip" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
+          <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
           ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
         </article>`;
       })
