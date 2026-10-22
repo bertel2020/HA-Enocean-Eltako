@@ -252,8 +252,12 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         its entry: it is found by its base ID and gets the new address.
         """
         config = dict(discovery_info.config)
-        gateways = [dict(g) for g in config.pop("gateways", [])]
-        host = str(config["host"])
+        try:
+            host = str(config["host"])
+            gateways = [{**g, "port": int(g["port"])} for g in config.pop("gateways", [])]
+            status_port = int(config["status_port"]) if config.get("status_port") else None
+        except (KeyError, TypeError, ValueError):
+            return self.async_abort(reason="invalid_discovery_info")
         configured = {
             (
                 entry.data.get(CONF_DEVICE, {}).get(CONF_HOST),
@@ -261,7 +265,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             )
             for entry in self._async_current_entries(include_ignore=False)
         }
-        gateways = [g for g in gateways if (host, int(g["port"])) not in configured]
+        gateways = [g for g in gateways if (host, g["port"]) not in configured]
         if not gateways:
             return self.async_abort(reason="already_configured")
         for extra in gateways[1:]:
@@ -277,7 +281,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 ),
             )
         gateway = gateways[0]
-        port = int(gateway["port"])
+        port = gateway["port"]
         await self.async_set_unique_id(f"proxy_{host}_{port}")
         self._abort_if_unique_id_configured()
         # a gateway of the app on another port (the app's port options changed), or one
@@ -290,16 +294,17 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             or CONF_PROXY_STATUS_PORT in e.data
         ]
         probe = next(
-            m
-            for m in MODELS.values()
-            if m.reads_base_id and m.protocol == (gateway.get("protocol") or "esp2")
+            (
+                m
+                for m in MODELS.values()
+                if m.reads_base_id and m.protocol == (gateway.get("protocol") or "esp2")
+            ),
+            None,
         )
+        if probe is None:  # a protocol this version does not know
+            return self.async_abort(reason="invalid_discovery_info")
         connection = TcpConnection(host, port)
-        updates = (
-            {CONF_PROXY_STATUS_PORT: int(config["status_port"])}
-            if config.get("status_port")
-            else {}
-        )
+        updates = {CONF_PROXY_STATUS_PORT: status_port} if status_port else {}
         moved = await self._async_moved_gateway(probe, connection, through_app, updates)
         if moved is not None:
             return moved

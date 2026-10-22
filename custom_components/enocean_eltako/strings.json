@@ -109,7 +109,8 @@
       "already_configured": "A gateway with this base ID is already set up.",
       "reconfigure_successful": "The connection was changed.",
       "wrong_gateway": "This is a different gateway (other base ID). Add it as a new gateway instead.",
-      "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
+      "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
+      "invalid_discovery_info": "The Device Proxy app sent gateway information this version cannot read. Update the integration and the app."
     }
   },
   "selector": {

@@ -511,6 +511,25 @@ async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
     assert again["reason"] == "already_configured"
 
 
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"gateways": [{"port": 9001}]},  # no host
+        {"host": "127.0.0.1", "gateways": [{"name": "x"}]},  # no port
+        {"host": "127.0.0.1", "gateways": [{"port": "x"}]},
+        {"host": "127.0.0.1", "gateways": [{"port": 9001, "protocol": "esp9"}]},
+    ],
+)
+async def test_device_proxy_app_discovery_malformed(hass: HomeAssistant, config: dict) -> None:
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    info = HassioServiceInfo(config=config, name="Device Proxy", slug="abc", uuid="1")
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+    )
+    assert result["reason"] == "invalid_discovery_info"
+
+
 async def test_device_proxy_app_discovers_all_gateways(hass: HomeAssistant) -> None:
     """One app message lists every gateway; each unconfigured one gets its own flow."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
