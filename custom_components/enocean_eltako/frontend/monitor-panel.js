@@ -2175,7 +2175,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._replace(container, `${select}
       <div class="pool">
         <div><div class="meta-label">${esc(t.poolFree)}</div><div class="big">${esc(pool.free)} <small>${esc(t.poolOf(pool.size))}</small></div></div>
-        <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${Math.round((used / pool.size) * 100)}%"></i></span>
+        <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${pool.size ? Math.round((used / pool.size) * 100) : 0}%"></i></span>
           <div class="range"><span class="mono">${esc(pool.start)} – ${esc(pool.end)}</span> · ${esc(t.poolSummary(pool.rows.length - blocked.length, blocked.length))}</div></div>
       </div>
       ${pool.rows.length ? `<div class="sid-list">${html}</div>` : `<div class="hint">${esc(t.noSenderIds)}</div>`}`);
