@@ -279,6 +279,8 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "area": None,
             "entities": 3,
             "ha_device": registered.id,
+            "key": next(iter(entry.subentries)),
+            "teach": [{"profile": "central", "id": "FF-B7-44-81", "ute": False}],
         }
     ]
     # senders hidden from discovery: the panel does not offer them as new devices
@@ -307,6 +309,25 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
         reply = await send(msg_id, **fields)
         assert not reply["success"] and reply["error"]["code"] == code
     assert len(entry.runtime_data.hub.monitor.history(entry.entry_id)) == 1
+
+    # "teach in" from the panel: the device's teach-in telegram from its sender ID
+    teach = {"type": "enocean_eltako/teach_in", "entry_id": entry.entry_id}
+    await client.send_json(
+        {"id": 7, **teach, "device": next(iter(entry.subentries)), "profile": "central"}
+    )
+    reply = await client.receive_json()
+    assert reply["success"] and reply["result"] == {"ute": False, "window": 0}
+    await hass.async_block_till_done()
+    history = entry.runtime_data.hub.monitor.history(entry.entry_id)
+    assert len(history) == 2 and history[-1].telegram.sender == 0xFFB74481
+    for msg_id, fields, code in (
+        (8, {"device": next(iter(entry.subentries)), "profile": "rocker"}, "unknown_sender"),
+        (9, {"device": "nope", "profile": "central"}, "unknown_sender"),
+        (10, {"entry_id": "nope", "device": "x", "profile": "central"}, "not_found"),
+    ):
+        await client.send_json({"id": msg_id, **teach, **fields})
+        reply = await client.receive_json()
+        assert not reply["success"] and reply["error"]["code"] == code
     entry.runtime_data.hub.hidden[entry.entry_id] = {0x0199887F}
     await client.send_json({"id": 100, "type": "enocean_eltako/gateways"})
     (status,) = (await client.receive_json())["result"]

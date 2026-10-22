@@ -26,6 +26,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from .catalog import CATALOG, GENERIC_EEP
 from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
+from .device import UTE_WINDOW
 from .hub import async_get_hub
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
@@ -51,6 +52,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_gateways)
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_send)
+    websocket_api.async_register_command(hass, ws_teach_in)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     async_setup_takeover_websocket(hass)
@@ -283,6 +285,16 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
                     len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
                 ),
                 "ha_device": entry.id if entry else None,
+                # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
+                "key": device.subentry.subentry_id,
+                "teach": [
+                    {
+                        "profile": profile,
+                        "id": format_id(sender),
+                        "ute": not device.model.sender_profile(profile).teach_in,
+                    }
+                    for profile, sender in device.senders.items()
+                ],
             }
         )
     return rows
@@ -411,6 +423,37 @@ async def ws_send(
         return
     result = await runtime.queue.submit(RadioTelegram(rorg, data, sender, status[0]), Priority.USER)
     connection.send_result(msg["id"], {"result": result.value})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/teach_in",
+        vol.Required("entry_id"): str,
+        vol.Required("device"): str,
+        vol.Required("profile"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_teach_in(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel "teach in": what the device's teach-in button sends, for one of its sender IDs.
+
+    A UTE profile (VLD actuators) sends nothing yet: it answers the actuator's query within the
+    window, which the result names.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    device = entry.runtime_data.devices.get(msg["device"])
+    if device is None or msg["profile"] not in device.senders:
+        connection.send_error(msg["id"], "unknown_sender", "no such device or sender profile")
+        return
+    device.teach_in(msg["profile"])
+    ute = not device.model.sender_profile(msg["profile"]).teach_in
+    connection.send_result(msg["id"], {"ute": ute, "window": UTE_WINDOW if ute else 0})
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:
