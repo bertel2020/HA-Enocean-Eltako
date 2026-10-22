@@ -13,6 +13,8 @@ All notable changes to this project are documented here, in English and German
 - **Discovered devices:** senders a gateway hears but no device listens to are listed under
   **Add device → Discovered devices** of that gateway instead of as cards on the integration
   page and in the "Add hub" list. One notification per gateway announces new ones.
+- **Teach-in hints:** the device form names the learn function and the rotary switch
+  positions for switching actuators, dimmers and cover actuators (Eltako series 14).
 - **Panel:** "Add device" on an unknown sender opens the integration page and highlights its
   gateway.
 
@@ -121,6 +123,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Entdeckte Geräte:** Sender, die ein Gateway hört und auf die kein Gerät hört, stehen beim
   Gateway unter **Gerät hinzufügen → Entdeckte Geräte** statt als Karten auf der Integrationsseite
   und in der Liste bei „Hub hinzufügen“. Eine Benachrichtigung pro Gateway meldet neue.
+- **Anlernhinweise:** das Geräteformular nennt für Schaltaktoren, Dimmer und Rollladenaktoren
+  (Eltako Baureihe 14) die Lernfunktion und die Drehschalterstellungen.
 - **Panel:** „Gerät hinzufügen“ bei einem unbekannten Sender öffnet die Integrationsseite und
   hebt sein Gateway hervor.
 

@@ -242,7 +242,7 @@
       "options": {
         "default": "Teach-in: put the actuator into learn mode (rotary switch LRN or learn button), then press the matching teach-in button on this device page.",
         "psc": "Teach-in: start the learn mode on the PSC (PSC132: touch about 3 s, PSC234: more than 5 s, LED flashes red), then within 15 s press \"Teach in controller\" on this device page. The PSC first sends a request of its own, which is ignored. Done when the LED flashes green 5 times.",
-        "cover": "Teach-in: put the actuator into learn mode (FSB: function 180/200 for the controller, 10/30 for the direction rocker), then press the matching teach-in button on this device page.",
+        "cover": "Teach-in (Eltako cover actuator, e.g. FSB14): turn the upper rotary switch to the learn function (180 = controller motor 1, 200 = controller motor 2, 10 = direction rocker motor 1, 30 = direction rocker motor 2), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details: docs/teach_in.md.",
         "heating_actuator": "Teach-in: put the actuator into learn mode for a room controller, then press \"Teach in controller\"; for cooling also teach in the cooling switch.",
         "virtual_contact": "Teach-in: put the actuator into learn mode for a window contact (FSR14: any learn position; FUD14: LC2 = make contact, LC3 = break contact; FSB14: function 20/40, which also sets up the lock-out protection; FHK14: upper rotary switch at the right stop), then press “Teach in window contact”.",
         "virtual_temperature": "Teach-in: put the actuator into learn mode for a temperature sensor (FHK14: during teach-in the hysteresis switch sets the setpoint, middle position = 21 °C), then press “Teach in temperature”.",
@@ -253,7 +253,9 @@
         "vld_cover": "Teach-in: press “Teach in (UTE)” on this device page, then put the actuator into learn mode within 60 s. It sends a query that Home Assistant answers. This needs an ESP3 gateway (USB300, MGW-ETH, generic ESP3).",
         "virtual_brightness": "Teach-in: put the actuator into learn mode for a brightness sensor (FSB14: function 150 for the shading automatic; FSR14: any learn position, its upper rotary switch then sets the switching threshold), then press “Teach in brightness sensor”.",
         "virtual_weather": "Teach-in: put the actuator into learn mode for a weather station (FSB14: any learn function; it takes either an FAH60 or an FWS61), then press “Teach in weather station”.",
-        "virtual_scene": "Teach-in: put the actuator into learn mode for a scene button (FSR14: 30, FUD14: LC4, FSB14: function 180/200), then press one of the scene buttons on this device page. Scenes are stored on the actuator as its manual describes."
+        "virtual_scene": "Teach-in: put the actuator into learn mode for a scene button (FSR14: 30, FUD14: LC4, FSB14: function 180/200), then press one of the scene buttons on this device page. Scenes are stored on the actuator as its manual describes.",
+        "switch": "Teach-in (Eltako series 14, e.g. FSR14-4x): pick the channel with the lower rotary switch, turn the upper switch to the learn function (0 = direction rocker, 5 or 10 = universal rocker; any position for the central command), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details for other devices: docs/teach_in.md.",
+        "dimmer": "Teach-in (Eltako dimmer, e.g. FUD14): turn the upper rotary switch to the learn function (LC2 = direction rocker, EC2 = universal rocker, PCT = central command), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details for other devices: docs/teach_in.md."
       }
     },
     "when_unavailable": {
