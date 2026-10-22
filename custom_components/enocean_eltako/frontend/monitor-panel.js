@@ -524,6 +524,7 @@ const STYLE = `
 
 function bars(dbm) {
   if (dbm == null) return "";
+  dbm = Number(dbm);
   const level = dbm >= -70 ? 4 : dbm >= -80 ? 3 : dbm >= -90 ? 2 : 1;
   const rects = [0, 1, 2, 3]
     .map((i) => `<rect x="${i * 5}" y="${10 - i * 3}" width="3" height="${4 + i * 3}" rx="1" class="${i < level ? "on" : ""}"></rect>`)
@@ -1861,7 +1862,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const bytes = r.data.match(/../g) || [];
     const before = prev.data.match(/../g) || [];
     const same = bytes.length === before.length;
-    const raw = bytes.map((b, i) => (same && b === before[i] ? b : `<span class="chg">${esc(b)}</span>`)).join(" ");
+    const raw = bytes.map((b, i) => (same && b === before[i] ? esc(b) : `<span class="chg">${esc(b)}</span>`)).join(" ");
     const now = new Map((r.fields || []).map((f) => [f.label, f]));
     const changes = (prev.fields || [])
       .map((old) => [old, now.get(old.label)])
@@ -1964,7 +1965,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
     return `<tr class="${classes}" data-key="${esc(key)}">
       <td class="time">${clock}</td>
-      <td class="dirc"><span class="dir ${r.dir}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
+      <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
       <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
       <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
       <td class="content"><div class="values">${extra}${values}</div></td>
