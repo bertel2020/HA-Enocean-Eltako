@@ -327,6 +327,30 @@
           "description": "Nur die Geräte dieses Gateways; leer für alle."
         }
       }
+    },
+    "export_custom_devices": {
+      "name": "Eigene Gerätedefinitionen exportieren",
+      "description": "Gibt deine eigenen Gerätedefinitionen (custom_devices.yaml und importierte) als YAML-Text zurück, den du weitergeben kannst.",
+      "fields": {
+        "ids": {
+          "name": "IDs",
+          "description": "Nur diese Definitionen; leer für alle."
+        }
+      }
+    },
+    "import_custom_devices": {
+      "name": "Gerätedefinitionen importieren",
+      "description": "Prüft weitergegebene Definitionen (YAML-Text, wie exportiert) und legt jede gültige als eigene Datei in /config/enocean_eltako/custom_devices/ ab. Deine eigene custom_devices.yaml wird nie geändert oder ersetzt. Danach stehen sie unter Gerät hinzufügen → Eigene Definition.",
+      "fields": {
+        "yaml": {
+          "name": "Definitionen",
+          "description": "Der YAML-Text mit dem Schlüssel devices."
+        },
+        "overwrite": {
+          "name": "Vorhandene ersetzen",
+          "description": "Importierte Definitionen mit gleicher ID ersetzen."
+        }
+      }
     }
   },
   "options": {

@@ -29,3 +29,21 @@ add_energy_devices:
       selector:
         config_entry:
           integration: enocean_eltako
+
+export_custom_devices:
+  fields:
+    ids:
+      selector:
+        object:
+
+import_custom_devices:
+  fields:
+    yaml:
+      required: true
+      selector:
+        text:
+          multiline: true
+    overwrite:
+      default: false
+      selector:
+        boolean:
