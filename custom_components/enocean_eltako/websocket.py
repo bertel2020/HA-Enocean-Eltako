@@ -299,6 +299,8 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "free_senders": runtime.senders.pool.free_count(),
             "senders": own_senders(runtime),
             "radio_devices": radio_devices(runtime),
+            # senders hidden from discovery: the panel does not offer them as new devices
+            "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),

@@ -1276,6 +1276,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     notice.querySelector("span").textContent = text;
   }
 
+  _isHidden(gateway, sender) {
+    // a sender hidden from the gateway's discovery is not offered as a new device here either
+    return !!this._gateways.find((g) => g.entry_id === gateway)?.hidden?.includes(sender);
+  }
+
   _matches(r) {
     const f = this._filter;
     return (
@@ -1283,7 +1288,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (!f.dir || r.dir === f.dir) &&
       (!f.type || r.rorg === f.type) &&
       (f.repeats || !r.duplicate) &&
-      !(f.unknown && (r.device || r.dir === "tx")) &&
+      !(f.unknown && (r.device || r.dir === "tx" || this._isHidden(r.gateway, r.sender))) &&
       this._textMatches(r)
     );
   }
@@ -1573,10 +1578,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const clock = time.toLocaleTimeString(this._hass.language, { hour12: false });
     const ms = String(time.getMilliseconds()).padStart(3, "0");
     const unknown = !r.device && r.dir === "rx";
+    const hidden = unknown && this._isHidden(r.gateway, r.sender);
     const name = r.device
       ? `<span class="name">${esc(r.device)}</span>`
       : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
-    const tags = r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "";
+    const tags = (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
+      (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra =
       (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "") +
       (r.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span>` : "");
@@ -1616,7 +1623,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
         </dl></td></tr>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
@@ -1823,6 +1830,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const info = setup.get(r.sender);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
+        hidden: !r.device && this._isHidden(r.gateway, r.sender),
         eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
@@ -1850,7 +1858,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const f = this._filter;
     if (f.area && d.area !== f.area) return false;
     if (f.devStatus === "known" && d.unknown) return false;
-    if (f.devStatus === "unknown" && !d.unknown) return false;
+    if (f.devStatus === "unknown" && (!d.unknown || d.hidden)) return false;
     if (f.devStatus === "silent" && !d.silent) return false;
     const text = f.text.toLowerCase();
     if (!text) return true;
@@ -1952,7 +1960,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           .join("")
       : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
     const hints = d.unknown
-      ? (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "") +
+      ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
+        (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "") +
         (d.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span>` : "")
       : d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "";
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
@@ -1965,7 +1974,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const acts = d.quiet
       ? ""
       : `<button class="chip" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}<span class="lbl">${esc(t.telegrams)}</span></button>${
-          d.unknown ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
+          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     return `<div class="dev${d.quiet ? " quiet" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}">
       <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}</div>

@@ -270,6 +270,8 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "entities": 3,
         }
     ]
+    # senders hidden from discovery: the panel does not offer them as new devices
+    assert status["hidden"] == []
 
     async def send(msg_id: int, **fields):
         base = {"type": "enocean_eltako/send", "entry_id": entry.entry_id, "rorg": "F6"}
@@ -293,6 +295,10 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
         reply = await send(msg_id, **fields)
         assert not reply["success"] and reply["error"]["code"] == code
     assert len(entry.runtime_data.hub.monitor.history(entry.entry_id)) == 1
+    entry.runtime_data.hub.hidden[entry.entry_id] = {0x0199887F}
+    await client.send_json({"id": 100, "type": "enocean_eltako/gateways"})
+    (status,) = (await client.receive_json())["result"]
+    assert status["hidden"] == ["01-99-88-7F"]
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 
