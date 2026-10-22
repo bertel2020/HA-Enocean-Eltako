@@ -156,12 +156,21 @@ class EnOceanDevice:
         return self.model.examples.split(",")[0] if self.model.examples else self._model_name
 
     @property
+    def _registry_model(self) -> str:
+        """Model as the device page lists it: the type, then the EEP it speaks."""
+        label = self._model_label
+        if self.model.receive is None:
+            return label
+        eep = self.model.receive.eep
+        return label if eep in label else f"{label} ({eep})"
+
+    @property
     def device_info(self) -> DeviceInfo:
         info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_prefix)},
             name=self.subentry.title,
             manufacturer=self.model.manufacturer,
-            model=self._model_label,
+            model=self._registry_model,
             model_id=str(self.model.receive) if self.model.receive else None,
             serial_number=format_id(self.device_id),
         )

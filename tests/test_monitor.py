@@ -249,6 +249,13 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     assert status["senders"] == [
         {"id": "FF-B7-44-81", "device": "Licht Diele", "profile": "central"}
     ]
+    # the device page lists the type and the EEP it speaks
+    from homeassistant.helpers import device_registry as dr
+
+    registered = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, "FF-B7-44-80_05-10-A2-B3"), entry.entry_id
+    )
+    assert registered is not None and registered.model == "FSR61 (M5-38-08)"
     # configured devices for the panel's "not heard" list: nothing heard yet
     assert status["radio_devices"] == [
         {
