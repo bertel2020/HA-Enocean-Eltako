@@ -282,6 +282,8 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
         "model": model.name if model else None,
         "base_id": entry.data.get(CONF_BASE_ID),
         "loaded": entry.state is ConfigEntryState.LOADED,
+        # the server's clock: the panel measures "x s ago" against it, not the browser's
+        "server_time": time.time(),
     }
     runtime = getattr(entry, "runtime_data", None)
     if status["loaded"] and runtime is not None:
