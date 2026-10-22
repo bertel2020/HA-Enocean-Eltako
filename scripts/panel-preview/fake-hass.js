@@ -9,8 +9,11 @@
 // the takeover view: two devices to take over, one already set up and still in use
 const none = { automation: [], script: [], scene: [], dashboard: [] };
 const takeoverDevices = [
-  { id: "05-10-A2-B3", name: "Licht Diele", ready: true, area: "Flur", labels: [], carry: ["area", "voice"], used: 2 },
-  { id: "05-10-A2-B4", name: "Rollladen Süd", ready: true, area: "Wohnzimmer", labels: ["Beschattung"], carry: ["area", "labels", "names"], used: 0 },
+  { id: "05-10-A2-B3", name: "Licht Diele", ready: true, area: "Flur", labels: [], carry: ["area", "voice"], used: 2,
+    entities: [{ old: "light.eltako_0510a2b3", new: "light.licht_diele" }, { old: "sensor.eltako_0510a2b3_id", new: "sensor.licht_diele_enocean_id" }],
+    places: ["automation:Flur Bewegung", "dashboard:Übersicht"] },
+  { id: "05-10-A2-B4", name: "Rollladen Süd", ready: true, area: "Wohnzimmer", labels: ["Beschattung"], carry: ["area", "labels", "names"], used: 0,
+    entities: [{ old: "cover.eltako_0510a2b4", new: "cover.rollladen_sud" }, { old: "sensor.eltako_0510a2b4_power", new: null }], places: [] },
   { id: "01-90-8C-14", name: "Zwischenstecker", ready: false, reason: "takeover_exists", area: "Küche", labels: [], carry: ["area"], used: 1 },
 ];
 const takeoverRows = [

@@ -106,6 +106,16 @@ for (const lang of ["en", "de"]) {
     await settle();
     root.querySelector(".takeover [data-tk-run]").click();
     await settle();
+    expect("confirmation before the takeover", fake.sent.some((m) => m.type === "enocean_eltako/takeover/run"), false);
+    expect("confirmation: old -> new IDs", root.querySelectorAll(".takeover .confirm-dev .idrow").length, 4);
+    expect("confirmation: places afterwards", root.querySelector(".takeover .stat.warn b")?.textContent, "2");
+    root.querySelector(".takeover [data-tk-back]").click();
+    await settle();
+    expect("back keeps the selection", root.querySelectorAll(".takeover [data-tk-pick]:checked").length, 2);
+    root.querySelector(".takeover [data-tk-run]").click();
+    await settle();
+    root.querySelector(".takeover [data-tk-confirm]").click();
+    await settle();
     expect("takeover sends the chosen options", fake.sent.some((m) => m.type === "enocean_eltako/takeover/run" && m.carry.join() === "area"), true);
     root.querySelector('.takeover [data-tk-tab="mapping"]').click();
     await settle();

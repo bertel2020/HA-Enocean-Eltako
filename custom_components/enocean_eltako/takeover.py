@@ -22,6 +22,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.translation import async_get_translations
 
 from .catalog import (
     CATALOG,
@@ -31,6 +32,7 @@ from .catalog import (
     DIRECTION_ROCKER,
     GENERIC_EEP,
     GENERIC_EEPS,
+    GROUP_VIRTUAL,
     HEATING_CONTROLLER,
     OPT_BUTTONS,
     OPT_DEVICE_CLASS,
@@ -54,6 +56,7 @@ from .const import (
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
+from .entity_ids import gateway_prefix, object_id
 from .protocol.ids import format_id, parse_id
 from .protocol.sender_pool import SenderIdError
 from .subentry_flow import sender_owner
@@ -326,6 +329,56 @@ async def async_takeover_available(hass: HomeAssistant) -> bool:
 def primary_entity(entries: list[er.RegistryEntry]) -> er.RegistryEntry | None:
     """The entity that is the device itself (light, switch ...): it has no name of its own."""
     return next((e for e in entries if e.original_name is None), None)
+
+
+# platforms whose main entity has no name of its own: its ID is the device name alone
+MAIN_PLATFORMS = (Platform.LIGHT, Platform.SWITCH, Platform.COVER, Platform.CLIMATE)
+
+
+async def async_predicted_ids(
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    devices: list[TakeoverDevice],
+    old: dict[int, list[er.RegistryEntry]],
+) -> dict[str, str]:
+    """Old entity ID -> the one its new counterpart will probably get.
+
+    Home Assistant gives the ID only when the entity is added; until then it is predicted
+    for the main entity and the ID sensor. A taken ID gets "_2" (and so on), as it would.
+    """
+    texts = await async_get_translations(hass, hass.config.language, "entity", [DOMAIN])
+    id_name = texts.get(f"component.{DOMAIN}.entity.sensor.enocean_id.name", "EnOcean ID")
+    prefix = gateway_prefix(entry.options)
+    registry = er.async_get(hass)
+    reserved: set[str] = set()
+
+    def free(domain: str, name: str | None, device_name: str) -> str:
+        base = f"{domain}.{object_id(prefix, device_name, name)}"
+        candidate, n = base, 2
+        while (
+            candidate in reserved
+            or registry.async_is_registered(candidate)
+            or hass.states.get(candidate) is not None
+        ):
+            candidate, n = f"{base}_{n}", n + 1
+        reserved.add(candidate)
+        return candidate
+
+    found: dict[str, str] = {}
+    for device in devices:
+        if device.model is None:
+            continue
+        entries = old.get(device.device_id, [])
+        model = CATALOG.get(device.model)
+        platform = device.data.get(OPT_PLATFORM) or (model.platforms[0] if model else None)
+        if (main := primary_entity(entries)) is not None and platform in MAIN_PLATFORMS:
+            found[main.entity_id] = free(str(platform), None, device.name)
+        if model is not None and model.group == GROUP_VIRTUAL:
+            continue  # sends only: no ID sensor
+        for entity in entries:
+            if old_suffix(entity) == "id":
+                found[entity.entity_id] = free(Platform.SENSOR, id_name, device.name)
+    return found
 
 
 # What the takeover can carry over, each chosen on its own in the panel

@@ -351,7 +351,12 @@ integration is still active, that step opens its integration page.
   integration: **Area**, **Labels**, **Voice assistants**, **Own names** (names given in Home
   Assistant), **Icons** and **Hidden / disabled**, each with the number of chosen devices it
   concerns. Nothing is chosen at first; the panel remembers your choice in this browser. Each
-  device shows what it has to carry over and in how many places it is used.
+  device shows what it has to carry over and in how many places it is used. The button below
+  does not take over yet: it first shows a confirmation with the number of devices, entities
+  and places to switch over afterwards, the chosen options and, per device, each old entity ID
+  next to the one its new entity will probably get (Home Assistant gives the ID only when the
+  entity is added; for the main entity and the ID sensor it is predicted, a taken ID gets
+  "_2"). Only **Take over now** sets the devices up; **Back to the selection** keeps it.
 - **Check** is the overview of every device set up here that the old integration had, taken over
   or set up by hand alike. Per device: what the old integration had that it still lacks, and in
   how many places its old IDs are used; opened, the old entity ID next to the new one and the
