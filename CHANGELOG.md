@@ -78,6 +78,8 @@ All notable changes to this project are documented here, in English and German
   failure (gateway offline) is logged as a warning instead of an unhandled error.
 - **Development:** a release is only created once the checks have passed for that push to
   main, and by hand only from main.
+- **Panel:** leaving it right after opening no longer leaves a status poll running every 5 s
+  until the browser tab is closed.
 
 ### [0.1.6] - 2026-10-22
 
@@ -344,6 +346,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Fehler.
 - **Entwicklung:** ein Release entsteht erst, wenn die Prüfungen für den Push auf main
   bestanden sind, und von Hand nur von main aus.
+- **Panel:** wird es direkt nach dem Öffnen verlassen, läuft nicht mehr bis zum Schließen des
+  Browser-Tabs alle 5 s eine Statusabfrage weiter.
 
 ### [0.1.6] - 2026-10-22
 
