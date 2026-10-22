@@ -438,7 +438,7 @@ const STYLE = `
   #view button { display: inline-flex; background: none; align-items: center; min-height: 48px; padding: 0 16px; border-radius: 0; font-size: 14px; font-weight: 500;
     color: var(--muted); border-bottom: 3px solid transparent; }
   #view button:hover { color: var(--text); }
-  #view button[aria-pressed="true"] { color: var(--accent); background: none; border-bottom-color: var(--accent); }
+  #view button[aria-selected="true"] { color: var(--accent); background: none; border-bottom-color: var(--accent); }
   #view button[hidden] { display: none; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -985,18 +985,18 @@ class EnOceanEltakoPanel extends HTMLElement {
       <style>${STYLE}</style>
       <header class="header">
         <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title)}</b></div></div>
-        <nav class="segmented" role="group" id="view" aria-label="${esc(t.title)}">
-          <button data-view="telegrams" aria-pressed="true">${esc(t.viewTelegrams)}</button>
-          <button data-view="devices" aria-pressed="false">${esc(t.viewDevices)}</button>
-          <button data-view="senders" aria-pressed="false">${esc(t.viewSenders)}</button>
-          <button data-view="takeover" aria-pressed="false" hidden>${esc(t.viewTakeover)}</button>
+        <nav class="segmented" role="tablist" id="view" aria-label="${esc(t.title)}">
+          <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
+          <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
+          <button role="tab" data-view="senders" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewSenders)}</button>
+          <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${esc(t.viewTakeover)}</button>
         </nav>
       </header>
       <main>
         <section id="gatewaySection" aria-label="${esc(t.gateways)}">
           <div class="cards" id="cards"></div>
         </section>
-        <section class="panel" id="panel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
+        <section class="panel" id="panel" role="tabpanel" data-view="telegrams" aria-label="${esc(t.telegrams)}">
           <div class="bar">
             <h2 id="viewTitle">${esc(t.telegrams)}</h2>
             <span class="live list-only" id="live"><i></i><span></span></span>
@@ -1077,6 +1077,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("view").addEventListener("click", (e) => {
       const button = e.target.closest("button");
       if (button) this._setView(button.dataset.view);
+    });
+    $("view").addEventListener("keydown", (e) => {
+      const tabs = [...$("view").querySelectorAll("button:not([hidden])")];
+      const at = tabs.indexOf(e.target);
+      const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (at < 0 || to === undefined) return;
+      e.preventDefault();
+      const tab = tabs[(to + tabs.length) % tabs.length];
+      this._setView(tab.dataset.view);
+      tab.focus();
     });
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
@@ -1359,7 +1369,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (view === "senders") this._loadPools();
     if (view === "takeover") this._loadTakeover();
     for (const button of $("view").querySelectorAll("button")) {
-      button.setAttribute("aria-pressed", String(button.dataset.view === view));
+      // tabs: only the chosen one is in the tab order, the arrow keys move between them
+      button.setAttribute("aria-selected", String(button.dataset.view === view));
+      button.tabIndex = button.dataset.view === view ? 0 : -1;
     }
     this._render();
   }
