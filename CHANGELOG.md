@@ -71,6 +71,9 @@ All notable changes to this project are documented here, in English and German
   gateway wrongly counted as silent, and a refused repeater setting counted as accepted.
 - **Actions:** Import custom devices, Capture telegrams and Add energy devices write files or
   the Energy settings and are now for administrators only.
+- **Takeover, restore entity IDs:** an old entity whose new counterpart is of another kind
+  (for example sensor and binary sensor) keeps the new ID instead of failing the restore for
+  all others.
 
 ### [0.1.6] - 2026-10-22
 
@@ -329,6 +332,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   übernommen.
 - **Aktionen:** Eigene Geräte importieren, Telegramme aufzeichnen und Energie-Geräte hinzufügen
   schreiben Dateien oder die Energie-Einstellungen und sind jetzt nur noch für Administratoren.
+- **Übernahme, Entitäts-IDs wiederherstellen:** eine alte Entität, deren neue Entsprechung
+  eine andere Art ist (etwa Sensor und Binärsensor), behält die neue ID, statt das
+  Wiederherstellen für alle anderen scheitern zu lassen.
 
 ### [0.1.6] - 2026-10-22
 

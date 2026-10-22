@@ -20,6 +20,7 @@ from custom_components.enocean_eltako.takeover import (
     registered_device,
     subentry_data,
 )
+from custom_components.enocean_eltako.takeover_report import async_get_report
 from custom_components.enocean_eltako.usage import async_usage
 
 from .test_devices import BASE, _subentry, gateway  # noqa: F401
@@ -438,6 +439,10 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert mapping["old_entities"] is False
 
     # the new entities get the old IDs back; the history goes on under them
+    report = await async_get_report(hass)
+    (taken,) = report.devices(entry.entry_id).values()  # an old entity of another domain
+    other = {**taken["entities"][0], "old": "binary_sensor.alt", "primary": False}
+    taken["entities"].append(other)
     reply = await _ws(hass_ws_client, hass, 10, "restore", entry_id=entry.entry_id)
     assert reply["result"] == {"restored": 2, "blocked": 0}
     assert registry.async_get(old_light).platform == "enocean_eltako"

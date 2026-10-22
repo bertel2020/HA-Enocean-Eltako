@@ -215,6 +215,8 @@ async def async_restore_ids(
             if now == row["old"]:
                 row["restored"] = True
                 continue
+            if now.split(".")[0] != row["old"].split(".")[0]:
+                continue  # another kind of entity now (sensor -> binary_sensor): keeps its ID
             if registry.async_is_registered(row["old"]) or hass.states.get(row["old"]):
                 blocked += 1
                 continue
