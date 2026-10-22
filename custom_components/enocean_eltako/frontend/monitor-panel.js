@@ -230,6 +230,7 @@ const STYLE = `
   .notice { margin: 8px 16px 0; padding: 12px 14px; border-radius: 12px; font-size: 13px;
     background: color-mix(in srgb, var(--warn) 14%, transparent); display: flex; gap: 8px; align-items: center; }
   .notice[hidden] { display: none; }
+  .notice.ok { background: color-mix(in srgb, var(--ok) 14%, transparent); }
   .notice span { flex: 1; }
 
   /* telegram table: sortable columns, one page at a time */
@@ -527,7 +528,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -1328,6 +1329,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._navigate(`/config/devices/device/${page.dataset.devicePage}`);
       return;
     }
+    const resend = e.target.closest("[data-resend]");
+    if (resend) {
+      this._resend(resend);
+      return;
+    }
     const copy = e.target.closest("[data-copy]");
     if (copy) {
       this._copy(copy.dataset.copy);
@@ -1484,11 +1490,38 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("sendGo").disabled = false;
   }
 
+  _canResend(r) {
+    // a sent telegram of a type the send form knows, from a sender ID one of the devices uses
+    return r.dir === "tx" && !!SEND_TYPES[r.rorg] && !!this._gateways.find((g) => g.entry_id === r.gateway && g.loaded)?.senders?.some((s) => s.id === r.sender);
+  }
+
+  async _resend(button) {
+    // the same telegram again; a rocker press is released right after, as by the send form
+    const t = this._t;
+    const r = this._rows.find((row) => rowKey(row) === button.dataset.resend);
+    if (!r) return;
+    const send = (data, status) => this._hass.callWS({ type: "enocean_eltako/send", entry_id: r.gateway, sender: r.sender, rorg: r.rorg, data, status });
+    button.disabled = true;
+    try {
+      let result = await send(r.data, r.status);
+      const ok = (res) => ["sent", "confirmed"].includes(res.result);
+      if (ok(result) && r.rorg === "F6" && r.data !== "00") {
+        const release = await send("00", "20");
+        if (!ok(release)) result = release;
+      }
+      this._notice(t.sendResult[result.result] || t.sendResult.unknown, ok(result));
+    } catch (err) {
+      this._notice(t.sendResult[err.code] || t.sendResult.unknown);
+    }
+    button.disabled = false;
+  }
+
   _notice(text, done = false) {
     // a success ("done") goes after a few seconds; errors and hints stay until closed
     const notice = this.shadowRoot.getElementById("notice");
     clearTimeout(this._noticeTimer);
     notice.hidden = !text;
+    notice.classList.toggle("ok", done);
     notice.querySelector("span").textContent = text;
     if (text) this._announce(text);
     if (text && done) this._noticeTimer = setTimeout(() => this._notice(""), NOTICE_TIME);
@@ -1917,7 +1950,9 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}</div>
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}${
+            this._canResend(r) ? `<button class="chip" data-resend="${esc(key)}" title="${esc(t.resendHint)}">${svg(ICON.send)}${esc(t.resend)}</button>` : ""
+          }</div>
         </dl></td></tr>`
       : "";
     const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
