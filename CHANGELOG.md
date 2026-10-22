@@ -25,6 +25,9 @@ All notable changes to this project are documented here, in English and German
   devices not heard yet; sortable by column, filterable by status (set up, unknown, silent),
   area, gateway and text, with pages of 25 to 200 rows. The CSV export saves the whole filtered
   list.
+- **Device page:** the model of a device lists the EEP it speaks, for example "FSR61
+  (M5-38-08)", so the integration page shows it in the device row. Existing devices update on
+  the next start; nothing is migrated.
 - **Sender IDs:** a radio gateway hands out base ID + 1 ... 127; the base ID itself is no
   longer used (127 IDs per gateway). A device that already sends from the base ID keeps
   working and is reported in the log: give it another sender ID.
@@ -178,6 +181,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   eingerichtete, noch nicht gehörte Geräte; nach Spalten sortierbar, filterbar nach Status
   (eingerichtet, unbekannt, still), Bereich, Gateway und Text, mit Seiten zu 25 bis 200 Zeilen.
   Der CSV-Export speichert die ganze gefilterte Liste.
+- **Geräteseite:** Das Modell eines Geräts nennt das EEP, mit dem es funkt, zum Beispiel
+  „FSR61 (M5-38-08)“, sodass die Integrationsseite es in der Geräte-Zeile zeigt. Bestehende
+  Geräte ziehen beim nächsten Start nach; es wird nichts migriert.
 - **Sender-IDs:** Ein Funk-Gateway vergibt Base-ID + 1 ... 127; die Base-ID selbst wird nicht
   mehr verwendet (127 IDs pro Gateway). Ein Gerät, das schon von der Base-ID sendet, läuft
   weiter und wird im Log gemeldet: ihm eine andere Sender-ID geben.

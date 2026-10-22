@@ -252,7 +252,9 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
         if device.virtual is not None:  # I9: a virtual sensor has no telegrams of its own
             continue
         hass = device.hass
-        entry = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, device.unique_prefix)})
+        entry = dr.async_get(hass).async_get_device_by_identifier(
+            (DOMAIN, device.unique_prefix), device.entry.entry_id
+        )
         area = ar.async_get(hass).async_get_area(entry.area_id) if entry and entry.area_id else None
         rows.append(
             {
@@ -261,7 +263,7 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
                 "last_seen": device.stats.last_seen,
                 "silent": device.silent,
                 "eep": str(device.model.receive) if device.model.receive else None,
-                "model": device.device_info.get("model"),
+                "model": device._model_label,
                 "category": device.model.category,
                 "area": area.name if area else None,
                 "entities": (
