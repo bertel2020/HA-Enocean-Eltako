@@ -174,6 +174,7 @@ const STYLE = `
   .search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; font: inherit;
     font-size: 14px; color: var(--text); }
   .search input::placeholder { color: var(--muted); }
+  .search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
   .search .icon-btn { width: 30px; height: 30px; }
   .search .icon-btn svg { width: 18px; height: 18px; }
   .segmented { display: inline-flex; border: 1px solid var(--input-line); border-radius: 10px; overflow: hidden; }
