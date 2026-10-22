@@ -22,10 +22,12 @@ export const TAKEOVER_STYLE = `
   .takeover .step.cur .num { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .takeover .step.done .num { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
   .takeover .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .takeover .pill { height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .takeover .pill[aria-pressed="true"] { border-color: transparent; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
-  .takeover .search { flex: 1; min-width: 140px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface);
-    color: var(--text); font: inherit; font-size: 13px; padding: 0 10px; }
+  /* filter pills and search as in the other views */
+  .takeover .pill { height: 32px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--input-line); font-size: 13px; font-weight: 500; color: var(--accent); background: var(--surface); white-space: nowrap; }
+  .takeover .pill:hover { background: var(--accent-soft); }
+  .takeover .pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-hover); background: var(--accent-soft); }
+  .takeover .search { flex: 1; min-width: 140px; height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface);
+    color: var(--text); font: inherit; font-size: 14px; padding: 0 12px; }
   .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
   .takeover .group { display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-top: 1px solid var(--line); background: var(--soft); font-size: 12px; }
