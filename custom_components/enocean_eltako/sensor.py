@@ -590,14 +590,27 @@ class MeterTotalSensor(EnOceanEntity, RestoreSensor):
         return True
 
 
-class _StatsSensor(EnOceanEntity, SensorEntity):
+class _WrittenOnChange(SensorEntity):
+    """Values read from elsewhere (statistics, what was sent): written only when they change."""
+
+    _written: tuple[Any, Any] | None = None
+
+    @callback
+    def _write_if_changed(self) -> None:
+        current = (self.native_value, self.extra_state_attributes)
+        if current != self._written:
+            self._written = current
+            self.async_write_ha_state()
+
+
+class _StatsSensor(EnOceanEntity, _WrittenOnChange):
     """Diagnostic sensor fed from the device's radio statistics, not from decoded values."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @callback
     def _availability_changed(self) -> None:
-        self.async_write_ha_state()  # every statistics change is a new state
+        self._write_if_changed()
 
     @property
     def available(self) -> bool:
@@ -752,12 +765,12 @@ class PositionAccuracySensor(_StatsSensor):
         return round(cover.position.inaccuracy, 1) if cover is not None else None
 
 
-class _VirtualSensorEntity(EnOceanEntity, SensorEntity):
+class _VirtualSensorEntity(EnOceanEntity, _WrittenOnChange):
     """I9: what a virtual sensor sent last."""
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        self.async_on_remove(self._device.virtual.add_listener(self.async_write_ha_state))
+        self.async_on_remove(self._device.virtual.add_listener(self._write_if_changed))
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False
