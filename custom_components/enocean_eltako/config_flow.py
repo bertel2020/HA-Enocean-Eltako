@@ -57,6 +57,7 @@ from .const import (
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
+from .discovery import async_set_hidden
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
@@ -596,7 +597,38 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
     """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if self._hidden():
+            return self.async_show_menu(step_id="init", menu_options=["settings", "hidden"])
         return await self.async_step_settings()
+
+    def _hidden(self) -> set[int]:
+        if getattr(self.config_entry, "runtime_data", None) is None:
+            return set()
+        hub = self.config_entry.runtime_data.hub
+        hidden: set[int] = hub.hidden.get(self.config_entry.entry_id, set())
+        return hidden
+
+    async def async_step_hidden(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Show hidden discovered senders again (they are listed once the gateway hears them)."""
+        hidden = self._hidden()
+        if user_input is not None:
+            again = {parse_id(s) for s in user_input.get("again", [])}
+            await async_set_hidden(self.hass, self.config_entry, hidden - again)
+            return self.async_abort(reason="senders_shown")
+        return self.async_show_form(
+            step_id="hidden",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("again", default=[]): SelectSelector(
+                        SelectSelectorConfig(
+                            options=sorted(format_id(s) for s in hidden),
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
 
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None

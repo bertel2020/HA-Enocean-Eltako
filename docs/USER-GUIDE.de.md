@@ -111,7 +111,9 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
 steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Benachrichtigung
 meldet neue). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
-vom Nachbarn) bleiben einfach unbenutzt; nach einem Neustart beginnt die Liste leer. In den
+vom Nachbarn) lassen sich dort mit **Diesen Sender ausblenden** verstecken; **Konfigurieren →
+Ausgeblendete Sender** am Gateway zeigt sie wieder an. Die Liste behält die neuesten 100
+Sender und beginnt nach einem Neustart leer; ausgeblendete Sender werden gemerkt. In den
 Einstellungen des Gateways lässt sich die Discovery abschalten.
 
 Eltako-Aktoren der Baureihe 14 lernen eine Sender-ID über eine Einlernfunktion am Aktor; welche

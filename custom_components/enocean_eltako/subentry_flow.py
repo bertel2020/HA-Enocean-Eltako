@@ -97,7 +97,7 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .custom_devices import DEFINITIONS
-from .discovery import pending
+from .discovery import async_set_hidden, pending
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
@@ -582,6 +582,9 @@ class DeviceForm:
         return data
 
 
+CONF_HIDE = "hide"  # discovered sender: hide it instead of adding it
+
+
 class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     """Add a device: model, then name, ID, senders and options. Reconfigure: all but the ID."""
 
@@ -623,6 +626,11 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             self._learned = heard.get(user_input[CONF_DEVICE_ID])
             if self._learned is None:
                 return self.async_abort(reason="already_configured")
+            if user_input.get(CONF_HIDE):
+                entry = self._get_entry()
+                hidden = entry.runtime_data.hub.hidden.get(entry.entry_id, set())
+                await async_set_hidden(self.hass, entry, {*hidden, self._learned.sender})
+                return self.async_abort(reason="sender_hidden")
             return await self.async_step_learned()
         if not heard:
             return self.async_abort(reason="no_discovered")
@@ -639,7 +647,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 {
                     vol.Required(CONF_DEVICE_ID): SelectSelector(
                         SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST)
-                    )
+                    ),
+                    vol.Required(CONF_HIDE, default=False): BooleanSelector(),
                 }
             ),
         )

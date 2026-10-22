@@ -32,6 +32,7 @@ class Hub:
     bus_groups: dict[str, BusGroupRuntime] = field(default_factory=dict)
     # unknown senders heard (last telegram each), offered under "Add device"
     discovered: dict[int, ReceivedTelegram] = field(default_factory=dict)
+    hidden: dict[str, set[int]] = field(default_factory=dict)  # per gateway entry, stored
     _bus_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def __post_init__(self) -> None:
