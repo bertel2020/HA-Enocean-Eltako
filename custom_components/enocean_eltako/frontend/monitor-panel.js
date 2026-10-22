@@ -482,9 +482,13 @@ const STYLE = `
     .pager label span { display: none; }
     .filters .search { flex-basis: 100%; }
     /* the view switch gets a line of its own and scrolls instead of cutting off a view */
-    #view { flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    #view { flex-basis: calc(100% + 32px); margin: 0 -16px; padding: 0 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     #view::-webkit-scrollbar { display: none; }
-    #view button { flex: 1 0 auto; justify-content: center; padding: 0 10px; }
+    #view button { flex: 1 0 auto; justify-content: center; padding: 0 8px; }
+    /* tabs beyond the edge fade out there: a sign that the row scrolls */
+    #view.fade-end { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+    #view.fade-start { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
+    #view.fade-start.fade-end { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
     .filters .chip { padding: 0 12px; font-size: 12px; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
@@ -823,6 +827,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       const button = e.target.closest("button");
       if (button) this._setView(button.dataset.view);
     });
+    $("view").addEventListener("scroll", () => this._fadeTabs(), { passive: true });
+    new ResizeObserver(() => this._fadeTabs()).observe($("view"));
     $("view").addEventListener("keydown", (e) => {
       const tabs = [...$("view").querySelectorAll("button:not([hidden])")];
       const at = tabs.indexOf(e.target);
@@ -1193,8 +1199,20 @@ class EnOceanEltakoPanel extends HTMLElement {
       button.setAttribute("aria-selected", String(button.dataset.view === view));
       button.tabIndex = button.dataset.view === view ? 0 : -1;
     }
+    // phones: the chosen tab scrolls into the row
+    const tabs = $("view");
+    const tab = tabs.querySelector('[aria-selected="true"]');
+    if (tab && tabs.scrollWidth > tabs.clientWidth) tabs.scrollTo({ left: tab.offsetLeft - (tabs.clientWidth - tab.offsetWidth) / 2 });
+    this._fadeTabs();
     this._render();
     this._saveView();
+  }
+
+  _fadeTabs() {
+    const tabs = this.shadowRoot.getElementById("view");
+    const end = tabs.scrollWidth - tabs.clientWidth;
+    tabs.classList.toggle("fade-start", end > 1 && tabs.scrollLeft > 1);
+    tabs.classList.toggle("fade-end", end > 1 && tabs.scrollLeft < end - 1);
   }
 
   _applyUrl() {
