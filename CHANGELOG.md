@@ -6,6 +6,19 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [0.1.8] - 2026-10-22
+
+#### Changed
+
+- **Device Proxy:** the gateway card and the gateway's connection sensor show whether the app's
+  fallback gateway stands in and whether it is ready.
+
+#### Fixed
+
+- **Panel:** the EnOcean panel no longer stays blank when one of its files fails to load once
+  (during a Home Assistant start or a proxy hiccup): the parts load with retries, and if they
+  still fail the panel shows a message with a Reload button.
+
 ### [0.1.7] - 2026-10-22
 
 #### Changed
@@ -290,6 +303,19 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [0.1.8] - 2026-10-22
+
+#### Geändert
+
+- **Device Proxy:** die Gateway-Karte und der Verbindungssensor des Gateways zeigen, ob das
+  Ausweich-Gateway der App einspringt und ob es bereit ist.
+
+#### Behoben
+
+- **Panel:** das EnOcean-Panel bleibt nicht mehr leer, wenn eine seiner Dateien einmal nicht
+  lädt (beim Start von Home Assistant oder bei einem Proxy-Aussetzer): die Teile laden mit
+  Wiederholungen, und scheitern sie dennoch, zeigt das Panel eine Meldung mit Neu-laden-Knopf.
 
 ### [0.1.7] - 2026-10-22
 

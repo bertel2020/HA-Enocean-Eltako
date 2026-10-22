@@ -5,13 +5,36 @@
 // enocean_eltako/gateways and enocean_eltako/discover.
 
 // the parts load with this file's version (?v=<hash> from panel.py), so an update never mixes
-// old and new files from the browser cache
+// old and new files from the browser cache. They load after the element is defined, with retries:
+// a failed import is remembered by the browser, so a top-level await here would leave the panel
+// blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-const [{ ICON, MAX_ROWS, csv, esc, svg }, { TEXT }, { TAKEOVER_STYLE, takeover, takeoverState }] = await Promise.all([
-  import(`./shared.js${VERSION}`),
-  import(`./texts.js${VERSION}`),
-  import(`./takeover.js${VERSION}`),
-]);
+let ICON, MAX_ROWS, csv, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
+const LOAD_TRIES = 4;
+
+async function loadParts() {
+  let error;
+  for (let i = 0; i < LOAD_TRIES; i++) {
+    // a retry asks for a new URL: the failed one stays failed in the module map
+    const v = i ? `${VERSION}${VERSION ? "&" : "?"}r=${i}` : VERSION;
+    try {
+      const [shared, texts, tk] = await Promise.all([
+        import(`./shared.js${v}`),
+        import(`./texts.js${v}`),
+        import(`./takeover.js${v}`),
+      ]);
+      ({ ICON, MAX_ROWS, csv, esc, svg } = shared);
+      ({ TEXT } = texts);
+      ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
+      return;
+    } catch (err) {
+      error = err;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (i + 1)));
+    }
+  }
+  throw error;
+}
+let partsLoaded = null; // one shared load for every panel instance
 
 const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
@@ -609,7 +632,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._onReady = () => this._setLink(this._unsub ? "live" : "connecting");
     this._onDisconnected = () => this._setLink("offline");
     this._view = "telegrams"; // or "devices" (one line per sender) or "senders" (sender ID pools)
-    this._tk = takeoverState();
+    this._tk = null; // set once the parts are loaded
     this._pools = [];
     this._pool = ""; // shown pool
     this._freeing = null; // blocked sender ID waiting for its confirmation
@@ -657,6 +680,11 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   set hass(hass) {
+    if (!this._ready) {
+      this._waiting = hass;
+      if (!this._loading) this._loading = this._loadParts();
+      return;
+    }
     const first = !this._hass;
     this._hass = hass;
     this.style.colorScheme = hass.themes?.darkMode ? "dark" : "light";
@@ -671,6 +699,31 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (this._menu) this._menu.hass = hass;
     if (this.isConnected) this._watchConnection();
     if (this.isConnected && !this._unsub) this._subscribe();
+  }
+
+  async _loadParts() {
+    try {
+      partsLoaded ||= loadParts().catch((err) => {
+        partsLoaded = null; // the next opening tries again
+        throw err;
+      });
+      await partsLoaded;
+    } catch (err) {
+      console.error("enocean_eltako: panel parts failed to load", err);
+      this._loading = null;
+      const de = (this._waiting?.language || navigator.language || "en").startsWith("de");
+      this.shadowRoot.innerHTML = `<div style="padding:24px;font-family:sans-serif">
+        <p>${de ? "Das EnOcean-Panel konnte nicht geladen werden." : "The EnOcean panel could not be loaded."}</p>
+        <button id="reload">${de ? "Neu laden" : "Reload"}</button></div>`;
+      this.shadowRoot.getElementById("reload").onclick = () => location.reload();
+      return;
+    }
+    Object.assign(EnOceanEltakoPanel.prototype, takeover); // the Takeover view (takeover.js) adds its methods
+    this._tk = takeoverState();
+    this._ready = true;
+    this._loading = null;
+    this.hass = this._waiting;
+    this._waiting = null;
   }
 
   _watchConnection() {
@@ -2444,8 +2497,5 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
   }
 }
-
-// the Takeover view (takeover.js) adds its methods to the panel
-Object.assign(EnOceanEltakoPanel.prototype, takeover);
 
 customElements.define("enocean-eltako-monitor", EnOceanEltakoPanel);
