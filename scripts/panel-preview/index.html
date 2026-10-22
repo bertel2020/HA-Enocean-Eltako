@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Preview of the sidebar panel without Home Assistant, with sample data (fake-hass.js).
+     From the repository root: python3 -m http.server 8765
+     then open http://localhost:8765/scripts/panel-preview/?lang=de (options: see fake-hass.js). -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EnOcean panel preview</title>
+  <style>body { margin: 0; }</style>
+</head>
+<body>
+<script type="module">
+  import { fakeHass } from "./fake-hass.js";
+
+  customElements.define("ha-menu-button", class extends HTMLElement {});
+  // a new version on every reload, like the hash Home Assistant adds
+  await import(`../../custom_components/enocean_eltako/frontend/monitor-panel.js?v=${Date.now()}`);
+  const fake = fakeHass(new URLSearchParams(location.search));
+  const panel = document.createElement("enocean-eltako-monitor");
+  panel.narrow = false;
+  document.body.append(panel);
+  panel.hass = fake.hass;
+  // for the console: preview.push({ dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", time: new Date().toISOString() })
+  window.preview = { panel, ...fake };
+</script>
+</body>
+</html>
