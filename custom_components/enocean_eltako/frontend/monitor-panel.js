@@ -69,7 +69,7 @@ const TEXT = {
     gateways: "Gateways",
     sender: "Sender", content: "Content", unavailable: "Not available",
     direction: "Direction", allTypes: "All types", sortHint: "Sort by this column", sortLabel: "Sort",
-    sortOptions: { "time:desc": "Newest first", "time:asc": "Oldest first", "sender:asc": "Sender A–Z", "type:asc": "Type", "dbm:desc": "Strongest signal", "gateway:asc": "Gateway" },
+    sortOptions: { "time:desc": "Newest first", "time:asc": "Oldest first", "sender:asc": "Sender A–Z", "type:asc": "Type", "dbm:desc": "Strongest signal", "gateway:asc": "Gateway", "dir:asc": "Received first", "dir:desc": "Sent first" },
     rowsPerPage: "Rows per page", range: (a, b, n) => `${a}–${b} of ${n}`,
     firstPage: "First page", prevPage: "Previous page", nextPage: "Next page", lastPage: "Last page",
     newAbove: (n) => (n === 1 ? "1 new above" : `${n} new above`),
@@ -224,7 +224,7 @@ const TEXT = {
     gateways: "Gateways",
     sender: "Sender", content: "Inhalt", unavailable: "Nicht verfügbar",
     direction: "Richtung", allTypes: "Alle Typen", sortHint: "Nach dieser Spalte sortieren", sortLabel: "Sortieren",
-    sortOptions: { "time:desc": "Neueste zuerst", "time:asc": "Älteste zuerst", "sender:asc": "Sender A–Z", "type:asc": "Typ", "dbm:desc": "Stärkstes Signal", "gateway:asc": "Gateway" },
+    sortOptions: { "time:desc": "Neueste zuerst", "time:asc": "Älteste zuerst", "sender:asc": "Sender A–Z", "type:asc": "Typ", "dbm:desc": "Stärkstes Signal", "gateway:asc": "Gateway", "dir:asc": "Empfangene zuerst", "dir:desc": "Gesendete zuerst" },
     rowsPerPage: "Zeilen pro Seite", range: (a, b, n) => `${a}–${b} von ${n}`,
     firstPage: "Erste Seite", prevPage: "Vorherige Seite", nextPage: "Nächste Seite", lastPage: "Letzte Seite",
     newAbove: (n) => (n === 1 ? "1 neues oben" : `${n} neue oben`),
@@ -1531,7 +1531,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (focused) $("thead").querySelector(`[data-sort="${focused}"]`)?.focus({ preventScroll: true });
     const options = Object.entries(t.sortOptions).filter(([v]) => this._multi || !v.startsWith("gateway"));
     const current = `${this._sort.key}:${this._sort.desc ? "desc" : "asc"}`;
-    if (!options.some(([v]) => v === current)) options.push([current, `${t.sortLabel}: ${current}`]);
+    // a column order without a preset (e.g. a second click on a header): named after the column
+    const column = { time: t.time, dir: t.direction, sender: t.sender, type: t.type, dbm: t.signal, gateway: t.gateway }[this._sort.key];
+    if (!options.some(([v]) => v === current)) options.push([current, `${column} ${this._sort.desc ? "↓" : "↑"}`]);
     this._options($("sortSelect"), options, current);
   }
 
