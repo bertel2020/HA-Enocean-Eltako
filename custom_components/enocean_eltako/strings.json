@@ -326,6 +326,30 @@
           "description": "Only the devices of this gateway; empty for all."
         }
       }
+    },
+    "export_custom_devices": {
+      "name": "Export own device definitions",
+      "description": "Returns your own device definitions (custom_devices.yaml and imported ones) as YAML text that you can share.",
+      "fields": {
+        "ids": {
+          "name": "IDs",
+          "description": "Only these definitions; empty for all."
+        }
+      }
+    },
+    "import_custom_devices": {
+      "name": "Import device definitions",
+      "description": "Checks shared definitions (YAML text, as exported) and stores each valid one as its own file in /config/enocean_eltako/custom_devices/. Your own custom_devices.yaml is never changed or replaced. Afterwards they are listed under Add device → Own definition.",
+      "fields": {
+        "yaml": {
+          "name": "Definitions",
+          "description": "The YAML text with the key devices."
+        },
+        "overwrite": {
+          "name": "Replace existing",
+          "description": "Replace imported definitions with the same ID."
+        }
+      }
     }
   },
   "options": {

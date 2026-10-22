@@ -18,6 +18,9 @@ All notable changes to this project are documented here, in English and German
 
 #### Added
 
+- **Sharing device definitions:** the actions `enocean_eltako.export_custom_devices` and
+  `enocean_eltako.import_custom_devices` hand definitions over as YAML text; imported ones are
+  stored as files in `enocean_eltako/custom_devices/`, your own file is never changed.
 - **Energy dashboard:** the action `enocean_eltako.add_energy_devices` adds the electricity
   meters of your devices (with their power sensor) to the Energy dashboard.
 - **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
@@ -121,6 +124,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Neu
 
+- **Gerätedefinitionen weitergeben:** die Aktionen `enocean_eltako.export_custom_devices` und
+  `enocean_eltako.import_custom_devices` übergeben Definitionen als YAML-Text; importierte liegen
+  als Dateien in `enocean_eltako/custom_devices/`, deine eigene Datei bleibt unverändert.
 - **Energie-Dashboard:** die Aktion `enocean_eltako.add_energy_devices` fügt die Stromzähler
   deiner Geräte (mit ihrem Leistungssensor) zum Energie-Dashboard hinzu.
 - **Sender ausblenden:** fremde Sender lassen sich ausblenden (pro Gateway gemerkt) und unter

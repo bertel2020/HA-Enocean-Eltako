@@ -20,13 +20,17 @@ sensors and binary sensors with names, device classes and units of the user's ch
             name: Temperature available
             on: 1
 
-The file is read when an entry is set up (reloading it applies changes). Errors raise a
-repair issue; a device whose definition disappeared keeps working as a generic EEP device.
+The file is read when an entry is set up (reloading it applies changes), together with the
+files of enocean_eltako/custom_devices/*.yaml (where the import action puts shared
+definitions, so the user's own file is never rewritten). Errors raise a repair issue; a
+device whose definition disappeared keeps working as a generic EEP device. The actions
+export_custom_devices and import_custom_devices (services.py) share definitions as YAML text.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -36,7 +40,8 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.util.yaml import load_yaml
+from homeassistant.util.yaml import load_yaml, parse_yaml
+from homeassistant.util.yaml.dumper import dump as dump_yaml
 
 from .const import DOMAIN
 from .protocol.eep import EEPRef
@@ -46,6 +51,8 @@ from .protocol.eep.std.profiles import PROFILES
 _LOGGER = logging.getLogger(__name__)
 
 FILE = "enocean_eltako/custom_devices.yaml"
+DIRECTORY = "enocean_eltako/custom_devices"  # one file per imported definition
+VALID_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 ISSUE_ID = "custom_devices_invalid"
 
 
@@ -79,6 +86,7 @@ class CustomDevice:
 
 # the definitions read last; the catalog resolves "custom" subentries against them
 DEFINITIONS: dict[str, CustomDevice] = {}
+SOURCES: dict[str, str] = {}  # definition id -> the file it came from
 
 
 def _fields(eep: str) -> dict[str, Field]:
@@ -219,18 +227,125 @@ def _read(path: Path) -> Any:
     return load_yaml(path)
 
 
-async def async_load(hass: HomeAssistant) -> dict[str, CustomDevice]:
-    """Read the file, replace DEFINITIONS, raise or clear the repair issue."""
-    path = Path(hass.config.path(FILE))
+def _read_all(config_dir: Path) -> list[tuple[str, Any, str | None]]:
+    """(file name, content, read error) of the main file and the imported ones."""
+    files = [config_dir / FILE, *sorted((config_dir / DIRECTORY).glob("*.yaml"))]
+    result: list[tuple[str, Any, str | None]] = []
+    for path in files:
+        try:
+            result.append((path.name, _read(path), None))
+        except HomeAssistantError as err:
+            result.append((path.name, None, str(err)))
+    return result
+
+
+def to_raw(device: CustomDevice) -> dict[str, Any]:
+    """The YAML form of a definition (what parse reads), for the export."""
+    raw: dict[str, Any] = {"id": device.id, "name": device.name, "eep": device.eep.eep}
+    if device.manufacturer != "EnOcean":
+        raw["manufacturer"] = device.manufacturer
+    if device.interval is not None:
+        raw["interval"] = device.interval
+    if device.sensors:
+        raw["sensors"] = [
+            {
+                "field": s.field.shortcut,
+                "name": s.name,
+                **{
+                    k: v
+                    for k, v in (
+                        ("device_class", s.device_class),
+                        ("unit", s.unit),
+                        ("state_class", s.state_class),
+                    )
+                    if v
+                },
+            }
+            for s in device.sensors
+        ]
+    if device.binary_sensors:
+        raw["binary_sensors"] = [
+            {
+                "field": b.field.shortcut,
+                "name": b.name,
+                **{
+                    k: v
+                    for k, v in (("device_class", b.device_class), ("on", b.on))
+                    if v is not None
+                },
+            }
+            for b in device.binary_sensors
+        ]
+    return raw
+
+
+def export_yaml(ids: list[str] | None = None) -> str:
+    """The definitions (all, or the named ones) as shareable YAML text."""
+    chosen = [d for i, d in DEFINITIONS.items() if ids is None or i in ids]
+    return str(dump_yaml({"devices": [to_raw(d) for d in chosen]}))
+
+
+def _write_file(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+@dataclass(slots=True)
+class ImportResult:
+    imported: list[str]
+    skipped: dict[str, str]  # id -> why
+    errors: list[str]
+
+
+async def async_import(hass: HomeAssistant, text: str, overwrite: bool) -> ImportResult:
+    """Check shared YAML text and store each valid definition as its own file.
+
+    A definition of the user's own custom_devices.yaml is never replaced. The definitions
+    become available at once (also for "Add device").
+    """
     try:
-        raw = await hass.async_add_executor_job(_read, path)
+        raw = parse_yaml(text)
     except HomeAssistantError as err:
-        definitions: dict[str, CustomDevice] = {}
-        errors = [str(err)]
-    else:
-        definitions, errors = parse(raw)
+        return ImportResult([], {}, [str(err)])
+    definitions, errors = parse(raw)
+    result = ImportResult([], {}, errors)
+    base = Path(hass.config.path(DIRECTORY))
+    for device_id, definition in definitions.items():
+        if not VALID_ID.match(device_id):
+            result.skipped[device_id] = "invalid_id"
+        elif SOURCES.get(device_id) == Path(FILE).name:
+            result.skipped[device_id] = "own_file"
+        elif device_id in DEFINITIONS and not overwrite:
+            result.skipped[device_id] = "exists"
+        else:
+            body = dump_yaml({"devices": [to_raw(definition)]})
+            await hass.async_add_executor_job(_write_file, base / f"{device_id}.yaml", body)
+            result.imported.append(device_id)
+    if result.imported:
+        await async_load(hass)
+    return result
+
+
+async def async_load(hass: HomeAssistant) -> dict[str, CustomDevice]:
+    """Read the files, replace DEFINITIONS, raise or clear the repair issue."""
+    files = await hass.async_add_executor_job(_read_all, Path(hass.config.config_dir))
+    definitions: dict[str, CustomDevice] = {}
+    sources: dict[str, str] = {}
+    errors: list[str] = []
+    for name, raw, error in files:
+        found, problems = ([], [error]) if error else _parse_file(raw)
+        errors += [f"{name}: {m}" for m in problems]
+        for device_id, definition in found:
+            if device_id in definitions:
+                errors.append(f"{name}: {device_id}: id already defined in {sources[device_id]}")
+                continue
+            definitions[device_id] = definition
+            sources[device_id] = name
     DEFINITIONS.clear()
     DEFINITIONS.update(definitions)
+    SOURCES.clear()
+    SOURCES.update(sources)
+    path = hass.config.path(FILE)
     if errors:
         _LOGGER.warning("Errors in %s: %s", path, "; ".join(errors))
         ir.async_create_issue(
@@ -240,8 +355,13 @@ async def async_load(hass: HomeAssistant) -> dict[str, CustomDevice]:
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_ID,
-            translation_placeholders={"path": str(path), "errors": "\n".join(errors)},
+            translation_placeholders={"path": path, "errors": "\n".join(errors)},
         )
     else:
         ir.async_delete_issue(hass, DOMAIN, ISSUE_ID)
     return definitions
+
+
+def _parse_file(raw: Any) -> tuple[list[tuple[str, CustomDevice]], list[str]]:
+    definitions, errors = parse(raw)
+    return list(definitions.items()), errors

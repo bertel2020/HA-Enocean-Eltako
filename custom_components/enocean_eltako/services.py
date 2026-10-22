@@ -21,11 +21,17 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .custom_devices import async_import, export_yaml
 from .hub import async_get_hub
 from .protocol.monitor import MonitorEntry
 
 SERVICE_CAPTURE = "capture"
 SERVICE_ADD_ENERGY = "add_energy_devices"
+SERVICE_EXPORT_DEFINITIONS = "export_custom_devices"
+SERVICE_IMPORT_DEFINITIONS = "import_custom_devices"
+ATTR_IDS = "ids"
+ATTR_YAML = "yaml"
+ATTR_OVERWRITE = "overwrite"
 ATTR_DURATION = "duration"
 ATTR_ENTRY_ID = "config_entry_id"
 
@@ -37,6 +43,10 @@ CAPTURE_SCHEMA = vol.Schema(
 )
 
 
+EXPORT_SCHEMA = vol.Schema({vol.Optional(ATTR_IDS): [str]})
+IMPORT_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_YAML): str, vol.Optional(ATTR_OVERWRITE, default=False): bool}
+)
 ADD_ENERGY_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTRY_ID): str})
 ENERGY_SUFFIX_TOTAL = "_energy_total"
 
@@ -133,6 +143,32 @@ def async_setup_services(hass: HomeAssistant) -> None:
             )
         return cast(ServiceResponse, {"added": added})
 
+    async def export_custom_devices(call: ServiceCall) -> ServiceResponse:
+        """The own device definitions as YAML text to share (all, or the named ones)."""
+        return {"yaml": export_yaml(call.data.get(ATTR_IDS))}
+
+    async def import_custom_devices(call: ServiceCall) -> ServiceResponse:
+        """Store shared definitions as files of their own; own custom_devices.yaml stays."""
+        result = await async_import(hass, call.data[ATTR_YAML], call.data[ATTR_OVERWRITE])
+        return cast(
+            ServiceResponse,
+            {"imported": result.imported, "skipped": result.skipped, "errors": result.errors},
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_EXPORT_DEFINITIONS,
+        export_custom_devices,
+        schema=EXPORT_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_IMPORT_DEFINITIONS,
+        import_custom_devices,
+        schema=IMPORT_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
+    )
     hass.services.async_register(
         DOMAIN,
         SERVICE_ADD_ENERGY,

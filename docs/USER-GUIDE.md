@@ -167,6 +167,14 @@ definition is removed, its devices keep working as generic EEP devices. Devices 
 or by definition have a diagnostic sensor **Raw data** (disabled by default) with the bytes of
 the last telegram, to check the fields.
 
+**Sharing definitions:** the action `enocean_eltako.export_custom_devices` returns your
+definitions (all, or the `ids` you name) as YAML text. Someone else pastes it into
+`enocean_eltako.import_custom_devices` (Developer tools → Actions), which checks it and stores
+each valid definition as its own file in `/config/enocean_eltako/custom_devices/`; the
+definitions are listed under **Add device → Own definition** at once. Your own
+`custom_devices.yaml` is never changed, and a definition with the same ID as one in it is
+skipped; imported ones are only replaced with `overwrite: true`.
+
 ## Device notes
 
 - **Covers** (FSB14/61/71) take a controller sender and a direction-rocker sender in

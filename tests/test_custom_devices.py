@@ -7,6 +7,8 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.setup import async_setup_component
+from homeassistant.util.yaml import parse_yaml
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.const import DOMAIN
@@ -14,7 +16,9 @@ from custom_components.enocean_eltako.custom_devices import (
     DEFINITIONS,
     FILE,
     ISSUE_ID,
+    async_import,
     async_load,
+    export_yaml,
     parse,
 )
 from custom_components.enocean_eltako.protocol.models import Protocol
@@ -246,3 +250,55 @@ async def test_add_custom_device_via_flow(hass: HomeAssistant, server) -> None:
     assert subentry.data["eep"] == "A5-04-01:std"
     await hass.async_block_till_done()  # the new subentry reloads the entry
     await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_export_and_import_roundtrip(hass: HomeAssistant, tmp_path: Path) -> None:
+    """A definition exported as text can be imported elsewhere; own definitions stay."""
+    hass.config.config_dir = str(tmp_path)
+    own = tmp_path / FILE
+    own.parent.mkdir(parents=True)
+    own.write_text(YAML, encoding="utf-8")
+    await async_load(hass)
+    assert list(DEFINITIONS) == ["acme_climate"]
+
+    exported = export_yaml(["acme_climate"])
+    assert "acme_climate" in exported and "Feuchte" in exported
+    assert parse(parse_yaml(exported)) == (DEFINITIONS, [])  # what is exported is valid
+
+    other = exported.replace("acme_climate", "acme_copy")
+    result = await async_import(hass, other, overwrite=False)
+    assert result.imported == ["acme_copy"] and not result.errors
+    assert (tmp_path / "enocean_eltako/custom_devices/acme_copy.yaml").exists()
+    assert set(DEFINITIONS) == {"acme_climate", "acme_copy"}
+    assert own.read_text(encoding="utf-8") == YAML  # the own file is untouched
+
+    again = await async_import(hass, other, overwrite=False)
+    assert again.skipped == {"acme_copy": "exists"}
+    assert (await async_import(hass, other, overwrite=True)).imported == ["acme_copy"]
+    clash = await async_import(hass, exported, overwrite=True)
+    assert clash.skipped == {"acme_climate": "own_file"}  # never replaces the own file
+    bad = await async_import(hass, exported.replace("acme_climate", "../evil"), overwrite=True)
+    assert bad.skipped == {"../evil": "invalid_id"}
+    assert (await async_import(hass, "devices: [", overwrite=False)).errors
+    assert (await async_import(hass, "devices: 5", overwrite=False)).errors
+
+
+async def test_actions_return_yaml(hass: HomeAssistant, tmp_path: Path) -> None:
+    hass.config.config_dir = str(tmp_path)
+    await async_setup_component(hass, DOMAIN, {})
+    own = tmp_path / FILE
+    own.parent.mkdir(parents=True)
+    own.write_text(YAML, encoding="utf-8")
+    await async_load(hass)
+    exported = await hass.services.async_call(
+        DOMAIN, "export_custom_devices", {}, blocking=True, return_response=True
+    )
+    assert "acme_climate" in exported["yaml"]
+    imported = await hass.services.async_call(
+        DOMAIN,
+        "import_custom_devices",
+        {"yaml": exported["yaml"].replace("acme_climate", "acme_two")},
+        blocking=True,
+        return_response=True,
+    )
+    assert imported["imported"] == ["acme_two"]
