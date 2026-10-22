@@ -87,12 +87,12 @@ const STYLE = `
   .brand b { display: block; font-size: 18px; font-weight: 500; line-height: 1.2; }
   .brand small { display: block; font-size: 12px; color: var(--muted); }
   .header .logo { width: 36px; height: 36px; flex: none; }
-  .segmented#view { display: flex; flex-wrap: wrap; border: 0; border-radius: 0; overflow: visible; }
-  #view button + button { border-left: 0; }
-  #view button { display: inline-flex; background: none; align-items: center; min-height: 48px; padding: 0 16px; border-radius: 0; font-size: 14px; font-weight: 500;
+  /* the view tabs: their own look, not the segmented filter buttons */
+  #view { display: flex; flex-wrap: wrap; }
+  #view button { display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 500; white-space: nowrap;
     color: var(--muted); border-bottom: 3px solid transparent; }
   #view button:hover { color: var(--text); }
-  #view button[aria-selected="true"] { color: var(--accent); background: none; border-bottom-color: var(--accent); }
+  #view button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
   #view button[hidden] { display: none; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -384,7 +384,7 @@ const STYLE = `
     .pager label span { display: none; }
     .filters .search { flex-basis: 100%; }
     /* the view switch gets a line of its own and scrolls instead of cutting off a view */
-    .segmented#view { flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    #view { flex-basis: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     #view::-webkit-scrollbar { display: none; }
     #view button { flex: 1 0 auto; justify-content: center; padding: 0 10px; }
     .filters .chip { padding: 0 10px; font-size: 12px; flex: 1 1 auto; justify-content: center; }
@@ -494,6 +494,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._drawn = new WeakMap(); // last HTML per container: unchanged status costs nothing
     this._stale = { list: false, cards: false, devices: false }; // redraw held back while text is selected
     this._onKey = (e) => this._keydown(e);
+    // a hidden tab asks for no status; back in view it catches up at once
+    this._onVisible = () => {
+      if (!document.hidden && this._hass) this._refreshStatus();
+    };
     this._onSelection = () => {
       if (this._stale.list) this._render(true);
       if (this._stale.cards) this._renderCards(true);
@@ -547,6 +551,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   connectedCallback() {
     window.addEventListener("keydown", this._onKey);
     document.addEventListener("selectionchange", this._onSelection);
+    document.addEventListener("visibilitychange", this._onVisible);
     if (this._hass) this._watchConnection();
     if (this._hass && !this._unsub) this._subscribe();
   }
@@ -554,6 +559,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   disconnectedCallback() {
     window.removeEventListener("keydown", this._onKey);
     document.removeEventListener("selectionchange", this._onSelection);
+    document.removeEventListener("visibilitychange", this._onVisible);
     clearInterval(this._timer);
     this._timer = null;
     clearTimeout(this._tkTyping);
@@ -572,7 +578,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <style>${STYLE}${TAKEOVER_STYLE}</style>
       <header class="header">
         <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title)}</b></div></div>
-        <nav class="segmented" role="tablist" id="view" aria-label="${esc(t.title)}">
+        <nav role="tablist" id="view" aria-label="${esc(t.title)}">
           <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
           <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
           <button role="tab" data-view="senders" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewSenders)}</button>
@@ -832,7 +838,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     await this._refreshStatus();
     this._checkTakeover();
     clearInterval(this._timer);
-    this._timer = setInterval(() => this._refreshStatus(), STATUS_INTERVAL);
+    this._timer = setInterval(() => {
+      if (!document.hidden) this._refreshStatus();
+    }, STATUS_INTERVAL);
   }
 
   async _refreshStatus() {
