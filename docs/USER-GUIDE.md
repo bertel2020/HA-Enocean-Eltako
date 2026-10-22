@@ -281,7 +281,7 @@ list as sent.
 
 The **Sender IDs** switch of the panel shows who uses which sender ID: per gateway (and per bus
 group) the free IDs of the pool, and each device with its IDs, their profile and status, blocked
-IDs first. Radio gateways hand out base ID + 0…127.
+IDs first. Radio gateways hand out base ID + 1…127.
 
 After a device is deleted its ID stays **blocked** until it is taught out of every actuator.
 **Free** releases it once the actuator has forgotten it, after a confirmation.

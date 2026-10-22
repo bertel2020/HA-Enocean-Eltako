@@ -73,7 +73,7 @@ from .protocol.gateway import Gateway
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS, Protocol
 from .protocol.send_queue import Priority, SendQueue
-from .protocol.sender_pool import SenderState
+from .protocol.sender_pool import RADIO_POOL_SIZE, SenderState
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
 from .proxy_status import async_setup_proxy_status
@@ -95,7 +95,7 @@ class GatewayRuntime:
     hub: Hub
     gateway: Gateway
     queue: SendQueue
-    senders: SenderStore  # radio sender IDs: base ID + 0...127
+    senders: SenderStore  # radio sender IDs: base ID + 1...127
     on_demand: bool = False
     bus: BusGroupRuntime | None = None
     devices: dict[str, EnOceanDevice] = field(default_factory=dict)  # by subentry ID
@@ -226,10 +226,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
         delay=entry.options.get(CONF_MESSAGE_DELAY, DEFAULT_MESSAGE_DELAY) / 1000,
         on_sent=lambda telegram: hub.monitor.sent(entry.entry_id, telegram),
     )
-    pool = hub.senders.create_pool(radio_key(entry.entry_id), parse_id(entry.data[CONF_BASE_ID]))
+    base_id = parse_id(entry.data[CONF_BASE_ID])
+    pool = hub.senders.create_pool(radio_key(entry.entry_id), base_id + 1, RADIO_POOL_SIZE)
     entry.async_on_unload(lambda: hub.senders.remove_pool(radio_key(entry.entry_id)))
     senders = SenderStore(hass, radio_key(entry.entry_id), pool)
     await senders.async_load()
+    for subentry in entry.subentries.values():
+        if any(parse_id(s[CONF_SENDER_ID]) == base_id for s in subentry.data.get(CONF_SENDERS, ())):
+            _LOGGER.warning(
+                "%s sends from the gateway's base ID %s, which is no longer handed out: "
+                "give it another sender ID",
+                subentry.title,
+                format_id(base_id),
+            )
 
     bus = None
     if model.bus:

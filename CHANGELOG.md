@@ -10,10 +10,20 @@ All notable changes to this project are documented here, in English and German
 
 #### Added
 
+- **Sender IDs:** the decimal value of an ID is an attribute (`decimal`) of the EnOcean ID and
+  Sender ID diagnostics sensors and an own column in the panel's Sender IDs view. The view
+  also shows a pool map (one square per ID, click to jump to its row), the next free ID, and
+  device groups can be collapsed.
 - **Swap a gateway:** reconfiguring a gateway now also asks for the model, so a defective
   gateway or a FAM-USB can be replaced by another model (for example a network gateway)
   without losing devices or sender IDs. The new gateway has to report the same base ID,
   otherwise the change is refused. Bus gateways (FGW14-USB, FAM14) swap among themselves.
+
+#### Changed
+
+- **Sender IDs:** a radio gateway hands out base ID + 1 ... 127; the base ID itself is no
+  longer used (127 IDs per gateway). A device that already sends from the base ID keeps
+  working and is reported in the log: give it another sender ID.
 
 ### [0.1.4] - 2026-10-22
 
@@ -148,11 +158,21 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Hinzugefügt
 
+- **Sender-IDs:** Der Dezimalwert einer ID ist ein Attribut (`decimal`) der Diagnose-Sensoren
+  EnOcean-ID und Sender-ID und eine eigene Spalte in der Ansicht Sender-IDs des Panels. Die
+  Ansicht zeigt außerdem eine Pool-Karte (ein Feld pro ID, Klick springt zur Zeile) und die
+  nächste freie ID; Gerätegruppen lassen sich einklappen.
 - **Gateway tauschen:** Beim Neukonfigurieren eines Gateways wird jetzt auch das Modell
   abgefragt. So lässt sich ein defektes Gateway oder ein FAM-USB durch ein anderes Modell
   (z. B. ein Netzwerk-Gateway) ersetzen, ohne Geräte und Sender-IDs zu verlieren. Das neue
   Gateway muss dieselbe Base-ID melden, sonst wird der Wechsel abgelehnt. Bus-Gateways
   (FGW14-USB, FAM14) tauschen nur untereinander.
+
+#### Geändert
+
+- **Sender-IDs:** Ein Funk-Gateway vergibt Base-ID + 1 ... 127; die Base-ID selbst wird nicht
+  mehr verwendet (127 IDs pro Gateway). Ein Gerät, das schon von der Base-ID sendet, läuft
+  weiter und wird im Log gemeldet: ihm eine andere Sender-ID geben.
 
 ### [0.1.4] - 2026-10-22
 

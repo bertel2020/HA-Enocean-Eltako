@@ -97,7 +97,7 @@ async def test_add_switch_actuator_via_flow(hass: HomeAssistant, gateway) -> Non
     schema = result["data_schema"].schema
     keys = [k for k in schema if str(k).startswith("sender_")]
     assert keys == ["sender_rocker", "sender_central"]  # the rocker first, it gets the suggestion
-    assert keys[0].description["suggested_value"] == "FF-B7-44-80"
+    assert keys[0].description["suggested_value"] == "FF-B7-44-81"
     assert not keys[1].description
     result = await hass.config_entries.subentries.async_configure(
         result["flow_id"],
@@ -513,7 +513,7 @@ async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) ->
         {
             "name": "Licht",
             "device_id": "05-10-A2-B3",
-            "sender_central": "FF-B7-44-80",
+            "sender_central": "FF-B7-44-82",
             "platform": "switch",
         },
     )
@@ -522,7 +522,7 @@ async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) ->
     assert hass.config_entries.async_remove_subentry(entry, subentry_id)
     await hass.async_block_till_done()
     pool = entry.runtime_data.senders.pool
-    assert pool.get(0xFFB74480).state == "blocked"
+    assert pool.get(0xFFB74482).state == "blocked"
     assert pool.next_free() == 0xFFB74481
 
 
@@ -576,7 +576,7 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
         {
             "name": "Rollladen",
             "device_id": "05-00-00-23",
-            "sender_controller": "FF-B7-44-80",
+            "sender_controller": "FF-B7-44-81",
             "time_opens": 20,
             "time_closes": 21,
             "routing": "controller",
@@ -594,8 +594,8 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
         result["flow_id"],
         {
             "name": "Rollladen Büro",
-            "sender_controller": "FF-B7-44-80",
-            "sender_direction_rocker": "FF-B7-44-81",
+            "sender_controller": "FF-B7-44-81",
+            "sender_direction_rocker": "FF-B7-44-82",
             "time_opens": 25,
             "time_closes": 21,
             "routing": "both",
@@ -607,12 +607,12 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     subentry = entry.subentries[subentry_id]
     assert subentry.title == "Rollladen Büro"
     assert subentry.data["senders"] == [
-        {"profile": "controller", "sender_id": "FF-B7-44-80"},
-        {"profile": "direction_rocker", "sender_id": "FF-B7-44-81"},
+        {"profile": "controller", "sender_id": "FF-B7-44-81"},
+        {"profile": "direction_rocker", "sender_id": "FF-B7-44-82"},
     ]
     assert subentry.data["time_opens"] == 25
     pool = entry.runtime_data.senders.pool
-    assert pool.get(0xFFB74481).owner == "device:05-00-00-23:direction_rocker"
+    assert pool.get(0xFFB74482).owner == "device:05-00-00-23:direction_rocker"
 
     # dropping the rocker blocks its ID until the teach-out is confirmed
     result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
@@ -623,14 +623,14 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
         result["flow_id"],
         {
             "name": "Rollladen Büro",
-            "sender_controller": "FF-B7-44-80",
+            "sender_controller": "FF-B7-44-81",
             "time_opens": 25,
             "time_closes": 21,
             "routing": "controller",
         },
     )
     await hass.async_block_till_done()
-    assert entry.runtime_data.senders.pool.get(0xFFB74481).state == "blocked"
+    assert entry.runtime_data.senders.pool.get(0xFFB74482).state == "blocked"
 
 
 async def test_migrate_subentries_to_sender_list(hass: HomeAssistant) -> None:
