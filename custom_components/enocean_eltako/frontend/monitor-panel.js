@@ -275,6 +275,8 @@ const STYLE = `
   .sendform label { display: grid; gap: 4px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; min-width: 0; }
   .sendform .text { height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface); color: var(--text);
     padding: 0 10px; font: 13px ui-monospace, monospace; text-transform: none; min-width: 0; }
+  .sendform label.check { display: flex; align-items: center; gap: 8px; align-self: end; height: 38px; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text); }
+  .sendform label.check[hidden] { display: none; }
   .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
@@ -728,6 +730,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               <label><span>${esc(t.sendType)}</span><select class="select" id="sendType">${[["F6", "RPS"], ["D5", "1BS"], ["A5", "4BS"], ["D2", "VLD"]].map(([v, l]) => `<option value="${v}">${l} (${v})</option>`).join("")}</select></label>
               <label><span>${esc(t.sendData)}</span><input class="text" id="sendData" autocomplete="off" spellcheck="false" placeholder="70" required></label>
               <label><span>${esc(t.sendStatus)}</span><input class="text" id="sendStatus" autocomplete="off" spellcheck="false" value="30" required></label>
+              <label class="check" id="sendReleaseRow" title="${esc(t.sendReleaseHint)}"><input type="checkbox" id="sendRelease" checked><span>${esc(t.sendRelease)}</span></label>
             </div>
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
@@ -1270,6 +1273,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const $ = (id) => this.shadowRoot.getElementById(id);
     const type = SEND_TYPES[$("sendType").value];
     if (status) $("sendStatus").value = type.status;
+    $("sendReleaseRow").hidden = $("sendType").value !== "F6"; // only a rocker is let go
     $("sendData").placeholder = type.example;
     $("sendData").maxLength = type.bytes[1] * 3; // room for spaces between the bytes
   }
@@ -1306,15 +1310,23 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     $("sendGo").disabled = true;
-    try {
-      const result = await this._hass.callWS({
+    const send = (data, status) =>
+      this._hass.callWS({
         type: "enocean_eltako/send",
         entry_id: $("sendGateway").value,
         sender: $("sendSender").value,
         rorg: $("sendType").value,
-        data: $("sendData").value.trim(),
-        status: $("sendStatus").value.trim(),
+        data,
+        status,
       });
+    try {
+      let result = await send($("sendData").value.trim(), $("sendStatus").value.trim());
+      const ok = ["sent", "confirmed"].includes(result.result);
+      // a rocker press, then its release (energy bow up: no button, T21 set, NU clear)
+      if (ok && $("sendType").value === "F6" && $("sendRelease").checked) {
+        const release = await send("00", "20");
+        if (!["sent", "confirmed"].includes(release.result)) result = release;
+      }
       this._notice(t.sendResult[result.result] || t.sendResult.unknown, ["sent", "confirmed"].includes(result.result));
     } catch (err) {
       this._notice(t.sendResult[err.code] || t.sendResult.unknown);
