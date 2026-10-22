@@ -51,7 +51,7 @@ async def test_gateway_sensors(hass: HomeAssistant, gateway) -> None:
     telegrams = _entity_id(hass, "sensor", entry, "telegrams")
     assert hass.states.get(telegrams).state == "0"
     assert hass.states.get(_entity_id(hass, "sensor", entry, "base_id")).state == "FF-B7-44-80"
-    assert hass.states.get(_entity_id(hass, "sensor", entry, "free_senders")).state == "128"
+    assert hass.states.get(_entity_id(hass, "sensor", entry, "free_senders")).state == "127"
     assert _entity_id(hass, "sensor", entry, "polls_dropped") is None  # not a bus gateway
 
     server.push(esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes(4), 0x00216343, 0x30).encode())

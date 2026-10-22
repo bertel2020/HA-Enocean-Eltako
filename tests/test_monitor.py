@@ -107,7 +107,7 @@ async def test_diagnostics(hass: HomeAssistant, setup):
     assert diag["gateway"]["telegrams_received"] == 1
     assert diag["dispatcher"]["received"] >= 1
     assert diag["send_queue"]["length"] == 0
-    assert diag["sender_pool"]["start"] == "FF-B7-44-80"
+    assert diag["sender_pool"]["start"] == "FF-B7-44-81"
     assert diag["telegrams"][-1]["sender"] == "00-21-63-43"
 
 
@@ -323,10 +323,10 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
         "radio",
         "FAM-USB",
     )
-    assert (result["start"], result["end"], result["size"]) == ("FF-B7-44-80", "FF-B7-44-FF", 128)
-    assert result["free"] == 126
-    assert result["first"] == 0xFFB74480
-    assert result["next_free"] == "FF-B7-44-80"
+    assert (result["start"], result["end"], result["size"]) == ("FF-B7-44-81", "FF-B7-44-FF", 127)
+    assert result["free"] == 125
+    assert result["first"] == 0xFFB74481
+    assert result["next_free"] == "FF-B7-44-83"
     assert result["unavailable"] == []
     assert result["rows"] == [
         {

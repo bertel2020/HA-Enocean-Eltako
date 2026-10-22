@@ -1,6 +1,7 @@
 """Sender ID pool (E3): IDs are handed out, never typed in by hand.
 
-Radio gateways send only from base ID + 0...127 (TCM limit). Bus groups use a freely chosen
+Radio gateways send only from base ID + 1...127 (TCM limit; the base ID itself is not
+handed out). Bus groups use a freely chosen
 range, default 00-00-B0-00 ... 00-00-B0-7F, entered into the actuators with PCT14.
 A released ID stays blocked until its teach-out is confirmed, so it cannot be handed to a new
 device while an old actuator still reacts to it.
@@ -15,7 +16,8 @@ from typing import Any
 
 from .ids import format_id, parse_id
 
-POOL_SIZE = 128
+POOL_SIZE = 128  # bus groups
+RADIO_POOL_SIZE = 127  # base ID + 1 ... + 127
 BUS_POOL_START = 0x0000B000
 
 
