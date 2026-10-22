@@ -60,7 +60,7 @@ from .const import (
 )
 from .custom_devices import async_load as async_load_custom_devices
 from .device import EnOceanDevice
-from .discovery import async_setup_discovery
+from .discovery import async_load_hidden, async_remove_hidden, async_setup_discovery
 from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .panel import async_register_panel
@@ -258,6 +258,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     )
     await async_load_custom_devices(hass)  # I8: re-read on every (re)load
     _async_setup_devices(hass, entry)
+    await async_load_hidden(hass, entry)
     entry.async_on_unload(async_setup_discovery(hass, entry))
     if (stop_proxy_status := async_setup_proxy_status(hass, entry)) is not None:
         entry.async_on_unload(stop_proxy_status)
@@ -450,6 +451,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
     """Delete the stored sender pools (the bus pool with the last member of its group)."""
     ir.async_delete_issue(hass, DOMAIN, f"proxy_outdated_{entry.entry_id}")
     await async_remove_store(hass, radio_key(entry.entry_id))
+    await async_remove_hidden(hass, entry.entry_id)
     if group := entry.data.get(CONF_BUS_GROUP):
         others = [
             e

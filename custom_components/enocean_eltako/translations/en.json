@@ -334,7 +334,23 @@
           "discovery": "Offer unknown senders this gateway receives as discovered devices.",
           "proxy_replay": "Only when this gateway is reached through the Device Proxy or EnOcean Proxy app: after every connect the app replays the telegrams that arrived while Home Assistant was restarting."
         }
+      },
+      "init": {
+        "menu_options": {
+          "settings": "Settings",
+          "hidden": "Hidden senders"
+        }
+      },
+      "hidden": {
+        "title": "Hidden senders",
+        "description": "Senders you hid. Pick the ones to list again when the gateway hears them.",
+        "data": {
+          "again": "Show again"
+        }
       }
+    },
+    "abort": {
+      "senders_shown": "The selected senders are listed again when heard."
     }
   },
   "config_subentries": {
@@ -789,7 +805,11 @@
           "title": "Discovered devices",
           "description": "Senders this gateway heard that are not set up yet.",
           "data": {
-            "device_id": "Sender"
+            "device_id": "Sender",
+            "hide": "Hide this sender"
+          },
+          "data_description": {
+            "hide": "Not yours (a neighbour's, for example)? Hide it instead of adding it; it is not listed again. Show it again in the gateway's settings."
           }
         }
       },
@@ -812,7 +832,8 @@
         "reconfigure_successful": "Device updated.",
         "measure_needs_controller": "Measuring needs the controller sender (H5-3F-7F).",
         "measure_failed": "The cover did not report the open end position.",
-        "no_discovered": "No unknown senders were heard yet."
+        "no_discovered": "No unknown senders were heard yet.",
+        "sender_hidden": "The sender is hidden."
       },
       "progress": {
         "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now.",

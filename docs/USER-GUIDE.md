@@ -105,7 +105,9 @@ Add a device under the gateway with **Add device** in one of six ways:
 Even simpler: every sender the gateway hears that is not set up yet is listed under
 **Add device → Discovered devices** of that gateway (a notification tells when new ones
 arrive). Picking one suggests the kind and fills in the ID. Senders that are not yours
-(a neighbour's, for example) simply stay unused; the list starts empty after a restart.
+(a neighbour's, for example) can be hidden there with **Hide this sender**; **Configure →
+Hidden senders** on the gateway lists them again. The list keeps the newest 100 senders and
+starts empty after a restart; hidden senders are remembered.
 Discovery can be switched off per gateway in its settings.
 
 Eltako series 14 actuators learn a sender ID through a learn function on the actuator; which

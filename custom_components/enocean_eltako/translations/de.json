@@ -334,7 +334,23 @@
           "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten.",
           "proxy_replay": "Nur wenn dieses Gateway über die App Device Proxy oder EnOcean Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen."
         }
+      },
+      "init": {
+        "menu_options": {
+          "settings": "Einstellungen",
+          "hidden": "Ausgeblendete Sender"
+        }
+      },
+      "hidden": {
+        "title": "Ausgeblendete Sender",
+        "description": "Von dir ausgeblendete Sender. Wähle die, die wieder aufgelistet werden sollen, sobald das Gateway sie hört.",
+        "data": {
+          "again": "Wieder anzeigen"
+        }
       }
+    },
+    "abort": {
+      "senders_shown": "Die gewählten Sender werden wieder aufgelistet, sobald sie gehört werden."
     }
   },
   "config_subentries": {
@@ -789,7 +805,11 @@
           "title": "Entdeckte Geräte",
           "description": "Sender, die dieses Gateway gehört hat und die noch nicht eingerichtet sind.",
           "data": {
-            "device_id": "Sender"
+            "device_id": "Sender",
+            "hide": "Diesen Sender ausblenden"
+          },
+          "data_description": {
+            "hide": "Nicht deiner (z. B. vom Nachbarn)? Blende ihn aus statt ihn hinzuzufügen; er wird nicht mehr aufgelistet. In den Einstellungen des Gateways kannst du ihn wieder einblenden."
           }
         }
       },
@@ -812,7 +832,8 @@
         "reconfigure_successful": "Gerät aktualisiert.",
         "measure_needs_controller": "Zum Messen braucht der Rollladen den Controller-Sender (H5-3F-7F).",
         "measure_failed": "Der Rollladen hat die obere Endlage nicht gemeldet.",
-        "no_discovered": "Es wurden noch keine unbekannten Sender gehört."
+        "no_discovered": "Es wurden noch keine unbekannten Sender gehört.",
+        "sender_hidden": "Der Sender ist ausgeblendet."
       },
       "progress": {
         "learn": "Warte bis zu {seconds} s auf ein Telegramm. Jetzt am Gerät eine Taste drücken oder den Aktor vor Ort schalten.",

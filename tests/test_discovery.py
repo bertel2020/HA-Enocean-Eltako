@@ -115,6 +115,51 @@ async def test_panel_offers_sender(hass: HomeAssistant, gateway, hass_ws_client)
     assert (await client.receive_json())["error"]["code"] == "invalid_id"
 
 
+async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, server = gateway
+    hub = entry.runtime_data.hub
+    _push(server, 0x05, b"\x70", 0x002A0B0F, 0x30)
+    await _settle(hass)
+    result = await _menu(hass, entry)
+    configure = hass.config_entries.subentries.async_configure
+    result = await configure(result["flow_id"], {"next_step_id": "discovered"})
+    result = await configure(result["flow_id"], {"device_id": "00-2A-0B-0F", "hide": True})
+    assert result["reason"] == "sender_hidden"
+    assert hub.hidden[entry.entry_id] == {0x002A0B0F}
+    assert not _notifications(hass)  # nothing left to announce
+
+    _push(server, 0x05, b"\x00", 0x002A0B0F, 0x20)  # still hidden when heard again
+    await _settle(hass)
+    result = await _menu(hass, entry)
+    assert "discovered" not in result["menu_options"]
+    hass.config_entries.subentries.async_abort(result["flow_id"])
+
+    options = await hass.config_entries.options.async_init(entry.entry_id)
+    assert options["type"] is FlowResultType.MENU
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"], {"next_step_id": "hidden"}
+    )
+    options = await hass.config_entries.options.async_configure(
+        options["flow_id"], {"again": ["00-2A-0B-0F"]}
+    )
+    assert options["reason"] == "senders_shown"
+    assert not hub.hidden[entry.entry_id]
+    _push(server, 0x05, b"\x70", 0x002A0B0F, 0x30)
+    await _settle(hass)
+    result = await _menu(hass, entry)
+    assert "discovered" in result["menu_options"]
+
+
+async def test_list_is_capped(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    from custom_components.enocean_eltako.discovery import MAX_DISCOVERED
+
+    entry, server = gateway
+    for n in range(MAX_DISCOVERED + 5):
+        _push(server, 0x05, b"\x70", 0x00300000 + n, 0x30)
+    await _settle(hass)
+    assert len(entry.runtime_data.hub.discovered) == MAX_DISCOVERED
+
+
 def _notifications(hass: HomeAssistant):
     from homeassistant.components import persistent_notification
 
