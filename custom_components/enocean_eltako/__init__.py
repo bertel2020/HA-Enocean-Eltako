@@ -104,7 +104,7 @@ class GatewayRuntime:
     health_check: Callable[[], None] | None = None
     connection_listeners: list[Callable[[], None]] = field(default_factory=list)
     gateway_device_id: str | None = None  # device registry ID, parent of all devices
-    proxy: dict[str, Any] | None = None  # EnOcean Proxy app status (proxy_status.py)
+    proxy: dict[str, Any] | None = None  # Device Proxy app status (proxy_status.py)
     remove_reload_listener: Callable[[], None] | None = None
     drops: deque[float] = field(default_factory=lambda: deque(maxlen=20))  # time.time()
     probed_connection: float = 0.0  # Gateway.connected_at of the connection asked for its base ID
@@ -182,7 +182,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
 
     @callback
     def on_replayed(telegram: RadioTelegram, received_at: float) -> None:
-        """Telegrams the EnOcean Proxy kept during a restart, with their reception time."""
+        """Telegrams the Device Proxy kept during a restart, with their reception time."""
         hub.dispatcher.dispatch(entry.entry_id, telegram, timestamp=received_at)
 
     @callback
@@ -466,7 +466,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
 
 async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """Delete the stored sender pools (the bus pool with the last member of its group)."""
-    ir.async_delete_issue(hass, DOMAIN, f"proxy_outdated_{entry.entry_id}")
     await async_remove_store(hass, radio_key(entry.entry_id))
     await async_remove_hidden(hass, entry.entry_id)
     ir.async_delete_issue(hass, DOMAIN, old_issue_id(entry.entry_id))

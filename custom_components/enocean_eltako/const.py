@@ -22,8 +22,8 @@ REPEATER_UNCHANGED: Final = "unchanged"
 REPEATER_LEVELS: Final = {"off": 0, "1": 1, "2": 2}
 CONF_MESSAGE_DELAY: Final = "message_delay"  # milliseconds between telegrams
 CONF_DISCOVERY: Final = "discovery"  # offer unknown senders as discovered devices
-CONF_PROXY_REPLAY: Final = "proxy_replay"  # TCP gateway is the EnOcean Proxy app: replay
-# telegrams missed while HA was away, each with its reception time (EnOcean Proxy >= 0.4)
+CONF_PROXY_REPLAY: Final = "proxy_replay"  # TCP gateway is the Device Proxy app: replay
+# telegrams missed while HA was away, each with its reception time
 PROXY_REPLAY_REQUEST: Final = b"EOPX REPLAY TS\n"
 CONF_ENTITY_PREFIX: Final = "entity_prefix"  # new entity IDs start with eno_gw<number>
 CONF_GATEWAY_NUMBER: Final = "gateway_number"

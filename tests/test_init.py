@@ -227,7 +227,7 @@ async def test_bus_group_with_on_demand_fam14(hass: HomeAssistant) -> None:
 
 
 async def test_proxy_replay_request_after_connect(hass: HomeAssistant) -> None:
-    """Phase 6: over the EnOcean Proxy app, ask for telegrams missed while HA was away."""
+    """Phase 6: over the Device Proxy app, ask for telegrams missed while HA was away."""
     from custom_components.enocean_eltako.const import PROXY_REPLAY_REQUEST
 
     server = await FakeGateway(Protocol.ESP2).start()

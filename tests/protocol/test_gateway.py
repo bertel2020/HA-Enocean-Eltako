@@ -141,7 +141,7 @@ async def test_bus_polling_is_dropped_before_dispatch(fake: FakeGateway) -> None
 
 @pytest.mark.parametrize("block", [True, False])
 async def test_proxy_replay_with_reception_times(block: bool) -> None:
-    """EnOcean Proxy >= 0.4 sends a text block with reception times; older ones none."""
+    """The Device Proxy sends a text block with reception times; without one the stream starts."""
     frame = esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x70, 0, 0, 0]), 0x00216343, 0x30)
     live = esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x50, 0, 0, 0]), 0x00216343, 0x30)
     request = asyncio.Event()
