@@ -21,3 +21,6 @@ CLAUDE.md
 /docs/assets/
 /CHANGELOG.internal.md
 /ROADMAP.md
+
+# local Claude Code preview servers
+.claude/launch.json
