@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from types import MappingProxyType
 from typing import Any
 from uuid import uuid4
 
@@ -15,7 +14,6 @@ from homeassistant.config_entries import (
     ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
-    ConfigSubentry,
     ConfigSubentryFlow,
     OptionsFlow,
 )
@@ -37,14 +35,13 @@ from homeassistant.helpers.selector import (
 from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
-from .catalog import CATALOG, GENERIC_EEPS, DeviceModel, generic_model
+from .catalog import DeviceModel
 from .const import (
     BAUDRATES,
     CONF_BASE_ID,
     CONF_BAUDRATE,
     CONF_BUS_GROUP,
     CONF_DEVICE,
-    CONF_DEVICE_ID,
     CONF_DISCOVERY,
     CONF_MESSAGE_DELAY,
     CONF_MODE,
@@ -59,25 +56,15 @@ from .const import (
     MODE_ON_DEMAND,
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
-    SUBENTRY_DEVICE,
 )
-from .discovery import discovery_unique_id
-from .protocol.eep import EEPRef
-from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
-from .protocol.telegram import Rorg
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .proxy_status import CONF_PROXY_STATUS_PORT
 from .subentry_flow import (
     SUBENTRY_FLOWS,
     DeviceForm,
-    candidates,
-    flatten_sections,
-    receives,
-    status_channel,
-    subentry_unique_id,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,7 +117,6 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
         self._proxy: dict[str, Any] | None = None  # gateway announced by a proxy app
         self._proxy_app = "EnOcean Proxy"  # its name: Device Proxy or EnOcean Proxy
-        self._discovery: dict[str, Any] = {}  # discovered device: gateway, ID, telegram
         self._device_model: DeviceModel | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -350,116 +336,6 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 "connection": str(self._connection),
             },
         )
-
-    # Discovered devices ---------------------------------------------------------------------
-
-    async def async_step_integration_discovery(
-        self, discovery_info: dict[str, Any]
-    ) -> ConfigFlowResult:
-        """A gateway heard a sender no device listens to."""
-        device_id = parse_id(discovery_info[CONF_DEVICE_ID])
-        await self.async_set_unique_id(discovery_unique_id(device_id))
-        self._abort_if_unique_id_configured()
-        self._discovery = discovery_info
-        self.context["title_placeholders"] = {"name": format_id(device_id)}
-        return await self.async_step_discovered()
-
-    def _get_entry(self) -> ConfigEntry:
-        """The gateway that heard the discovered device (DeviceForm)."""
-        entry = self.hass.config_entries.async_get_entry(self._discovery["gateway"])
-        assert entry is not None
-        return entry
-
-    def _discovery_abort(self) -> ConfigFlowResult | None:
-        entry = self.hass.config_entries.async_get_entry(self._discovery["gateway"])
-        if entry is None or getattr(entry, "runtime_data", None) is None:
-            return self.async_abort(reason="gateway_not_loaded")
-        device_id = self._discovery[CONF_DEVICE_ID]
-        if any(s.unique_id == device_id for s in entry.subentries.values()):
-            return self.async_abort(reason="already_configured")
-        return None
-
-    async def async_step_discovered(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Name the kinds that fit the heard telegram; a teach-in may settle it."""
-        if (abort := self._discovery_abort()) is not None:
-            return abort
-        if user_input is not None:
-            self._device_model = CATALOG[user_input[CONF_MODEL]]
-            return await self.async_step_discovered_device()
-        rorg = self._discovery["rorg"]
-        data = bytes.fromhex(self._discovery["data"])
-        teach_in = decode_teach_in_4bs(data) if rorg == Rorg.BS4 else None
-        if teach_in is not None and teach_in.eep in GENERIC_EEPS:
-            if not any(receives(m, teach_in.eep) for m in CATALOG.values()):
-                self._device_model = generic_model(EEPRef(teach_in.eep, "std"))
-                return await self.async_step_discovered_device()
-        kinds = candidates(rorg, teach_in, data)
-        if not kinds:
-            return self.async_abort(reason="no_matching_kind")
-        entry = self._get_entry()
-        dbm = self._discovery.get("dbm")
-        return self.async_show_form(
-            step_id="discovered",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_MODEL, default=kinds[0]): SelectSelector(
-                        SelectSelectorConfig(
-                            options=kinds,
-                            translation_key="device_model",
-                            mode=SelectSelectorMode.DROPDOWN,
-                        )
-                    )
-                }
-            ),
-            description_placeholders={
-                "device_id": self._discovery[CONF_DEVICE_ID],
-                "gateway": entry.title,
-                "eep": teach_in.eep if teach_in else f"{rorg:02X}",
-                "dbm": f"{dbm} dBm" if dbm is not None else "-",
-            },
-        )
-
-    async def async_step_discovered_device(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Name, senders and options as in "add device"; saved as a subentry of the gateway."""
-        assert self._device_model is not None
-        if (abort := self._discovery_abort()) is not None:
-            return abort
-        device_id = parse_id(self._discovery[CONF_DEVICE_ID])
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            data = await self._async_save(user_input, device_id, {}, errors)
-            if data is not None:
-                self.hass.config_entries.async_add_subentry(
-                    self._get_entry(),
-                    ConfigSubentry(
-                        data=MappingProxyType(data),
-                        subentry_type=SUBENTRY_DEVICE,
-                        title=user_input[CONF_NAME],
-                        unique_id=subentry_unique_id(
-                            device_id, status_channel(flatten_sections(user_input))
-                        ),
-                    ),
-                )
-                return self.async_abort(reason="device_added")
-        schema = {
-            vol.Required(CONF_NAME): TextSelector(),
-            **self._fields(self._device_model, {}, new=True),
-        }
-        result: ConfigFlowResult = await self._form("discovered_device", schema, user_input, errors)
-        return result
-
-    async def async_step_unignore(self, user_input: dict[str, Any]) -> ConfigFlowResult:
-        """Un-ignored discovered device: offer it again when it is heard next time."""
-        unique_id = user_input["unique_id"]
-        if unique_id.startswith("device_"):
-            from .hub import async_get_hub
-
-            async_get_hub(self.hass).discovered.discard(parse_id(unique_id[len("device_") :]))
-        return self.async_abort(reason="discovery_reset")
 
     async def async_step_connection(
         self, user_input: dict[str, Any] | None = None

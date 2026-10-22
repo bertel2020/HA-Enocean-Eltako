@@ -70,8 +70,8 @@ Home Assistant uses to control it, each with its own sender ID from the gateway'
   as a device with one sensor per value. Profiles outside the catalog are not checked
   against hardware.
 - **Own definition**: sensors you describe in `/config/enocean_eltako/custom_devices.yaml`.
-- **Discovered senders**: every unknown sender a gateway hears is offered as a card
-  with a suggested kind.
+- **Discovered senders**: every unknown sender a gateway hears is listed under **Add
+  device → Discovered devices** with a suggested kind.
 
 How to add each kind: [User Guide](USER-GUIDE.md). Learn function to set on an Eltako
 series 14 actuator for each teach-in button: [teach_in.md](teach_in.md).

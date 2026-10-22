@@ -108,8 +108,8 @@ TEXT = {
             "  as a device with one sensor per value. Profiles outside the catalog are not checked\n"
             "  against hardware.\n"
             "- **Own definition**: sensors you describe in `/config/enocean_eltako/custom_devices.yaml`.\n"
-            "- **Discovered senders**: every unknown sender a gateway hears is offered as a card\n"
-            "  with a suggested kind.\n\n"
+            "- **Discovered senders**: every unknown sender a gateway hears is listed under **Add\n"
+            "  device → Discovered devices** with a suggested kind.\n\n"
             "How to add each kind: [User Guide](USER-GUIDE.md). Learn function to set on an Eltako\n"
             "series 14 actuator for each teach-in button: [teach_in.md](teach_in.md)."
         ),
@@ -154,8 +154,8 @@ TEXT = {
             "  Hardware geprüft.\n"
             "- **Eigene Definition**: Sensoren, die du in `/config/enocean_eltako/custom_devices.yaml`\n"
             "  beschreibst.\n"
-            "- **Entdeckte Sender**: jeder unbekannte Sender, den ein Gateway hört, erscheint als Karte\n"
-            "  mit einem Vorschlag für die Geräteart.\n\n"
+            "- **Entdeckte Sender**: jeder unbekannte Sender, den ein Gateway hört, steht unter **Gerät hinzufügen →\n"
+            "  Entdeckte Geräte** und bekommt einen Vorschlag für die Geräteart.\n\n"
             "Wie jede Art angelegt wird: [Benutzerhandbuch](USER-GUIDE.de.md). Welche Einlernfunktion am\n"
             "Eltako-Aktor der Baureihe 14 zu welchem Einlern-Button gehört: [teach_in.de.md](teach_in.de.md)."
         ),

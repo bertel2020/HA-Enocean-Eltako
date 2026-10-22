@@ -72,104 +72,6 @@
           "name": "Shown on the integration page and as the gateway device. Rename later in the entry's menu."
         }
       },
-      "discovered": {
-        "title": "New device discovered",
-        "description": "Gateway **{gateway}** received a telegram from **{device_id}** (profile {eep}, signal {dbm}). What kind of device is it? If it is not yours (a neighbour's, for example), close this dialog and choose **Ignore** on the card.",
-        "data": {
-          "model": "Kind"
-        }
-      },
-      "discovered_device": {
-        "title": "Set up discovered device",
-        "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.\n\n{hint}",
-        "data": {
-          "name": "Name",
-          "platform": "Type",
-          "time_opens": "Travel time up",
-          "time_closes": "Travel time down",
-          "device_class": "Kind",
-          "invert": "Invert",
-          "sender_central": "Sender ID: Central command (A5-38-08)",
-          "sender_rocker": "Sender ID: Rocker (F6-02-01)",
-          "sender_controller": "Sender ID: controller",
-          "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
-          "routing": "Moved by",
-          "buttons": "Buttons",
-          "on_button": "On with",
-          "off_button": "Off with",
-          "temperature_sensor": "Room temperature",
-          "send_interval": "Send interval",
-          "unavailable_when_silent": "Unavailable when silent",
-          "status_request": "Ask for the state at startup",
-          "long_press": "Long press from",
-          "double_press": "Double press within",
-          "calibration": "Calibration",
-          "fields": "Shown values",
-          "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
-          "vent_time": "Vent slot time",
-          "tilt_time": "Slat turning time",
-          "channel": "Channel",
-          "sender_vld": "Sender ID: VLD commands",
-          "run_time_tenths": "Run times in 100 ms"
-        },
-        "data_description": {
-          "time_opens": "Full travel time from closed to open.",
-          "time_closes": "Full travel time from open to closed.",
-          "routing": "Which sender moves the cover. Positions always use the controller when it is set.",
-          "temperature_sensor": "Sensor whose temperature is sent to the actuator (any temperature sensor in Home Assistant). Empty: Home Assistant sends only the setpoint, the thermostat taught into the actuator measures.",
-          "send_interval": "How often setpoint and temperature are sent. The actuator needs a telegram at least every 10 min, otherwise it goes into fault mode after 1 h.",
-          "unavailable_when_silent": "Show the entities as unavailable when the device was not heard for three times its usual interval.",
-          "status_request": "Only for actuators that answer a confirmation request (FL62, FR62, FD62). Others keep their last state, marked as assumed, until they report.",
-          "calibration": "Before an uncertain move, the cover first drives to the nearer end when its position may be off by more than 10 points.",
-          "fields": "Values of the profile that become sensors.",
-          "sender_central": "Optional when the rocker sender is set: without it Home Assistant switches with rocker presses (dimmers then without brightness, no state request at startup).",
-          "sender_cooling": "Optional. Heating actuators switch to cooling on a taught-in switch press (0x50); Home Assistant repeats it every 10 min while the mode is Cool.",
-          "vent_time": "Shutters with vent slots: seconds at the end of the down run in which only the slots close. Position 1 % is then 'down, slots open'. 0 = none.",
-          "tilt_time": "Blinds: seconds for a full turn of the slats. Above 0 the cover becomes a blind with a tilt position; every run turns the slats first.",
-          "channel": "Output of the actuator (0 = first channel).",
-          "sender_vld": "Reported to the actuator during the UTE teach-in.",
-          "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
-          "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped."
-        },
-        "sections": {
-          "rocker_buttons": {
-            "name": "Rocker sender: buttons",
-            "description": "Which buttons Home Assistant presses with the rocker sender ID. Change them only if the ID is taught in on the right rocker or with top and bottom swapped.",
-            "data": {
-              "rocker_on_button": "Button for on / up",
-              "rocker_off_button": "Button for off / down"
-            },
-            "data_description": {
-              "rocker_on_button": "A = left rocker, B = right; 0 = top, 1 = bottom. The teach-in button presses this one.",
-              "rocker_off_button": "Usually the other half of the same rocker."
-            }
-          },
-          "wall_switch_settings": {
-            "name": "Wall switch (receive, for actuators without feedback)",
-            "description": "Home Assistant listens to a wall switch taught into the actuator and sets the assumed state from its presses.",
-            "data": {
-              "wall_switch": "Wall switch ID",
-              "wall_on_button": "Button for on",
-              "wall_off_button": "Button for off"
-            },
-            "data_description": {
-              "wall_switch": "For actuators that do not report their state: the ID of a pushbutton taught into the actuator. Its presses then set the state (marked as assumed until the actuator reports).",
-              "wall_on_button": "Same button for on and off: every press toggles.",
-              "wall_off_button": "Same button for on and off: every press toggles."
-            }
-          },
-          "status_channel_settings": {
-            "name": "Two-channel actuator",
-            "description": "Only for actuators with two channels under one ID (e.g. FSR71NP-2x): set up each channel as a device of its own with the same ID. Fixed once the device is set up.",
-            "data": {
-              "status_channel": "Channel"
-            },
-            "data_description": {
-              "status_channel": "Which status telegrams belong to this device. Commands go through its own sender IDs."
-            }
-          }
-        }
-      },
       "proxy_confirm": {
         "title": "Gateway through a proxy app",
         "description": "The {app} app offers the gateway **{name}** at {connection}. Which model is behind it? Replay after restarts is switched on.",
@@ -200,9 +102,6 @@
       "already_configured": "A gateway with this base ID is already set up.",
       "reconfigure_successful": "The connection was changed.",
       "wrong_gateway": "This is a different gateway (other base ID). Add it as a new gateway instead.",
-      "device_added": "The device was added to the gateway.",
-      "no_matching_kind": "No device kind fits this telegram. Add the device on the gateway with **Add device → By EEP (expert)**.",
-      "discovery_reset": "The device will be offered again the next time it sends.",
       "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
     }
   },
@@ -454,14 +353,16 @@
             "enocean": "EnOcean device of another manufacturer",
             "virtual": "Virtual sensor (Home Assistant sends)",
             "eep": "By EEP (expert)",
-            "custom": "Own definition (custom_devices.yaml)"
+            "custom": "Own definition (custom_devices.yaml)",
+            "discovered": "Discovered devices"
           },
           "menu_option_descriptions": {
             "learn": "Press the learn button or a button on the device, or switch the actuator locally. The kind is suggested from its telegram.",
             "eltako": "Pick it from the Eltako catalog.",
             "enocean": "NodOn, Permundo, Hoppe and other manufacturers.",
             "eep": "Any supported profile, for devices not in the catalog.",
-            "virtual": "Home Assistant sends as a window contact, motion sensor, temperature sensor or rocker, e.g. so an HA window contact lowers the heating."
+            "virtual": "Home Assistant sends as a window contact, motion sensor, temperature sensor or rocker, e.g. so an HA window contact lowers the heating.",
+            "discovered": "Senders this gateway heard that are not set up yet; the kind is suggested from the telegram."
           }
         },
         "eltako": {
@@ -883,6 +784,13 @@
         "measure_tilt": {
           "title": "Slat turning time",
           "description": "Click Submit the moment the slats are fully turned open, before the blind starts to rise."
+        },
+        "discovered": {
+          "title": "Discovered devices",
+          "description": "Senders this gateway heard that are not set up yet.",
+          "data": {
+            "device_id": "Sender"
+          }
         }
       },
       "error": {
@@ -903,7 +811,8 @@
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
         "reconfigure_successful": "Device updated.",
         "measure_needs_controller": "Measuring needs the controller sender (H5-3F-7F).",
-        "measure_failed": "The cover did not report the open end position."
+        "measure_failed": "The cover did not report the open end position.",
+        "no_discovered": "No unknown senders were heard yet."
       },
       "progress": {
         "learn": "Waiting up to {seconds} s for a telegram. Press a button on the device or switch the actuator locally now.",

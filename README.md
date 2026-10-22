@@ -61,7 +61,7 @@ Copy the `custom_components/enocean_eltako` directory to
 ## Quick start
 
 1. Add the integration once per gateway and pick the model and connection (USB port, or host and port).
-2. Under the gateway choose **Add device**: listen for the device by pressing a button on it, or pick it from the catalog. Senders the gateway hears on its own show up as **discovered** cards.
+2. Under the gateway choose **Add device**: listen for the device by pressing a button on it, or pick it from the catalog. Senders the gateway hears on its own are listed there under **Discovered devices**.
 3. Open **EnOcean** in the sidebar to watch telegrams live and to check sender IDs.
 
 Every step, all device types, the panel, the takeover, blueprints, known limitations and troubleshooting are in the **[User Guide](docs/USER-GUIDE.md)**.

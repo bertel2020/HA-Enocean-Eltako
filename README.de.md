@@ -64,7 +64,7 @@ starten.
 ## Schnellstart
 
 1. Die Integration pro Gateway einmal hinzufügen und Modell und Anbindung wählen (USB-Port oder Host und Port).
-2. Unter dem Gateway **Gerät hinzufügen** wählen: das Gerät durch Tastendruck anlernen oder aus dem Katalog aussuchen. Sender, die das Gateway von selbst hört, erscheinen als **entdeckt**-Karten.
+2. Unter dem Gateway **Gerät hinzufügen** wählen: das Gerät durch Tastendruck anlernen oder aus dem Katalog aussuchen. Sender, die das Gateway von selbst hört, stehen dort unter **Entdeckte Geräte**.
 3. Im Seitenleisten-Panel **EnOcean** Telegramme live beobachten und Sender-IDs prüfen.
 
 Jeder Schritt, alle Gerätearten, das Panel, die Übernahme, Blueprints, bekannte Einschränkungen und die Fehlersuche stehen im **[Benutzerhandbuch](docs/USER-GUIDE.de.md)**.

@@ -102,10 +102,11 @@ Add a device under the gateway with **Add device** in one of six ways:
   sensor per value; type a code such as `A5-04-02` to find it.
 - **Own definition**: sensors you describe yourself, see below.
 
-Even simpler: every sender the gateway hears that is not set up yet shows up as a
-**discovered** card on the integration page. **Add** suggests the kind and fills in the ID;
-**Ignore** hides senders that are not yours (a neighbour's, for example) for good. Discovery
-can be switched off per gateway in its settings.
+Even simpler: every sender the gateway hears that is not set up yet is listed under
+**Add device → Discovered devices** of that gateway (a notification tells when new ones
+arrive). Picking one suggests the kind and fills in the ID. Senders that are not yours
+(a neighbour's, for example) simply stay unused; the list starts empty after a restart.
+Discovery can be switched off per gateway in its settings.
 
 Eltako series 14 actuators learn a sender ID through a learn function on the actuator; which
 function belongs to which teach-in button is in [teach_in.md](teach_in.md).
@@ -204,7 +205,7 @@ several gateways, the gateway.
 - Sent telegrams name the device and sender profile; a teach-in of an unknown sender shows its
   EEP.
 - Click a telegram for its raw data, status, destination and signal in dBm, or to show only
-  that sender. Unknown senders also offer **Add device** there to open their discovered card.
+  that sender. Unknown senders also offer **Add device** there to open the integration page, where they wait under **Add device → Discovered devices**.
 - The details also show the EEP (with its variant) and, for Eltako devices, the device type;
   what changed against the previous telegram of the sender (changed bytes and values); a
   command and the device's answer with the latency; the repeater hops and how many copies of

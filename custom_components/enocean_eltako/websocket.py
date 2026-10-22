@@ -14,19 +14,17 @@ from typing import Any
 import probatio as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import (
-    SOURCE_INTEGRATION_DISCOVERY,
     ConfigEntry,
     ConfigEntryState,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
 from .catalog import CATALOG, GENERIC_EEP
 from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
-from .discovery import discovery_data
 from .hub import async_get_hub
+from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
@@ -36,6 +34,7 @@ from .protocol.monitor import MonitorEntry
 from .protocol.send_queue import Priority
 from .protocol.sender_pool import SenderState
 from .protocol.telegram import RadioTelegram, Rorg
+from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
@@ -282,12 +281,10 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
 async def ws_discover(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Panel "add as device": a discovered-device card for a sender from the monitor.
+    """Panel "add as device": offer a sender from the monitor under "Add device".
 
-    Uses the sender's last received telegram (gateway, type, teach-in); works also with
-    discovery switched off. The result names the flow, or why there is none (already set
-    up, ignored, card already there). A sender that got no card (no fitting kind, gateway not
-    loaded) stays open for automatic discovery.
+    Uses the sender's last received telegram; works also with discovery switched off. The
+    result names the gateway (the panel opens its integration page), or why it cannot be added.
     """
     try:
         sender = parse_id(msg["sender"])
@@ -306,18 +303,20 @@ async def ws_discover(
     if last is None:
         connection.send_error(msg["id"], "not_found", "no telegram from this sender")
         return
-    hub.discovered.add(sender)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_INTEGRATION_DISCOVERY},
-        data=discovery_data(last.gateway, sender, last.telegram),
-    )
-    if result["type"] is FlowResultType.ABORT:
-        if result["reason"] not in ("already_configured", "already_in_progress"):
-            hub.discovered.discard(sender)
-        connection.send_result(msg["id"], {"reason": result["reason"]})
+    entry = hass.config_entries.async_get_entry(last.gateway)
+    if entry is None or getattr(entry, "runtime_data", None) is None:
+        connection.send_result(msg["id"], {"reason": "gateway_not_loaded"})
         return
-    connection.send_result(msg["id"], {"flow_id": result["flow_id"]})
+    if any(s.unique_id == format_id(sender) for s in entry.subentries.values()):
+        connection.send_result(msg["id"], {"reason": "already_configured"})
+        return
+    data = last.telegram.data
+    teach_in = decode_teach_in_4bs(data) if last.telegram.rorg == Rorg.BS4 else None
+    if not candidates(last.telegram.rorg, teach_in, data):
+        connection.send_result(msg["id"], {"reason": "no_matching_kind"})
+        return
+    hub.discovered[sender] = ReceivedTelegram(last.telegram, last.gateway, last.timestamp, sender)
+    connection.send_result(msg["id"], {"entry_id": entry.entry_id})
 
 
 @websocket_api.websocket_command(

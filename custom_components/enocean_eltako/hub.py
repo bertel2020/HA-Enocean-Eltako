@@ -10,7 +10,7 @@ from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
 from .protocol.bus_group import BusGroup, BusMember
-from .protocol.dispatcher import Dispatcher
+from .protocol.dispatcher import Dispatcher, ReceivedTelegram
 from .protocol.monitor import TelegramMonitor
 from .protocol.sender_pool import BUS_POOL_START, SenderRegistry
 from .senders import SenderStore, bus_key
@@ -30,7 +30,8 @@ class Hub:
     senders: SenderRegistry = field(default_factory=SenderRegistry)
     monitor: TelegramMonitor = field(default_factory=TelegramMonitor)
     bus_groups: dict[str, BusGroupRuntime] = field(default_factory=dict)
-    discovered: set[int] = field(default_factory=set)  # senders offered for discovery
+    # unknown senders heard (last telegram each), offered under "Add device"
+    discovered: dict[int, ReceivedTelegram] = field(default_factory=dict)
     _bus_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def __post_init__(self) -> None:
