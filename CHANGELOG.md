@@ -6,6 +6,24 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Added
+
+- **Panel, teach in:** a device with a sender ID of its own can be taught into its actuator
+  from the Devices view (graduation cap), with the steps and a choice of sender ID; it sends what
+  the device's teach-in button sends (websocket `enocean_eltako/teach_in`).
+- **Panel, weak signal:** a hint above the Devices list counts the senders with a weak signal and
+  shows only them on a click; status filter **Weak signal**.
+- **Panel, send again:** the details of a sent telegram can send it once more.
+- **Development:** a preview page of the panel with sample data (`scripts/panel-preview`) and a
+  CI check that renders every view in a simulated browser.
+
+#### Fixed
+
+- **Panel in English:** milliseconds stand before AM/PM; the gateway card counts in lower case
+  and in the singular for one.
+
 ### [0.1.5] - 2026-10-22
 
 #### Added
@@ -178,6 +196,24 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Hinzugefügt
+
+- **Panel, Einlernen:** ein Gerät mit eigener Sender-ID lässt sich in der Ansicht Geräte
+  (Doktorhut) in seinen Aktor einlernen, mit Anleitung und Wahl der Sender-ID; gesendet wird
+  dasselbe wie mit der Einlern-Schaltfläche des Geräts (Websocket `enocean_eltako/teach_in`).
+- **Panel, schwaches Signal:** ein Hinweis über der Geräteliste zählt die Sender mit schwachem
+  Signal und zeigt per Klick nur sie; Status-Filter **Schwaches Signal**.
+- **Panel, nochmal senden:** die Details eines gesendeten Telegramms senden es erneut.
+- **Entwicklung:** eine Vorschauseite des Panels mit Beispieldaten (`scripts/panel-preview`) und
+  eine CI-Prüfung, die jede Ansicht in einem simulierten Browser zeichnet.
+
+#### Behoben
+
+- **Panel auf Englisch:** Millisekunden stehen vor AM/PM; die Zahlen der Gateway-Karte klein
+  geschrieben und bei eins im Singular.
 
 ### [0.1.5] - 2026-10-22
 

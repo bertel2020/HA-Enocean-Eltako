@@ -291,9 +291,19 @@ Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könn
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
+**Einlernen** (Doktorhut-Symbol, bei Geräten mit eigener Sender-ID) lernt das Gerät in seinen
+Aktor ein, ohne dafür die Geräteseite zu öffnen: Aktor in den Lernmodus bringen (bei Eltako
+meist Drehschalter auf LRN), dann **Einlernen senden**. Hat das Gerät mehrere Sender-IDs (etwa
+Zentralbefehl und Taster), wählt man eine aus. Gesendet wird dasselbe wie mit der
+Einlern-Schaltfläche des Geräts; bei einem VLD-Aktor (UTE) erst senden und den Aktor dann
+innerhalb von 60 s in den Lernmodus bringen.
+
+Über der Liste zählt ein Hinweis die Sender mit schwachem Signal; ein Klick zeigt nur sie, das
+schwächste zuerst (auch als Status **Schwaches Signal** unter **Filter**).
+
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
 übernimmt das eine Auswahl. Die Suche und unter **Filter** das Gateway, der Status (**Alle Geräte /
-Eingerichtet / Unbekannt / Still**) und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
+Eingerichtet / Unbekannt / Still / Schwaches Signal**) und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
 gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
 Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
 Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
@@ -307,7 +317,8 @@ Länge für den Typ (RPS und 1BS ein Byte, 4BS vier, VLD eins bis vierzehn); Lä
 vor dem Senden geprüft, Escape schließt das Formular. Bei einem Taster-Telegramm (RPS) sendet
 **Drücken und loslassen** (standardmäßig an) gleich danach das Loslassen (Daten 00, Status 20),
 wie ein Wandtaster. Aktoren reagieren darauf wie auf jedes Telegramm; es erscheint in der Liste
-als gesendet.
+als gesendet. In den Details eines gesendeten Telegramms schickt **Nochmal senden** es erneut
+(einen Tastendruck mit Loslassen), ohne es neu einzutippen.
 
 ## Sender-IDs
 
