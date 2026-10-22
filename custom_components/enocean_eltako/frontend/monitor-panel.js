@@ -152,7 +152,16 @@ const STYLE = `
   .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
     box-shadow: none; overflow: clip; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 12px 12px 16px;
-    border-bottom: 1px solid var(--line); }
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; background: var(--surface); }
+  /* the gateway status in the bar, once the cards are scrolled away */
+  .mini { display: inline-flex; align-items: center; gap: 12px; min-width: 0; padding: 0 4px; font-size: 12px; color: var(--muted); border-radius: 8px; }
+  .mini[hidden] { display: none; }
+  .mini:hover { color: var(--text); }
+  .mini > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini i { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+  .mini i.ok { background: var(--ok); }
+  .mini i.bad { background: var(--bad); }
+  .mini i.idle { background: var(--warn); }
   .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; min-height: 24px; padding: 0 10px;
     border-radius: 12px; background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
   .live i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
@@ -239,10 +248,10 @@ const STYLE = `
   .telegrams col.c-signal { width: 92px; }
   .telegrams col.c-gw { width: 140px; }
   .telegrams col.c-end { width: 48px; }
-  .telegrams th { position: sticky; top: 0; z-index: 1; padding: 0; text-align: left;
+  .telegrams th { position: sticky; top: var(--bar-height, 0px); z-index: 1; padding: 0; text-align: left;
     background: var(--soft); border-bottom: 1px solid var(--line); }
   .telegrams th > button, .telegrams th > span { display: flex; align-items: center; gap: 2px; width: 100%; height: 38px;
-    padding: 0 8px; font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; white-space: nowrap; }
+    padding: 0 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-align: left; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
   .telegrams th:first-child > * { padding-left: 16px; }
   .telegrams th > button:hover, .telegrams th[aria-sort] > button { color: var(--text); }
   .telegrams th .sort { width: 16px; height: 16px; opacity: 0; transition: transform .15s, opacity .15s; }
@@ -350,7 +359,7 @@ const STYLE = `
   .senders .sid-head .fold { margin-left: auto; width: 16px; text-align: center; color: var(--muted); font-size: 12px; }
   .senders .sid-group.folded .sid-row, .senders .sid-group.folded .sid-hint, .senders .sid-group.folded .confirm { display: none; }
   .senders .sid-cols { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; padding: 8px 16px 6px 28px;
-    border-top: 1px solid var(--line); font-size: 12px; font-weight: 500; color: var(--muted); }
+    border-top: 1px solid var(--line); font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .senders .sid-cols span:last-child { width: 0; }
   .senders .act { text-align: right; }
   .senders .act .chip { height: 30px; }
@@ -378,7 +387,8 @@ const STYLE = `
   .devices { display: grid; grid-template-columns: minmax(170px, 2fr) 96px minmax(64px, 1fr) 76px minmax(0, 1.6fr) 140px auto; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
-  .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+    background: var(--soft); border-top: 1px solid var(--line); }
   .devices .dev-head button { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; border-radius: 4px; }
   .devices .dev-head button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .devices .dev-head button:hover { color: var(--text); }
@@ -480,6 +490,8 @@ const STYLE = `
     .bar { flex-wrap: nowrap; gap: 6px; padding-right: 6px; }
     .bar h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bar .live { flex: none; }
+    .mini { gap: 4px; }
+    .mini .mini-text { display: none; }
     .bar .icon-btn { width: 38px; height: 38px; flex: none; }
     select.m-only { display: block; }
     .time small { display: none; }
@@ -741,6 +753,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="bar">
             <h2 id="viewTitle">${esc(t.telegrams)}</h2>
             <span class="live list-only" id="live"><i></i><span></span></span>
+            <button class="mini" id="mini" hidden></button>
             <span class="sr-only" id="announce" role="status" aria-live="polite"></span>
             <span class="spacer"></span>
             <button class="icon-btn list-only" id="pause"></button>
@@ -835,6 +848,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (button) this._setView(button.dataset.view);
     });
     $("view").addEventListener("scroll", () => this._fadeTabs(), { passive: true });
+    // the table head sticks below the bar; the bar shows the gateways once their cards are out of view
+    new ResizeObserver(() => this.style.setProperty("--bar-height", `${this.shadowRoot.querySelector(".bar").offsetHeight}px`)).observe(this.shadowRoot.querySelector(".bar"));
+    new IntersectionObserver(([entry]) => {
+      this._cardsAway = !entry.isIntersecting && entry.boundingClientRect.top < 0; // scrolled off above
+      this._renderMini();
+    }).observe($("cards"));
+    $("mini").addEventListener("click", () => $("gatewaySection").scrollIntoView({ behavior: "smooth", block: "start" }));
     new ResizeObserver(() => this._fadeTabs()).observe($("view"));
     $("view").addEventListener("keydown", (e) => {
       const tabs = [...$("view").querySelectorAll("button:not([hidden])")];
@@ -1191,6 +1211,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("panel").dataset.view = view;
     // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
     $("gatewaySection").hidden = view === "senders" || view === "takeover";
+    this._renderMini();
     // export saves what the view shows: telegrams, or the sender list
     const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
     $("moreExport").textContent = view === "devices" ? this._t.exportDevicesShort : this._t.exportShort;
@@ -1665,6 +1686,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._replace(cards, `<div class="panel">${this._noGateway()}</div>`);
       return;
     }
+    this._renderMini();
     const now = this._now() / 1000;
     this._replace(cards, this._gateways
       .map((gw) => {
@@ -1690,6 +1712,25 @@ class EnOceanEltakoPanel extends HTMLElement {
         </article>`;
       })
       .join(""));
+  }
+
+  _renderMini() {
+    const mini = this.shadowRoot.getElementById("mini");
+    const show = this._cardsAway && this._gateways.length > 0 && !this.shadowRoot.getElementById("gatewaySection").hidden;
+    mini.hidden = !show;
+    if (!show) return;
+    const t = this._t;
+    const state = (gw) => (!gw.loaded ? ["", t.notLoaded] : gw.connected ? ["ok", t.connected] : gw.on_demand ? ["idle", t.onDemand] : ["bad", t.disconnected]);
+    const html = this._gateways
+      .map((gw) => {
+        const [cls, label] = state(gw);
+        const rate = gw.loaded ? ` · ${gw.per_minute ?? "–"} ${t.perMinute}` : "";
+        return `<span title="${esc(`${gw.title}: ${label}`)}"><i class="${cls}"></i><span class="mini-text">${esc(gw.title)}${esc(rate)}</span></span>`;
+      })
+      .join("");
+    if (mini.innerHTML !== html) mini.innerHTML = html;
+    mini.title = t.gateways;
+    mini.setAttribute("aria-label", `${t.gateways}: ${this._gateways.map((gw) => `${gw.title} ${state(gw)[1]}`).join(", ")}`);
   }
 
   _proxyLine(gw) {
