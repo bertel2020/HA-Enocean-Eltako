@@ -48,6 +48,12 @@ All notable changes to this project are documented here, in English and German
   are renamed on request (automations and dashboards are not adapted). Off by default. The
   gateway shows its prefix in the diagnostic sensor Entity ID prefix.
 
+#### Fixed
+
+- **Takeover:** two old buttons on one sender ID (left and right) no longer stop the takeover
+  halfway; the second is marked as listed twice. What was added before an error stays, with its
+  sender IDs saved and the gateway set up again.
+
 ### [0.1.6] - 2026-10-22
 
 #### Added
@@ -280,6 +286,12 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   IDs wie `light.eno_gw1_kuche`, mit einer eigenen Gateway-Nummer je Gateway; bestehende
   Entitäten werden auf Wunsch umbenannt (Automationen und Dashboards werden nicht angepasst).
   Standardmäßig aus. Das Gateway zeigt seinen Präfix im Diagnose-Sensor Entitäts-ID-Präfix.
+
+#### Behoben
+
+- **Übernahme:** zwei alte Taster auf derselben Sender-ID (links und rechts) brechen die
+  Übernahme nicht mehr mittendrin ab; der zweite gilt als doppelt. Was vor einem Fehler angelegt
+  wurde, bleibt, mit gespeicherten Sender-IDs und neu eingerichtetem Gateway.
 
 ### [0.1.6] - 2026-10-22
 

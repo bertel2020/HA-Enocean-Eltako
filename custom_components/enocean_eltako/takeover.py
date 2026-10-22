@@ -270,6 +270,13 @@ def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
                 _button(device, conf)
             else:
                 device.reason = "takeover_unsupported"
+    targets: set[int] = set()
+    for device in devices:  # two buttons on one sender, or a button on another device's ID
+        if device.model is None:
+            continue
+        if device.target_id in targets:
+            device.model, device.reason = None, "takeover_duplicate"
+        targets.add(device.target_id)
     return devices
 
 
@@ -588,32 +595,41 @@ async def async_take_over(
     pool = runtime.senders.pool
     old = old_entities(hass)
     carried = {d.target_id: carried_from(hass, old.get(d.device_id, [])) for d in devices}
+    existing = {s.unique_id for s in entry.subentries.values()}
     runtime.suspend_reload()
     skipped: list[str] = []
-    for device in devices:
-        senders: dict[str, int] = {}
-        for profile, sender in device.senders.items():
-            try:
-                pool.assign(sender, sender_owner(device.target_id, profile))
-            except SenderIdError as err:
-                skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
+    added = 0
+    try:
+        for device in devices:
+            if (unique_id := format_id(device.target_id)) in existing:
+                skipped.append(f"{unique_id} ({device.name}): takeover_exists")
                 continue
-            senders[profile] = sender
-        hass.config_entries.async_add_subentry(
-            entry,
-            ConfigSubentry(
-                data=MappingProxyType(subentry_data(device, senders)),
-                subentry_type=SUBENTRY_DEVICE,
-                title=device.name,
-                unique_id=format_id(device.target_id),
-            ),
-        )
-    await runtime.senders.async_save()
-    await hass.config_entries.async_reload(entry.entry_id)
+            existing.add(unique_id)
+            senders: dict[str, int] = {}
+            for profile, sender in device.senders.items():
+                try:
+                    pool.assign(sender, sender_owner(device.target_id, profile))
+                except SenderIdError as err:
+                    skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
+                    continue
+                senders[profile] = sender
+            hass.config_entries.async_add_subentry(
+                entry,
+                ConfigSubentry(
+                    data=MappingProxyType(subentry_data(device, senders)),
+                    subentry_type=SUBENTRY_DEVICE,
+                    title=device.name,
+                    unique_id=unique_id,
+                ),
+            )
+            added += 1
+    finally:  # what was added stays: its senders saved, the entry set up again
+        await runtime.senders.async_save()
+        await hass.config_entries.async_reload(entry.entry_id)
     done = 0
     if carry and entry.state is ConfigEntryState.LOADED:
         try:
             done = apply_carried(hass, entry, carried, carry)
         except Exception:
             _LOGGER.exception("Could not carry area and labels over from the old integration")
-    return TakeoverResult(len(devices), skipped, done)
+    return TakeoverResult(added, skipped, done)
