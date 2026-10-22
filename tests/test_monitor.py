@@ -325,6 +325,9 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
     )
     assert (result["start"], result["end"], result["size"]) == ("FF-B7-44-80", "FF-B7-44-FF", 128)
     assert result["free"] == 126
+    assert result["first"] == 0xFFB74480
+    assert result["next_free"] == "FF-B7-44-80"
+    assert result["unavailable"] == []
     assert result["rows"] == [
         {
             "id": "FF-B7-44-81",

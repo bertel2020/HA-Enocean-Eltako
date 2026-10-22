@@ -431,7 +431,15 @@ def ws_sender_pools(
                 "start": format_id(pool.start),
                 "end": format_id(pool.start + pool.size - 1),
                 "size": pool.size,
+                "first": pool.start,
                 "free": pool.free_count(),
+                "next_free": format_id(nxt) if (nxt := pool.next_free()) is not None else None,
+                # in the range but unusable without an allocation of ours (device IDs, bus aliases)
+                "unavailable": [
+                    s
+                    for s in range(pool.start, pool.start + pool.size)
+                    if pool.get(s) is None and not pool.is_free(s)
+                ],
                 "rows": _pool_rows(hass, store),
             }
         )

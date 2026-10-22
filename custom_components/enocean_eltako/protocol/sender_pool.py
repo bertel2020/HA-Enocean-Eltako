@@ -106,6 +106,9 @@ class SenderPool:
         if current is not None and current.state is SenderState.BLOCKED:
             del self._allocations[sender]
 
+    def is_free(self, sender: int) -> bool:
+        return self._is_free(sender)
+
     def _is_free(self, sender: int) -> bool:
         return sender not in self._allocations and not self._taken_elsewhere(sender)
 
