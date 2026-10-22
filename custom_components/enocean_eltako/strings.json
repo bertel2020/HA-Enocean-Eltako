@@ -101,6 +101,7 @@
       "sender_none": "Enter at least one sender ID.",
       "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
       "sender_pool_exhausted": "No free sender ID left.",
+      "no_buttons": "Choose at least one button.",
       "weather_no_source": "Choose at least one entity for the weather station.",
       "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34."
     },
@@ -581,6 +582,7 @@
             "sender_controller": "Sender ID: controller",
             "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
             "routing": "Moved by",
+            "buttons": "Buttons",
             "on_button": "On with",
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
@@ -692,6 +694,7 @@
             "sender_controller": "Sender ID: controller",
             "sender_direction_rocker": "Sender ID: Direction rocker (F6-02-01)",
             "routing": "Moved by",
+            "buttons": "Buttons",
             "on_button": "On with",
             "off_button": "Off with",
             "temperature_sensor": "Room temperature",
@@ -875,6 +878,7 @@
         "sender_blocked": "Blocked until the teach-out of the removed device is confirmed.",
         "sender_pool_exhausted": "No free sender ID left.",
         "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02.",
+        "no_buttons": "Choose at least one button.",
         "weather_no_source": "Choose at least one entity for the weather station.",
         "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34."
       },
