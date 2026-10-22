@@ -254,19 +254,20 @@ colour becomes the panel's accent. In a hidden browser tab it pauses its status 
 
 ### Devices view
 
-The **Devices** switch shows one line per sender instead of the telegram list: the latest
-values, when it was last heard, telegrams in the list and per minute, and a curve of the
-signal of its last telegrams with a note for weak reception (below -85 dBm), which a repeater
-or a better gateway position helps. For an unknown sender it adds the telegram type and what
-its telegrams tell: a teach-in profile or the profiles that could fit. **Telegrams** opens that
-sender's telegrams, **Add device** sets up an unknown sender. The list sorts by name, by when
-a sender was last heard, by the weakest signal or by the most telegrams. Telegram counts refer
-to the monitor's buffer (the newest 1,000 telegrams), not to the time since the start.
+The **Devices** switch shows one line per device instead of the telegram list: name and ID,
+the EEP, the area, the number of entities, the latest values, when it was last heard, telegrams
+in the list and per minute, and a curve of the signal of its last telegrams with a note for weak
+reception (below -85 dBm), which a repeater or a better gateway position helps. Your devices
+without a telegram in the monitor's buffer are listed too (**not heard**, with **silent** for a
+device whose usual interval has passed three times). For an unknown sender the list adds the
+telegram type and what its telegrams tell: a teach-in profile or the profiles that could fit.
+**Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender.
 
-Below, **Set up, not in the monitor** lists your devices with no telegram in that buffer, with
-when they were last heard (or "nothing heard since the start") and **silent** for a device
-whose usual interval has passed three times. Export here saves this list (both parts) as CSV;
-sending and clearing belong to the telegram list and are not offered here.
+A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
+search box, the gateway, **All devices / Set up / Unknown / Silent** and the area narrow the list,
+and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
+newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
+as CSV; sending and clearing belong to the telegram list and are not offered here.
 
 ### Send a telegram
 
