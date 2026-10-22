@@ -267,6 +267,7 @@ const STYLE = `
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
   .m-only { display: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .sendform { padding: 12px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 8%, transparent); }
   .sendform[hidden] { display: none; }
   .sendform h3 { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
@@ -627,8 +628,20 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _setLink(state) {
+    // screen readers hear a lost stream and its return, not the first connection on opening
+    if (state !== this._link && this._t) {
+      if (state === "offline") this._announce(this._t.offline);
+      else if (state === "live" && this._lost) this._announce(this._t.live);
+      this._lost = state === "offline" || (this._lost && state !== "live");
+    }
     this._link = state;
     this._renderBar();
+  }
+
+  _announce(text) {
+    // one live region that is always there (a hidden notice would not be read out when shown)
+    const region = this.shadowRoot.getElementById("announce");
+    if (region) region.textContent = text;
   }
 
   set narrow(narrow) {
@@ -686,6 +699,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="bar">
             <h2 id="viewTitle">${esc(t.telegrams)}</h2>
             <span class="live list-only" id="live"><i></i><span></span></span>
+            <span class="sr-only" id="announce" role="status" aria-live="polite"></span>
             <span class="spacer"></span>
             <button class="icon-btn list-only" id="pause"></button>
             <button class="icon-btn tg-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
@@ -1340,6 +1354,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     clearTimeout(this._noticeTimer);
     notice.hidden = !text;
     notice.querySelector("span").textContent = text;
+    if (text) this._announce(text);
     if (text && done) this._noticeTimer = setTimeout(() => this._notice(""), NOTICE_TIME);
   }
 
