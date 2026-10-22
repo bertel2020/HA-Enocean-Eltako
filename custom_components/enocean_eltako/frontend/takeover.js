@@ -60,6 +60,10 @@ export const TAKEOVER_STYLE = `
     /* phones: the main button gets the whole width */
     .takeover .actionbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "count all" "carry carry" "run run"; }
     .takeover .bar-run { justify-content: center; }
+    /* the steps one below the other: name and state on one line */
+    .takeover .steps { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .takeover .step { align-items: center; }
+    .takeover .step b { display: inline; margin-right: 6px; }
   }
 `;
 
