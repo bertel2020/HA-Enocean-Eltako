@@ -145,3 +145,38 @@ async def test_hanging_write_fails_and_queue_goes_on(monkeypatch) -> None:
     assert [t.data for t in written] == [b"\x30"]
     await q.stop()
     assert task.done()
+
+
+async def test_worker_cancelled_while_writing_resolves_the_job() -> None:
+    """Home Assistant runs run() as a task of its own and cancels it on unload."""
+    writing = asyncio.Event()
+
+    async def slow(_telegram: RadioTelegram) -> None:
+        writing.set()
+        await asyncio.sleep(10)
+
+    q = SendQueue(slow, delay=0)
+    future = q.submit(tg(1), expect=lambda _t: True)
+    worker = asyncio.get_running_loop().create_task(q.run())
+    await writing.wait()
+    await q.stop()  # the worker is not q._task: stop() cannot cancel it
+    worker.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await worker
+    assert await future == SendResult.CANCELLED
+
+
+async def test_stop_while_writing_does_not_retry() -> None:
+    release = asyncio.Event()
+
+    async def held(_telegram: RadioTelegram) -> None:
+        await release.wait()
+
+    q = SendQueue(held, delay=0)
+    future = q.submit(tg(1), expect=lambda _t: True)
+    worker = asyncio.get_running_loop().create_task(q.run())
+    await asyncio.sleep(0)
+    await q.stop()
+    release.set()
+    assert await asyncio.wait_for(future, 1) == SendResult.CANCELLED
+    worker.cancel()
