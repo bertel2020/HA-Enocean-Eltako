@@ -249,6 +249,10 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     assert status["senders"] == [
         {"id": "FF-B7-44-81", "device": "Licht Diele", "profile": "central"}
     ]
+    # configured devices for the panel's "not heard" list: nothing heard yet
+    assert status["radio_devices"] == [
+        {"id": "05-10-A2-B3", "device": "Licht Diele", "last_seen": None, "silent": False}
+    ]
 
     async def send(msg_id: int, **fields):
         base = {"type": "enocean_eltako/send", "entry_id": entry.entry_id, "rorg": "F6"}
