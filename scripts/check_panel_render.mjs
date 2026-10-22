@@ -72,6 +72,13 @@ for (const lang of ["en", "de"]) {
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 4);
+    root.querySelector("[data-teach]").click();
+    await settle();
+    expect("teach-in form open", root.getElementById("teachForm").hidden, false);
+    root.getElementById("teachForm").requestSubmit();
+    await settle();
+    expect("teach-in sent", fake.sent.some((m) => m.type === "enocean_eltako/teach_in" && m.device === "sub1" && m.profile === "central"), true);
+    expect("teach-in form closed", root.getElementById("teachForm").hidden, true);
     await view("senders");
     expect("pool map squares", root.querySelectorAll(".map button").length, 128);
     expect("sender ID rows", root.querySelectorAll(".sid-row").length, 2);

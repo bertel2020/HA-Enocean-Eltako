@@ -15,7 +15,8 @@ export function fakeHass(params = new URLSearchParams()) {
     devices: 3, free_senders: 120, hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
     radio_devices: [
-      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14" },
+      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14",
+        key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
       { id: "05-11-11-11", device: "Temperatur Bad", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
       { id: "05-22-22-22", device: "Fensterkontakt Küche", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
     ],
@@ -72,6 +73,8 @@ export function fakeHass(params = new URLSearchParams()) {
           return { rows: [], old_active: true };
         case "enocean_eltako/send":
           return { result: "sent" };
+        case "enocean_eltako/teach_in":
+          return { ute: false, window: 0 };
         default:
           throw { code: "unknown_command", message: msg.type };
       }

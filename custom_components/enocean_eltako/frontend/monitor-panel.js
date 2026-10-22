@@ -525,7 +525,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -807,6 +807,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             </div>
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
+          <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
           <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
@@ -905,6 +906,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       const page = e.target.closest("[data-device-page]");
       if (page) {
         this._navigate(`/config/devices/device/${page.dataset.devicePage}`);
+        return;
+      }
+      const teach = e.target.closest("[data-teach]");
+      if (teach) {
+        this._openTeach(teach.dataset.teach);
         return;
       }
       const dev = e.target.closest(".dev:not(.quiet)"); // a device not heard has no telegrams to show
@@ -1013,6 +1019,22 @@ class EnOceanEltakoPanel extends HTMLElement {
         this._toggleSend(false);
         $("send").focus();
       }
+    });
+    $("teachForm").addEventListener("click", (e) => {
+      if (e.target.closest("[data-teach-cancel]")) this._openTeach(null);
+    });
+    $("teachForm").addEventListener("change", (e) => {
+      if (e.target.id === "teachProfile") this._renderTeach();
+    });
+    $("teachForm").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this._openTeach(null);
+      }
+    });
+    $("teachForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      this._teachIn();
     });
     $("sendForm").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -2104,7 +2126,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const info = setup.get(r.sender);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
-        hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null,
+        hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
         eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
@@ -2114,7 +2136,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     for (const d of setup.values()) {
       if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
-        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null,
+        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
         eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
@@ -2206,6 +2228,48 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
   }
 
+  _openTeach(key) {
+    // the teach-in form above the device list, for one set-up device with sender IDs
+    const item = key && this._deviceItems().find((d) => d.devKey === key && d.senders.length);
+    this._teaching = item ? { key, gateway: item.gateway, name: item.name, teach: item.senders } : null;
+    this._renderTeach();
+    if (item) this.shadowRoot.getElementById("teachGo")?.focus();
+  }
+
+  _renderTeach() {
+    const t = this._t;
+    const form = this.shadowRoot.getElementById("teachForm");
+    const teaching = this._teaching;
+    form.hidden = !teaching;
+    if (!teaching) return;
+    const chosen = this.shadowRoot.getElementById("teachProfile")?.value;
+    const sender = teaching.teach.find((s) => s.profile === chosen) || teaching.teach[0];
+    const label = (s) => `${this._profile(s.profile)} · ${s.id}`;
+    const pick = teaching.teach.length > 1
+      ? `<label><span>${esc(t.teachSender)}</span><select class="select" id="teachProfile">${teaching.teach
+          .map((s) => `<option value="${esc(s.profile)}"${s === sender ? " selected" : ""}>${esc(label(s))}</option>`)
+          .join("")}</select></label>`
+      : `<label><span>${esc(t.teachSender)}</span><span class="mono">${esc(label(sender))}</span></label>`;
+    form.innerHTML = `<h3>${esc(t.teachTitle(teaching.name))}</h3><p>${esc(sender.ute ? t.teachUteSteps : t.teachSteps)}</p>
+      <div class="fields">${pick}</div>
+      <div class="buttons"><button class="chip" type="button" data-teach-cancel>${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="teachGo">${svg(ICON.teach)}${esc(t.teachSend)}</button></div>`;
+    form.dataset.profile = sender.profile;
+  }
+
+  async _teachIn() {
+    const t = this._t;
+    const teaching = this._teaching;
+    if (!teaching) return;
+    const form = this.shadowRoot.getElementById("teachForm");
+    try {
+      const result = await this._hass.callWS({ type: "enocean_eltako/teach_in", entry_id: teaching.gateway, device: teaching.key, profile: form.dataset.profile });
+      this._notice(result.ute ? t.teachArmed(result.window) : t.teachSent(teaching.name), !result.ute);
+      this._openTeach(null);
+    } catch (err) {
+      this._notice(t.teachFailed);
+    }
+  }
+
   _emptyState(icon, title, text = "", action = "", small = false) {
     return `<div class="empty${small ? " small" : ""}"><span class="ico">${svg(icon)}</span><b>${esc(title)}</b>${text ? `<span>${esc(text)}</span>` : ""}${action}</div>`;
   }
@@ -2255,9 +2319,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const only = d.name || d.id;
     // the device's page in Home Assistant: an icon only, the row has buttons enough
     const page = d.page ? `<button class="icon-btn" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
+    const teach = d.senders.length ? `<button class="icon-btn" data-teach="${esc(d.devKey)}" title="${esc(t.teachHint)}" aria-label="${esc(t.teachHint)}">${svg(ICON.teach)}</button>` : "";
     const acts = d.quiet
-      ? page
-      : `${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
+      ? teach + page
+      : `${teach}${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
           d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     return `<div class="dev${d.quiet ? " quiet" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}">
