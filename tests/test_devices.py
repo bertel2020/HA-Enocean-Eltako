@@ -1276,6 +1276,18 @@ async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gatew
     _push(server, 0x07, bytes.fromhex("00DC010A"), 0x05000024)  # nearer end: up again
     await asyncio.wait_for(calibrate, 5)
 
+    # the button: the run goes on after the press, bound to the entry
+    server.received.clear()
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_05-00-00-24_1_calibrate")},
+        blocking=True,
+    )
+    await asyncio.sleep(0.1)
+    assert full_up in bytes(server.received)
+    await hass.config_entries.async_unload(_entry.entry_id)  # cancels the waiting run
+
 
 @pytest.mark.parametrize(
     "gateway",

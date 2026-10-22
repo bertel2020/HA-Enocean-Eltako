@@ -74,6 +74,8 @@ All notable changes to this project are documented here, in English and German
 - **Takeover, restore entity IDs:** an old entity whose new counterpart is of another kind
   (for example sensor and binary sensor) keeps the new ID instead of failing the restore for
   all others.
+- **Covers, Calibrate button:** the run stops when the gateway is reloaded or removed, and a
+  failure (gateway offline) is logged as a warning instead of an unhandled error.
 
 ### [0.1.6] - 2026-10-22
 
@@ -335,6 +337,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Übernahme, Entitäts-IDs wiederherstellen:** eine alte Entität, deren neue Entsprechung
   eine andere Art ist (etwa Sensor und Binärsensor), behält die neue ID, statt das
   Wiederherstellen für alle anderen scheitern zu lassen.
+- **Rollläden, Schaltfläche Kalibrieren:** die Fahrt endet, wenn das Gateway neu geladen oder
+  entfernt wird, und ein Fehler (Gateway offline) steht als Warnung im Log statt als unbehandelter
+  Fehler.
 
 ### [0.1.6] - 2026-10-22
 

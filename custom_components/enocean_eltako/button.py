@@ -3,11 +3,13 @@ I9 virtual sensors: send now, virtual rocker buttons."""
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnOceanEltakoConfigEntry
@@ -23,6 +25,8 @@ ROCKER_BUTTONS = {"b0": 0x70, "b1": 0x50, "a0": 0x30, "a1": 0x10}
 SCENE_BUTTONS = ("a0", "a1", "b0", "b1")
 
 PARALLEL_UPDATES = 0
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -75,8 +79,19 @@ class CalibrateButton(EnOceanEntity, ButtonEntity):
         super().__init__(device, "calibrate")
 
     async def async_press(self) -> None:
-        if self._device.cover_entity is not None:
-            self.hass.async_create_task(self._device.cover_entity.async_calibrate())
+        """The run takes up to a full run and back: it goes on after the press returns, and
+        stops with the entry (reload, unload)."""
+        if self._device.cover_entity is not None and self.platform.config_entry is not None:
+            self.platform.config_entry.async_create_background_task(
+                self.hass, self._calibrate(), f"calibrate {self.entity_id}"
+            )
+
+    async def _calibrate(self) -> None:
+        assert self._device.cover_entity is not None
+        try:
+            await self._device.cover_entity.async_calibrate()
+        except HomeAssistantError as err:
+            _LOGGER.warning("Calibrating %s failed: %s", self._device.subentry.title, err)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False
