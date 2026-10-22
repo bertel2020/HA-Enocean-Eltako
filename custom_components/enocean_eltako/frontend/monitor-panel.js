@@ -495,13 +495,16 @@ const OLD_DEV_SORTS = { name: { key: "name", desc: false }, recent: { key: "hear
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
 
+const VIEWS = ["telegrams", "devices", "senders", "takeover"];
+
 function loadView() {
-  const fallback = { pageSize: 50, sort: { key: "time", desc: true }, devSort: { key: "name", desc: false }, filter: { ...NO_FILTER } };
+  const fallback = { view: "telegrams", pageSize: 50, sort: { key: "time", desc: true }, devSort: { key: "name", desc: false }, filter: { ...NO_FILTER } };
   try {
     const view = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const saved = view.filter || {};
     const text = (v) => (typeof v === "string" ? v : "");
     return {
+      view: VIEWS.includes(view.view) ? view.view : "telegrams",
       pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
       sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : fallback.sort,
       devSort: DEV_SORTERS[view.devSort?.key] ? { key: view.devSort.key, desc: !!view.devSort.desc } : OLD_DEV_SORTS[view.devSort] || fallback.devSort,
@@ -544,6 +547,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._freeing = null; // blocked sender ID waiting for its confirmation
     this._sidFolded = new Set(); // devices whose IDs are hidden in the Sender IDs view
     const view = loadView();
+    this._savedView = view.view; // shown once the gateways and the Takeover check are in
     this._filter = view.filter;
     this._sort = view.sort;
     this._devSort = view.devSort;
@@ -564,6 +568,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._drawn = new WeakMap(); // last HTML per container: unchanged status costs nothing
     this._stale = { list: false, cards: false, devices: false }; // redraw held back while text is selected
     this._onKey = (e) => this._keydown(e);
+    // a link into the open panel (same page, new query) applies its view and filters
+    this._onLocation = () => {
+      if (this._restored) this._applyUrl();
+    };
     // a click anywhere outside the "more" menu closes it
     this._onPointer = (e) => {
       const more = this.shadowRoot.querySelector(".more");
@@ -628,6 +636,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     document.addEventListener("selectionchange", this._onSelection);
     document.addEventListener("visibilitychange", this._onVisible);
     document.addEventListener("pointerdown", this._onPointer);
+    window.addEventListener("location-changed", this._onLocation);
     if (this._hass) this._watchConnection();
     if (this._hass && !this._unsub) this._subscribe();
   }
@@ -637,6 +646,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     document.removeEventListener("selectionchange", this._onSelection);
     document.removeEventListener("visibilitychange", this._onVisible);
     document.removeEventListener("pointerdown", this._onPointer);
+    window.removeEventListener("location-changed", this._onLocation);
     clearInterval(this._timer);
     this._timer = null;
     clearTimeout(this._tkTyping);
@@ -960,7 +970,12 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
     );
     await this._refreshStatus();
-    this._checkTakeover();
+    await this._checkTakeover();
+    if (!this._restored) {
+      this._restored = true;
+      const takeover = this.shadowRoot.querySelector('#view button[data-view="takeover"]');
+      this._applyUrl() || this._setView(this._savedView === "takeover" && takeover?.hidden ? "telegrams" : this._savedView);
+    }
     clearInterval(this._timer);
     this._timer = setInterval(() => {
       if (!document.hidden) this._refreshStatus();
@@ -1056,7 +1071,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _saveView() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ pageSize: this._pageSize, sort: this._sort, devSort: this._devSort, filter: this._filter }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ view: this._view, pageSize: this._pageSize, sort: this._sort, devSort: this._devSort, filter: this._filter }));
     } catch (err) {
       // private window or blocked storage: the view just is not remembered
     }
@@ -1107,6 +1122,22 @@ class EnOceanEltakoPanel extends HTMLElement {
       button.tabIndex = button.dataset.view === view ? 0 : -1;
     }
     this._render();
+    this._saveView();
+  }
+
+  _applyUrl() {
+    // a link into the panel: /enocean-eltako?view=devices&sender=05-10-A2-B3&gateway=<entry id>
+    // sets view and filters once; the query then leaves the address so a reload keeps the view
+    const params = new URLSearchParams(location.search);
+    if (!location.pathname.endsWith("/enocean-eltako") || !["view", "sender", "gateway"].some((k) => params.has(k))) return false;
+    const gateway = params.get("gateway");
+    if (gateway && this._gateways.some((g) => g.entry_id === gateway)) this._set("gateway", gateway);
+    if (params.has("sender")) this._setText(params.get("sender"));
+    const view = params.get("view");
+    const takeover = this.shadowRoot.querySelector('#view button[data-view="takeover"]');
+    this._setView(VIEWS.includes(view) && !(view === "takeover" && takeover?.hidden) ? view : params.has("sender") ? "telegrams" : this._view);
+    history.replaceState(history.state, "", location.pathname);
+    return true;
   }
 
   _setText(value) {
