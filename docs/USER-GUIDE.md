@@ -225,7 +225,7 @@ several gateways, the gateway.
 - Sent telegrams name the device and sender profile; a teach-in of an unknown sender shows its
   EEP.
 - Click a telegram for its raw data, status, destination and signal in dBm, or to show only
-  that sender. Unknown senders also offer **Add device** there to open the integration page, where they wait under **Add device → Discovered devices**.
+  that sender. **Open device** leads to the device's page in Home Assistant. Unknown senders also offer **Add device** there to open the integration page, where they wait under **Add device → Discovered devices**; a sender you hid from discovery is tagged **hidden** instead and left out of "unknown senders only".
 - The details also show the EEP (with its variant) and, for Eltako devices, the device type;
   what changed against the previous telegram of the sender (changed bytes and values); a
   command and the device's answer with the latency; the repeater hops and how many copies of
@@ -251,6 +251,14 @@ lost connection or a long time in a background tab it adds only what it missed. 
 display does not reset telegrams per minute, which come from the gateway. The panel follows
 the Home Assistant theme, light and dark; with a theme or primary colour of your own, that
 colour becomes the panel's accent. In a hidden browser tab it pauses its status requests.
+Times and numbers follow your profile (time format, browser or server time zone, number
+format); "x s ago" counts on the server's clock, so a browser clock that is off does not
+matter. Success messages disappear after 4 s, errors stay until closed; screen readers hear a
+lost connection and every message.
+
+The panel opens with the view you used last. A link like
+`/enocean-eltako?view=devices&sender=05-10-A2-B3` (optionally `&gateway=<entry ID>`) opens a
+view with that filter, for example from a dashboard.
 
 ### Devices view
 
@@ -261,7 +269,8 @@ reception (below -85 dBm), which a repeater or a better gateway position helps. 
 without a telegram in the monitor's buffer are listed too (**not heard**, with **silent** for a
 device whose usual interval has passed three times). For an unknown sender the list adds the
 telegram type and what its telegrams tell: a teach-in profile or the profiles that could fit.
-**Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender.
+**Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
+arrow icon opens the device's page in Home Assistant.
 
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
 search box, the gateway, **All devices / Set up / Unknown / Silent** and the area narrow the list,
@@ -275,8 +284,9 @@ The **Send a telegram** button sends a raw telegram (type, data, status as hex) 
 send queue, only from a sender ID that one of your devices already uses, to try out an
 actuator. The data field shows an example of the right length for the type (RPS and 1BS one
 byte, 4BS four, VLD one to fourteen); length and hex are checked before anything is sent, and
-Escape closes the form. Actuators react to it as to any telegram; the telegram appears in the
-list as sent.
+Escape closes the form. For a rocker telegram (RPS) **Press and release** (on by default) sends
+the release (data 00, status 20) right after, as a wall switch does. Actuators react to it as
+to any telegram; the telegram appears in the list as sent.
 
 ## Sender IDs
 

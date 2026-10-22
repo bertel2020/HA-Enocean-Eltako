@@ -234,8 +234,10 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
 - Gesendete Telegramme nennen Gerät und Sender-Profil; beim Lerntelegramm eines unbekannten
   Senders steht die EEP dabei.
 - Ein Klick auf ein Telegramm zeigt Rohdaten, Status, Ziel und Signal in dBm oder filtert auf
-  diesen Sender. Bei unbekannten Sendern öffnet dort **Gerät hinzufügen** die Integrationsseite,
-  wo sie unter **Gerät hinzufügen → Entdeckte Geräte** warten.
+  diesen Sender. **Gerät öffnen** führt zur Geräteseite in Home Assistant. Bei unbekannten
+  Sendern öffnet dort **Gerät hinzufügen** die Integrationsseite, wo sie unter **Gerät
+  hinzufügen → Entdeckte Geräte** warten; ein Sender, den du in der Discovery ausgeblendet hast,
+  ist stattdessen als **ausgeblendet** markiert und fehlt bei „Nur unbekannte Sender“.
 - Die Details zeigen außerdem die EEP (mit Variante) und bei Eltako-Geräten den Gerätetyp; was
   sich gegenüber dem vorigen Telegramm des Senders geändert hat (geänderte Bytes und Werte); einen
   Befehl und die Antwort des Geräts mit der Laufzeit; die Repeater-Stufen und wie viele Kopien
@@ -263,7 +265,14 @@ einem Verbindungsabbruch oder langer Zeit im Hintergrund-Tab ergänzt es nur, wa
 leeren setzt die Telegramme pro Minute nicht zurück, sie kommen vom Gateway. Das Panel folgt dem
 Home-Assistant-Design, hell und dunkel; mit einem eigenen Design oder einer eigenen Hauptfarbe
 wird diese Farbe zur Akzentfarbe des Panels. In einem verborgenen Browser-Tab pausiert es seine
-Statusabfragen.
+Statusabfragen. Zeiten und Zahlen folgen deinem Profil (Zeitformat, Zeitzone von Browser oder
+Server, Zahlenformat); „vor x s“ rechnet mit der Serveruhr, eine falsch gehende Browser-Uhr
+stört also nicht. Erfolgsmeldungen verschwinden nach 4 s, Fehler bleiben bis zum Schließen;
+Screenreader hören einen Verbindungsverlust und jede Meldung.
+
+Das Panel öffnet mit der zuletzt genutzten Ansicht. Ein Link wie
+`/enocean-eltako?view=devices&sender=05-10-A2-B3` (optional `&gateway=<Entry-ID>`) öffnet eine
+Ansicht mit diesem Filter, etwa von einem Dashboard aus.
 
 ### Ansicht Geräte
 
@@ -276,7 +285,7 @@ in der Liste (**nicht gehört**, und **still** bei einem Gerät, dessen übliche
 verstrichen ist). Bei einem unbekannten Sender kommen der Telegrammtyp dazu und was seine
 Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könnten.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
-unbekannten Sender ein.
+unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
 übernimmt das eine Auswahl. Die Suche, das Gateway, **Alle Geräte / Eingerichtet / Unbekannt /
@@ -291,8 +300,10 @@ Die Schaltfläche **Telegramm senden** schickt ein rohes Telegramm (Typ, Daten u
 Hex) über die Sendewarteschlange, nur von einer Sender-ID, die eines deiner Geräte schon
 nutzt, etwa um einen Aktor auszuprobieren. Das Datenfeld zeigt ein Beispiel in der richtigen
 Länge für den Typ (RPS und 1BS ein Byte, 4BS vier, VLD eins bis vierzehn); Länge und Hex werden
-vor dem Senden geprüft, Escape schließt das Formular. Aktoren reagieren darauf wie auf jedes
-Telegramm; es erscheint in der Liste als gesendet.
+vor dem Senden geprüft, Escape schließt das Formular. Bei einem Taster-Telegramm (RPS) sendet
+**Drücken und loslassen** (standardmäßig an) gleich danach das Loslassen (Daten 00, Status 20),
+wie ein Wandtaster. Aktoren reagieren darauf wie auf jedes Telegramm; es erscheint in der Liste
+als gesendet.
 
 ## Sender-IDs
 
