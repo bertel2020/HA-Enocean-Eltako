@@ -283,14 +283,15 @@ async def _ws(hass_ws_client, hass, msg_id: int, type_: str, **fields):
 
 
 async def test_takeover_status(hass: HomeAssistant, gateway, hass_ws_client, old_yaml) -> None:  # noqa: F811
-    assert (await _ws(hass_ws_client, hass, 1, "status"))["result"] == {"available": False}
+    nothing = {"available": False, "report": False, "closed": False}
+    assert (await _ws(hass_ws_client, hass, 1, "status"))["result"] == nothing
     old_yaml["config"] = {"eltako": OLD_CONFIG}
-    assert (await _ws(hass_ws_client, hass, 2, "status"))["result"] == {"available": True}
+    assert (await _ws(hass_ws_client, hass, 2, "status"))["result"]["available"] is True
     old_yaml["config"] = {}  # no configuration, but entities the old integration left behind
     old = MockConfigEntry(domain="eltako")
     old.add_to_hass(hass)
     _old_device(hass, old, "Licht Büro", "FF-C2-4A-8F", None)
-    assert (await _ws(hass_ws_client, hass, 3, "status"))["result"] == {"available": True}
+    assert (await _ws(hass_ws_client, hass, 3, "status"))["result"]["available"] is True
 
 
 async def test_takeover_errors(hass: HomeAssistant, gateway, old_yaml, hass_ws_client) -> None:  # noqa: F811
@@ -403,6 +404,45 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert reply["result"] == {"carried": 0}  # nothing left to do
     reply = await _ws(hass_ws_client, hass, 7, "carry", entry_id=entry.entry_id, carry=["x"])
     assert reply["error"]["code"] == "invalid_format"
+
+    # the report: what the device was in the old integration, kept in our own storage
+    stored = mapping["devices"]["FF-C2-4A-8F"]
+    assert stored["taken_at"] and stored["carried"] == ["area", "labels"]
+    assert stored["old"]["config"].startswith("light ")
+    assert stored["old"]["device_name"] == "Schreibtisch" and stored["old"]["area"] == "Büro"
+    assert stored["old"]["labels"] == ["matter_hub"]
+    reply = await _ws(hass_ws_client, hass, 8, "restore", entry_id=entry.entry_id)
+    assert reply["error"]["code"] == "old_present"  # the old IDs are still taken
+
+    # the old integration is deleted: its entities go, the report stays
+    old.mock_state(hass, ConfigEntryState.NOT_LOADED)
+    for entity in [e for e in registry.entities.values() if e.platform == "eltako"]:
+        registry.async_remove(entity.entity_id)
+    old_yaml["config"] = {}
+    mapping = (await _ws(hass_ws_client, hass, 9, "mapping", entry_id=entry.entry_id))["result"]
+    rows = {r["old"]: r for r in mapping["rows"]}
+    assert rows[old_light]["new"] == "light.licht_buro" and rows[old_light]["taken"]
+    assert mapping["old_entities"] is False
+
+    # the new entities get the old IDs back; the history goes on under them
+    reply = await _ws(hass_ws_client, hass, 10, "restore", entry_id=entry.entry_id)
+    assert reply["result"] == {"restored": 2, "blocked": 0}
+    assert registry.async_get(old_light).platform == "enocean_eltako"
+    assert registry.async_get(old_id).unique_id.endswith("enocean_id")
+    mapping = (await _ws(hass_ws_client, hass, 11, "mapping", entry_id=entry.entry_id))["result"]
+    rows = {r["old"]: r for r in mapping["rows"]}
+    assert rows[old_light]["restored"] and rows[old_light]["new"] == old_light
+    reply = await _ws(hass_ws_client, hass, 12, "restore", entry_id=entry.entry_id)
+    assert reply["result"] == {"restored": 0, "blocked": 0}
+
+    # closed: the view goes, the report stays
+    status = (await _ws(hass_ws_client, hass, 13, "status"))["result"]
+    assert status == {"available": True, "report": True, "closed": False}
+    await _ws(hass_ws_client, hass, 14, "close")
+    status = (await _ws(hass_ws_client, hass, 15, "status"))["result"]
+    assert status == {"available": False, "report": True, "closed": True}
+    old_yaml["config"] = {"eltako": OLD_CONFIG}  # a device not taken over yet: back again
+    assert (await _ws(hass_ws_client, hass, 16, "status"))["result"]["available"] is True
 
 
 async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant) -> None:

@@ -816,7 +816,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text dev-only" id="tkReport" hidden>${esc(t.tkReportButton)}</button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
           <div class="takeover" id="takeover"></div>
@@ -952,6 +952,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._setDevSort(key, dir === "desc");
     });
     $("devStatus").addEventListener("change", (e) => this._set("devStatus", e.target.value));
+    $("tkReport").addEventListener("click", () => this._openReport());
     $("weakHint").addEventListener("click", () => {
       this._set("devStatus", "weak");
       this._setDevSort("signal", false);

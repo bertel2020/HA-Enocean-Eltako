@@ -21,6 +21,15 @@ All notable changes to this project are documented here, in English and German
 - **Panel, Takeover:** Take over asks first: a confirmation shows the devices, entities and
   places to switch over afterwards, the chosen options and each old entity ID next to the one
   its new entity will probably get; only Take over now sets the devices up.
+- **Panel, Takeover:** four steps, Select, Carry over (the options as cards with their values,
+  and the preview of old and new IDs), Switch over (by place, by device with what each device
+  was in the old integration, and the report as a table) and Clean up (a checklist found from
+  the current state); Finish the takeover hides the tab.
+- **Takeover:** the mapping of old to new entity IDs is kept in the integration's own storage,
+  so the report stays readable after the old integration is deleted; Takeover report in the
+  Devices view opens it.
+- **Takeover:** Restore old IDs gives the new entities the old entity IDs back once the old
+  integration is deleted, so references go on working unchanged.
 - **Panel, Sender IDs:** the map of the pool uses the full width and labels every row with the
   last byte of its first ID.
 
@@ -245,6 +254,15 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Panel, Übernahme:** Übernehmen fragt zuerst nach: eine Bestätigung zeigt Geräte, Entitäten
   und die danach umzustellenden Fundstellen, die gewählten Optionen und jede alte Entity-ID neben
   der, die die neue Entität voraussichtlich bekommt; erst Jetzt übernehmen legt die Geräte an.
+- **Panel, Übernahme:** vier Schritte, Auswählen, Mitnehmen (die Optionen als Kacheln mit ihren
+  Werten, dazu die Vorschau alter und neuer IDs), Umstellen (nach Fundstelle, nach Gerät mit dem,
+  was jedes Gerät in der alten Integration war, und der Bericht als Tabelle) und Aufräumen (eine
+  Checkliste aus dem aktuellen Stand); Übernahme abschließen blendet den Tab aus.
+- **Übernahme:** die Zuordnung alter zu neuen Entity-IDs speichert die Integration selbst, der
+  Bericht bleibt deshalb nach dem Löschen der alten Integration abrufbar; Übernahme-Bericht in
+  der Ansicht Geräte öffnet ihn.
+- **Übernahme:** Alte IDs wiederherstellen gibt den neuen Entitäten die alten Entity-IDs zurück,
+  sobald die alte Integration gelöscht ist; Verweise laufen dann unverändert weiter.
 - **Panel, Sender-IDs:** die Karte des Pools nutzt die volle Breite und beschriftet jede Reihe
   mit dem letzten Byte ihrer ersten ID.
 
