@@ -21,6 +21,12 @@ All notable changes to this project are documented here, in English and German
   longer shows the first example of the kind (FSR61 for an FSR14). Without a chosen model it lists
   the possible models; the device page shows the EEP only.
 - **Weather station:** the example FWG14 is named FWG14MS.
+- **Devices view:** a set-up device's row opens in place and shows everything known of it: identity
+  (model, EEP, area, gateway, ID), radio (last heard, signal with minimum and maximum, repeater hops,
+  telegram count, expected interval), latest values, sender IDs with their teach-in kind, command
+  statistics (sent, confirmed, answer time), settings and entities with their states. Several rows
+  can be open; they stay up to date, and the list keeps its order while one is open. A click on the
+  row no longer jumps to the telegrams: the filter button of the row does that.
 - **Devices view:** the list always opens sorted by name; a column sort you click applies until the
   panel is closed and is no longer kept.
 - **Telegram monitor:** an open telegram pauses the list: new telegrams wait (the live badge shows
@@ -341,6 +347,13 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   mehr das erste Beispiel der Art (FSR61 bei einem FSR14). Ohne gewähltes Modell steht dort die
   Liste der möglichen Modelle, die Geräteseite zeigt nur das EEP.
 - **Wetterstation:** Das Beispiel FWG14 heißt FWG14MS.
+- **Geräteansicht:** Die Zeile eines eingerichteten Geräts klappt an Ort und Stelle auf und zeigt alles,
+  was wir kennen: Identität (Modell, EEP, Bereich, Gateway, ID), Funk (zuletzt gehört, Signal mit
+  Minimum und Maximum, Repeater-Stufen, Telegrammzahl, erwartetes Intervall), letzte Werte,
+  Sender-IDs mit Art des Einlernens, Befehlsstatistik (gesendet, bestätigt, Antwortzeit),
+  Einstellungen und Entitäten mit ihren Zuständen. Mehrere Zeilen können offen sein, sie bleiben
+  aktuell, und die Liste behält ihre Reihenfolge, solange eine offen ist. Ein Klick auf die Zeile
+  springt nicht mehr zu den Telegrammen: Das macht der Filter-Knopf der Zeile.
 - **Geräteansicht:** Die Liste öffnet immer nach Namen sortiert; eine angeklickte Spaltensortierung
   gilt, bis das Panel geschlossen wird, und wird nicht mehr gemerkt.
 - **Telegramm-Monitor:** Ein aufgeklapptes Telegramm hält die Liste an: neue Telegramme warten (die

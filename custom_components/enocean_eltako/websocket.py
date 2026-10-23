@@ -25,7 +25,14 @@ from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util.hass_dict import HassKey
 
 from .catalog import CATALOG, GENERIC_EEP
-from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
+from .const import (
+    CONF_BASE_ID,
+    CONF_BUS_GROUP,
+    CONF_MODEL,
+    CONF_MODEL_NAME,
+    CONF_PROXY_REPLAY,
+    DOMAIN,
+)
 from .device import UTE_WINDOW
 from .hub import async_get_hub
 from .protocol.dispatcher import ReceivedTelegram
@@ -53,6 +60,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_discover)
     websocket_api.async_register_command(hass, ws_send)
     websocket_api.async_register_command(hass, ws_teach_in)
+    websocket_api.async_register_command(hass, ws_device_details)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     async_setup_takeover_websocket(hass)
@@ -457,6 +465,97 @@ def ws_teach_in(
     device.teach_in(msg["profile"])
     ute = not device.model.sender_profile(msg["profile"]).teach_in
     connection.send_result(msg["id"], {"ute": ute, "window": UTE_WINDOW if ute else 0})
+
+
+# subentry data that is the device's identity or kept elsewhere, not a setting to show
+NOT_SETTINGS = ("schema", "model", "device_id", "senders", "eep", "custom", CONF_MODEL_NAME)
+
+
+def device_details(device: Any) -> dict[str, Any]:
+    """Everything known of a set-up device, for the panel's opened row in the devices view."""
+    hass, stats, model = device.hass, device.stats, device.model
+    entry = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, device.unique_prefix), device.entry.entry_id
+    )
+    registry = er.async_get(hass)
+    entities = []
+    for ent in er.async_entries_for_device(registry, entry.id) if entry else ():
+        state = hass.states.get(ent.entity_id)
+        entities.append(
+            {
+                "name": ent.name or ent.original_name or ent.entity_id,
+                "entity_id": ent.entity_id,
+                "state": state.state if state else None,
+                "unit": state.attributes.get("unit_of_measurement") if state else None,
+            }
+        )
+    entities.sort(key=lambda e: str(e["name"]).casefold())
+    commands = None
+    if model.actuator:
+        latencies = list(stats.latencies)
+        commands = {
+            "sent": stats.commands,
+            "confirmed": stats.confirmed,
+            "rate": stats.success_rate,
+            "latency_avg": round(sum(latencies) / len(latencies), 1) if latencies else None,
+            "latency_max": round(max(latencies), 1) if latencies else None,
+        }
+    gateway = device.entry
+    return {
+        "key": device.subentry.subentry_id,
+        "entry_id": gateway.entry_id,
+        "gateway_name": gateway.title,
+        "model": device._model_label,
+        "model_name": str(device.options.get(CONF_MODEL_NAME) or ""),
+        "models": list(model.models),
+        "eep": str(model.receive) if model.receive else None,
+        "eep_extra": [str(ref) for ref in model.receive_extra],
+        "category": model.category,
+        "signal": {"rssi": stats.rssi, "min": stats.rssi_min, "max": stats.rssi_max},
+        "repeat": stats.repeat_count,
+        "telegrams": stats.telegrams,
+        "interval": model.interval,
+        "silent": device.silent,
+        "senders": [
+            {
+                "profile": profile,
+                "id": format_id(sender),
+                "ute": not model.sender_profile(profile).teach_in,
+            }
+            for profile, sender in device.senders.items()
+        ],
+        "commands": commands,
+        "settings": {
+            k: v
+            for k, v in device.subentry.data.items()
+            if k not in NOT_SETTINGS and isinstance(v, str | int | float | bool)
+        },
+        "entities": entities,
+    }
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/device_details",
+        vol.Required("entry_id"): str,
+        vol.Required("device"): str,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_device_details(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel devices view: what is known of one set-up device (an opened row)."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    device = entry.runtime_data.devices.get(msg["device"])
+    if device is None:
+        connection.send_error(msg["id"], "unknown_device", "no such device")
+        return
+    connection.send_result(msg["id"], device_details(device))
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:

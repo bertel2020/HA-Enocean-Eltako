@@ -452,3 +452,75 @@ async def test_panel_registered_with_frontend(hass: HomeAssistant):
     assert kwargs["require_admin"] is True
     assert kwargs["module_url"].startswith("/enocean_eltako_static/monitor-panel.js?v=")
     assert panel.PANEL_FILE.is_file()
+
+
+async def test_websocket_device_details(hass: HomeAssistant, hass_ws_client) -> None:
+    """The devices view opens a row: what is known of the device, as the panel shows it."""
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 4,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                    "platform": "light",
+                    "invert": False,
+                    "model_name": "FSR14-4x",
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    key = next(iter(entry.subentries))
+    server.push(
+        esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x70, 0, 0, 0]), 0x0510A2B3, 0x30).encode()
+    )
+    await asyncio.sleep(0.05)
+    await hass.async_block_till_done()
+
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "enocean_eltako/device_details",
+            "entry_id": entry.entry_id,
+            "device": key,
+        }
+    )
+    details = (await client.receive_json())["result"]
+    assert details["key"] == key and details["gateway_name"] == "FAM-USB Keller"
+    assert details["model"] == "FSR14-4x" and details["model_name"] == "FSR14-4x"
+    assert "FSR14-2x" in details["models"]
+    assert details["eep"] == "M5-38-08:eltako" and details["telegrams"] == 1
+    assert details["senders"] == [{"profile": "central", "id": "FF-B7-44-81", "ute": False}]
+    assert details["commands"]["sent"] == 0  # an actuator: statistics, none yet
+    assert details["settings"] == {"platform": "light", "invert": False}  # identity left out
+    assert {e["entity_id"].split(".")[0] for e in details["entities"]} >= {"light"}
+
+    for msg_id, fields, code in (
+        (2, {"entry_id": "nope", "device": key}, "not_found"),
+        (3, {"entry_id": entry.entry_id, "device": "nope"}, "unknown_device"),
+    ):
+        await client.send_json({"id": msg_id, "type": "enocean_eltako/device_details", **fields})
+        reply = await client.receive_json()
+        assert not reply["success"] and reply["error"]["code"] == code
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()

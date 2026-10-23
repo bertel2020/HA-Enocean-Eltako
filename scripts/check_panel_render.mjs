@@ -92,6 +92,19 @@ for (const lang of ["en", "de"]) {
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 5);
+    // a set-up device opens in place, with what the server knows of it, and closes again
+    root.querySelector('.dev[data-dev="sub1"]').click();
+    await settle();
+    expect("device details open", root.querySelectorAll(".dev-detail").length, 1);
+    expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-B7-44-81"), true);
+    expect("device rows while one is open", root.querySelectorAll(".dev").length, 5);
+    root.querySelector('.dev[data-dev="sub2"]').click();
+    await settle();
+    expect("two device rows open", root.querySelectorAll(".dev-detail").length, 2);
+    root.querySelector('.dev[data-dev="sub2"] .expand').click();
+    root.querySelector('.dev[data-dev="sub1"] .expand').click();
+    await settle();
+    expect("device details closed", root.querySelectorAll(".dev-detail").length, 0);
     root.getElementById("weakHint").click();
     await settle();
     expect("weak-signal devices", root.querySelectorAll(".dev").length, 1);
