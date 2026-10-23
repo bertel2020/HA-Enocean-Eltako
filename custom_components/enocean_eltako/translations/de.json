@@ -1061,6 +1061,19 @@
       },
       "gateway_address": {
         "name": "IP-Adresse"
+      },
+      "cover_state": {
+        "name": "Zustand",
+        "state": {
+          "opening": "Fährt auf",
+          "closing": "Fährt zu",
+          "open": "Offen",
+          "closed": "Geschlossen",
+          "stopped": "Gestoppt"
+        }
+      },
+      "driven_time": {
+        "name": "Fahrzeit"
       }
     },
     "binary_sensor": {

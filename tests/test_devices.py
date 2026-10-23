@@ -602,6 +602,29 @@ async def test_cover_automation_mode(hass: HomeAssistant, gateway) -> None:
     assert hass.states.get(entity_id).state == "morning"
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("cover", "05-00-00-22", "Jalousie", routing="controller")]],
+    indirect=True,
+)
+async def test_cover_state_and_driven_time(hass: HomeAssistant, gateway) -> None:
+    """The FSB's confirmation telegrams: state (run started, end position, stopped), driven time."""
+    _entry, server = gateway
+    state_id = _entity(hass, "sensor", f"{BASE}_05-00-00-22_1_cover_state")
+    time_id = _entity(hass, "sensor", f"{BASE}_05-00-00-22_1_driven_time")
+    _push(server, 0x05, b"\x01", 0x05000022)  # started moving up
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "opening"
+    _push(server, 0x05, b"\x50", 0x05000022)  # lower end position
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "closed"
+    _push(server, 0x07, bytes.fromhex("0064010A"), 0x05000022)  # stopped: drove 10.0 s up
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "stopped"
+    driven = hass.states.get(time_id)
+    assert float(driven.state) == 10.0 and driven.attributes["direction"] == "up"
+
+
 async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     entry, _ = gateway
     result = await hass.config_entries.subentries.async_init(

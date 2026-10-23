@@ -259,6 +259,12 @@
       },
       "acceleration_z": {
         "default": "mdi:axis-z-arrow"
+      },
+      "cover_state": {
+        "default": "mdi:window-shutter-cog"
+      },
+      "driven_time": {
+        "default": "mdi:timer-outline"
       }
     },
     "select": {
