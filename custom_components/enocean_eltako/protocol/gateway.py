@@ -90,6 +90,7 @@ class Gateway:
         opener: Opener = open_connection,
         hello: bytes = b"",
         on_replayed: Callable[[RadioTelegram, float], None] | None = None,
+        on_replay_done: Callable[[], None] | None = None,
     ) -> None:
         self.protocol = protocol
         self.connection = connection
@@ -98,6 +99,7 @@ class Gateway:
         self._opener = opener
         self._hello = hello  # sent first after every connect (Device Proxy replay request)
         self._on_replayed = on_replayed
+        self._on_replay_done = on_replay_done  # after the last telegram of a replay block
         self._codec = _Codec(protocol)
         self._writer: asyncio.StreamWriter | None = None
         self._reader_task: asyncio.Task[None] | None = None
@@ -305,6 +307,8 @@ class Gateway:
                 elif self._on_telegram is not None:
                     self._on_telegram(telegram)
         _LOGGER.info("%s: %d telegrams replayed by the Device Proxy", self.connection, replayed)
+        if self._on_replay_done is not None:
+            self._on_replay_done()
         return rest, True
 
     def _log_outage(self, message: str, *args: object) -> None:

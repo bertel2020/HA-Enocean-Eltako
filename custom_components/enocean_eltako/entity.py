@@ -17,6 +17,11 @@ class EnOceanEntity(PrefixedEntityId):
     # E2: actuator states restored after a restart count as assumed until the device reports
     _assume_until_heard = False
     _heard = False
+    # a Device Proxy replay feeds in the changes of minutes within milliseconds: a pure state
+    # (a contact) is written once, when the replay is through, so the flips in between fire
+    # no triggers and a state that ends where it began fires none at all
+    _write_after_replay = False
+    _replay_write_pending = False
 
     def __init__(self, device: EnOceanDevice, key: str) -> None:
         self._device = device
@@ -27,6 +32,7 @@ class EnOceanEntity(PrefixedEntityId):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self.async_on_remove(self._device.add_listener(self._handle_values))
+        self.async_on_remove(self._device.add_replay_listener(self._replay_done))
         self._was_available = self.available
         self.async_on_remove(self._device.add_stats_listener(self._availability_changed))
 
@@ -54,6 +60,15 @@ class EnOceanEntity(PrefixedEntityId):
             self._heard = True
             changed = True
         if changed:
+            if self._write_after_replay and self._device.replaying:
+                self._replay_write_pending = True
+                return
+            self.async_write_ha_state()
+
+    @callback
+    def _replay_done(self) -> None:
+        if self._replay_write_pending:
+            self._replay_write_pending = False
             self.async_write_ha_state()
 
     def _apply(self, values: dict[str, Any]) -> bool:

@@ -122,6 +122,8 @@ class EnOceanDevice:
         self.started = time.time()
         self.silent = False  # E5: no telegram for 3x the expected interval
         self._listeners: list[Listener] = []
+        self._replay_listeners: list[Callable[[], None]] = []
+        self.replaying = False  # a Device Proxy replay is being fed in
         self._stat_listeners: list[Callable[[], None]] = []
         self.cover_entity: Any = None  # set by the cover entity (calibrate button, accuracy)
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
@@ -226,6 +228,16 @@ class EnOceanDevice:
     def add_listener(self, listener: Listener) -> Callable[[], None]:
         self._listeners.append(listener)
         return lambda: self._listeners.remove(listener)
+
+    def add_replay_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        """Called once a replay has been fed in (entities that wait for its end)."""
+        self._replay_listeners.append(listener)
+        return lambda: self._replay_listeners.remove(listener)
+
+    def end_replay(self) -> None:
+        self.replaying = False
+        for listener in list(self._replay_listeners):
+            listener()
 
     def add_stats_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self._stat_listeners.append(listener)
