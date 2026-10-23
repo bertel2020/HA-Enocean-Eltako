@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, replace
@@ -28,6 +29,7 @@ from homeassistant.const import (
     UnitOfRatio,
     UnitOfSpeed,
     UnitOfTemperature,
+    UnitOfTime,
     UnitOfVolume,
     UnitOfVolumeFlowRate,
 )
@@ -467,6 +469,11 @@ async def async_setup_entry(
         if device.model.kind in (GENERIC_EEP, CUSTOM):
             diagnostics.append(RawDataSensor(device))
         async_add_entities(diagnostics, config_subentry_id=subentry_id)
+        if device.model.kind == "cover":  # the actuator's confirmation telegrams
+            async_add_entities(
+                [CoverStateSensor(device), CoverDrivenTimeSensor(device)],
+                config_subentry_id=subentry_id,
+            )
         if Platform.SENSOR not in device.model.platforms:
             continue
         descriptions = model_descriptions(device)
@@ -763,6 +770,68 @@ class PositionAccuracySensor(_StatsSensor):
     def native_value(self) -> float | None:
         cover = self._device.cover_entity
         return round(cover.position.inaccuracy, 1) if cover is not None else None
+
+
+COVER_STATES = ["opening", "closing", "open", "closed", "stopped"]
+
+
+class CoverStateSensor(EnOceanEntity, SensorEntity, RestoreEntity):
+    """What the FSB confirmed last: a run started (up / down), an end position reached, or the
+    run stopped in between (its driven-time telegram)."""
+
+    _attr_translation_key = "cover_state"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = COVER_STATES
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "cover_state")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None and last.state in COVER_STATES:
+            self._attr_native_value = last.state
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        state = values.get("state") or ("stopped" if "driven_time" in values else None)
+        if state is None or state == self._attr_native_value:
+            return False
+        self._attr_native_value = state
+        return True
+
+
+class CoverDrivenTimeSensor(EnOceanEntity, SensorEntity, RestoreEntity):
+    """The FSB's report after a stop: how long the last run took, in which direction."""
+
+    _attr_translation_key = "driven_time"
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.SECONDS
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "driven_time")
+        self._direction: str | None = None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"direction": self._direction}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            with contextlib.suppress(ValueError):
+                self._attr_native_value = float(last.state)
+                self._direction = last.attributes.get("direction")
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        if "driven_time" not in values:
+            return False
+        changed = (values["driven_time"], values["direction"]) != (
+            self._attr_native_value,
+            self._direction,
+        )
+        self._attr_native_value = values["driven_time"]
+        self._direction = values["direction"]
+        return changed
 
 
 class _VirtualSensorEntity(EnOceanEntity, _WrittenOnChange):

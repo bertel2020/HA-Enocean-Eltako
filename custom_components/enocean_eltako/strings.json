@@ -1061,6 +1061,19 @@
       },
       "gateway_address": {
         "name": "IP address"
+      },
+      "cover_state": {
+        "name": "State",
+        "state": {
+          "opening": "Opening",
+          "closing": "Closing",
+          "open": "Open",
+          "closed": "Closed",
+          "stopped": "Stopped"
+        }
+      },
+      "driven_time": {
+        "name": "Driven time"
       }
     },
     "binary_sensor": {
