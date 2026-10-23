@@ -2012,7 +2012,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${copies ? `<div><dt>${esc(t.repeated)}</dt><dd>${esc(t.heardTimes(copies))}</dd></div>` : ""}
           ${r.candidates ? `<div class="wide"><dt>${esc(t.maybe)}</dt><dd class="mono">${esc(r.candidates.join(", "))}</dd></div>` : ""}
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
-          ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : ""}
+          ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : r.models?.length ? `<div class="wide"><dt>${esc(t.models)}</dt><dd>${esc(r.models.join(", "))}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
           <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}${

@@ -178,7 +178,7 @@ export const TEXT = {
     time: "Time",
     type: "Type",
     profile: "Sender profile",
-    eep: "EEP", model: "Device type",
+    eep: "EEP", model: "Model", models: "Possible models",
     on: "on",
     off: "off",
     fields: {
@@ -402,7 +402,7 @@ export const TEXT = {
     time: "Zeit",
     type: "Typ",
     profile: "Sender-Profil",
-    eep: "EEP", model: "Gerätetyp",
+    eep: "EEP", model: "Modell", models: "Mögliche Modelle",
     on: "an",
     off: "aus",
     fields: {

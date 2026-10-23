@@ -30,7 +30,14 @@ from .catalog import (
     DeviceModel,
     model_for,
 )
-from .const import CONF_DEVICE_ID, CONF_PROFILE, CONF_SENDER_ID, CONF_SENDERS, DOMAIN
+from .const import (
+    CONF_DEVICE_ID,
+    CONF_MODEL_NAME,
+    CONF_PROFILE,
+    CONF_SENDER_ID,
+    CONF_SENDERS,
+    DOMAIN,
+)
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -153,7 +160,13 @@ class EnOceanDevice:
     def _model_label(self) -> str:
         if self.model.group == GROUP_VIRTUAL:  # it sends as a profile, it is no Eltako model
             return f"{self.model.senders[0].eep}"
-        return self.model.examples.split(",")[0] if self.model.examples else self._model_name
+        if chosen := str(self.options.get(CONF_MODEL_NAME) or "").strip():
+            return chosen
+        examples = self.model.example_list
+        if not examples:
+            return self._model_name
+        # one example is the type; with several the EEP does not tell which one it is
+        return examples[0] if len(examples) == 1 else ""
 
     @property
     def _registry_model(self) -> str:
@@ -162,6 +175,8 @@ class EnOceanDevice:
         if self.model.receive is None:
             return label
         eep = self.model.receive.eep
+        if not label:
+            return eep
         return label if eep in label else f"{label} ({eep})"
 
     @property

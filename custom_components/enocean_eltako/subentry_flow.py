@@ -93,6 +93,7 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_EEP,
     CONF_MODEL,
+    CONF_MODEL_NAME,
     CONF_NAME,
     CONF_PROFILE,
     CONF_SENDER_ID,
@@ -457,6 +458,14 @@ class DeviceForm:
             schema[vol.Required(OPT_DEVICE_CLASS, default="window")] = SelectSelector(
                 SelectSelectorConfig(options=DEVICE_CLASSES, translation_key=OPT_DEVICE_CLASS)
             )
+        if model.models:  # the type is not told by the radio: optional, free text allowed
+            schema[vol.Optional(CONF_MODEL_NAME)] = SelectSelector(
+                SelectSelectorConfig(
+                    options=list(model.models),
+                    custom_value=True,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            )
         if OPT_INVERT in model.options:
             schema[vol.Required(OPT_INVERT, default=False)] = BooleanSelector()
         if OPT_LONG_PRESS in model.options:
@@ -584,6 +593,8 @@ class DeviceForm:
                 data[key] = user_input[key]
         if user_input.get(OPT_DEVICE_CLASS):
             data[OPT_DEVICE_CLASS] = user_input[OPT_DEVICE_CLASS]
+        if model_name := (user_input.get(CONF_MODEL_NAME) or "").strip():
+            data[CONF_MODEL_NAME] = model_name
         return data
 
 
@@ -926,7 +937,11 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         suggested = nest_sections(
             {
                 CONF_NAME: subentry.title,
-                **{k: data[k] for k in (*OPTION_KEYS, OPT_DEVICE_CLASS) if k in data},
+                **{
+                    k: data[k]
+                    for k in (*OPTION_KEYS, OPT_DEVICE_CLASS, CONF_MODEL_NAME)
+                    if k in data
+                },
                 **{sender_field(p): s for p, s in current.items()},
             }
         )

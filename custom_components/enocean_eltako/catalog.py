@@ -165,11 +165,16 @@ class DeviceModel:
     manufacturer: str = "Eltako"
     options: tuple[str, ...] = ()
     examples: str = ""  # models shown in the flow
+    models: tuple[str, ...] = ()  # models of this kind the user can pick (display only)
 
     @property
     def kind(self) -> str:
         """Behaviour key of the platforms: entries of other manufacturers share it."""
         return self.base or self.id
+
+    @property
+    def example_list(self) -> tuple[str, ...]:
+        return tuple(e.strip() for e in self.examples.split(",") if e.strip())
 
     @property
     def actuator(self) -> bool:
@@ -206,6 +211,17 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_STATUS_CHANNEL,
             ),
             examples="FSR61, FSR14, FL62, FSR71",
+            models=(
+                "FSR14-2x",
+                "FSR14-4x",
+                "FSR14SSR",
+                "FSR61",
+                "FSR61-230V",
+                "FSR61NP-230V",
+                "FSR71",
+                "FSR71NP-230V",
+                "FL62",
+            ),
         ),
         DeviceModel(
             "dimmer",
@@ -216,6 +232,7 @@ CATALOG: dict[str, DeviceModel] = {
             any_sender=True,
             options=(OPT_STATUS_REQUEST, OPT_ROCKER_ON),
             examples="FUD14, FUD61, FD62",
+            models=("FUD14", "FUD14/800W", "FUD61", "FUD61NP-230V", "FUD61NPN-230V", "FD62"),
         ),
         DeviceModel(
             "cover",
@@ -234,6 +251,15 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_ROCKER_ON,
             ),
             examples="FSB14, FSB61, FSB71, FJ62",
+            models=(
+                "FSB14",
+                "FSB61",
+                "FSB61NP-230V",
+                "FSB71",
+                "FJ62",
+                "FJ62NP-230V",
+                "FJ62/12-36V DC",
+            ),
         ),
         DeviceModel(
             "psc",
@@ -247,6 +273,7 @@ CATALOG: dict[str, DeviceModel] = {
             interval=600,  # power repeated every 10 min
             manufacturer="Permundo",
             examples="Permundo PSC132, PSC234",
+            models=("Permundo PSC132", "Permundo PSC234"),
         ),
         DeviceModel(
             "window_handle",
@@ -255,6 +282,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="buttons",
             options=(OPT_INVERT,),
             examples="FTKE, FFG7B",
+            models=("FTKE", "FFG7B"),
         ),
         DeviceModel(
             "contact",
@@ -263,6 +291,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="buttons",
             options=(OPT_DEVICE_CLASS, OPT_INVERT),
             examples="FTK, FTKB",
+            models=("FTK", "FTKB"),
         ),
         DeviceModel(
             "rocker",
@@ -271,6 +300,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="buttons",
             options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
             examples="F4T55E, FT55, FT4F",
+            models=("F4T55E", "FT55", "FT4F"),
         ),
         DeviceModel(
             "rocker_contact",
@@ -279,6 +309,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="buttons",
             options=(OPT_ON_BUTTON, OPT_OFF_BUTTON, OPT_DEVICE_CLASS, OPT_INVERT),
             examples="FTS14EM, FSM61, garage door controllers",
+            models=("FTS14EM", "FSM61"),
         ),
         DeviceModel(
             "meter",
@@ -287,6 +318,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="meters",
             interval=600,
             examples="FWZ12, FSDG14, DSZ14",
+            models=("FWZ12-65A", "FWZ14-65A", "FSDG14", "DSZ14DRS", "DSZ14WDRS"),
         ),
         DeviceModel(
             "gas_meter",
@@ -311,6 +343,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="sensors",
             interval=1800,
             examples="FAFT60, FFT65B",
+            models=("FAFT60", "FFT65B"),
         ),
         DeviceModel(
             "fbh",
@@ -319,6 +352,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="sensors",
             interval=1800,
             examples="FBH65, FBH65S, FABH65S",
+            models=("FBH65", "FBH65S", "FABH65S"),
         ),
         DeviceModel(
             "voc",
@@ -380,6 +414,7 @@ CATALOG: dict[str, DeviceModel] = {
             senders=(HEATING_CONTROLLER, COOLING_SWITCH),
             options=(OPT_TEMPERATURE_SENSOR, OPT_SEND_INTERVAL),
             examples="FHK14, FAE14, F4HK14, FHK61",
+            models=("FHK14", "F4HK14", "FAE14", "FHK61"),
         ),
         DeviceModel(
             "room_controller",
@@ -388,6 +423,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="climate",
             interval=1800,
             examples="FUTH, FTR65HS, FTAF55D",
+            models=("FUTH", "FTR65HS", "FTAF55D"),
         ),
         DeviceModel(
             "weather",
@@ -395,7 +431,8 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SENSOR, Platform.BINARY_SENSOR),
             category="sensors",
             interval=600,
-            examples="FWS61, FWG14",
+            examples="FWS61, FWG14MS",
+            models=("FWS61", "FWS61-24V DC", "FWG14MS"),
         ),
         # other manufacturers: same behaviour as the Eltako entry named in base
         DeviceModel(

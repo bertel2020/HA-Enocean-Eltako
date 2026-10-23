@@ -163,7 +163,7 @@
         "fbh": "Motion and brightness sensor (FBH65 …)",
         "co2": "CO2 sensor (FCO2TF65)",
         "room_controller": "Room controller (FUTH, FTR65HS …)",
-        "weather": "Weather station (FWS61, FWG14)",
+        "weather": "Weather station (FWS61, FWG14MS)",
         "psc": "Permundo PSC132 / PSC234 plug",
         "rocker_contact": "Contact via rocker telegrams (FTS14EM, garage door …)",
         "heating_actuator": "Heating actuator, Home Assistant controls (FHK14, FAE14 …)",
@@ -532,7 +532,7 @@
             "model_fbh": "FBH65",
             "model_co2": "FCO2TF65",
             "model_room_controller": "FUTH, FTR65HS",
-            "model_weather": "FWS61, FWG14",
+            "model_weather": "FWS61, FWG14MS",
             "model_rocker_contact": "FTS14EM, garage door",
             "model_heating_actuator": "FHK14, FAE14",
             "model_enocean_rocker": "NodOn, PEHA, Jung",
@@ -613,7 +613,8 @@
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
             "weather_brightness": "Brightness",
-            "run_time_tenths": "Run times in 100 ms"
+            "run_time_tenths": "Run times in 100 ms",
+            "model_name": "Model (optional)"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -643,7 +644,8 @@
             "weather_rain": "Optional, on = rain.",
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
-            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped."
+            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
+            "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
           },
           "sections": {
             "rocker_buttons": {
@@ -722,7 +724,8 @@
             "weather_wind": "Wind speed",
             "weather_rain": "Rain",
             "weather_brightness": "Brightness",
-            "run_time_tenths": "Run times in 100 ms"
+            "run_time_tenths": "Run times in 100 ms",
+            "model_name": "Model (optional)"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -748,7 +751,8 @@
             "weather_rain": "Optional, on = rain.",
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
-            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped."
+            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
+            "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
           },
           "sections": {
             "rocker_buttons": {

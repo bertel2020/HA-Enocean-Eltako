@@ -172,6 +172,8 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     )
     assert page is not None and event["ha_device"] == page.id
     assert event["values"] == {"on": True, "channel": 1}
+    assert "model" not in event  # the radio does not tell which of the FSRs it is
+    assert event["models"] == ["FSR61", "FSR14", "FL62", "FSR71"]
     assert event["fields"] == [  # no sensors: the raw values
         {"label": "on", "value": True, "unit": None},
         {"label": "channel", "value": 1, "unit": None},
@@ -267,7 +269,9 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     registered = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, "FF-B7-44-80_05-10-A2-B3"), entry.entry_id
     )
-    assert registered is not None and registered.model == "FSR61 (M5-38-08)"
+    assert (
+        registered is not None and registered.model == "M5-38-08"
+    )  # several FSRs: the EEP is all we know
     # configured devices for the panel's "not heard" list: nothing heard yet
     assert status["radio_devices"] == [
         {
@@ -276,7 +280,8 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "last_seen": None,
             "silent": False,
             "eep": "M5-38-08:eltako",
-            "model": "FSR61",
+            "model": "",
+            "models": ["FSR61", "FSR14", "FL62", "FSR71"],
             "category": "lighting",
             "area": None,
             "entities": 3,

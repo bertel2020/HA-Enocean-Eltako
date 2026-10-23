@@ -6,6 +6,22 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Added
+
+- **Device model:** a device of a kind that several Eltako models share (switching actuators,
+  dimmers, shutter actuators, heating actuators, meters ...) has an optional "Model" field: pick
+  FSR14-4x, FUD61NPN-230V ... or type another one. It is shown in the telegram monitor and on the
+  device page and changes no behaviour. New device data version (schema 4, migration included).
+
+#### Changed
+
+- **Telegram monitor:** the radio does not tell which model sent a telegram, so the monitor no
+  longer shows the first example of the kind (FSR61 for an FSR14). Without a chosen model it lists
+  the possible models; the device page shows the EEP only.
+- **Weather station:** the example FWG14 is named FWG14MS.
+
 ### [0.1.8] - 2026-10-22
 
 #### Changed
@@ -303,6 +319,23 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Hinzugefügt
+
+- **Gerätemodell:** Ein Gerät einer Art, die mehrere Eltako-Modelle teilen (Schaltaktoren,
+  Dimmer, Rollladenaktoren, Heizungsaktoren, Zähler ...), hat ein optionales Feld „Modell": FSR14-4x,
+  FUD61NPN-230V ... wählen oder ein anderes eintippen. Es erscheint im Telegramm-Monitor und auf
+  der Geräteseite und ändert kein Verhalten. Neue Version der Gerätedaten (Schema 4, Migration
+  inklusive).
+
+#### Geändert
+
+- **Telegramm-Monitor:** Das Funktelegramm verrät das Modell nicht, deshalb zeigt der Monitor nicht
+  mehr das erste Beispiel der Art (FSR61 bei einem FSR14). Ohne gewähltes Modell steht dort die
+  Liste der möglichen Modelle, die Geräteseite zeigt nur das EEP.
+- **Wetterstation:** Das Beispiel FWG14 heißt FWG14MS.
 
 ### [0.1.8] - 2026-10-22
 

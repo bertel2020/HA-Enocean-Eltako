@@ -36,8 +36,9 @@ export function fakeHass(params = new URLSearchParams()) {
     devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
     radio_devices: [
-      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14",
+      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [],
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
+      { id: "05-10-A2-B4", device: "Dimmer Flur", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [] },
       { id: "05-11-11-11", device: "Temperatur Bad", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
       { id: "05-22-22-22", device: "Fensterkontakt Küche", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
     ],
@@ -49,7 +50,8 @@ export function fakeHass(params = new URLSearchParams()) {
   const at = (s) => new Date(Date.now() - s * 1000).toISOString();
   const history = empty ? [] : [
     { time: at(50), dir: "tx", sender: "FF-B7-44-81", rorg: "F6", data: "70", status: "30", destination: "FF-FF-FF-FF", dbm: null, gateway: "gw1", gateway_name: "FAM-USB Keller", device: "Licht Diele", device_key: "sub1", profile: "central" },
-    { time: at(49.8), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", destination: "FF-FF-FF-FF", dbm: -62, gateway: "gw1", gateway_name: "FAM-USB Keller", device: "Licht Diele", ha_device: "dev123", device_key: "sub1", eep: "M5-38-08:eltako", model: "FSR14", fields: [{ label: "on", value: true }] },
+    { time: at(49.8), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", destination: "FF-FF-FF-FF", dbm: -62, gateway: "gw1", gateway_name: "FAM-USB Keller", device: "Licht Diele", ha_device: "dev123", device_key: "sub1", eep: "M5-38-08:eltako", model: "FSR14-4x", fields: [{ label: "on", value: true }] },
+    { time: at(30), dir: "rx", sender: "05-10-A2-B4", rorg: "A5", data: "0264A808", status: "00", destination: "FF-FF-FF-FF", dbm: -70, gateway: "gw1", gateway_name: "FAM-USB Keller", device: "Dimmer Flur", ha_device: "dev124", device_key: "sub2", eep: "A5-38-08:eltako", models: ["FUD14", "FUD61", "FD62"], fields: [{ label: "dim", value: 50 }] },
     { time: at(20), dir: "rx", sender: "01-99-88-77", rorg: "A5", data: "0064A808", status: "00", destination: "FF-FF-FF-FF", dbm: -88, gateway: "gw1", gateway_name: "FAM-USB Keller", candidates: ["A5-02-05", "A5-10-06"] },
   ];
   const pool = {

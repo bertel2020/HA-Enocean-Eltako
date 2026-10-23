@@ -7,6 +7,7 @@ DOMAIN: Final = "enocean_eltako"
 CONF_MODEL: Final = "model"
 CONF_EEP: Final = "eep"  # device added by EEP: its "A5-04-02:std" reference
 CONF_CUSTOM: Final = "custom"  # I8: id of the user's device definition
+CONF_MODEL_NAME: Final = "model_name"  # the device's type as the user picked it, display only
 # Connection dict under "device": HA's usb integration finds the port at ("device", "path")
 # and shows which entry uses it.
 CONF_DEVICE: Final = "device"
@@ -39,4 +40,4 @@ CONF_SENDER_ID: Final = "sender_id"
 CONF_SENDERS: Final = "senders"  # [{"profile": "controller", "sender_id": "FF-B7-44-81"}, ...]
 CONF_PROFILE: Final = "profile"
 CONF_NAME: Final = "name"
-SUBENTRY_SCHEMA: Final = 3  # version of the device subentry data (subentries have none)
+SUBENTRY_SCHEMA: Final = 4  # version of the device subentry data (subentries have none)
