@@ -200,6 +200,13 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             device = entry.data.get(CONF_DEVICE, {})
             if device.get("type") == "tcp" and device.get(CONF_HOST) == host:
                 return self.async_abort(reason="already_configured")
+        # the MGW-ETH serves one connection: one the Device Proxy app holds is not offered again
+        if any(
+            e.data.get(CONF_MODEL) == model.key
+            and (e.options.get(CONF_PROXY_REPLAY) or CONF_PROXY_STATUS_PORT in e.data)
+            for e in self._async_current_entries(include_ignore=False)
+        ):
+            return self.async_abort(reason="already_configured")
         # until the base ID is known, the host identifies the discovery (and its "ignore")
         await self.async_set_unique_id(f"zeroconf_{host}")
         self._abort_if_unique_id_configured()

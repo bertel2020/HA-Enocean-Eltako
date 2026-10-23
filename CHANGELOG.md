@@ -6,6 +6,13 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Fixed
+
+- **PioTek MGW-ETH behind the Device Proxy:** the gateway is no longer offered again as discovered on its own address
+  once an MGW-ETH is set up through the app (it serves one connection only, the app holds it).
+
 ### [1.0.1] - 2026-10-23
 
 #### Fixed
@@ -447,6 +454,13 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Behoben
+
+- **PioTek MGW-ETH hinter dem Device Proxy:** Das Gateway wird nicht mehr unter seiner eigenen Adresse als entdeckt
+  angeboten, sobald ein MGW-ETH über die App eingerichtet ist (es bedient nur eine Verbindung, die hält die App).
 
 ### [1.0.1] - 2026-10-23
 
