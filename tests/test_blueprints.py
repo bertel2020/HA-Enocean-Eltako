@@ -20,5 +20,27 @@ def test_blueprint_is_valid(path: Path) -> None:
     assert blueprint.inputs
 
 
-def test_five_blueprints() -> None:
-    assert len(BLUEPRINTS) == 5
+def test_seven_blueprints() -> None:
+    assert len(BLUEPRINTS) == 7
+
+
+def _strings(node: object):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for value in node.values():
+            yield from _strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _strings(value)
+
+
+@pytest.mark.parametrize("path", BLUEPRINTS, ids=lambda p: p.stem)
+def test_blueprint_templates_parse(path: Path) -> None:
+    """Every template in a blueprint is valid Jinja (the rest only shows at runtime)."""
+    from jinja2 import Environment
+
+    data = load_yaml(path)
+    for text in _strings({k: v for k, v in data.items() if k != "blueprint"}):
+        if "{{" in text or "{%" in text:
+            Environment().parse(text)

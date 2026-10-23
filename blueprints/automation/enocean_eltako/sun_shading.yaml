@@ -129,7 +129,7 @@ variables:
   active: >-
     {% set ns = namespace(covers=[]) %}
     {% for cover in covers %}
-      {% set modes = device_entities(device_id(cover)) | select('match', '^select\.') | map('states') | list %}
+      {% set modes = device_entities(device_id(cover)) | select('match', '^select[.]') | map('states') | list %}
       {% if 'off' not in modes %}{% set ns.covers = ns.covers + [cover] %}{% endif %}
     {% endfor %}
     {{ ns.covers }}

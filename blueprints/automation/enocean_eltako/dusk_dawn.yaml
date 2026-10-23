@@ -1,0 +1,191 @@
+blueprint:
+  name: EnOcean Eltako - covers and lights at dusk and dawn
+  description: >-
+    In the evening, when it has been dark for a while, the chosen covers close and
+    the lights switch on; in the morning, when it has been bright for a while, the
+    covers open and the lights switch off. A cover's "Automation mode" decides: Evening
+    and Both close it in the evening, Morning and Both open it in the morning, Off
+    leaves it alone. Comfort only: wind, rain and frost protection stay in the actuator.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/dusk_dawn.yaml
+  input:
+    dawn_sensor:
+      name: Dawn sensor
+      description: The weather station's "Dawn" sensor.
+      selector:
+        entity:
+          filter:
+            - integration: enocean_eltako
+              domain: sensor
+              device_class: illuminance
+    covers:
+      name: Covers
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: enocean_eltako
+              domain: cover
+    lights:
+      name: Lights
+      description: Switched on in the evening and off in the morning.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          domain:
+            - light
+            - switch
+    dark_below:
+      name: Dark below
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 999
+          step: 1
+          unit_of_measurement: lx
+          mode: box
+    bright_above:
+      name: Bright above
+      description: Higher than "Dark below", so nothing flutters around the limit.
+      default: 40
+      selector:
+        number:
+          min: 1
+          max: 999
+          step: 1
+          unit_of_measurement: lx
+          mode: box
+    delay:
+      name: Dark or bright for
+      default:
+        minutes: 10
+      selector:
+        duration: {}
+    evening_not_before:
+      name: Evening not before
+      description: A dark storm cloud at noon does not close anything.
+      default: "15:00:00"
+      selector:
+        time: {}
+    morning_not_before:
+      name: Morning not before
+      description: It is bright early in summer; the covers open at this time at the earliest.
+      default: "06:00:00"
+      selector:
+        time: {}
+    close_position:
+      name: Position in the evening
+      description: 0 = closed, 100 = open.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+    open_position:
+      name: Position in the morning
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+
+mode: queued
+max_exceeded: silent
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input dawn_sensor
+    below: !input dark_below
+    for: !input delay
+    id: evening
+  - trigger: time
+    at: !input evening_not_before
+    id: evening
+  - trigger: numeric_state
+    entity_id: !input dawn_sensor
+    above: !input bright_above
+    for: !input delay
+    id: morning
+  - trigger: time
+    at: !input morning_not_before
+    id: morning
+
+variables:
+  covers: !input covers
+  lights: !input lights
+  dawn_sensor: !input dawn_sensor
+  dark_below: !input dark_below
+  bright_above: !input bright_above
+  close_position: !input close_position
+  open_position: !input open_position
+  evening_not_before: !input evening_not_before
+  morning_not_before: !input morning_not_before
+  # the covers by their "Automation mode" (a select of the same device)
+  due: >-
+    {% set ns = namespace(evening=[], morning=[]) %}
+    {% for cover in covers %}
+      {% set modes = device_entities(device_id(cover)) | select('match', '^select[.]') | map('states') | list %}
+      {% if 'evening' in modes or 'both' in modes %}{% set ns.evening = ns.evening + [cover] %}{% endif %}
+      {% if 'morning' in modes or 'both' in modes %}{% set ns.morning = ns.morning + [cover] %}{% endif %}
+    {% endfor %}
+    {{ {'evening': ns.evening, 'morning': ns.morning} }}
+  light: "{{ states(dawn_sensor) | float(-1) }}"
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: evening
+          - condition: time
+            after: !input evening_not_before
+          - condition: template
+            value_template: "{{ 0 <= light < dark_below | float }}"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ due.evening | length > 0 }}"
+            then:
+              - action: cover.set_cover_position
+                target:
+                  entity_id: "{{ due.evening }}"
+                data:
+                  position: "{{ close_position }}"
+          - if:
+              - condition: template
+                value_template: "{{ lights | length > 0 }}"
+            then:
+              - action: homeassistant.turn_on
+                target:
+                  entity_id: "{{ lights }}"
+      - conditions:
+          - condition: trigger
+            id: morning
+          - condition: time
+            after: !input morning_not_before
+            before: !input evening_not_before
+          - condition: template
+            value_template: "{{ light > bright_above | float }}"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ due.morning | length > 0 }}"
+            then:
+              - action: cover.set_cover_position
+                target:
+                  entity_id: "{{ due.morning }}"
+                data:
+                  position: "{{ open_position }}"
+          - if:
+              - condition: template
+                value_template: "{{ lights | length > 0 }}"
+            then:
+              - action: homeassistant.turn_off
+                target:
+                  entity_id: "{{ lights }}"

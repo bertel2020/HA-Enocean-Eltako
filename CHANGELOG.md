@@ -16,6 +16,11 @@ All notable changes to this project are documented here, in English and German
 - **Blueprint "Shade covers by the sun":** moves covers to a shading position when the sun on one side stays strong
   enough, and back when it has been weak for a while; optionally only when it is warm; leaves covers alone whose
   "Automation mode" is Off and covers you moved by hand.
+- **Blueprint "Covers and lights at dusk and dawn":** closes covers and switches lights on when it has been dark for a
+  while, opens and switches off in the morning; a cover's "Automation mode" decides (Evening and Both in the evening,
+  Morning and Both in the morning, Off never), with earliest times so a storm cloud at noon closes nothing.
+- **Blueprint "Weather warning with a window open":** a notice (any action you choose) when it starts to rain or blows
+  while a window is open, and when a window is opened in bad weather. It moves nothing.
 
 #### Changed
 
@@ -418,6 +423,11 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Blueprint „Rollläden nach der Sonne beschatten“:** fährt Rollläden in eine Beschattungsposition, wenn die Sonne auf einer
   Seite stark genug bleibt, und zurück, wenn sie eine Weile schwach war; auf Wunsch nur bei Wärme; lässt Rollläden in Ruhe,
   deren „Automatikmodus“ Aus ist, und solche, die du von Hand bewegt hast.
+- **Blueprint „Rollläden und Licht bei Dämmerung“:** schließt Rollläden und schaltet Licht ein, wenn es eine Weile dunkel
+  ist, öffnet und schaltet morgens aus; der „Automatikmodus“ eines Rollladens entscheidet (Abends und Beides am Abend,
+  Morgens und Beides am Morgen, Aus nie), mit frühesten Zeiten, damit eine Gewitterwolke am Mittag nichts schließt.
+- **Blueprint „Wetterwarnung bei offenem Fenster“:** eine Meldung (eine Aktion deiner Wahl), wenn es zu regnen beginnt oder
+  weht, während ein Fenster offen ist, und wenn ein Fenster bei schlechtem Wetter geöffnet wird. Es bewegt nichts.
 
 #### Geändert
 

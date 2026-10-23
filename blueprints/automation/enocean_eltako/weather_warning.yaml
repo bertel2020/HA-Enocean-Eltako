@@ -1,0 +1,93 @@
+blueprint:
+  name: EnOcean Eltako - weather warning with a window open
+  description: >-
+    Sends a notice when it starts to rain or the wind picks up while a window is open,
+    and when a window is opened while it rains or blows. The notice is whatever action
+    you choose (a push to your phone, a speech output ...); it gets the variables
+    "message", "reason" (rain, wind or window) and "windows" (the names of the open
+    windows). Comfort only: it moves nothing, protection stays in the actuators.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/weather_warning.yaml
+  input:
+    windows:
+      name: Window handles and contacts
+      selector:
+        entity:
+          multiple: true
+          domain: binary_sensor
+          device_class:
+            - window
+            - door
+            - opening
+    rain:
+      name: Rain
+      description: The weather station's "Rain" (or "Rain recently"), or any other rain sensor.
+      selector:
+        entity:
+          domain: binary_sensor
+    wind:
+      name: Wind speed (optional)
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: wind_speed
+    wind_above:
+      name: Wind above
+      description: In the unit the wind sensor shows (see its display unit).
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 200
+          step: 1
+          mode: box
+    notify:
+      name: Notice
+      description: What to do. Use {{ message }} in it.
+      selector:
+        action: {}
+
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input rain
+    to: "on"
+    id: rain
+  - trigger: template
+    value_template: "{{ wind != '' and states(wind) | float(0) > wind_above | float }}"
+    id: wind
+  - trigger: state
+    entity_id: !input windows
+    to: "on"
+    id: window
+
+trigger_variables:
+  wind: !input wind
+  wind_above: !input wind_above
+
+variables:
+  windows: !input windows
+  rain: !input rain
+  wind: !input wind
+  wind_above: !input wind_above
+  blowing: "{{ wind != '' and states(wind) | float(0) > wind_above | float }}"
+  raining: "{{ is_state(rain, 'on') }}"
+  open_windows: "{{ windows | select('is_state', 'on') | list }}"
+  names: "{{ open_windows | map('state_attr', 'friendly_name') | list }}"
+  reason: >-
+    {% if trigger.id == 'rain' %}rain{% elif trigger.id == 'wind' %}wind{% else %}window{% endif %}
+  message: >-
+    {% if reason == 'rain' %}It is raining and a window is open: {{ names | join(', ') }}.
+    {% elif reason == 'wind' %}It is windy and a window is open: {{ names | join(', ') }}.
+    {% else %}A window was opened while the weather is bad: {{ names | join(', ') }}.{% endif %}
+
+conditions:
+  - condition: template
+    value_template: "{{ open_windows | length > 0 and (raining or blowing) }}"
+
+actions:
+  - choose: []
+    default: !input notify
