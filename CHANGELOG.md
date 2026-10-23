@@ -6,7 +6,21 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
-### [Unreleased]
+### [1.0.0] - 2026-10-23
+
+#### Added
+
+- **Sender IDs view:** a search (device name, profile, ID with or without dashes, decimal), chips for All / Assigned /
+  Blocked and a sort (blocked first, name, sender ID). **Free all** frees every blocked ID the list shows, after a
+  confirmation.
+- **Device Proxy discovery:** an app that names the model of a gateway in its announcement (`model`, for example
+  `fam_usb`) spares the model question; without it the model is still guessed from the name.
+
+#### Changed
+
+- **Panel filters:** the device status is a row of chips instead of a dropdown in the filter menu, and "Unknown senders
+  only" is a toggle beside RX / TX in the telegram view. **Filter** only shows in the devices view when there are several
+  gateways or areas to choose from.
 
 #### Fixed
 
@@ -427,7 +441,21 @@ First version of the integration.
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
-### [Unreleased]
+### [1.0.0] - 2026-10-23
+
+#### Hinzugefügt
+
+- **Ansicht Sender-IDs:** eine Suche (Gerätename, Profil, ID mit oder ohne Bindestriche, dezimal), Chips für Alle /
+  Zugewiesen / Gesperrt und eine Sortierung (Gesperrte zuerst, Name, Sender-ID). **Alle freigeben** gibt jede gesperrte
+  ID frei, die die Liste zeigt, nach einer Rückfrage.
+- **Entdeckung über den Device Proxy:** Nennt die App das Modell eines Gateways in ihrer Meldung (`model`, zum Beispiel
+  `fam_usb`), entfällt die Frage nach dem Modell; ohne bleibt es beim Erraten am Namen.
+
+#### Geändert
+
+- **Filter im Panel:** Der Gerätestatus ist eine Chip-Reihe statt eines Dropdowns im Filtermenü, und „Nur unbekannte
+  Sender“ ist ein Schalter neben RX / TX in der Telegrammansicht. **Filter** erscheint in der Geräteansicht nur, wenn
+  mehrere Gateways oder Bereiche zur Auswahl stehen.
 
 #### Behoben
 
