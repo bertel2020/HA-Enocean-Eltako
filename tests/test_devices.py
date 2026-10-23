@@ -302,6 +302,11 @@ async def test_reconfigure_sections(hass: HomeAssistant, gateway) -> None:
     assert wall["wall_switch"] == {"suggested_value": "FE-D8-12-34"}
     rocker = {str(k): k.description for k in sections["rocker_buttons"].schema.schema}
     assert rocker["rocker_on_button"] == {"suggested_value": "b0"}
+    rocker_key = next(k for k in schema if str(k) == "rocker_buttons")
+    assert rocker_key.default() == {
+        "rocker_on_button": "b0",
+        "rocker_off_button": "b1",
+    }  # prefilled
 
     user_input = {
         "name": "Licht Keller",
