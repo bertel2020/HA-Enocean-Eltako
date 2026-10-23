@@ -238,6 +238,10 @@ const STYLE = `
   .chip.set { padding: 0 6px 0 10px; color: var(--text); background: var(--accent-soft); border-color: transparent; }
   .chip.set svg { width: 14px; height: 14px; color: var(--muted); }
   .chip.set:hover svg { color: var(--text); }
+  .filters:has(+ .statusrow) { border-bottom: 0; }
+  .statusrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
+  .statusrow .chip { min-height: 32px; color: var(--text); }
+  .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); }
   /* the filter menu */
   .chip.on { border-color: var(--accent); }
   #filterBtn[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-hover); }
@@ -921,19 +925,19 @@ class EnOceanEltakoPanel extends HTMLElement {
               <button data-dir="rx" aria-pressed="false">${esc(t.rx)}</button>
               <button data-dir="tx" aria-pressed="false">${esc(t.tx)}</button>
             </div>
+            <button class="chip tg-only" id="unknown" aria-pressed="false">${esc(t.unknownOnly)}</button>
             <!-- the rarer filters open below the row; the set ones show as chips above the list -->
             <button class="chip" id="filterBtn" aria-expanded="false" aria-controls="filterMenu">${svg(ICON.filter)}<span>${esc(t.filters)}</span><b class="count" id="filterCount" hidden></b></button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
             <select class="select m-only dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}"></select>
           </div>
+          <div class="statusrow dev-only list-only" id="devStatus" role="group" aria-label="${esc(t.filterStatus)}">${Object.entries(t.devStatus)
+            .map(([key, label]) => `<button class="chip" data-status="${key}" aria-pressed="false">${esc(label)}</button>`)
+            .join("")}</div>
           <div class="filtermenu list-only" id="filterMenu" role="group" aria-label="${esc(t.filters)}" hidden>
             <label class="field" id="gatewayRow" hidden><span>${esc(t.gateway)}</span><select class="select" id="gatewayFilter"></select></label>
             <label class="field tg-only"><span>${esc(t.type)}</span><select class="select" id="typeFilter"></select></label>
-            <label class="field dev-only"><span>${esc(t.filterStatus)}</span><select class="select" id="devStatus">${Object.entries(t.devStatus)
-              .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
-              .join("")}</select></label>
             <label class="field dev-only" id="devAreaRow" hidden><span>${esc(t.devCols.area)}</span><select class="select" id="devArea"></select></label>
-            <label class="opt tg-only"><input type="checkbox" id="unknown"><span>${esc(t.unknownOnly)}</span></label>
             <label class="opt tg-only"><input type="checkbox" id="repeats"><span>${esc(t.repeats)}</span></label>
           </div>
           <form class="sendform tg-only" id="sendForm" hidden>
@@ -1131,7 +1135,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       // back to the live list once the pick is done
       setTimeout(() => this._view === "devices" && !this._editing() && this._render(), 0);
     });
-    $("unknown").addEventListener("change", (e) => this._set("unknown", e.target.checked));
+    $("unknown").addEventListener("click", () => this._set("unknown", !this._filter.unknown));
     $("repeats").addEventListener("change", (e) => this._set("repeats", e.target.checked));
     $("filterBtn").addEventListener("click", () => this._toggleFilters());
     $("filterMenu").addEventListener("keydown", (e) => {
@@ -1157,7 +1161,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       const [key, dir] = e.target.value.split(":");
       this._setDevSort(key, dir === "desc");
     });
-    $("devStatus").addEventListener("change", (e) => this._set("devStatus", e.target.value));
+    $("devStatus").addEventListener("click", (e) => {
+      const button = e.target.closest("[data-status]");
+      if (button) this._set("devStatus", button.dataset.status);
+    });
     $("tkReport").addEventListener("click", () => this._openReport());
     $("weakHint").addEventListener("click", () => {
       this._set("devStatus", "weak");
@@ -1913,7 +1920,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     for (const button of $("dir").querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.dir === f.dir));
     }
-    $("unknown").checked = f.unknown;
+    $("unknown").setAttribute("aria-pressed", String(f.unknown));
+    for (const button of $("devStatus").querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.status === f.devStatus));
+    }
     $("repeats").checked = f.repeats;
     const t = this._t;
     this._options($("gatewayFilter"), [["", t.allGateways], ...this._gateways.map((g) => [g.entry_id, g.title])], f.gateway);
@@ -1925,8 +1935,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const chips = [
       f.gateway && ["gateway", `${t.gateway}: ${gateway?.title || f.gateway}`],
       ...(devices
-        ? [f.devStatus && ["devStatus", `${t.filterStatus}: ${t.devStatus[f.devStatus]}`], f.area && ["area", `${t.devCols.area}: ${f.area}`]]
-        : [f.type && ["type", `${t.type}: ${RORG[f.type] || f.type}`], f.unknown && ["unknown", t.unknownOnly], f.repeats && ["repeats", t.repeats]]),
+        ? [f.area && ["area", `${t.devCols.area}: ${f.area}`]]
+        : [f.type && ["type", `${t.type}: ${RORG[f.type] || f.type}`], f.repeats && ["repeats", t.repeats]]),
     ].filter(Boolean);
     $("activeFilters").innerHTML = chips
       .map(([key, label]) => `<button class="chip set" data-unset="${key}" title="${esc(t.removeFilter(label))}" aria-label="${esc(t.removeFilter(label))}">${esc(label)}${svg(ICON.close)}</button>`)
@@ -1934,6 +1944,15 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("filterCount").hidden = !chips.length;
     $("filterCount").textContent = chips.length;
     $("filterBtn").classList.toggle("on", chips.length > 0);
+    this._syncFilterBtn();
+  }
+
+  _syncFilterBtn() {
+    // the devices view has nothing behind Filter without several gateways or areas
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const any = this._view !== "devices" || !$("gatewayRow").hidden || !$("devAreaRow").hidden;
+    $("filterBtn").hidden = !any;
+    if (!any && !$("filterMenu").hidden) this._toggleFilters(false);
   }
 
   _options(select, options, value) {
@@ -2540,7 +2559,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const areaSelect = this.shadowRoot.getElementById("devArea");
     this._options(areaSelect, [["", t.allAreas], ...areas.map((a) => [a, a])], this._filter.area);
     this.shadowRoot.getElementById("devAreaRow").hidden = !areas.length && !this._filter.area;
-    this.shadowRoot.getElementById("devStatus").value = this._filter.devStatus;
+    this._syncFilterBtn();
     // senders at the edge of the range, at a glance: a click shows only them, weakest first
     const weak = all.filter((d) => d.dbm != null && d.dbm < WEAK_DBM).length;
     const weakHint = this.shadowRoot.getElementById("weakHint");

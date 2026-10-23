@@ -258,8 +258,8 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
 ### Suchen, Filter, Anhalten
 
 Suchen nach Gerät, ID (mit oder ohne Bindestriche), Wertname oder Daten (Taste `/`) und nur
-Empfangenes oder Gesendetes stehen direkt über der Liste. **Filter** öffnet die übrigen: ein
-Gateway, ein Telegrammtyp (RPS, 1BS, 4BS, VLD …), nur unbekannte Sender oder mit Wiederholungen.
+Empfangenes oder Gesendetes stehen direkt über der Liste. **Nur unbekannte** liegt gleich daneben. **Filter** öffnet die übrigen: ein
+Gateway, ein Telegrammtyp (RPS, 1BS, 4BS, VLD …) oder Wiederholungen.
 Gesetzte Filter stehen als Chips über der Liste, ihr Kreuz hebt sie einzeln auf, **Filter
 zurücksetzen** alle. Das Panel
 merkt sich die Filter im Browser. Anhalten (Taste `P`) sammelt weiter (bis zu 1.000) und zeigt,
@@ -306,11 +306,11 @@ Einlern-Schaltfläche des Geräts; bei einem VLD-Aktor (UTE) erst senden und den
 innerhalb von 60 s in den Lernmodus bringen.
 
 Über der Liste zählt ein Hinweis die Sender mit schwachem Signal; ein Klick zeigt nur sie, das
-schwächste zuerst (auch als Status **Schwaches Signal** unter **Filter**).
+schwächste zuerst (auch als Status **Schwaches Signal**).
 
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
-übernimmt das eine Auswahl. Die Suche und unter **Filter** das Gateway, der Status (**Alle Geräte /
-Eingerichtet / Unbekannt / Still / Schwaches Signal**) und der Bereich grenzen die Liste ein, und sie wird seitenweise mit 25 bis 200 Zeilen
+übernimmt das eine Auswahl. Die Suche, die Status-Chips (**Alle Geräte /
+Eingerichtet / Unbekannt / Still / Schwaches Signal**) und unter **Filter** das Gateway und der Bereich grenzen die Liste ein (**Filter** erscheint nur bei mehreren Gateways oder Bereichen), und sie wird seitenweise mit 25 bis 200 Zeilen
 gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
 Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
 Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
