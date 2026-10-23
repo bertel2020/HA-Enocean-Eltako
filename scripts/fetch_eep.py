@@ -17,12 +17,15 @@ import ssl
 import sys
 import urllib.request
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 BASE = "https://tools.enocean-alliance.org/EEPViewer"
 INDEX_URL = f"{BASE}/eep-viewer-desc.json"
 CACHE = Path(__file__).resolve().parent.parent / ".eep_cache"
 SUFFIXES = (".xml", "_test.xml")
+ABSENT = CACHE / "absent.json"  # files the viewer answered 404 for, so a cached run skips them
+WORKERS = 16
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -82,6 +85,33 @@ def _referenced_profile(path: Path) -> str | None:
     return "-".join(ref.findtext(tag).strip() for tag in ("rorg", "func", "type")).upper()
 
 
+def _load_absent() -> set[str]:
+    try:
+        return set(json.loads(ABSENT.read_text()))
+    except (OSError, ValueError):
+        return set()
+
+
+def _save_absent(absent: set[str]) -> None:
+    ABSENT.write_text(json.dumps(sorted(absent)))
+
+
+def _fetch_profile(profile: str, absent: set[str]) -> set[str]:
+    """Download what is neither cached nor known to be absent; return the new 404s."""
+    rorg, func, typ = profile.split("-")
+    not_found = set()
+    for suffix in SUFFIXES:
+        name = f"{profile}{suffix}"
+        if (CACHE / name).exists() or name in absent:
+            continue
+        data = _get(f"{BASE}/profiles/{rorg}/{func}/{typ}/{name}")
+        if data is None:
+            not_found.add(name)
+            continue
+        (CACHE / name).write_bytes(_fix_declaration(data))
+    return not_found
+
+
 def main(argv: list[str]) -> int:
     if argv == ["--generated"]:
         argv = []  # generate_eep.py writes every profile of the index
@@ -94,24 +124,20 @@ def main(argv: list[str]) -> int:
     profiles = list_profiles(json.loads(raw.decode("utf-8-sig")))
     wanted = [p for p in profiles if not argv or any(p.startswith(a.upper()) for a in argv)]
     wanted += [a.upper() for a in argv if len(a) == 8 and a.upper() not in wanted]
-    missing = 0
-    queue = list(wanted)
-    while queue:
-        profile = queue.pop(0)
-        rorg, func, typ = profile.split("-")
-        for suffix in SUFFIXES:
-            target = CACHE / f"{profile}{suffix}"
-            if target.exists():
-                continue
-            data = _get(f"{BASE}/profiles/{rorg}/{func}/{typ}/{profile}{suffix}")
-            if data is None:
-                missing += suffix == ".xml"
-                continue
-            target.write_bytes(_fix_declaration(data))
-        ref = _referenced_profile(CACHE / f"{profile}.xml")
-        if ref and ref not in wanted:
-            wanted.append(ref)
-            queue.append(ref)
+    absent = _load_absent()
+    batch = list(wanted)
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        while batch:
+            for not_found in pool.map(lambda p: _fetch_profile(p, absent), batch):
+                absent.update(not_found)
+            refs = (_referenced_profile(CACHE / f"{p}.xml") for p in batch)
+            batch = []
+            for ref in refs:
+                if ref and ref not in wanted:
+                    wanted.append(ref)
+                    batch.append(ref)
+    _save_absent(absent)
+    missing = sum(f"{p}.xml" in absent for p in wanted)
     print(f"{len(wanted)} profiles in {CACHE} ({missing} without definition)")
     return 0
 
