@@ -105,7 +105,9 @@ const STYLE = `
   input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; flex: none; cursor: pointer; }
 
   .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 0 24px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+    gap: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line);
+    /* logo and tabs line up with the content (max 1200 px, centred), not with the window's edges */
+    padding: 0 max(24px, calc((100% - 1200px) / 2 + 24px)); }
   .brand { display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 60px; }
   .brand ha-menu-button { margin-left: -12px; color: var(--text); }
   .brand b { display: block; font-size: 18px; font-weight: 500; line-height: 1.2; }
