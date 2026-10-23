@@ -595,6 +595,7 @@
             "status_request": "Zustand beim Start abfragen",
             "long_press": "Lang ab",
             "double_press": "Doppelt innerhalb",
+            "rain_hold": "Regen: „kürzlich“ bleibt an für",
             "calibration": "Kalibrierung",
             "fields": "Angezeigte Werte",
             "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
@@ -642,6 +643,7 @@
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
             "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "rain_hold": "Minuten, die „Regen kürzlich“ nach dem letzten Regen noch an bleibt.",
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
             "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
             "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden."
@@ -709,6 +711,7 @@
             "status_request": "Zustand beim Start abfragen",
             "long_press": "Lang ab",
             "double_press": "Doppelt innerhalb",
+            "rain_hold": "Regen: „kürzlich“ bleibt an für",
             "calibration": "Kalibrierung",
             "fields": "Angezeigte Werte",
             "sender_cooling": "Sender-ID: Kühlschalter (F6-02-01)",
@@ -749,6 +752,7 @@
             "weather_wind": "Optional, beliebige Einheit. Ohne Angabe werden 0 m/s gesendet.",
             "weather_rain": "Optional, ein = Regen.",
             "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
+            "rain_hold": "Minuten, die „Regen kürzlich“ nach dem letzten Regen noch an bleibt.",
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
             "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
             "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden."
@@ -925,6 +929,15 @@
       "dawn": {
         "name": "Dämmerung"
       },
+      "sun_side": {
+        "name": "Sonnigste Seite",
+        "state": {
+          "south": "Süd",
+          "east": "Ost",
+          "west": "West",
+          "none": "Keine Sonne"
+        }
+      },
       "sun_west": {
         "name": "Sonne West"
       },
@@ -1082,6 +1095,13 @@
         "state": {
           "on": "Regen",
           "off": "Kein Regen"
+        }
+      },
+      "rain_recent": {
+        "name": "Regen kürzlich",
+        "state": {
+          "on": "Nass",
+          "off": "Trocken"
         }
       },
       "gateway_connection": {

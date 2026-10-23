@@ -140,6 +140,19 @@ ILLUMINANCE: _Preset = {
     "state_class": SensorStateClass.MEASUREMENT,
 }
 
+SUN_MIN_LX = 2000  # below this on every side there is no sun worth the name
+SUN_SIDES = (("south", "SNS"), ("east", "SNE"), ("west", "SNW"))  # the first wins a tie
+
+
+def _sun_side(values: dict[str, Any]) -> str | None:
+    """The side the sun shines on most (levels are in klx), or "none" in the shade."""
+    levels = [(side, values[field]) for side, field in SUN_SIDES if field in values]
+    if not levels:
+        return None
+    side, klx = max(levels, key=lambda level: level[1])
+    return side if klx * 1000 >= SUN_MIN_LX else "none"
+
+
 SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
     "window_handle": (
         EnOceanSensorDescription(
@@ -250,6 +263,13 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
                 value_fn=(lambda f: lambda v: round(v[f] * 1000) if f in v else None)(field),
             )
             for side, field in (("west", "SNW"), ("south", "SNS"), ("east", "SNE"))
+        ),
+        EnOceanSensorDescription(
+            key="sun_side",
+            translation_key="sun_side",
+            device_class=SensorDeviceClass.ENUM,
+            options=["south", "east", "west", "none"],
+            value_fn=_sun_side,
         ),
     ),
 }

@@ -206,6 +206,13 @@ Die Definitionen stehen sofort unter **Gerät hinzufügen → Eigene Definition*
   Raumtemperatur-Entität lässt sich ergänzen.
 - **Taster** melden je Taste kurzes, langes und doppeltes Drücken, die Blueprints und
   Gerätetrigger nutzen.
+- **Wetterstationen** (FWS61, FWG14MS) melden Dämmerung, Temperatur, Wind, Sonne von drei Seiten und
+  Regen. Dazu kommen „Sonnigste Seite“ (Süd, Ost, West oder keine Sonne unter 2 klx) und „Regen
+  kürzlich“, das nach dem Regen noch einige Minuten an bleibt (Vorgabe 15, in den Einstellungen des
+  Geräts), damit Rollläden und Markisen nicht auf eine nasse Fläche zurückfahren. Die Einheit des
+  Winds (m/s, km/h, Beaufort) ist die Anzeigeeinheit der Entität in Home Assistant. Das Blueprint
+  „Rollläden nach der Sonne beschatten“ nutzt die Sonnensensoren; der Schutz vor Wind, Regen und
+  Frost bleibt im Aktor.
 - **Permundo PSC132/PSC234** melden Energie und Leistung; siehe
   [Bekannte Einschränkungen](#bekannte-einschränkungen).
 
@@ -431,6 +438,7 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 - [Wippe steuert Rollladen](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/rocker_cover.yaml) [![Importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Frocker_cover.yaml)
 - [Doppelklick ruft Szene](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/double_press_scene.yaml) [![Importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fdouble_press_scene.yaml)
 - [Rollläden zeitgesteuert kalibrieren](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml) [![Importieren](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fcalibrate_covers.yaml)
+- [Rollläden nach der Sonne beschatten](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/sun_shading.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fsun_shading.yaml)
 
 ### Aktionen
 

@@ -8,6 +8,15 @@ All notable changes to this project are documented here, in English and German
 
 ### [Unreleased]
 
+#### Added
+
+- **Weather station:** a "Sunniest side" sensor (south, east, west, or no sun below 2 klx on every side) and a "Rain
+  recently" sensor that stays on for some minutes after the rain stops, so covers and awnings do not move back onto a wet
+  surface. The minutes are a device setting (15 by default, 0 = no hold).
+- **Blueprint "Shade covers by the sun":** moves covers to a shading position when the sun on one side stays strong
+  enough, and back when it has been weak for a while; optionally only when it is warm; leaves covers alone whose
+  "Automation mode" is Off and covers you moved by hand.
+
 #### Changed
 
 - **Weather station:** dawn and the three sun sensors show whole lux (dawn no longer "999,0 lx"), the wind one decimal.
@@ -400,6 +409,15 @@ First version of the integration.
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### [Unreleased]
+
+#### Hinzugefügt
+
+- **Wetterstation:** ein Sensor „Sonnigste Seite“ (Süd, Ost, West oder keine Sonne unter 2 klx auf allen Seiten) und ein
+  Sensor „Regen kürzlich“, der nach dem Regen noch einige Minuten an bleibt, damit Rollläden und Markisen nicht auf eine
+  nasse Fläche zurückfahren. Die Minuten sind eine Geräteeinstellung (Vorgabe 15, 0 = kein Nachlauf).
+- **Blueprint „Rollläden nach der Sonne beschatten“:** fährt Rollläden in eine Beschattungsposition, wenn die Sonne auf einer
+  Seite stark genug bleibt, und zurück, wenn sie eine Weile schwach war; auf Wunsch nur bei Wärme; lässt Rollläden in Ruhe,
+  deren „Automatikmodus“ Aus ist, und solche, die du von Hand bewegt hast.
 
 #### Geändert
 

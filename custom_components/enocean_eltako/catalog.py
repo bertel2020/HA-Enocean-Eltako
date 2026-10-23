@@ -44,6 +44,8 @@ OPT_WEATHER_TEMPERATURE = "weather_temperature"  # I9 weather: entity per value 
 OPT_WEATHER_WIND = "weather_wind"
 OPT_WEATHER_RAIN = "weather_rain"
 OPT_WEATHER_BRIGHTNESS = "weather_brightness"
+OPT_RAIN_HOLD = "rain_hold"  # weather: minutes "rain recently" stays on after the rain stops
+DEFAULT_RAIN_HOLD = 15
 WEATHER_SOURCES = (
     OPT_WEATHER_TEMPERATURE,
     OPT_WEATHER_WIND,
@@ -433,6 +435,7 @@ CATALOG: dict[str, DeviceModel] = {
             interval=600,
             examples="FWS61, FWG14MS",
             models=("FWS61", "FWS61-24V DC", "FWG14MS"),
+            options=(OPT_RAIN_HOLD,),
         ),
         # other manufacturers: same behaviour as the Eltako entry named in base
         DeviceModel(

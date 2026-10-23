@@ -1,0 +1,172 @@
+blueprint:
+  name: EnOcean Eltako - shade covers by the sun
+  description: >-
+    Moves the chosen covers to a shading position when the sun on one side is strong
+    enough for a while, and back when it has been weak for a while. Optionally only
+    when it is warm. A cover whose "Automation mode" is Off is left alone. Use one
+    automation per side (the sun sensor of that side with the covers of that side).
+    Comfort only: wind, rain and frost protection stay in the actuator.
+  domain: automation
+  source_url: https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/sun_shading.yaml
+  input:
+    covers:
+      name: Covers
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: enocean_eltako
+              domain: cover
+    sun_sensor:
+      name: Sun sensor of this side
+      description: The weather station's "Sun east", "Sun south" or "Sun west".
+      selector:
+        entity:
+          filter:
+            - integration: enocean_eltako
+              domain: sensor
+              device_class: illuminance
+    close_above:
+      name: Shade above
+      default: 20000
+      selector:
+        number:
+          min: 1000
+          max: 150000
+          step: 1000
+          unit_of_measurement: lx
+          mode: box
+    open_below:
+      name: Open again below
+      description: Lower than "Shade above", so the covers do not flutter around the limit.
+      default: 10000
+      selector:
+        number:
+          min: 0
+          max: 150000
+          step: 1000
+          unit_of_measurement: lx
+          mode: box
+    delay_close:
+      name: Sun strong for
+      default:
+        minutes: 5
+      selector:
+        duration: {}
+    delay_open:
+      name: Sun weak for
+      default:
+        minutes: 15
+      selector:
+        duration: {}
+    shade_position:
+      name: Shading position
+      description: How far the covers stay open when shading (0 = closed, 100 = open).
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+    open_position:
+      name: Position when the sun is gone
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+    only_if_shaded:
+      name: Only open covers that are still in the shading position
+      description: A cover you moved by hand in the meantime stays where you put it.
+      default: true
+      selector:
+        boolean: {}
+    temperature_sensor:
+      name: Temperature (optional)
+      description: Shade only when it is at least this warm.
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    min_temperature:
+      name: Shade from temperature
+      default: 18
+      selector:
+        number:
+          min: -20
+          max: 40
+          step: 1
+          unit_of_measurement: °C
+          mode: box
+
+mode: queued
+max_exceeded: silent
+
+triggers:
+  - trigger: numeric_state
+    entity_id: !input sun_sensor
+    above: !input close_above
+    for: !input delay_close
+    id: sun
+  - trigger: numeric_state
+    entity_id: !input sun_sensor
+    below: !input open_below
+    for: !input delay_open
+    id: shade
+
+variables:
+  covers: !input covers
+  shade_position: !input shade_position
+  open_position: !input open_position
+  only_if_shaded: !input only_if_shaded
+  temperature_sensor: !input temperature_sensor
+  min_temperature: !input min_temperature
+  # the covers whose "Automation mode" (a select of the same device) is not Off
+  active: >-
+    {% set ns = namespace(covers=[]) %}
+    {% for cover in covers %}
+      {% set modes = device_entities(device_id(cover)) | select('match', '^select\.') | map('states') | list %}
+      {% if 'off' not in modes %}{% set ns.covers = ns.covers + [cover] %}{% endif %}
+    {% endfor %}
+    {{ ns.covers }}
+
+conditions:
+  - condition: template
+    value_template: "{{ active | length > 0 }}"
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: sun
+          - condition: template
+            value_template: >-
+              {{ temperature_sensor == '' or states(temperature_sensor) | float(-100) >= min_temperature }}
+        sequence:
+          - action: cover.set_cover_position
+            target:
+              entity_id: "{{ active }}"
+            data:
+              position: "{{ shade_position }}"
+      - conditions:
+          - condition: trigger
+            id: shade
+        sequence:
+          - variables:
+              to_open: >-
+                {% if only_if_shaded %}
+                  {{ active | select('is_state_attr', 'current_position', shade_position | int) | list }}
+                {% else %}
+                  {{ active }}
+                {% endif %}
+          - condition: template
+            value_template: "{{ to_open | length > 0 }}"
+          - action: cover.set_cover_position
+            target:
+              entity_id: "{{ to_open }}"
+            data:
+              position: "{{ open_position }}"

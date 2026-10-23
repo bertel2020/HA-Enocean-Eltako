@@ -13,6 +13,12 @@
           "on": "mdi:weather-pouring"
         }
       },
+      "rain_recent": {
+        "default": "mdi:weather-sunny",
+        "state": {
+          "on": "mdi:weather-rainy"
+        }
+      },
       "contact": {
         "default": "mdi:electric-switch"
       },
@@ -114,6 +120,15 @@
       },
       "dawn": {
         "default": "mdi:weather-sunset-up"
+      },
+      "sun_side": {
+        "default": "mdi:white-balance-sunny",
+        "state": {
+          "south": "mdi:arrow-down-thick",
+          "east": "mdi:arrow-right-thick",
+          "west": "mdi:arrow-left-thick",
+          "none": "mdi:weather-cloudy"
+        }
       },
       "energy_night": {
         "default": "mdi:weather-night"

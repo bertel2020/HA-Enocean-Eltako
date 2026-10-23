@@ -12,17 +12,20 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntityDescription,
 )
 from homeassistant.const import EntityCategory, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
 from .catalog import (
     CUSTOM,
+    DEFAULT_RAIN_HOLD,
     OPT_DEVICE_CLASS,
     OPT_INVERT,
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
+    OPT_RAIN_HOLD,
     custom_definition,
     custom_key,
 )
@@ -110,6 +113,11 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
             translation_key="rain",  # no device class: "moisture" is a leak sensor to assistants
             value_fn=lambda v: None if "RAN" not in v else v["RAN"] == 1,
         ),
+        EnOceanBinarySensorDescription(
+            key="rain_recent",
+            translation_key="rain_recent",
+            value_fn=lambda v: None if "RAN" not in v else v["RAN"] == 1,
+        ),
     ),
 }
 
@@ -187,7 +195,10 @@ async def async_setup_entry(
                 ),
             )
         async_add_entities(
-            [EnOceanBinarySensor(device, d) for d in descriptions],
+            [
+                (EnOceanRainRecent if d.key == "rain_recent" else EnOceanBinarySensor)(device, d)
+                for d in descriptions
+            ],
             config_subentry_id=subentry_id,
         )
 
@@ -218,3 +229,53 @@ class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
             return False
         self._attr_is_on = value
         return True
+
+
+class EnOceanRainRecent(EnOceanBinarySensor):
+    """On while it rains and for a while after: covers and awnings stay put until all is dry."""
+
+    def __init__(self, device: EnOceanDevice, description: EnOceanBinarySensorDescription) -> None:
+        super().__init__(device, description)
+        minutes = float(device.options.get(OPT_RAIN_HOLD, DEFAULT_RAIN_HOLD))
+        self._hold = minutes * 60
+        self._cancel: CALLBACK_TYPE | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(self._stop)
+        if self._attr_is_on:  # restored as on: dry after the hold unless rain is reported again
+            self._start()
+
+    def _start(self) -> None:
+        self._stop()
+        self._cancel = async_call_later(self.hass, max(self._hold, 1), self._dry)
+
+    @callback
+    def _stop(self) -> None:
+        if self._cancel is not None:
+            self._cancel()
+            self._cancel = None
+
+    @callback
+    def _dry(self, _now: Any) -> None:
+        self._cancel = None
+        self._attr_is_on = False
+        self.async_write_ha_state()
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        rain = self.entity_description.value_fn(values)
+        if rain is None:
+            return False
+        if rain:
+            self._stop()
+            changed = not self._attr_is_on
+            self._attr_is_on = True
+            return changed
+        if not self._attr_is_on:
+            return False
+        if self._hold <= 0:
+            self._attr_is_on = False
+            return True
+        if self._cancel is None:  # the hold counts from the first dry report, not from each one
+            self._start()
+        return False
