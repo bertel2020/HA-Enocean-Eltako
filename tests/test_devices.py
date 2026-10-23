@@ -1315,6 +1315,41 @@ async def test_contact_is_written_once_after_a_replay(hass: HomeAssistant, gatew
 
 
 @pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("rocker", "00-29-89-80", "NodOn", long_press=0.2, double_press=0.1)]],
+    indirect=True,
+)
+async def test_replayed_rocker_presses_fire_no_events(hass: HomeAssistant, gateway) -> None:
+    """Presses the Device Proxy kept during a restart arrive within milliseconds: gestures
+    are timed live, so they would turn into short or double presses and trigger automations."""
+    from custom_components.enocean_eltako.hub import async_get_hub
+
+    entry, _server = gateway
+    events: list[tuple[str, str]] = []
+    hass.bus.async_listen(
+        "enocean_eltako_button", lambda e: events.append((e.data["button"], e.data["type"]))
+    )
+    dispatcher = async_get_hub(hass).dispatcher
+    rocker = 0x00298980
+    for stamp in (1000.0, 1180.0):  # the same button twice, minutes apart
+        dispatcher.dispatch(
+            entry.entry_id, RadioTelegram(Rorg.RPS, b"\x70", rocker, 0x30), timestamp=stamp
+        )
+        dispatcher.dispatch(
+            entry.entry_id, RadioTelegram(Rorg.RPS, b"\x00", rocker, 0x20), timestamp=stamp + 0.1
+        )
+    await asyncio.sleep(0.3)
+    await hass.async_block_till_done()
+    assert events == []
+
+    dispatcher.dispatch(entry.entry_id, RadioTelegram(Rorg.RPS, b"\x70", rocker, 0x30))
+    dispatcher.dispatch(entry.entry_id, RadioTelegram(Rorg.RPS, b"\x00", rocker, 0x20))
+    await asyncio.sleep(0.3)
+    await hass.async_block_till_done()
+    assert ("b0", "short_press") in events  # a live press still counts
+
+
+@pytest.mark.parametrize(
     "gateway", [[_subentry("meter", "05-00-00-13", "Proxon TWWP")]], indirect=True
 )
 async def test_meter_tariffs_total_and_backward_jump(hass: HomeAssistant, gateway) -> None:

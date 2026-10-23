@@ -62,6 +62,9 @@ class RockerGestures:
 
     @callback
     def _handle(self, values: dict[str, Any]) -> None:
+        last = self._device.last_received
+        if last is not None and last.replayed:
+            return  # gestures are timed live; a press from before the restart is no event now
         if values.get("EB") == 1:
             second = BUTTONS[values["R2"]] if values.get("SA") == 1 else None
             self._detector.press(BUTTONS[values["R1"]], second)

@@ -30,6 +30,7 @@ class ReceivedTelegram:
     timestamp: float  # time.time()
     sender: int  # canonical sender ID (alias resolved)
     duplicate: bool = False
+    replayed: bool = False  # kept by the Device Proxy while Home Assistant was away
 
 
 Listener = Callable[[ReceivedTelegram], None]
@@ -129,7 +130,9 @@ class Dispatcher:
             duplicate = now - last[1] < self._window
         if not duplicate:
             self._last[sender] = (key, now, received_at)
-        received = ReceivedTelegram(telegram, gateway, received_at, sender, duplicate)
+        received = ReceivedTelegram(
+            telegram, gateway, received_at, sender, duplicate, replayed=timestamp is not None
+        )
 
         self.stats.received += 1
         self.stats.per_gateway[gateway] = self.stats.per_gateway.get(gateway, 0) + 1
