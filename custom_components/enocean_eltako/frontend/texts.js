@@ -66,7 +66,7 @@ export const TEXT = {
     tkSteps: ["Select", "Carry over", "Switch over", "Clean up"],
     tkStepState: {
       open: (n) => (n === 1 ? "1 to take over" : `${n} to take over`), none: "nothing left", chosen: (n) => `${n} selected`, nothing: "nothing selected",
-      places: (n) => (n === 1 ? "1 place" : `${n} places`), clear: "nothing left", cleanup: (a, b) => `${a} of ${b} done`,
+      places: (n) => (n === 1 ? "1 place" : `${n} places`), clear: "nothing left", waiting: "nothing to do yet", cleanup: (a, b) => `${a} of ${b} done`,
     },
     tkInYaml: (n) => `${n} in configuration.yaml`, tkExisting: (n) => (n === 1 ? "1 set up →" : `${n} set up →`),
     tkNotCount: (n) => (n === 1 ? "1 cannot be taken over" : `${n} cannot be taken over`),
@@ -307,7 +307,7 @@ export const TEXT = {
     tkSteps: ["Auswählen", "Mitnehmen", "Umstellen", "Aufräumen"],
     tkStepState: {
       open: (n) => (n === 1 ? "1 zu übernehmen" : `${n} zu übernehmen`), none: "nichts mehr offen", chosen: (n) => `${n} gewählt`, nothing: "nichts gewählt",
-      places: (n) => (n === 1 ? "1 Fundstelle" : `${n} Fundstellen`), clear: "nichts mehr offen", cleanup: (a, b) => `${a} von ${b} erledigt`,
+      places: (n) => (n === 1 ? "1 Fundstelle" : `${n} Fundstellen`), clear: "nichts mehr offen", waiting: "noch nichts zu tun", cleanup: (a, b) => `${a} von ${b} erledigt`,
     },
     tkInYaml: (n) => `${n} in configuration.yaml`, tkExisting: (n) => (n === 1 ? "1 eingerichtet →" : `${n} eingerichtet →`),
     tkNotCount: (n) => (n === 1 ? "1 nicht übernehmbar" : `${n} nicht übernehmbar`),

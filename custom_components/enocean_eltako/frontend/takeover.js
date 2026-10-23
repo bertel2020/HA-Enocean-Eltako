@@ -285,7 +285,7 @@ export const takeover = {
     const steps = [
       { text: ready.length ? st.open(ready.length) : st.none, done: !ready.length && rows.length > 0 },
       { text: chosen.length ? st.chosen(chosen.length) : st.nothing, off: !ready.length },
-      { text: places ? st.places(places) : st.clear, done: rows.length > 0 && !places, warn: places > 0, off: !rows.length },
+      { text: !rows.length ? st.waiting : places ? st.places(places) : st.clear, done: rows.length > 0 && !places, warn: places > 0, off: !rows.length },
       { text: st.cleanup(doneCount, 5), done: doneCount === 5, warn: rows.length > 0 && doneCount < 5 },
     ];
     const stepsHtml = steps
@@ -785,6 +785,9 @@ export const takeover = {
     tk.q = "";
     await this._refreshStatus();
     await this._loadTakeover();
+    // no old entity found for what was taken over: nothing to switch over, stay with the selection
+    if (!(tk.mapping?.rows || []).length) tk.tab = "select";
+    this._renderTakeover();
     this._checkTakeover();
     if (!result) return;
     const stillUsed = result.count ? (tk.mapping?.rows || []).filter(isUsed).length : 0;
