@@ -14,6 +14,8 @@ All notable changes to this project are documented here, in English and German
   the Device Proxy kept during a restart in one go: the state is written once when the replay is through, so a door
   opened and closed in the meantime no longer flips the sensor (and fires triggers) several times, and a state that ends
   where it began fires none.
+- **Device Proxy replay, rockers:** replayed rocker presses fire no rocker events. Gestures are timed live, so a replayed
+  press became a short press (or two a double press) at the restart and ran automations with a press from minutes ago.
 
 ### [0.1.13] - 2026-10-23
 
@@ -433,6 +435,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   nachgelieferten Telegramme aus der Zeit des Neustarts in einem Zug auf: der Zustand wird einmal geschrieben, wenn die
   Nachlieferung durch ist. Eine zwischendurch geöffnete und geschlossene Tür lässt den Sensor nicht mehr mehrfach
   umschalten (und Trigger feuern), und ein Zustand, der am Ende dort steht, wo er begann, löst nichts aus.
+- **Nachlieferung über den Device Proxy, Taster:** nachgelieferte Tasterdrücke lösen keine Taster-Ereignisse aus. Gesten
+  werden live gemessen, ein nachgelieferter Druck wurde beim Neustart zum kurzen Druck (zwei zum Doppelklick) und
+  startete Automationen mit einem Druck von vor Minuten.
 
 ### [0.1.13] - 2026-10-23
 
