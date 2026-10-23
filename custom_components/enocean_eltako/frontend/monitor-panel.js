@@ -120,6 +120,8 @@ const STYLE = `
   #view button:hover { color: var(--text); background: var(--neutral-soft); }
   #view button[aria-selected="true"] { color: var(--accent-hover); background: var(--accent-soft); }
   #view button[hidden] { display: none; }
+  .header-end { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .integration-link { color: var(--accent); }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
   main > section { min-width: 0; }
@@ -531,6 +533,10 @@ const STYLE = `
   @media (max-width: 760px) {
     main { padding: 16px 16px 32px; }
     .header { padding: 0 16px; }
+    /* the link moves up to the logo's line, the tabs keep their own */
+    .header-end { display: contents; }
+    .brand { order: -2; }
+    .integration-link { order: -1; margin-left: auto; }
     .card { gap: 12px; }
     .gateway-title { flex-basis: calc(100% - 60px); }
     .rate { border: 0; padding: 0; flex: 1; }
@@ -840,12 +846,15 @@ class EnOceanEltakoPanel extends HTMLElement {
       <style>${STYLE}${TAKEOVER_STYLE}</style>
       <header class="header">
         <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title)}</b></div></div>
+        <div class="header-end">
         <nav role="tablist" id="view" aria-label="${esc(t.title)}">
           <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
           <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
           <button role="tab" data-view="senders" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewSenders)}</button>
           <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${esc(t.viewTakeover)}</button>
         </nav>
+        <button class="chip integration-link" data-open-integration>${svg(ICON.open)}${esc(t.integration)}</button>
+        </div>
       </header>
       <main>
         <section id="gatewaySection" aria-label="${esc(t.gateways)}">
@@ -977,9 +986,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
     });
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
-    // the empty state without a gateway: to the integration, where one is added
+    // the empty state without a gateway and the gateway details: to the integration
     this.shadowRoot.addEventListener("click", (e) => {
-      if (e.target.closest("[data-open-integration]")) this._navigate("/config/integrations/integration/enocean_eltako");
+      const link = e.target.closest("[data-open-integration]");
+      if (!link) return;
+      // from a gateway card: straight to that gateway's entry
+      const entry = link.dataset.openIntegration;
+      this._navigate(`/config/integrations/integration/enocean_eltako${entry ? `#config_entry=${entry}` : ""}`);
     });
     $("takeover").addEventListener("change", (e) => this._takeoverChange(e));
     $("takeover").addEventListener("input", (e) => this._takeoverInput(e));
@@ -1946,7 +1959,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
-          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}</div>` : ""}
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
         </article>`;
       })
       .join(""));
