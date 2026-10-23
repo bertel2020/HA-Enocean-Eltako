@@ -6,6 +6,17 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [0.1.12] - 2026-10-23
+
+#### Added
+
+- **Panel, Devices view:** select several devices (a box per row, "Select all" for the filtered ones) and, with a bar,
+  set an **area**, add or remove **labels** (new labels can be created in place), **disable** or **enable** them, or
+  **remove** them from Home Assistant in one go. Area, labels and disabling are Home Assistant's own, so they show on
+  the device page too. Removing asks first, reloads the gateway once and leaves the devices' sender IDs blocked until
+  the teach-out is confirmed under Sender IDs.
+- **Panel:** a device's labels show under its name, a disabled device is tagged, and the search finds labels.
+
 ### [0.1.11] - 2026-10-23
 
 #### Added
@@ -377,6 +388,19 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [0.1.12] - 2026-10-23
+
+#### Hinzugefügt
+
+- **Panel, Ansicht Geräte:** mehrere Geräte auswählen (ein Kästchen je Zeile, „Alle auswählen“ für die gefilterten) und
+  mit einer Leiste einen **Bereich** setzen, **Labels** hinzufügen oder entfernen (neue Labels lassen sich gleich
+  anlegen), sie **deaktivieren** oder **aktivieren** oder in einem Zug aus Home Assistant **entfernen**. Bereich, Labels
+  und Deaktivieren sind die von Home Assistant, sie erscheinen also auch auf der Geräteseite. Das Entfernen fragt vorher
+  nach, lädt das Gateway nur einmal neu und lässt die Sender-IDs der Geräte gesperrt, bis das Abmelden unter Sender-IDs
+  bestätigt ist.
+- **Panel:** die Labels eines Geräts stehen unter seinem Namen, ein deaktiviertes Gerät trägt eine Markierung, und die
+  Suche findet Labels.
 
 ### [0.1.11] - 2026-10-23
 
