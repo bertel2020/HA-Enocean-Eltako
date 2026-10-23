@@ -58,7 +58,7 @@ export function fakeHass(params = new URLSearchParams()) {
     id: "gw1", kind: "radio", title: "FAM-USB Keller", size: 128, free: 119, first: 0xffb74480, unavailable: [0xffb74490, 0xffb74491],
     start: "FF-B7-44-80", end: "FF-B7-44-FF", next_free: "FF-B7-44-82",
     rows: [
-      { id: "FF-B7-44-81", decimal: 0xffb74481, device: "Licht Diele", profile: "central", state: "assigned" },
+      { id: "FF-B7-44-81", decimal: 0xffb74481, device: "Licht Diele", ref: "05-10-A2-B3", profile: "central", state: "assigned" },
       { id: "FF-B7-44-85", decimal: 0xffb74485, device: null, ref: "abc", profile: "central", state: "blocked" },
     ],
   };

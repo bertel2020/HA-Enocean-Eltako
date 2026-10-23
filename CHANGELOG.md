@@ -6,6 +6,13 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Links to the device in the panel:** an opened telegram has a "Device in panel" button, and the device name of a sender ID
+  group is a link: both open the device's row in the Devices view. "Open device" is now "Open in Home Assistant".
+
 ### [0.1.9] - 2026-10-23
 
 #### Added
@@ -338,6 +345,14 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Links zum Gerät im Panel:** Ein aufgeklapptes Telegramm hat den Knopf „Gerät im Panel", und der Gerätename einer
+  Sender-ID-Gruppe ist ein Link: beide öffnen die Zeile des Geräts in der Geräteansicht. „Gerät öffnen" heißt jetzt
+  „In Home Assistant öffnen".
 
 ### [0.1.9] - 2026-10-23
 

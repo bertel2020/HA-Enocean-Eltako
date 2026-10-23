@@ -355,6 +355,9 @@ const STYLE = `
   .senders .sid-group.blocked { background: color-mix(in srgb, var(--warn) 10%, transparent); }
   .senders .sid-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px 2px; min-width: 0; }
   .senders .sid-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+  .senders .sid-name.link { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); cursor: pointer; }
+  .senders .sid-name.link:hover { color: var(--accent-hover); text-decoration: underline; }
+  .senders .sid-name.link .go { width: 16px; height: 16px; }
   .senders .sid-head .sub { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .senders .sid-row { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; align-items: center;
     min-height: 34px; padding: 2px 16px 2px 28px; font-size: 13px; }
@@ -946,7 +949,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
     $("senders").addEventListener("keydown", (e) => {
-      if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-fold]")) {
+      if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-fold], [data-dev-panel]")) {
         e.preventDefault();
         this._sendersClick(e);
       }
@@ -1457,6 +1460,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     const page = e.target.closest("[data-device-page]");
     if (page) {
       this._navigate(`/config/devices/device/${page.dataset.devicePage}`);
+      return;
+    }
+    const inPanel = e.target.closest("[data-dev-panel]");
+    if (inPanel) {
+      this._showDevice(inPanel.dataset.devPanel);
       return;
     }
     const resend = e.target.closest("[data-resend]");
@@ -2085,7 +2093,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : r.models?.length ? `<div class="wide"><dt>${esc(t.models)}</dt><dd>${esc(r.models.join(", "))}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}${
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.device_key && this._inPanel(r.device_key) ? `<button class="chip" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}">${svg(ICON.list)}${esc(t.inPanel)}</button>` : ""}${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}${
             this._canResend(r) ? `<button class="chip" data-resend="${esc(key)}" title="${esc(t.resendHint)}">${svg(ICON.send)}${esc(t.resend)}</button>` : ""
           }</div>
         </dl></td></tr>`
@@ -2175,9 +2183,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     const list = [...groups.values()]
       .map((g) => ({ ...g, blocked: g.rows.some(isBlocked), rows: g.rows.sort((a, b) => isBlocked(b) - isBlocked(a) || collator.compare(a.id, b.id)) }))
       .sort((a, b) => b.blocked - a.blocked || (a.device == null) - (b.device == null) || collator.compare(a.device || "", b.device || ""));
+    const byRef = new Map(this._deviceItems().filter((d) => d.devKey).map((d) => [d.id, d.devKey]));
     const html = list
       .map((g) => {
-        const name = g.device
+        const panelKey = byRef.get(g.ref);
+        const name = g.device && panelKey
+          ? `<a class="sid-name link" data-dev-panel="${esc(panelKey)}" role="link" tabindex="0" title="${esc(t.inPanelHint)}">${esc(g.device)}${svg(ICON.next, "go")}</a>`
+          : g.device
           ? `<span class="sid-name">${esc(g.device)}</span>`
           : `<span class="sid-name deleted" title="${esc(g.ref || "")}">${esc(t.deletedDevice)}</span>`;
         const rows = g.rows
@@ -2234,7 +2246,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     const free = e.target.closest("[data-free]");
     const fold = e.target.closest("[data-fold]");
     const goto = e.target.closest("[data-goto]");
-    if (fold) {
+    const inPanel = e.target.closest("[data-dev-panel]");
+    if (inPanel) {
+      e.stopPropagation(); // the link sits in the fold header
+      this._showDevice(inPanel.dataset.devPanel);
+    } else if (fold) {
       const key = fold.dataset.fold;
       if (!this._sidFolded.delete(key)) this._sidFolded.add(key);
       this._renderSenderIds();
@@ -2618,6 +2634,31 @@ class EnOceanEltakoPanel extends HTMLElement {
   _editing() {
     const active = this.shadowRoot.activeElement;
     return !!active && !!active.closest?.(".dev-detail") && active.matches("select, input");
+  }
+
+  _inPanel(devKey) {
+    // a set-up device with telegrams of its own has a row in the Devices view
+    return this._deviceItems().some((d) => d.devKey === devKey);
+  }
+
+  _showDevice(devKey) {
+    // the Devices view with this device's row opened, on the page it is on
+    let list = this._deviceList();
+    if (!list.some((d) => d.devKey === devKey)) {
+      this._resetFilters(); // a filter hides it
+      list = this._deviceList();
+    }
+    const item = this._deviceItems().find((d) => d.devKey === devKey);
+    if (!item) return;
+    if (!this._devOpen.has(devKey)) {
+      this._devOpen.add(devKey);
+      this._loadDevDetail(devKey, item.gateway);
+    }
+    this._setView("devices");
+    const at = this._deviceList().findIndex((d) => d.devKey === devKey);
+    this._offset = at > 0 ? Math.floor(at / this._pageSize) * this._pageSize : 0;
+    this._render();
+    requestAnimationFrame(() => this.shadowRoot.querySelector(`.dev[data-dev="${CSS.escape(devKey)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   }
 
   async _loadDevDetail(key, gateway) {
