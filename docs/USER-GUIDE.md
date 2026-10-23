@@ -452,7 +452,8 @@ or PCT14.
 - The app announces its gateways: each one shows up here as discovered (**Device Proxy**);
   pick the model and the gateway is set up with **Replay over the Device Proxy** switched on.
   An app that names the model in its announcement (`model`, for example `fam_usb`) spares the
-  question; otherwise the model is guessed from the gateway's name.
+  question; otherwise the model is guessed from the gateway's name. The base ID is read from the
+  gateway; if it does not answer, the app's status supplies it.
 - After a Home Assistant restart the app delivers the telegrams that arrived meanwhile (radio
   telegrams only, up to 15 minutes old by default) with their reception time, so cover
   positions, meter readings and "last seen" stay right. If wanted, the app keeps them over its
