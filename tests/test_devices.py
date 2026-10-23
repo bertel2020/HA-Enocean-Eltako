@@ -1099,9 +1099,7 @@ async def test_inverted_switch_and_window_handle(hass: HomeAssistant, gateway) -
     [[_subentry("window_handle", "00-21-63-44", "Fenster", invert=True)]],
     indirect=True,
 )
-async def test_inverted_window_handle_swaps_closed_and_tilted(
-    hass: HomeAssistant, gateway
-) -> None:
+async def test_inverted_window_handle_swaps_closed_and_tilted(hass: HomeAssistant, gateway) -> None:
     """A handle fitted the other way up: closed and tilted trade places, open stays."""
     _entry, server = gateway
     window = _entity(hass, "binary_sensor", f"{BASE}_00-21-63-44_1_window")
@@ -1268,6 +1266,52 @@ async def test_rocker_gestures_and_device_triggers(hass: HomeAssistant, gateway)
         t for t in triggers if t["type"] == "long_press" and t["subtype"] == "a0"
     ).items()
     assert len(triggers) == 4 * 6
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("contact", "01-00-00-07", "Haustuer", device_class="door")]],
+    indirect=True,
+)
+async def test_contact_is_written_once_after_a_replay(hass: HomeAssistant, gateway) -> None:
+    """A door opened and closed twice while Home Assistant restarted: the Device Proxy replays
+    all four changes at once, and the contact must not flip through them (triggers, lights)."""
+    from custom_components.enocean_eltako.hub import async_get_hub
+
+    entry, server = gateway
+    contact = 0x01000007
+    entity_id = _entity(hass, "binary_sensor", f"{BASE}_01-00-00-07_1_contact")
+    _push(server, 0x06, b"\x09", contact)  # closed
+    await _settle(hass)
+    assert hass.states.get(entity_id).state == "off"
+    changes: list[str] = []
+    hass.bus.async_listen(
+        "state_changed",
+        lambda e: (
+            changes.append(e.data["new_state"].state) if e.data["entity_id"] == entity_id else None
+        ),
+    )
+    device = next(iter(entry.runtime_data.devices.values()))
+    dispatcher = async_get_hub(hass).dispatcher
+
+    def replay(data: bytes, stamp: float) -> None:
+        device.replaying = True
+        dispatcher.dispatch(entry.entry_id, RadioTelegram(Rorg.BS1, data, contact), timestamp=stamp)
+
+    for stamp, data in ((100.0, b"\x08"), (200.0, b"\x09"), (300.0, b"\x08"), (400.0, b"\x09")):
+        replay(data, stamp)  # open, closed, open, closed
+    await hass.async_block_till_done()
+    device.end_replay()
+    await hass.async_block_till_done()
+    assert changes == []  # it ends where it began
+    assert hass.states.get(entity_id).state == "off"
+
+    replay(b"\x08", 500.0)  # ends open
+    await hass.async_block_till_done()
+    assert changes == []  # still waiting for the end of the replay
+    device.end_replay()
+    await hass.async_block_till_done()
+    assert changes == ["on"]
 
 
 @pytest.mark.parametrize(

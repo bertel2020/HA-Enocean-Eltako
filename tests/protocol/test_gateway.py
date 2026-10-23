@@ -184,11 +184,13 @@ async def test_proxy_replay_with_reception_times(block: bool) -> None:
     port = server.sockets[0].getsockname()[1]
     replayed: list[tuple[RadioTelegram, float]] = []
     received: list[RadioTelegram] = []
+    done: list[int] = []
     gw = Gateway(
         Protocol.ESP2,
         TcpConnection("127.0.0.1", port),
         on_telegram=received.append,
         on_replayed=lambda telegram, at: replayed.append((telegram, at)),
+        on_replay_done=lambda: done.append(len(replayed)),
         hello=b"EOPX REPLAY TS\n",
     )
     await gw.connect()
@@ -203,8 +205,10 @@ async def test_proxy_replay_with_reception_times(block: bool) -> None:
     assert [t.data for t in received] == [b"\x50"]  # the live telegram
     if block:
         assert [(t.data, at) for t, at in replayed] == [(b"\x70", 1700000000.25)]
+        assert done == [1]  # once, after the last replayed telegram
     else:
         assert replayed == []
+        assert done == []
 
 
 async def test_proxy_replay_without_end_is_skipped(monkeypatch) -> None:

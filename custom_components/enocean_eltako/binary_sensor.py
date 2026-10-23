@@ -207,6 +207,7 @@ async def async_setup_entry(
 
 class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
     entity_description: EnOceanBinarySensorDescription
+    _write_after_replay = True
 
     def __init__(self, device: EnOceanDevice, description: EnOceanBinarySensorDescription) -> None:
         super().__init__(device, description.key)

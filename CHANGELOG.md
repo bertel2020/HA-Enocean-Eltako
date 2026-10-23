@@ -6,6 +6,15 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Fixed
+
+- **Device Proxy replay, binary sensors:** contacts, window handles, motion and rain sensors take the replay of telegrams
+  the Device Proxy kept during a restart in one go: the state is written once when the replay is through, so a door
+  opened and closed in the meantime no longer flips the sensor (and fires triggers) several times, and a state that ends
+  where it began fires none.
+
 ### [0.1.13] - 2026-10-23
 
 #### Added
@@ -415,6 +424,15 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Behoben
+
+- **Nachlieferung über den Device Proxy, Binärsensoren:** Kontakte, Fenstergriffe, Bewegungs- und Regensensoren nehmen die
+  nachgelieferten Telegramme aus der Zeit des Neustarts in einem Zug auf: der Zustand wird einmal geschrieben, wenn die
+  Nachlieferung durch ist. Eine zwischendurch geöffnete und geschlossene Tür lässt den Sensor nicht mehr mehrfach
+  umschalten (und Trigger feuern), und ein Zustand, der am Ende dort steht, wo er begann, löst nichts aus.
 
 ### [0.1.13] - 2026-10-23
 
