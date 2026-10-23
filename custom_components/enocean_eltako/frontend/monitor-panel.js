@@ -71,14 +71,15 @@ const STYLE = `
   :host {
     display: block; min-height: 100%; background: var(--bg); color: var(--text);
     font-family: Roboto, "Noto Sans", system-ui, -apple-system, sans-serif; font-size: 14px;
-    --bg: light-dark(#f3f4f6, #111418); --surface: light-dark(#ffffff, #1b1f24); --soft: light-dark(#f5f7f9, #22272e);
+    --bg: light-dark(#f4f6f9, #0f1216); --surface: light-dark(#ffffff, #1b1f24); --soft: light-dark(#f5f7f9, #22272e);
     --line: light-dark(#e1e5ea, #2d333b); --line-2: light-dark(#eef0f3, #262c33); --input-line: light-dark(#c3cbd5, #3a424c);
     --text: light-dark(#1b1f24, #e6e9ed); --muted: light-dark(#5b6270, #9aa4b1);
     --accent: light-dark(#0a6aa8, #5bb2ea); --accent-hover: light-dark(#07507f, #8ccaf2); --accent-soft: light-dark(#eaf3fa, #16324a);
     --on-accent: light-dark(#ffffff, #0b1a26); --focus: #7db8e0;
+    --shadow-c: light-dark(rgba(16, 24, 40, .06), rgba(0, 0, 0, .4)); --neutral-soft: light-dark(#eef1f4, #2a3038);
     --ok: light-dark(#1e6b34, #7fd49a); --warn: light-dark(#8a4b00, #f2c27a); --bad: light-dark(#a1261b, #f2a29a);
     --tag-bg: light-dark(#eef1f4, #2a3038); --tag-text: light-dark(#3a414c, #c5ccd5);
-    --radius: 16px;
+    --radius: 18px; --shadow: 0 1px 2px var(--shadow-c), 0 6px 18px -10px var(--shadow-c);
   }
   /* older browsers (iOS before 17.5, Chrome before 123) know no light-dark(): the same tokens,
      the scheme from the dark attribute */
@@ -87,18 +88,14 @@ const STYLE = `
       --bg: #f3f4f6; --surface: #ffffff; --soft: #f5f7f9; --line: #e1e5ea; --line-2: #eef0f3; --input-line: #c3cbd5;
       --text: #1b1f24; --muted: #5b6270; --accent: #0a6aa8; --accent-hover: #07507f; --accent-soft: #eaf3fa; --on-accent: #ffffff;
       --ok: #1e6b34; --warn: #8a4b00; --bad: #a1261b; --tag-bg: #eef1f4; --tag-text: #3a414c;
+      --shadow-c: rgba(16, 24, 40, .06); --neutral-soft: #eef1f4; --bg: #f4f6f9;
     }
     :host([dark]) {
       --bg: #111418; --surface: #1b1f24; --soft: #22272e; --line: #2d333b; --line-2: #262c33; --input-line: #3a424c;
       --text: #e6e9ed; --muted: #9aa4b1; --accent: #5bb2ea; --accent-hover: #8ccaf2; --accent-soft: #16324a; --on-accent: #0b1a26;
       --ok: #7fd49a; --warn: #f2c27a; --bad: #f2a29a; --tag-bg: #2a3038; --tag-text: #c5ccd5;
+      --shadow-c: rgba(0, 0, 0, .4); --neutral-soft: #2a3038; --bg: #0f1216;
     }
-  }
-  /* a theme or primary colour of the user's own: its colour is the accent */
-  :host([themed]) {
-    --theme-accent: var(--primary-color, #0a6aa8);
-    --accent: var(--theme-accent); --accent-hover: color-mix(in srgb, var(--theme-accent) 75%, var(--text));
-    --accent-soft: color-mix(in srgb, var(--theme-accent) 14%, var(--surface)); --on-accent: var(--text-primary-color, #ffffff);
   }
   * { box-sizing: border-box; }
   svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
@@ -107,7 +104,7 @@ const STYLE = `
   /* checkboxes in the accent colour, at one size */
   input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; flex: none; cursor: pointer; }
 
-  .header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
     gap: 0 24px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 60px; }
   .brand ha-menu-button { margin-left: -12px; color: var(--text); }
@@ -115,11 +112,11 @@ const STYLE = `
   .brand small { display: block; font-size: 12px; color: var(--muted); }
   .header .logo { width: 36px; height: 36px; flex: none; }
   /* the view tabs: their own look, not the segmented filter buttons */
-  #view { display: flex; flex-wrap: wrap; }
-  #view button { display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; font-size: 14px; font-weight: 500; white-space: nowrap;
-    color: var(--muted); border-bottom: 3px solid transparent; }
-  #view button:hover { color: var(--text); }
-  #view button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  #view { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 0; }
+  #view button { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font-size: 14px; font-weight: 500; white-space: nowrap;
+    color: var(--muted); border-radius: 20px; transition: background .15s, color .15s; }
+  #view button:hover { color: var(--text); background: var(--neutral-soft); }
+  #view button[aria-selected="true"] { color: var(--accent-hover); background: var(--accent-soft); }
   #view button[hidden] { display: none; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -131,7 +128,7 @@ const STYLE = `
   .cards { display: flex; flex-direction: column; gap: 12px; }
   .card { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 20px;
     background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
-    box-shadow: none; transition: border-color .15s, box-shadow .15s; }
+    box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s; }
   .card.selected { border: 2px solid var(--accent); padding: 19px; background: var(--accent-soft); }
   .card .name { font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .sub { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
@@ -173,7 +170,7 @@ const STYLE = `
 
   /* telegram section */
   .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
-    box-shadow: none; overflow: clip; }
+    box-shadow: var(--shadow); overflow: clip; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 12px 12px 16px;
     border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; background: var(--surface); }
   /* the gateway status in the bar, once the cards are scrolled away */
@@ -706,9 +703,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._hass = hass;
     this.style.colorScheme = hass.themes?.darkMode ? "dark" : "light";
     this.toggleAttribute("dark", !!hass.themes?.darkMode);
-    // the default theme keeps the panel's own accent; any other theme or colour sets it
-    const theme = hass.selectedTheme?.theme || hass.themes?.theme;
-    this.toggleAttribute("themed", !!((theme && theme !== "default") || hass.selectedTheme?.primaryColor));
     if (first) {
       this._t = TEXT[(hass.language || "en").startsWith("de") ? "de" : "en"];
       this._build();

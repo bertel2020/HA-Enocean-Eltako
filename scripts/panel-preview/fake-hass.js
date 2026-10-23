@@ -70,7 +70,6 @@ export function fakeHass(params = new URLSearchParams()) {
     locale: { language: params.get("lang") || "de", number_format: "language", time_format: "language", time_zone: "local" },
     config: { time_zone: "Europe/Berlin" },
     themes: { darkMode: params.has("dark"), theme: "default" },
-    selectedTheme: params.has("primary") ? { primaryColor: "#e91e63" } : null,
     connection: {
       connected: true,
       addEventListener: (event, callback) => (listeners[event] = callback),
