@@ -515,7 +515,9 @@ async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
     ("announced", "asks"),
     [("fgw14_usb", False), ("mgw_eth", True), ("nope", True)],  # other protocol, unknown: ask
 )
-async def test_device_proxy_app_model_announced(hass: HomeAssistant, announced: str, asks: bool) -> None:
+async def test_device_proxy_app_model_announced(
+    hass: HomeAssistant, announced: str, asks: bool
+) -> None:
     """A model in the announcement skips the question; one that does not fit is ignored."""
     from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
@@ -524,7 +526,9 @@ async def test_device_proxy_app_model_announced(hass: HomeAssistant, announced: 
         config={
             "host": "127.0.0.1",
             "replay": True,
-            "gateways": [{"name": "Bus", "port": server.port, "protocol": "esp2", "model": announced}],
+            "gateways": [
+                {"name": "Bus", "port": server.port, "protocol": "esp2", "model": announced}
+            ],
         },
         name="Device Proxy",
         slug="abc_device_proxy",

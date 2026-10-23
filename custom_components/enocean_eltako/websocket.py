@@ -765,7 +765,9 @@ async def ws_free_senders(
         for sender in senders:
             allocation = pool.get(sender)
             if allocation is None or allocation.state is not SenderState.BLOCKED:
-                connection.send_error(msg["id"], "not_blocked", "only a blocked sender ID can be freed")
+                connection.send_error(
+                    msg["id"], "not_blocked", "only a blocked sender ID can be freed"
+                )
                 return
     else:
         senders = [s for s, a in pool.allocations() if a.state is SenderState.BLOCKED]
