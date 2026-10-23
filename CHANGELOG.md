@@ -30,6 +30,8 @@ All notable changes to this project are documented here, in English and German
 - **Devices view:** the model of a device is set in its opened row: a dropdown with the models of its
   kind, "Not specified", or "Other model…" to type one. It is saved at once (the gateway's entry
   reloads, as after any change of a device).
+- **Devices view:** the opened row shows its values as small tiles and tables on white, like the statistics of the
+  Device Proxy app; the share of confirmed commands is a coloured chip.
 - **Panel look:** the panel looks like the Device Proxy app: its page colour, larger rounded cards
   with a soft shadow, and pill-shaped view tabs. The accent colour is always the blue of the app; it
   no longer follows the primary colour of a Home Assistant theme (light and dark still follow it).
@@ -363,6 +365,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Geräteansicht:** Das Modell eines Geräts wird in seiner aufgeklappten Zeile gesetzt: Dropdown mit den
   Modellen seiner Art, „Nicht angegeben" oder „Anderes Modell …" zum Eintippen. Es wird sofort
   gespeichert (der Eintrag des Gateways lädt neu, wie nach jeder Änderung an einem Gerät).
+- **Geräteansicht:** Die aufgeklappte Zeile zeigt ihre Werte als kleine Kacheln und Tabellen auf Weiß, wie die
+  Statistiken der Device-Proxy-App; der Anteil bestätigter Befehle ist ein farbiger Chip.
 - **Aussehen des Panels:** Das Panel sieht aus wie die Device-Proxy-App: deren Seitenfarbe, größere
   abgerundete Karten mit weichem Schatten und Reiter als Pillen. Die Akzentfarbe ist immer das Blau
   der App und folgt nicht mehr der Primärfarbe eines Home-Assistant-Themes (hell und dunkel folgen

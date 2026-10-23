@@ -303,6 +303,7 @@ const STYLE = `
   .who .line2 { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
   .tag { flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: var(--tag-bg); color: var(--tag-text); white-space: nowrap; }
   .tag.teach, .tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .tag.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
   .values { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
   .value { white-space: nowrap; }
   .value span { color: var(--muted); }
@@ -440,12 +441,16 @@ const STYLE = `
   .devices .dev.open { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .dev-detail .dsec h4 { margin: 0 0 6px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 0; }
-  .dev-detail .dgrid dt { font-size: 11px; color: var(--muted); }
-  .dev-detail .dgrid dd { margin: 0; overflow-wrap: anywhere; }
+  .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
+  /* values as small tiles, like the Device Proxy's statistics */
+  .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0; }
+  .dev-detail .dgrid > div { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  .dev-detail .dgrid dt { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .dev-detail .dgrid dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+  .dev-detail .dtbl, .dev-detail .vbox { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px 12px; }
+  .dev-detail .vbox { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
   .dev-detail .dtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .dev-detail .dtbl td { padding: 4px 12px 4px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; vertical-align: top; }
+  .dev-detail .dtbl td { padding: 8px 12px 8px 0; border-top: 1px solid var(--line-2); overflow-wrap: anywhere; vertical-align: top; }
   .dev-detail .dtbl tr:first-child td { border-top: 0; }
   .dev-detail .values { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   .dev-detail .dact { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -2559,13 +2564,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
     ]);
     const fields = d.fields && d.fields.length ? d.fields.map((f) => (f.label === "on" || f.label === "state" ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>` : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`)).join("") : "";
-    const values = (fields ? `<div class="values">${fields}</div>` : "") + (d.data ? `<div class="mono sub">${esc(d.data)}</div>` : "");
+    const values = fields || d.data ? `<div class="vbox">${fields ? `<div class="values">${fields}</div>` : ""}${d.data ? `<div class="mono sub">${esc(d.data)}</div>` : ""}</div>` : "";
     const senders = x.senders.length ? table(x.senders.map((s) => [esc(this._profile(s.profile)), esc(s.id), esc(s.ute ? t.teachUte : t.teachTelegram)])) : "";
     const c = x.commands;
     const commands = c && c.sent
       ? list([
           item(t.cmdSent, esc(c.sent)),
-          item(t.cmdConfirmed, `${esc(c.confirmed)}${c.rate != null ? ` <span class="tag${c.rate < 90 ? " warn" : ""}">${esc(c.rate.toLocaleString(undefined, { maximumFractionDigits: 1 }))} %</span>` : ""}`),
+          item(t.cmdConfirmed, `${esc(c.confirmed)}${c.rate != null ? ` <span class="tag ${c.rate < 90 ? "warn" : "ok"}">${esc(c.rate.toLocaleString(undefined, { maximumFractionDigits: 1 }))} %</span>` : ""}`),
           item(t.cmdLatency, c.latency_avg != null ? esc(t.latency(c.latency_avg, c.latency_max)) : ""),
         ])
       : "";
