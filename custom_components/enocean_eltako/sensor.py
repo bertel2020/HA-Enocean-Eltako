@@ -226,7 +226,11 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
     ),
     "weather": (
         EnOceanSensorDescription(
-            key="dawn", translation_key="dawn", **ILLUMINANCE, value_fn=_field("DWS", 0)
+            key="dawn",
+            translation_key="dawn",
+            **ILLUMINANCE,
+            suggested_display_precision=0,
+            value_fn=lambda v: round(v["DWS"]) if "DWS" in v else None,
         ),
         EnOceanSensorDescription(key="temperature", **TEMPERATURE, value_fn=_field("TMP")),
         EnOceanSensorDescription(
@@ -234,6 +238,7 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
             device_class=SensorDeviceClass.WIND_SPEED,
             native_unit_of_measurement=UnitOfSpeed.METERS_PER_SECOND,
             state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
             value_fn=_field("WND"),
         ),
         *(
@@ -241,6 +246,7 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
                 key=f"sun_{side}",
                 translation_key=f"sun_{side}",
                 **ILLUMINANCE,
+                suggested_display_precision=0,
                 value_fn=(lambda f: lambda v: round(v[f] * 1000) if f in v else None)(field),
             )
             for side, field in (("west", "SNW"), ("south", "SNS"), ("east", "SNE"))

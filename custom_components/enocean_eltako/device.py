@@ -184,7 +184,8 @@ class EnOceanDevice:
             name=self.subentry.title,
             manufacturer=self.model.manufacturer,
             model=self._registry_model,
-            model_id=str(self.model.receive) if self.model.receive else None,
+            # the EEP stands once: as the model when there is no type, else as the model ID
+            model_id=str(self.model.receive) if self.model.receive and self._model_label else None,
             serial_number=format_id(self.device_id),
         )
         if (gateway := self.entry.runtime_data.gateway_device_id) is not None:
