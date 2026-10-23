@@ -645,7 +645,7 @@
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
             "rain_hold": "Minutes “Rain recently” stays on after the last rain.",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
-            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
+            "invert": "Contacts: on means closed. Window handles: closed and tilted trade places (handle fitted the other way up). Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
           },
           "sections": {
@@ -754,7 +754,7 @@
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
             "rain_hold": "Minutes “Rain recently” stays on after the last rain.",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
-            "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
+            "invert": "Contacts: on means closed. Window handles: closed and tilted trade places (handle fitted the other way up). Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
           },
           "sections": {

@@ -1094,6 +1094,30 @@ async def test_inverted_switch_and_window_handle(hass: HomeAssistant, gateway) -
     assert hass.states.get(window).state == "on"
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("window_handle", "00-21-63-44", "Fenster", invert=True)]],
+    indirect=True,
+)
+async def test_inverted_window_handle_swaps_closed_and_tilted(
+    hass: HomeAssistant, gateway
+) -> None:
+    """A handle fitted the other way up: closed and tilted trade places, open stays."""
+    _entry, server = gateway
+    window = _entity(hass, "binary_sensor", f"{BASE}_00-21-63-44_1_window")
+    handle = _entity(hass, "sensor", f"{BASE}_00-21-63-44_1_handle")
+    # (telegram, handle sensor, window on = open)
+    for data, position, is_open in (
+        (b"\xf0", "tilted", "on"),
+        (b"\xd0", "closed", "off"),
+        (b"\xe0", "open", "on"),
+    ):
+        _push(server, 0x05, data, 0x00216344, 0x20)
+        await _settle(hass)
+        assert hass.states.get(handle).state == position
+        assert hass.states.get(window).state == is_open
+
+
 def test_heating_controller_telegram() -> None:
     from custom_components.enocean_eltako.protocol.eep.eltako import heating
 

@@ -44,6 +44,7 @@ from .catalog import (
     GENERIC_EEP,
     GROUP_VIRTUAL,
     OPT_FIELDS,
+    OPT_INVERT,
     custom_definition,
     custom_key,
     generic_fields,
@@ -63,6 +64,8 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
 HANDLE_POSITIONS = {0xF0: "closed", 0xC0: "open", 0xE0: "open", 0xD0: "tilted"}
+# a handle fitted the other way up: its closed and tilted positions are exchanged, open stays
+HANDLE_UPSIDE_DOWN = {"closed": "tilted", "tilted": "closed", "open": "open"}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -522,6 +525,7 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
         super().__init__(device, description.key)
         self.entity_description = description
         self._primary_seen = False
+        self._upside_down = description.key == "handle" and bool(device.options.get(OPT_INVERT))
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -534,6 +538,8 @@ class EnOceanSensor(EnOceanEntity, RestoreSensor):
             self._primary_seen = True
         elif self.entity_description.fallback_value_fn is not None and not self._primary_seen:
             value = self.entity_description.fallback_value_fn(values)
+        if self._upside_down and value is not None:
+            value = HANDLE_UPSIDE_DOWN[value]
         if value is None or value == self._attr_native_value:
             return False
         if self.entity_description.monotonic and _decreases(self._attr_native_value, value):
