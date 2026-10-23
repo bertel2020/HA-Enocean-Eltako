@@ -260,6 +260,11 @@
       "acceleration_z": {
         "default": "mdi:axis-z-arrow"
       }
+    },
+    "select": {
+      "cover_automation": {
+        "default": "mdi:form-select"
+      }
     }
   },
   "services": {

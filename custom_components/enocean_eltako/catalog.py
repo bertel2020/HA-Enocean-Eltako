@@ -739,6 +739,7 @@ PLATFORMS: tuple[Platform, ...] = (
     Platform.COVER,
     Platform.EVENT,
     Platform.LIGHT,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
 )

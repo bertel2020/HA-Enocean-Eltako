@@ -1184,6 +1184,17 @@
       "scene_4": {
         "name": "Scene 4"
       }
+    },
+    "select": {
+      "cover_automation": {
+        "name": "Automation mode",
+        "state": {
+          "off": "Off",
+          "morning": "Morning",
+          "evening": "Evening",
+          "both": "Both"
+        }
+      }
     }
   },
   "issues": {
