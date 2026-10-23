@@ -101,6 +101,15 @@ def _sent(server, rorg: int, data: bytes, sender: int, status: int = 0) -> bool:
     return esp2.encode_radio(RadioTelegram(rorg, data, sender, status)) in bytes(server.received)
 
 
+async def _wait_sent(hass: HomeAssistant, server, rorg: int, data: bytes, sender: int) -> bool:
+    """Poll until the telegram has gone through the send queue (CI runners can be slow)."""
+    for _ in range(100):
+        if _sent(server, rorg, data, sender):
+            return True
+        await _settle(hass)
+    return False
+
+
 async def test_states_are_restored(hass: HomeAssistant, restored) -> None:
     assert hass.states.get(_entity(hass, "light", uid("05-00-00-01", "light"))).state == "on"
     dimmer = hass.states.get(_entity(hass, "light", uid("05-00-00-02", "light")))
@@ -151,7 +160,9 @@ async def test_heating_cycle_and_silence_repair(hass: HomeAssistant, restored, m
     _entry, server = restored
     heater = _entity(hass, "climate", uid("05-00-00-06", "climate"))
     issue_id = f"climate_silent_{BASE}_05-00-00-06"
-    assert _sent(server, Rorg.BS4, heating.encode_controller(0, 20.0), 0xFFB74486)  # off
+    assert await _wait_sent(
+        hass, server, Rorg.BS4, heating.encode_controller(0, 20.0), 0xFFB74486
+    )  # off
 
     hass.states.async_set("sensor.raum", "not a number")  # read at the next cycle only
     await hass.services.async_call(
