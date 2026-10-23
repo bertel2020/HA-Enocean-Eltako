@@ -6,7 +6,7 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
-### [Unreleased]
+### [1.0.1] - 2026-10-23
 
 #### Fixed
 
@@ -448,7 +448,7 @@ First version of the integration.
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
-### [Unreleased]
+### [1.0.1] - 2026-10-23
 
 #### Behoben
 
