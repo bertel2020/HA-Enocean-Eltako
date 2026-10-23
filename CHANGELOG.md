@@ -29,6 +29,9 @@ All notable changes to this project are documented here, in English and German
   that assistants might treat as a leak alarm. The wind's unit (m/s, km/h, Beaufort) is the entity's display unit
   setting in Home Assistant.
 - **Device page:** a device without a named type lists its EEP once, as the model, not again as the model ID.
+- **Panel, Devices view:** the boxes have a column of their own, so name and ID line up, and "Select all" sits in the
+  table head above them (on phones it stays in the line above the list). The bar of the ticked devices takes the place
+  of the count line, the row icons are subdued until the pointer is over the row, and "not heard" is muted.
 
 ### [0.1.12] - 2026-10-23
 
@@ -436,6 +439,10 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Regen-Symbolen, kein „Feuchtigkeits“-Sensor (Leck) mehr, den Assistenten als Leckalarm behandeln könnten. Die Einheit
   des Winds (m/s, km/h, Beaufort) ist die Anzeigeeinheit der Entität in Home Assistant.
 - **Geräteseite:** ein Gerät ohne benannten Typ nennt sein EEP einmal, als Modell, nicht noch einmal als Modell-ID.
+- **Panel, Ansicht Geräte:** die Kästchen haben eine eigene Spalte, so fluchten Name und ID, und „Alle auswählen“ steht
+  im Tabellenkopf darüber (auf dem Handy bleibt es in der Zeile über der Liste). Die Leiste der gewählten Geräte
+  ersetzt die Zeile mit der Anzahl, die Symbole der Zeilen sind gedämpft, bis der Zeiger über der Zeile steht, und
+  „nicht gehört“ ist abgeschwächt.
 
 ### [0.1.12] - 2026-10-23
 

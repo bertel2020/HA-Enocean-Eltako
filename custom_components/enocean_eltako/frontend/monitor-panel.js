@@ -351,16 +351,22 @@ const STYLE = `
   .sendform ul.names { margin: 0 0 10px; padding-left: 18px; font-size: 13px; }
   .sendform .newlabel { display: flex; gap: 8px; align-items: end; }
   .sendform .newlabel label { flex: 1; }
-  .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent-soft); border-top: 1px solid var(--line); }
+  .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 48px; padding: 8px 16px; background: var(--accent-soft); border-top: 1px solid var(--line); }
+  .panel[data-picked] .meta { display: none; }
   .selbar[hidden] { display: none; }
   .selbar .count { font-weight: 500; margin-right: 4px; }
   .selbar .grow { flex: 1; }
   .selbar .chip { height: 32px; background: var(--surface); }
   .selbar .chip.danger { color: var(--bad); border-color: var(--bad); }
   .sendform .chip.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
-  .selall { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
-  .selall[hidden] { display: none; }
-  .devices .dev .selbox { width: 16px; height: 16px; margin: 0 10px 0 0; vertical-align: -3px; cursor: pointer; accent-color: var(--accent); }
+  .selall { display: none; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+  .selbox { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--accent); }
+  .devices .c-sel { display: flex; align-items: center; justify-content: center; align-self: stretch; }
+  .devices .dev .quiet-note { color: var(--muted); font-size: 12px; }
+  @media (hover: hover) {
+    .devices .dev .acts .icon-btn { opacity: .55; transition: opacity .15s; }
+    .devices .dev:hover .acts .icon-btn, .devices .dev .acts .icon-btn:focus-visible { opacity: 1; }
+  }
   .devices .dev.picked { background: var(--accent-soft); }
   .devices .dev .labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
@@ -457,7 +463,7 @@ const STYLE = `
   }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: minmax(170px, 2fr) 96px minmax(64px, 1fr) 76px minmax(0, 1.6fr) 140px auto; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(170px, 2fr) 96px minmax(64px, 1fr) 76px minmax(0, 1.6fr) 140px auto; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -509,17 +515,19 @@ const STYLE = `
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   @media (max-width: 760px) {
-    .devices { grid-template-columns: minmax(0, 1fr) auto; }
+    .devices { grid-template-columns: 28px minmax(0, 1fr) auto; }
     .devices .dev-head { display: none; }
+    .devices .c-sel { grid-column: 1; grid-row: 1 / span 2; align-items: flex-start; padding-top: 4px; }
+    .selall:not([hidden]) { display: inline-flex; }
     .devices .dev { grid-template-columns: subgrid; }
     .devices .dev .c-type, .devices .dev .c-area, .devices .dev .c-ent { display: none; }
     .devices .dev .msub { display: block; }
     .devices .dev .sub { overflow-wrap: break-word; }
     .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
-    .devices .dev .values { grid-column: 1; grid-row: 2; }
+    .devices .dev .values { grid-column: 2; grid-row: 2; }
     /* phones: "add" shrinks to its icon, next to the values */
-    .devices .dev .acts { grid-column: 2; grid-row: 2; flex-wrap: nowrap; }
+    .devices .dev .acts { grid-column: 3; grid-row: 2; flex-wrap: nowrap; }
     .devices .dev .acts .chip { width: 32px; padding: 0; }
     .devices .dev .acts .lbl { display: none; }
   }
@@ -1048,6 +1056,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._applyPick();
     });
     $("devices").addEventListener("click", (e) => {
+      if (e.target.closest("[data-sel-all]")) return;
       const box = e.target.closest("[data-sel]");
       if (box) {
         this._toggleSel(box.dataset.sel, box.checked);
@@ -1096,6 +1105,10 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._setView("telegrams");
     });
     $("devices").addEventListener("change", (e) => {
+      if (e.target.matches?.("[data-sel-all]")) {
+        this._selectAll(e.target.checked);
+        return;
+      }
       const select = e.target.closest("[data-model-for]");
       if (select) {
         const input = select.parentElement.querySelector("[data-model-text]");
@@ -2544,7 +2557,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     const now = this._now();
     const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard]];
-    const head = `<div class="dev-head">${cols
+    const listed = devices.filter((d) => d.devKey);
+    const ticked = listed.filter((d) => this._sel.has(d.devKey)).length;
+    const all_ = `<span class="c-sel">${listed.length ? `<input type="checkbox" class="selbox" data-sel-all${listed.length && ticked === listed.length ? " checked" : ""} aria-label="${esc(t.selAll)}">` : ""}</span>`;
+    const head = `<div class="dev-head">${all_}${cols
       .map(([key, label, cls]) => {
         if (!DEV_SORTERS[key]) return `<span>${esc(label)}</span>`;
         const state = this._devSort.key === key ? ` aria-sort="${this._devSort.desc ? "descending" : "ascending"}"` : "";
@@ -2552,6 +2568,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       })
       .join("")}<span></span></div>`;
     this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
+    const headBox = container.querySelector("[data-sel-all]");
+    if (headBox) headBox.indeterminate = ticked > 0 && ticked < listed.length;
   }
 
   _labelNames(d) {
@@ -2611,6 +2629,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (!items.length) this._pick = null;
     const bar = $("selBar");
     bar.hidden = !items.length;
+    $("panel").toggleAttribute("data-picked", items.length > 0);
     $("pickForm").hidden = !this._pick;
     if (!items.length) return;
     const off = items.every((d) => d.disabled);
@@ -2844,7 +2863,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const stats = d.quiet
-      ? `<span title="${esc(t.quietHint)}">${esc(heard)}</span>`
+      ? `<span${d.time == null ? ' class="quiet-note"' : ""} title="${esc(t.quietHint)}">${esc(heard)}</span>`
       : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
         <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}`;
     const only = d.name || d.id;
@@ -2862,7 +2881,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const box = d.devKey ? `<input type="checkbox" class="selbox" data-sel="${esc(d.devKey)}"${picked ? " checked" : ""} aria-label="${esc(t.selBoxLabel(d.name || d.id))}">` : "";
     const labels = this._labelNames(d);
     return `<div class="dev${d.quiet ? " quiet" : ""}${open ? " open" : ""}${picked ? " picked" : ""}${d.devKey ? " expandable" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}"${d.devKey ? ` data-dev="${esc(d.devKey)}" data-gateway="${esc(d.gateway)}"` : ""}>
-      <div class="ident"><div class="line1">${box}${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div>
+      <div class="c-sel">${box}</div>
+      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div>
       <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
       <div class="c-area">${d.area ? esc(d.area) : none}</div>
       <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>
