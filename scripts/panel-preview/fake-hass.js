@@ -99,6 +99,8 @@ export function fakeHass(params = new URLSearchParams()) {
             entities: [{ name: "Licht", entity_id: "light.licht_diele", state: "on", unit: null }, { name: "Signalstärke", entity_id: "sensor.licht_diele_signal", state: "-62", unit: "dBm" }],
           };
         }
+        case "enocean_eltako/set_model":
+          return { model_name: msg.model_name };
         case "enocean_eltako/takeover/status":
           return { available: !empty && !params.has("closed"), report: !empty, closed: params.has("closed") };
         case "enocean_eltako/sender_pools":

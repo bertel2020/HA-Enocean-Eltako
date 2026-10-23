@@ -452,6 +452,8 @@ const STYLE = `
   .dev-detail .dtbl tr:first-child td { border-top: 0; }
   .dev-detail .values { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   .dev-detail .dact { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dev-detail .mini { height: 32px; max-width: 100%; min-width: 12em; }
+  .dev-detail input.mini { margin-top: 4px; width: 100%; border: 1px solid var(--input-line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
   .devices .dev.quiet .name { color: var(--muted); }
   .spark { display: block; }
   .spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -1005,6 +1007,29 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (dev.classList.contains("quiet")) return; // a device not heard has no telegrams to show
       this._setText(dev.dataset.only);
       this._setView("telegrams");
+    });
+    $("devices").addEventListener("change", (e) => {
+      const select = e.target.closest("[data-model-for]");
+      if (select) {
+        const input = select.parentElement.querySelector("[data-model-text]");
+        if (select.value === "__other") {
+          input.hidden = false;
+          input.focus();
+        } else {
+          input.hidden = true;
+          this._saveModel(select.dataset.modelFor, select.value);
+        }
+        return;
+      }
+      const text = e.target.closest("[data-model-text]");
+      if (text && text.value.trim()) this._saveModel(text.dataset.modelText, text.value.trim());
+    });
+    $("devices").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.target.matches?.("[data-model-text]")) e.target.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    $("devices").addEventListener("focusout", () => {
+      // back to the live list once the pick is done
+      setTimeout(() => this._view === "devices" && !this._editing() && this._render(), 0);
     });
     $("unknown").addEventListener("change", (e) => this._set("unknown", e.target.checked));
     $("repeats").addEventListener("change", (e) => this._set("repeats", e.target.checked));
@@ -2382,7 +2407,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     weakHint.hidden = !weak || this._filter.devStatus === "weak";
     weakHint.innerHTML = `${svg(ICON.signal)}${esc(t.weakCount(weak))}`;
     weakHint.title = t.weakHint;
-    if (this._hold("devices", container, background)) return;
+    if (this._hold("devices", container, background) || this._editing()) return;
     if (!page.length) {
       const filtered = all.length > 0;
       this._replace(container, filtered
@@ -2526,7 +2551,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const sig = x.signal;
     const identity = list([
-      item(t.model, x.model ? esc(x.model) : x.models.length ? `${none} <span class="sub">${esc(t.modelUnknown)}</span>` : ""),
+      item(t.model, x.models.length ? this._modelPicker(d.devKey, x) : x.model ? esc(x.model) : ""),
       item(t.eep, x.eep ? mono([x.eep, ...x.eep_extra].join(", ")) : ""),
       item(t.devCols.area, d.area ? esc(d.area) : ""),
       item(t.gateway, esc(x.gateway_name)),
@@ -2562,6 +2587,38 @@ class EnOceanEltakoPanel extends HTMLElement {
       d.quiet && d.time == null ? "" : `<button class="chip" data-only="${esc(only)}">${svg(ICON.filter)}${esc(t.showTelegrams)}</button>`
     }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}</div>`;
     return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders)}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntities(x.entities.length), entities)}${actions}</div>`;
+  }
+
+  _modelPicker(key, x) {
+    // the type is not told by the radio: a pick from the kind's models, or a model typed in
+    const t = this._t;
+    const custom = x.model_name && !x.models.includes(x.model_name);
+    const options = [["", t.modelNone], ...x.models.map((m) => [m, m]), ...(custom ? [[x.model_name, x.model_name]] : []), ["__other", t.modelOther]];
+    const select = `<select class="select mini" data-model-for="${esc(key)}" aria-label="${esc(t.model)}">${options
+      .map(([v, label]) => `<option value="${esc(v)}"${v === x.model_name ? " selected" : ""}>${esc(label)}</option>`)
+      .join("")}</select>`;
+    return `${select}<input class="mini" data-model-text="${esc(key)}" placeholder="${esc(t.modelPlaceholder)}" maxlength="64" autocomplete="off" hidden>${x.model_name ? "" : `<div class="sub">${esc(t.modelUnknown)}</div>`}`;
+  }
+
+  async _saveModel(key, modelName) {
+    const gateway = this._deviceItems().find((d) => d.devKey === key)?.gateway;
+    if (!gateway) return;
+    this._notice("");
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_model", entry_id: gateway, device: key, model_name: modelName });
+    } catch (err) {
+      this._notice(this._t.modelFailed);
+      return;
+    }
+    const x = this._devDetails.get(key);
+    if (x) Object.assign(x, { model_name: modelName, model: modelName });
+    this._render();
+  }
+
+  // a select or text box being used in an opened row keeps the list from being redrawn under it
+  _editing() {
+    const active = this.shadowRoot.activeElement;
+    return !!active && !!active.closest?.(".dev-detail") && active.matches("select, input");
   }
 
   async _loadDevDetail(key, gateway) {

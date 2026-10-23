@@ -27,6 +27,9 @@ All notable changes to this project are documented here, in English and German
   statistics (sent, confirmed, answer time), settings and entities with their states. Several rows
   can be open; they stay up to date, and the list keeps its order while one is open. A click on the
   row no longer jumps to the telegrams: the filter button of the row does that.
+- **Devices view:** the model of a device is set in its opened row: a dropdown with the models of its
+  kind, "Not specified", or "Other model…" to type one. It is saved at once (the gateway's entry
+  reloads, as after any change of a device).
 - **Devices view:** the list always opens sorted by name; a column sort you click applies until the
   panel is closed and is no longer kept.
 - **Telegram monitor:** an open telegram pauses the list: new telegrams wait (the live badge shows
@@ -354,6 +357,9 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   Einstellungen und Entitäten mit ihren Zuständen. Mehrere Zeilen können offen sein, sie bleiben
   aktuell, und die Liste behält ihre Reihenfolge, solange eine offen ist. Ein Klick auf die Zeile
   springt nicht mehr zu den Telegrammen: Das macht der Filter-Knopf der Zeile.
+- **Geräteansicht:** Das Modell eines Geräts wird in seiner aufgeklappten Zeile gesetzt: Dropdown mit den
+  Modellen seiner Art, „Nicht angegeben" oder „Anderes Modell …" zum Eintippen. Es wird sofort
+  gespeichert (der Eintrag des Gateways lädt neu, wie nach jeder Änderung an einem Gerät).
 - **Geräteansicht:** Die Liste öffnet immer nach Namen sortiert; eine angeklickte Spaltensortierung
   gilt, bis das Panel geschlossen wird, und wird nicht mehr gemerkt.
 - **Telegramm-Monitor:** Ein aufgeklapptes Telegramm hält die Liste an: neue Telegramme warten (die

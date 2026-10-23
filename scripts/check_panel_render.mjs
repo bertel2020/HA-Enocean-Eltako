@@ -98,6 +98,24 @@ for (const lang of ["en", "de"]) {
     expect("device details open", root.querySelectorAll(".dev-detail").length, 1);
     expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-B7-44-81"), true);
     expect("device rows while one is open", root.querySelectorAll(".dev").length, 5);
+    // the model is a pick from the kind's models; a typed one comes through "other"
+    const picker = root.querySelector("[data-model-for]");
+    picker.value = "FL62";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    const saved = () => fake.sent.filter((m) => m.type === "enocean_eltako/set_model").map((m) => `${m.device}:${m.model_name}`).join(",");
+    expect("model picked", saved(), "sub1:FL62");
+    const again = root.querySelector("[data-model-for]"); // the row was drawn anew
+    again.value = "__other";
+    again.dispatchEvent(new Event("change", { bubbles: true }));
+    const typed = root.querySelector("[data-model-text]");
+    expect("typing box shown", typed.hidden, false);
+    typed.value = "FSR14M-2x";
+    typed.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    expect("model typed", saved(), "sub1:FL62,sub1:FSR14M-2x");
+    typed.blur(); // the redraw waits while a box is in use, then catches up
+    await settle();
     root.querySelector('.dev[data-dev="sub2"]').click();
     await settle();
     expect("two device rows open", root.querySelectorAll(".dev-detail").length, 2);
