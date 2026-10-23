@@ -12,6 +12,8 @@ All notable changes to this project are documented here, in English and German
 
 - **Links to the device in the panel:** an opened telegram has a "Device in panel" button, and the device name of a sender ID
   group is a link: both open the device's row in the Devices view. "Open device" is now "Open in Home Assistant".
+- **Panel look:** logo and view tabs line up with the content (at most 1200 px, centred) instead of the window's
+  edges, like in the Device Proxy app.
 - **Sender IDs:** the top of the view is clearer: tiles for free, assigned and blocked IDs and the next
   free ID (with a copy button), one bar for the share used, a note when blocked IDs wait for their teach-out
   (with a button to the first one), a pool map whose rows name their ID range, and a line under the map that
@@ -357,6 +359,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Links zum Gerät im Panel:** Ein aufgeklapptes Telegramm hat den Knopf „Gerät im Panel", und der Gerätename einer
   Sender-ID-Gruppe ist ein Link: beide öffnen die Zeile des Geräts in der Geräteansicht. „Gerät öffnen" heißt jetzt
   „In Home Assistant öffnen".
+- **Aussehen des Panels:** Logo und Reiter richten sich am Inhalt aus (höchstens 1200 px, zentriert) statt an den
+  Fensterrändern, wie in der Device-Proxy-App.
 - **Sender-IDs:** Der Kopf der Ansicht ist klarer: Kacheln für freie, zugewiesene und gesperrte IDs und die nächste
   freie ID (mit Kopieren-Knopf), ein Balken für den belegten Anteil, ein Hinweis, wenn gesperrte IDs auf ihr
   Teach-out warten (mit Knopf zur ersten), eine Pool-Karte, deren Zeilen ihren ID-Bereich nennen, und eine Zeile
