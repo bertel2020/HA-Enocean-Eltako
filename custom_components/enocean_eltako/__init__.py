@@ -189,9 +189,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             if data.get("schema", 1) >= 5:
                 continue
             if data.get(OPT_ROUTING) == "both":
-                profiles = [s[CONF_PROFILE] for s in data.get(CONF_SENDERS, ())]
+                taught = [s[CONF_PROFILE] for s in data.get(CONF_SENDERS, ())]
                 data[OPT_ROUTING] = (
-                    CONTROLLER.id if CONTROLLER.id in profiles or not profiles else profiles[0]
+                    CONTROLLER.id if CONTROLLER.id in taught or not taught else taught[0]
                 )
             data["schema"] = 5
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
