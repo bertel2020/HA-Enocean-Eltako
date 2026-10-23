@@ -300,6 +300,23 @@ async def test_zeroconf_known_host_aborts(hass: HomeAssistant) -> None:
     assert result["reason"] == "already_configured"
 
 
+async def test_zeroconf_gateway_behind_the_proxy_aborts(hass: HomeAssistant) -> None:
+    """An MGW-ETH the Device Proxy app holds is not offered again on its own address."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="FF-8A-1B-00",
+        data={"model": "mgw_eth", "device": {"type": "tcp", "host": "proxy-host", "port": 9100}},
+        options={"proxy_replay": True},
+    ).add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_ZEROCONF},
+        data=_zeroconf("192.168.1.50", 5100),
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
 async def test_zeroconf_new_address_updates_entry(hass: HomeAssistant) -> None:
     server = await FakeGateway(Protocol.ESP3, base_id=0xFF8A1B00).start()
     entry = MockConfigEntry(
