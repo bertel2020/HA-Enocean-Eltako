@@ -344,13 +344,29 @@ const STYLE = `
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
   .panel:not([data-view="takeover"]) .takeover { display: none; }
-  .senders .pool { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr); gap: 12px 16px; align-items: center; padding: 14px 16px; }
-  .senders .meta-label { font-size: 13px; color: var(--muted); }
-  .senders .pool .big { font-size: 24px; font-weight: 500; }
-  .senders .pool .big small { font-size: 13px; font-weight: 400; color: var(--muted); }
-  .senders .pool .range { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .senders .meter { display: block; height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
-  .senders .meter i { display: block; height: 100%; background: var(--accent); }
+  /* the pool at a glance: four tiles, one bar, a note when something waits, then the map */
+  .senders .ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 16px 16px 0; }
+  .senders .ptile { background: var(--soft); border-radius: 12px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .senders .ptile small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .senders .ptile b { font-size: 22px; font-weight: 500; line-height: 1.2; }
+  .senders .ptile b i { font-style: normal; font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .senders .ptile .id { display: flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 500; line-height: 30px; }
+  .senders .ptile .id button { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--accent); }
+  .senders .ptile .id button:hover { background: var(--accent-soft); }
+  .senders .ptile .id svg { width: 16px; height: 16px; }
+  .senders .ptile.warn { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 35%, transparent); }
+  .senders .ptile.warn small, .senders .ptile.warn b { color: var(--warn); }
+  .senders .pstack { margin: 16px 16px 0; height: 12px; border-radius: 6px; background: var(--soft); display: flex; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line-2); }
+  .senders .pstack i { display: block; height: 100%; }
+  .senders .pstack .a { background: var(--accent); }
+  .senders .pstack .b { background: var(--warn); }
+  .senders .prange { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; margin: 6px 16px 0; font-size: 12px; color: var(--muted); }
+  .senders .pnote { margin: 14px 16px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; font-size: 13px;
+    background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); color: var(--warn); }
+  .senders .pnote button { margin-left: auto; font-weight: 500; text-decoration: underline; color: var(--warn); }
+  .senders .pread { margin: 0 16px 12px; min-height: 36px; display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; padding: 6px 12px; border-radius: 12px;
+    background: var(--soft); font-size: 13px; color: var(--muted); }
+  .senders .pread b { color: var(--text); font-weight: 500; }
   .senders .sid-group { padding: 4px 0 8px; border-top: 1px solid var(--line); }
   .senders .sid-group.blocked { background: color-mix(in srgb, var(--warn) 10%, transparent); }
   .senders .sid-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px 2px; min-width: 0; }
@@ -365,10 +381,12 @@ const STYLE = `
   .senders .sid-dec { color: var(--muted); }
   /* the pool map: the full width, 32 to a row (16 on phones), each row labelled with its first
      ID's last byte; details in the tooltip */
-  .senders .map { display: grid; grid-template-columns: 22px repeat(32, minmax(0, 1fr)); gap: 3px; align-items: center; padding: 4px 16px 8px; }
+  .senders .map { display: grid; grid-template-columns: 56px repeat(32, minmax(0, 1fr)); gap: 3px; align-items: center; padding: 16px 16px 8px; }
   .senders .map button { all: unset; box-sizing: border-box; height: 18px; border-radius: 3px; border: 1px solid var(--line); cursor: default; }
   .senders .map .row-id { font: 11px/1 var(--code-font-family, ui-monospace, monospace); color: var(--muted); }
   .senders .map .row-id.half { display: none; }
+  .senders .map .row-id .lh { display: none; }
+  .senders .map button.sel { outline: 2px solid var(--text); outline-offset: 1px; }
   .senders .map button[data-goto]:hover { transform: scale(1.25); }
   .senders .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0 16px 14px; font-size: 12px; color: var(--muted); }
   .senders .legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -377,15 +395,16 @@ const STYLE = `
   .senders .legend .t-blocked { background: var(--warn); border-color: var(--warn); }
   .senders .legend .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
   @media (max-width: 760px) {
-    .senders .map { grid-template-columns: 22px repeat(16, minmax(0, 1fr)); }
+    .senders .map { grid-template-columns: 44px repeat(16, minmax(0, 1fr)); }
     .senders .map .row-id.half { display: block; }
+    .senders .map .row-id .lf { display: none; }
+    .senders .map .row-id .lh { display: inline; }
   }
   .senders .map button[data-goto] { cursor: pointer; }
   .senders .map button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .senders .map .t-assigned { background: var(--accent); border-color: var(--accent); }
   .senders .map .t-blocked { background: var(--warn); border-color: var(--warn); }
   .senders .map .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
-  .senders .pool .next { margin-top: 6px; font-size: 12px; color: var(--muted); }
   .senders .sid-head { cursor: pointer; }
   .senders .sid-head .fold { margin-left: auto; width: 16px; text-align: center; color: var(--muted); font-size: 12px; }
   .senders .sid-group.folded .sid-row, .senders .sid-group.folded .sid-hint, .senders .sid-group.folded .confirm { display: none; }
@@ -654,6 +673,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._tk = null; // set once the parts are loaded
     this._pools = [];
     this._pool = ""; // shown pool
+    this._poolSel = ""; // the square chosen on the pool map (its ID)
     this._freeing = null; // blocked sender ID waiting for its confirmation
     this._sidFolded = new Set(); // devices whose IDs are hidden in the Sender IDs view
     const view = loadView();
@@ -2212,6 +2232,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       .join("");
     const byId = new Map(pool.rows.map((r) => [r.decimal, r]));
     const away = new Set(pool.unavailable);
+    const lastByte = (n) => (n & 255).toString(16).toUpperCase().padStart(2, "0");
+    const lastId = pool.first + pool.size - 1;
+    let readout = `<span>${esc(t.mapHint)}</span>`;
     const tiles = Array.from({ length: pool.size }, (_, i) => {
       const n = pool.first + i;
       const hex = [24, 16, 8, 0].map((sh) => ((n >>> sh) & 255).toString(16).toUpperCase().padStart(2, "0")).join("-");
@@ -2220,24 +2243,36 @@ class EnOceanEltakoPanel extends HTMLElement {
       const label = { assigned: t.stateAssigned, blocked: t.stateBlocked, unavailable: t.stateUnavailable, free: t.stateFree }[state];
       const who = r?.device ? ` · ${r.device}` : "";
       const text = `${hex} (${n}) · ${label}${who}`;
-      // a label starts every row: every 32 IDs, and in between where phones break after 16
-      const row = i % 16 ? "" : `<span class="row-id${i % 32 ? " half" : ""}" aria-hidden="true" title="${esc(hex)}">${hex.slice(-2)}</span>`;
-      return `${row}<button class="t-${state}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
+      const chosen = this._poolSel === hex;
+      if (chosen) readout = `<span class="mono"><b>${esc(hex)}</b></span><span>${n}</span><span>${esc(label)}</span>${r?.device ? `<span><b>${esc(r.device)}</b>${r.profile ? ` · ${esc(this._profile(r.profile))}` : ""}</span>` : ""}`;
+      // a label starts every row: its range, every 32 IDs (16 on phones, which break in between)
+      const range = (len) => `${lastByte(n)}–${lastByte(Math.min(n + len - 1, lastId))}`;
+      const row = i % 16 ? "" : `<span class="row-id${i % 32 ? " half" : ""}" aria-hidden="true" title="${esc(hex)}">${i % 32 ? "" : `<span class="lf">${range(32)}</span>`}<span class="lh">${range(16)}</span></span>`;
+      return `${row}<button class="t-${state}${chosen ? " sel" : ""}" data-tile="${esc(hex)}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
     }).join("");
-    // the legend names the states the map shows; free is always there to compare with
+    const assigned = pool.rows.length - blocked.length;
+    const pct = (n) => (pool.size ? (n / pool.size) * 100 : 0);
+    const tile = (label, body, cls = "") => `<div class="ptile${cls ? ` ${cls}` : ""}"><small>${esc(label)}</small>${body}</div>`;
+    const next = pool.next_free
+      ? `<span class="id mono">${esc(pool.next_free)}<button data-copy-id="${esc(pool.next_free)}" title="${esc(t.copyId)}" aria-label="${esc(t.copyId)}">${svg(ICON.copy)}</button></span>`
+      : `<b>${esc(t.noValue)}</b>`;
+    const overview = `<div class="ptiles">${tile(t.poolFree, `<b>${esc(pool.free)}<i>${esc(t.poolOf(pool.size))}</i></b>`)}${tile(t.poolAssigned, `<b>${assigned}</b>`)}${tile(t.poolBlocked, `<b>${blocked.length}</b>`, blocked.length ? "warn" : "")}${
+      away.size ? tile(t.stateUnavailable[0].toUpperCase() + t.stateUnavailable.slice(1), `<b>${away.size}</b>`) : ""
+    }${tile(t.poolNext, next)}</div>
+      <div class="pstack" role="img" aria-label="${esc(t.poolSummary(assigned, blocked.length))}"><i class="a" style="width:${pct(assigned)}%"></i><i class="b" style="width:${pct(blocked.length)}%"></i></div>
+      <div class="prange"><span class="mono">${esc(pool.start)}</span><span class="mono">${esc(pool.end)}</span></div>
+      ${blocked.length ? `<div class="pnote"><span>${esc(t.poolBlockedNote(blocked.length))}</span><button data-goto="${esc(blocked[0].id)}">${esc(t.poolShow)}</button></div>` : ""}`;
+    // the legend names the states the map shows, with their numbers; free is always there to compare with
     const shown = new Set(["free", ...pool.rows.map((r) => r.state), ...(away.size ? ["unavailable"] : [])]);
+    const counts = { free: pool.free, assigned, blocked: blocked.length, unavailable: away.size };
     const legend = [["free", t.stateFree], ["assigned", t.stateAssigned], ["blocked", t.stateBlocked], ["unavailable", t.stateUnavailable]]
       .filter(([state]) => shown.has(state))
-      .map(([state, label]) => `<span><i class="t-${state}"></i>${esc(label)}</span>`)
+      .map(([state, label]) => `<span><i class="t-${state}"></i>${esc(label)} ${counts[state]}</span>`)
       .join("");
     this._replace(container, `${select}
-      <div class="pool">
-        <div><div class="meta-label">${esc(t.poolFree)}</div><div class="big">${esc(pool.free)} <small>${esc(t.poolOf(pool.size))}</small></div></div>
-        <div><span class="meter" role="meter" aria-valuemin="0" aria-valuemax="${esc(pool.size)}" aria-valuenow="${esc(used)}" aria-label="${esc(t.pools)}"><i style="width:${pool.size ? Math.round((used / pool.size) * 100) : 0}%"></i></span>
-          <div class="range"><span class="mono">${esc(pool.start)} – ${esc(pool.end)}</span> · ${esc(t.poolSummary(pool.rows.length - blocked.length, blocked.length))}</div>
-          ${pool.next_free ? `<div class="next">${esc(t.poolNext)}: <span class="mono">${esc(pool.next_free)}</span></div>` : ""}</div>
-      </div>
+      ${overview}
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
+      <div class="pread" aria-live="polite">${readout}</div>
       <div class="legend" aria-hidden="true">${legend}</div>
       ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true)}`);
   }
@@ -2247,6 +2282,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     const fold = e.target.closest("[data-fold]");
     const goto = e.target.closest("[data-goto]");
     const inPanel = e.target.closest("[data-dev-panel]");
+    const tile = e.target.closest("[data-tile]");
+    const copyId = e.target.closest("[data-copy-id]");
+    if (tile) {
+      this._poolSel = tile.dataset.tile === this._poolSel ? "" : tile.dataset.tile;
+      this._renderSenderIds();
+    }
+    if (copyId) {
+      navigator.clipboard.writeText(copyId.dataset.copyId).then(() => this._notice(this._t.idCopied, true), () => this._notice(this._t.copyFailed));
+      return;
+    }
     if (inPanel) {
       e.stopPropagation(); // the link sits in the fold header
       this._showDevice(inPanel.dataset.devPanel);
