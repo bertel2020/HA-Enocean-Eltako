@@ -38,7 +38,8 @@ async def test_unknown_rocker_becomes_device(hass: HomeAssistant, gateway) -> No
     assert "1 " in cards[0]["context"]["title_placeholders"]["name"]
     result = await hass.config_entries.flow.async_configure(cards[0]["flow_id"])
     assert result["step_id"] == "discovered_senders"
-    assert "00-2A-0B-0C" in result["description_placeholders"]["senders"]
+    assert result["description_placeholders"]["count"] == "1"
+    assert "(F6)" in result["description_placeholders"]["kinds"]
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["reason"] == "discovered_hint"
     assert not await _cards(hass)  # seen: the card goes until something new is heard

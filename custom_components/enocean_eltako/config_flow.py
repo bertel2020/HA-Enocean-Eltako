@@ -62,7 +62,7 @@ from .const import (
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
-from .discovery import async_set_hidden, card_title, card_unique_id, pending
+from .discovery import async_set_hidden, card_title, card_unique_id, kinds_summary, pending
 from .entity_ids import free_gateway_number, rename_entities, taken_gateway_numbers
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
@@ -361,19 +361,12 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 reason="discovered_hint",
                 description_placeholders={"name": entry.title, "url": gateway_page},
             )
-        lines = [
-            f"- `{format_id(t.sender)}` ({t.telegram.rorg:02X}"
-            + (f", {t.telegram.dbm} dBm)" if t.telegram.dbm is not None else ")")
-            for t in heard[:10]
-        ]
-        if len(heard) > 10:
-            lines.append(f"- … +{len(heard) - 10}")
         return self.async_show_form(
             step_id="discovered_senders",
             description_placeholders={
                 "name": entry.title,
                 "count": str(len(heard)),
-                "senders": "\n".join(lines),
+                "kinds": kinds_summary(self.hass, heard),
                 "url": gateway_page,
             },
         )

@@ -65,6 +65,24 @@ _TITLES = {
 }
 
 
+_KINDS = {
+    "en": {0xF6: "rockers", 0xD5: "contacts", 0xA5: "sensors", 0xD2: "VLD devices"},
+    "de": {0xF6: "Taster", 0xD5: "Kontakte", 0xA5: "Sensoren", 0xD2: "VLD-Geräte"},
+}
+
+
+def kinds_summary(hass: HomeAssistant, heard: list[ReceivedTelegram]) -> str:
+    """ "15 sensors (A5), 9 rockers (F6)": what was heard, by telegram type, most first."""
+    names = _KINDS.get(hass.config.language, _KINDS["en"])
+    counts: dict[int, int] = {}
+    for t in heard:
+        counts[t.telegram.rorg] = counts.get(t.telegram.rorg, 0) + 1
+    return ", ".join(
+        f"{n} {names.get(rorg, 'RORG')} ({rorg:02X})"
+        for rorg, n in sorted(counts.items(), key=lambda item: -item[1])
+    )
+
+
 def card_unique_id(entry: EnOceanEltakoConfigEntry) -> str:
     return f"discovered_{entry.entry_id}"
 

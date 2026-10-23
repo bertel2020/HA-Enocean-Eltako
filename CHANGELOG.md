@@ -6,6 +6,13 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Discovery card:** the dialog names how many senders were heard by type (for example "15 sensors (A5), 9 rockers
+  (F6)") and links to the gateway, instead of listing ten IDs.
+
 ### [1.1.0] - 2026-10-23
 
 #### Changed
@@ -462,6 +469,13 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Entdeckt-Karte:** Der Dialog nennt, wie viele Sender nach Typ gehört wurden (zum Beispiel „15 Sensoren (A5), 9 Taster
+  (F6)“), und verlinkt aufs Gateway, statt zehn IDs aufzulisten.
 
 ### [1.1.0] - 2026-10-23
 
