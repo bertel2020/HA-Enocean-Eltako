@@ -68,6 +68,18 @@ for (const lang of ["en", "de"]) {
     root.querySelector("tr.row").click();
     await settle();
     expect("open details", root.querySelectorAll("tr.detail-row").length, 1);
+    // an open telegram holds new ones back; closing it lets them in
+    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", dbm: -61, device: "Licht Diele" });
+    await settle();
+    expect("telegram rows while one is open", root.querySelectorAll("tr.row").length, 5);
+    expect("held back while one is open", root.getElementById("live").classList.contains("paused"), true);
+    root.querySelector("tr.row").click();
+    await settle();
+    expect("closed details", root.querySelectorAll("tr.detail-row").length, 0);
+    expect("telegram rows after closing", root.querySelectorAll("tr.row").length, 6);
+    expect("live again after closing", root.getElementById("live").classList.contains("paused"), false);
+    root.querySelector("tr.row").click();
+    await settle();
     // the sent telegram of the samples: "send again" sends it, a rocker press with its release
     const sent = [...root.querySelectorAll("tr.row")].find((row) => row.querySelector(".dir.tx"));
     sent.click();

@@ -1219,7 +1219,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (this._keys.has(key) || this._cleared.has(key)) return;
     }
     this._keys.add(key);
-    if (this._paused) {
+    if (this._holding()) {
       // held back up to the list size; older ones would drop out on resume anyway
       this._pending.push(row);
       this._missed += 1;
@@ -1296,6 +1296,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _setView(view) {
     this._view = view;
     this._offset = 0;
+    this._release(); // an open telegram holds only the telegram list
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
     // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
@@ -1358,15 +1359,25 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._set("text", value);
   }
 
+  // new telegrams are held back while the user paused, and while a telegram is open in the
+  // list: the row being read must not move away; closing the last one lets them in again
+  _holding() {
+    return this._paused || (this._view === "telegrams" && this._expanded.size > 0);
+  }
+
+  _release() {
+    if (this._holding()) return;
+    for (const row of this._pending) this._keepPlace(row);
+    this._rows = [...this._pending.reverse(), ...this._rows];
+    this._pending = [];
+    this._missed = 0;
+    this._trim();
+  }
+
   _togglePause() {
     this._paused = !this._paused;
     this._missed = 0;
-    if (!this._paused) {
-      for (const row of this._pending) this._keepPlace(row);
-      this._rows = [...this._pending.reverse(), ...this._rows];
-      this._pending = [];
-      this._trim();
-    }
+    this._release();
     this._renderBar();
     this._render();
   }
@@ -1374,6 +1385,8 @@ class EnOceanEltakoPanel extends HTMLElement {
   _toggleRow(key) {
     if (this._expanded.has(key)) this._expanded.delete(key);
     else this._expanded.add(key);
+    this._release();
+    this._renderBar();
     this._render();
   }
 
@@ -1717,7 +1730,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const live = this.shadowRoot.getElementById("live");
     if (!live) return;
     // pausing is the user's choice; a lost stream matters more and shows through it
-    const state = this._link !== "live" ? this._link : this._paused ? "paused" : "live";
+    const state = this._link !== "live" ? this._link : this._holding() ? "paused" : "live";
     live.classList.toggle("paused", state === "paused");
     live.classList.toggle("connecting", state === "connecting");
     live.classList.toggle("offline", state === "offline");
