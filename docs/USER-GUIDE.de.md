@@ -350,6 +350,12 @@ Nach dem Löschen eines Geräts bleibt seine ID **gesperrt**, bis sie aus allen 
 ist. **Freigeben** gibt sie nach einer Rückfrage frei, sobald der Aktor sie verlernt hat
 (Teach-out).
 
+Die Liste hat eine Suche (Gerätename, Profil, ID mit oder ohne Bindestriche oder dezimal), Chips
+für **Alle / Zugewiesen / Gesperrt** und eine Sortierung (Gesperrte zuerst, Name, Sender-ID).
+**Alle freigeben** gibt jede gesperrte ID frei, die die Liste gerade zeigt, ebenfalls nach einer
+Rückfrage; wer nur einige freigeben will, filtert vorher. Nur tun, wenn jeder Aktor sie verlernt
+hat: Ein neues Gerät mit einer solchen ID würde den alten Aktor sonst mitsteuern.
+
 ## Gateway-Einstellungen und Reparaturen
 
 **Konfigurieren** an einem Gateway öffnet **Einstellungen**: Pause zwischen Telegrammen,

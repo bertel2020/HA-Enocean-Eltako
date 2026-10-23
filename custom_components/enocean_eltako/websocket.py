@@ -65,6 +65,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
+    websocket_api.async_register_command(hass, ws_free_senders)
     async_setup_takeover_websocket(hass)
 
 
@@ -734,3 +735,42 @@ async def ws_free_sender(
     store.pool.confirm_teach_out(sender)
     await store.async_save()
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/sender_pools/free_all",
+        vol.Required("pool"): str,
+        vol.Optional("senders"): [str],
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_free_senders(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Free the blocked sender IDs of a pool (the listed ones, else all) after their teach-out."""
+    found = _pools(hass).get(msg["pool"])
+    if found is None:
+        connection.send_error(msg["id"], "not_found", "pool not found")
+        return
+    pool = found[2].pool
+    if "senders" in msg:
+        try:
+            senders = [parse_id(s) for s in msg["senders"]]
+        except ValueError:
+            connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+            return
+        # all or nothing: one ID that is not blocked refuses the whole request
+        for sender in senders:
+            allocation = pool.get(sender)
+            if allocation is None or allocation.state is not SenderState.BLOCKED:
+                connection.send_error(msg["id"], "not_blocked", "only a blocked sender ID can be freed")
+                return
+    else:
+        senders = [s for s, a in pool.allocations() if a.state is SenderState.BLOCKED]
+    for sender in senders:
+        pool.confirm_teach_out(sender)
+    if senders:
+        await found[2].async_save()
+    connection.send_result(msg["id"], {"freed": len(senders)})

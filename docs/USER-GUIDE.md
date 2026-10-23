@@ -329,6 +329,12 @@ names ID and device, a click jumps to its row.
 After a device is deleted its ID stays **blocked** until it is taught out of every actuator.
 **Free** releases it once the actuator has forgotten it, after a confirmation.
 
+The list has a search (device name, profile, ID with or without dashes, or decimal), chips for
+**All / Assigned / Blocked** and a sort (blocked first, name, sender ID). **Free all** frees every
+blocked ID the list currently shows, again after a confirmation, so filter first to free only some.
+Do this only when every actuator has forgotten them: a new device that gets such an ID would
+switch the old actuator too.
+
 ## Gateway settings and repairs
 
 **Configure** on a gateway opens **Settings**: pause between telegrams, discovery, bus

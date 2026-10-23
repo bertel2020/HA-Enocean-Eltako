@@ -440,6 +440,31 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
 
     assert (await free(6, "FF-B7-44-82"))["success"]
     assert pool.get(0xFFB74482) is None and pool.get(0xFFB74481) is not None
+
+    async def free_all(msg_id: int, **extra):
+        await client.send_json(
+            {"id": msg_id, "type": "enocean_eltako/sender_pools/free_all", "pool": result["id"], **extra}
+        )
+        return await client.receive_json()
+
+    # a listed assigned ID refuses the whole request, nothing is freed
+    for sender in (0xFFB74483, 0xFFB74484):
+        pool.assign(sender, f"device:gone{sender}:controller")
+        pool.release(sender)
+    reply = await free_all(7, senders=["FF-B7-44-83", "FF-B7-44-81"])
+    assert not reply["success"] and reply["error"]["code"] == "not_blocked"
+    assert pool.get(0xFFB74483) is not None
+    reply = await free_all(8, senders=["nope"])
+    assert not reply["success"] and reply["error"]["code"] == "invalid_id"
+    # the listed ones only, then all that are left
+    reply = await free_all(9, senders=["FF-B7-44-83"])
+    assert reply["result"] == {"freed": 1}
+    assert pool.get(0xFFB74483) is None and pool.get(0xFFB74484) is not None
+    reply = await free_all(10)
+    assert reply["result"] == {"freed": 1}
+    assert pool.get(0xFFB74484) is None and pool.get(0xFFB74481) is not None
+    reply = await free_all(11)
+    assert reply["result"] == {"freed": 0}
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 
