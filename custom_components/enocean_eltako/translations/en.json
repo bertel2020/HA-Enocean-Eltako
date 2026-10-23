@@ -595,6 +595,7 @@
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
             "double_press": "Double press within",
+            "rain_hold": "Rain: “recently” stays on for",
             "calibration": "Calibration",
             "fields": "Shown values",
             "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
@@ -642,6 +643,7 @@
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
+            "rain_hold": "Minutes “Rain recently” stays on after the last rain.",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
             "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
@@ -709,6 +711,7 @@
             "status_request": "Ask for the state at startup",
             "long_press": "Long press from",
             "double_press": "Double press within",
+            "rain_hold": "Rain: “recently” stays on for",
             "calibration": "Calibration",
             "fields": "Shown values",
             "sender_cooling": "Sender ID: cooling switch (F6-02-01)",
@@ -749,6 +752,7 @@
             "weather_wind": "Optional, any speed unit. Without it 0 m/s is sent.",
             "weather_rain": "Optional, on = rain.",
             "weather_brightness": "Optional, in lx; also sent as sun on all sides and for day/night (night below 10 lx).",
+            "rain_hold": "Minutes “Rain recently” stays on after the last rain.",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
             "invert": "Contacts and window handles: on means closed. Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
@@ -925,6 +929,15 @@
       "dawn": {
         "name": "Dawn"
       },
+      "sun_side": {
+        "name": "Sunniest side",
+        "state": {
+          "south": "South",
+          "east": "East",
+          "west": "West",
+          "none": "No sun"
+        }
+      },
       "sun_west": {
         "name": "Sun west"
       },
@@ -1082,6 +1095,13 @@
         "state": {
           "on": "Rain",
           "off": "No rain"
+        }
+      },
+      "rain_recent": {
+        "name": "Rain recently",
+        "state": {
+          "on": "Wet",
+          "off": "Dry"
         }
       },
       "gateway_connection": {

@@ -198,6 +198,13 @@ skipped; imported ones are only replaced with `overwrite: true`.
   entity can be added.
 - **Rockers** report short, long and double presses per button, which blueprints and device
   triggers use.
+- **Weather stations** (FWS61, FWG14MS) report dawn, temperature, wind, sun from three sides and
+  rain. Besides these there are "Sunniest side" (south, east, west, or no sun below 2 klx) and
+  "Rain recently", which stays on for some minutes after the rain stops (15 by default, set in
+  the device's settings), so covers and awnings do not move back out onto a wet surface. The wind
+  unit (m/s, km/h, Beaufort) is the entity's display unit in Home Assistant. The "Shade covers by
+  the sun" blueprint uses the sun sensors; protection against wind, rain and frost stays in the
+  actuator.
 - **Permundo PSC132/PSC234** plugs report energy and power; see
   [Known limitations](#known-limitations).
 
@@ -406,6 +413,7 @@ Rockers report short, long and double presses per button. Ready-made automations
 - [Rocker controls a cover](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/rocker_cover.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Frocker_cover.yaml)
 - [Double press activates a scene](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/double_press_scene.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fdouble_press_scene.yaml)
 - [Calibrate covers on a schedule](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/calibrate_covers.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fcalibrate_covers.yaml)
+- [Shade covers by the sun](https://github.com/bertel2020/HA-Enocean-Eltako/blob/main/blueprints/automation/enocean_eltako/sun_shading.yaml) [![Import](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbertel2020%2FHA-Enocean-Eltako%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fenocean_eltako%2Fsun_shading.yaml)
 
 ### Actions
 

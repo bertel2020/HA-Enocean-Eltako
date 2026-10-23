@@ -32,8 +32,19 @@ def test_weather_station_display() -> None:
     for key in ("dawn", "sun_west", "sun_south", "sun_east"):
         assert by_key[key].suggested_display_precision == 0
     assert by_key["wind_speed"].suggested_display_precision == 1
-    (rain,) = BINARY_SENSORS["weather"]
-    assert rain.key == "rain" and rain.device_class is None
+    assert [(d.key, d.device_class) for d in BINARY_SENSORS["weather"]] == [
+        ("rain", None),
+        ("rain_recent", None),
+    ]
+
+
+def test_sunniest_side() -> None:
+    sun = {"SNW": 6.0, "SNS": 12.0, "SNE": 6.0}
+    assert _value("weather", "sun_side", sun) == "south"
+    assert _value("weather", "sun_side", {"SNW": 40.0, "SNS": 12.0, "SNE": 6.0}) == "west"
+    assert _value("weather", "sun_side", {"SNW": 6.0, "SNS": 6.0, "SNE": 6.0}) == "south"  # a tie
+    assert _value("weather", "sun_side", {"SNW": 1.0, "SNS": 1.9, "SNE": 0.0}) == "none"
+    assert _value("weather", "sun_side", {"DWS": 500.0}) is None  # the other telegram
 
 
 def test_voc_scale_and_unit() -> None:
@@ -102,3 +113,64 @@ async def test_entities(hass: HomeAssistant, sensors) -> None:
         for n in range(4)
     ]
     assert inputs == ["on", "off", "on", "off"]
+
+
+@pytest.fixture
+async def weather(hass: HomeAssistant):
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=BASE,
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": BASE,
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            _sub("weather", "05-13-00-01", "Wetter", [], rain_hold=1),
+            _sub("weather", "05-13-00-02", "Wetter ohne Nachlauf", [], rain_hold=0),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    yield server
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_weather_sun_side_and_rain_recently(hass: HomeAssistant, weather) -> None:
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    def state(device: str, platform: str, key: str) -> str:
+        return hass.states.get(_entity(hass, platform, uid(device, key))).state
+
+    for device, hold in (("05-13-00-01", True), ("05-13-00-02", False)):
+        sender = int(device.replace("-", ""), 16)
+        _push(weather, BS4, bytes([0x40, 0x80, 0x10, 0x1A]), sender)  # raining
+        _push(weather, BS4, bytes([0x10, 0x30, 0x10, 0x28]), sender)  # sun: south is the highest
+        await _settle(hass)
+        assert state(device, "binary_sensor", "rain") == "on"
+        assert state(device, "binary_sensor", "rain_recent") == "on"
+        assert state(device, "sensor", "sun_side") == "south"
+        _push(weather, BS4, bytes([0x40, 0x80, 0x10, 0x18]), sender)  # the rain has stopped
+        await _settle(hass)
+        assert state(device, "binary_sensor", "rain") == "off"
+        # with a hold the recent rain stays on until it has run out; without, it ends at once
+        assert state(device, "binary_sensor", "rain_recent") == ("on" if hold else "off")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=30))
+    await hass.async_block_till_done()
+    assert state("05-13-00-01", "binary_sensor", "rain_recent") == "on"
+    _push(
+        weather, BS4, bytes([0x40, 0x80, 0x10, 0x1A]), 0x05130001
+    )  # rain again: the hold restarts
+    _push(weather, BS4, bytes([0x40, 0x80, 0x10, 0x18]), 0x05130001)
+    await _settle(hass)
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=90))
+    await hass.async_block_till_done()
+    assert state("05-13-00-01", "binary_sensor", "rain_recent") == "off"

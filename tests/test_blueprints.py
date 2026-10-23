@@ -20,5 +20,5 @@ def test_blueprint_is_valid(path: Path) -> None:
     assert blueprint.inputs
 
 
-def test_four_blueprints() -> None:
-    assert len(BLUEPRINTS) == 4
+def test_five_blueprints() -> None:
+    assert len(BLUEPRINTS) == 5

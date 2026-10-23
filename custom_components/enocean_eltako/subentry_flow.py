@@ -36,6 +36,7 @@ from .catalog import (
     CATALOG,
     CONTROLLER,
     CUSTOM,
+    DEFAULT_RAIN_HOLD,
     EEP_OPTIONS,
     EEP_TO_MODEL,
     GENERIC_EEP,
@@ -56,6 +57,7 @@ from .catalog import (
     OPT_ON_BUTTON,
     OPT_PLATFORM,
     OPT_PRIORITY,
+    OPT_RAIN_HOLD,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
     OPT_ROUTING,
@@ -204,6 +206,7 @@ OPTION_KEYS = (
     OPT_STATUS_REQUEST,
     OPT_LONG_PRESS,
     OPT_DOUBLE_PRESS,
+    OPT_RAIN_HOLD,
     OPT_BUTTONS,
     OPT_CALIBRATION,
     OPT_TENTHS,
@@ -496,6 +499,12 @@ class DeviceForm:
                         mode=NumberSelectorMode.BOX,
                     )
                 )
+        if OPT_RAIN_HOLD in model.options:
+            schema[vol.Required(OPT_RAIN_HOLD, default=DEFAULT_RAIN_HOLD)] = NumberSelector(
+                NumberSelectorConfig(
+                    min=0, max=240, step=1, unit_of_measurement="min", mode=NumberSelectorMode.BOX
+                )
+            )
         if OPT_STATUS_REQUEST in model.options:
             schema[vol.Required(OPT_STATUS_REQUEST, default=False)] = BooleanSelector()
         if model.interval:
