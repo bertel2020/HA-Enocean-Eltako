@@ -124,6 +124,8 @@ export function fakeHass(params = new URLSearchParams()) {
           return { available: !empty && !params.has("closed"), report: !empty, closed: params.has("closed") };
         case "enocean_eltako/sender_pools":
           return empty ? [] : [pool];
+        case "enocean_eltako/sender_pools/free_all":
+          return { freed: msg.senders.length };
         case "enocean_eltako/takeover/preview":
           return { devices: takeoverDevices, old_active: true };
         case "enocean_eltako/takeover/mapping":

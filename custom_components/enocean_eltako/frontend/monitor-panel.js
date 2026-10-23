@@ -239,6 +239,7 @@ const STYLE = `
   .chip.set svg { width: 14px; height: 14px; color: var(--muted); }
   .chip.set:hover svg { color: var(--text); }
   .filters:has(+ .statusrow) { border-bottom: 0; }
+  .filters[hidden], .statusrow[hidden] { display: none; }
   .statusrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
   .statusrow .chip { min-height: 32px; color: var(--text); }
   .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); }
@@ -714,6 +715,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pool = ""; // shown pool
     this._poolSel = ""; // the square chosen on the pool map (its ID)
     this._freeing = null; // blocked sender ID waiting for its confirmation
+    this._sid = { text: "", state: "", sort: "state" }; // search, state filter and sort of the Sender IDs view
+    this._sidShownBlocked = []; // the blocked IDs the list shows: what Free all frees
     this._sidFolded = new Set(); // devices whose IDs are hidden in the Sender IDs view
     const view = loadView();
     this._savedView = view.view; // shown once the gateways and the Takeover check are in
@@ -959,7 +962,23 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
-          <div class="senders" id="senders"></div>
+          <div class="senders" id="senders">
+            <div id="sidTop"></div>
+            <div class="filters" id="sidTools" hidden>
+              <label class="search">
+                ${svg(ICON.search)}
+                <input id="sidText" type="search" placeholder="${esc(t.sidSearch)}" aria-label="${esc(t.sidSearch)}" autocomplete="off">
+              </label>
+              <select class="select" id="sidSort" aria-label="${esc(t.sortLabel)}"><option value="state">${esc(t.sidSortState)}</option><option value="name">${esc(t.devCols.name)}</option><option value="id">${esc(t.colId)}</option></select>
+              <button class="chip" id="sidFreeAll" hidden></button>
+            </div>
+            <div class="statusrow" id="sidState" role="group" aria-label="${esc(t.colStatus)}">
+              <button class="chip" data-sid-state="" aria-pressed="true">${esc(t.dirAll)}</button>
+              <button class="chip" data-sid-state="assigned" aria-pressed="false">${esc(t.poolAssigned)} <b class="count"></b></button>
+              <button class="chip" data-sid-state="blocked" aria-pressed="false">${esc(t.poolBlocked)} <b class="count"></b></button>
+            </div>
+            <div id="sidList"></div>
+          </div>
           <div class="takeover" id="takeover"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager list-only" id="pager">
@@ -1037,6 +1056,28 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (e.target.id !== "poolSelect") return;
       this._pool = e.target.value;
       this._freeing = null;
+      this._renderSenderIds();
+    });
+    const sidChanged = () => {
+      if (this._freeing?.all) this._freeing = null; // the IDs it listed may be gone from the list
+      this._renderSenderIds();
+    };
+    $("sidText").addEventListener("input", (e) => {
+      this._sid.text = e.target.value;
+      sidChanged();
+    });
+    $("sidSort").addEventListener("change", (e) => {
+      this._sid.sort = e.target.value;
+      sidChanged();
+    });
+    $("sidState").addEventListener("click", (e) => {
+      const button = e.target.closest("[data-sid-state]");
+      if (!button) return;
+      this._sid.state = button.dataset.sidState;
+      sidChanged();
+    });
+    $("sidFreeAll").addEventListener("click", () => {
+      this._freeing = { all: true, ids: this._sidShownBlocked };
       this._renderSenderIds();
     });
     $("selAll").addEventListener("change", (e) => this._selectAll(e.target.checked));
@@ -2277,10 +2318,12 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _renderSenderIds() {
     const t = this._t;
-    const container = this.shadowRoot.getElementById("senders");
+    const $ = (id) => this.shadowRoot.getElementById(id);
     const pool = this._pools.find((p) => p.id === this._pool);
+    $("sidTools").hidden = $("sidState").hidden = !pool;
     if (!pool) {
-      this._replace(container, this._noGateway());
+      this._replace($("sidTop"), this._noGateway());
+      this._replace($("sidList"), "");
       return;
     }
     const blocked = pool.rows.filter((r) => r.state === "blocked");
@@ -2291,16 +2334,35 @@ class EnOceanEltakoPanel extends HTMLElement {
           .join("")}</select></div>`
       : "";
     // one block per device with its IDs; blocked IDs (deleted devices) first, they need doing
+    const f = this._sid;
+    const q = f.text.trim().toLowerCase();
+    const qId = /^[0-9a-f\s-]+$/.test(q) ? q.replace(/[\s-]/g, "") : "";
+    const isBlocked = (r) => r.state === "blocked";
+    // a device name or profile finds all its IDs, an ID or decimal only itself
+    const matches = (r) =>
+      (!q ||
+        (r.device || t.deletedDevice).toLowerCase().includes(q) ||
+        (qId && r.id.replace(/-/g, "").toLowerCase().includes(qId)) ||
+        String(r.decimal).includes(q) ||
+        (r.profile && (r.profile.toLowerCase().includes(q) || this._profile(r.profile).toLowerCase().includes(q)))) &&
+      (!f.state || r.state === f.state);
     const groups = new Map();
-    for (const r of pool.rows) {
+    for (const r of pool.rows.filter(matches)) {
       const key = r.ref || r.device || r.id;
       if (!groups.has(key)) groups.set(key, { device: r.device, ref: r.ref, rows: [] });
       groups.get(key).rows.push(r);
     }
-    const isBlocked = (r) => r.state === "blocked";
+    const firstId = (g) => Math.min(...g.rows.map((r) => r.decimal));
+    const byName = (a, b) => (a.device == null) - (b.device == null) || collator.compare(a.device || "", b.device || "");
+    const order = {
+      state: (a, b) => b.blocked - a.blocked || byName(a, b),
+      name: (a, b) => byName(a, b) || firstId(a) - firstId(b),
+      id: (a, b) => firstId(a) - firstId(b),
+    }[f.sort];
     const list = [...groups.values()]
       .map((g) => ({ ...g, blocked: g.rows.some(isBlocked), rows: g.rows.sort((a, b) => isBlocked(b) - isBlocked(a) || collator.compare(a.id, b.id)) }))
-      .sort((a, b) => b.blocked - a.blocked || (a.device == null) - (b.device == null) || collator.compare(a.device || "", b.device || ""));
+      .sort(order);
+    this._sidShownBlocked = list.flatMap((g) => g.rows.filter(isBlocked).map((r) => r.id));
     const byRef = new Map(this._deviceItems().filter((d) => d.devKey).map((d) => [d.id, d.devKey]));
     const html = list
       .map((g) => {
@@ -2367,12 +2429,31 @@ class EnOceanEltakoPanel extends HTMLElement {
       .filter(([state]) => shown.has(state))
       .map(([state, label]) => `<span><i class="t-${state}"></i>${esc(label)} ${counts[state]}</span>`)
       .join("");
-    this._replace(container, `${select}
+    this._replace($("sidTop"), `${select}
       ${overview}
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
       <div class="pread" aria-live="polite">${readout}</div>
-      <div class="legend" aria-hidden="true">${legend}</div>
-      ${pool.rows.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true)}`);
+      <div class="legend" aria-hidden="true">${legend}</div>`);
+    // the search box, chips and sort are not redrawn, so typing keeps its focus: only their state is set
+    if ($("sidText").value !== f.text) $("sidText").value = f.text;
+    $("sidSort").value = f.sort;
+    for (const button of $("sidState").querySelectorAll("button")) {
+      const state = button.dataset.sidState;
+      button.setAttribute("aria-pressed", String(state === f.state));
+      const count = button.querySelector(".count");
+      if (count) count.textContent = state === "blocked" ? blocked.length : assigned;
+    }
+    const freeAll = $("sidFreeAll");
+    freeAll.hidden = !this._sidShownBlocked.length;
+    freeAll.textContent = t.freeAllAction(this._sidShownBlocked.length);
+    const confirmAll = this._freeing?.all
+      ? `<div class="confirm" style="margin-left:16px"><b>${esc(t.freeAllConfirmTitle(this._freeing.ids.length))}</b><p>${esc(t.freeAllConfirmText)}</p>
+          <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(t.freeAllConfirm)}</button></div></div>`
+      : "";
+    const none = pool.rows.length
+      ? this._emptyState(ICON.search, t.sidNoMatch, "", `<button class="chip" data-sid-reset>${esc(t.resetFilters)}</button>`, true)
+      : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true);
+    this._replace($("sidList"), `${confirmAll}${list.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : none}`);
   }
 
   _sendersClick(e) {
@@ -2407,6 +2488,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     } else if (free) {
       this._freeing = { id: free.dataset.free, device: free.dataset.device };
       this._renderSenderIds();
+    } else if (e.target.closest("[data-sid-reset]")) {
+      this._sid.text = "";
+      this._sid.state = "";
+      this._renderSenderIds();
     } else if (e.target.closest("[data-free-cancel]")) {
       this._freeing = null;
       this._renderSenderIds();
@@ -2417,10 +2502,15 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   async _freeSender() {
     const t = this._t;
-    const { id } = this._freeing;
+    const { id, all, ids } = this._freeing;
     try {
-      await this._hass.callWS({ type: "enocean_eltako/sender_pools/free", pool: this._pool, sender: id });
-      this._notice(t.freed, true);
+      if (all) {
+        const { freed } = await this._hass.callWS({ type: "enocean_eltako/sender_pools/free_all", pool: this._pool, senders: ids });
+        this._notice(t.freedMany(freed), true);
+      } else {
+        await this._hass.callWS({ type: "enocean_eltako/sender_pools/free", pool: this._pool, sender: id });
+        this._notice(t.freed, true);
+      }
     } catch (err) {
       this._notice(t.freeErrors[err.code] || t.freeErrors.unknown);
     }

@@ -148,6 +148,25 @@ for (const lang of ["en", "de"]) {
     await view("senders");
     expect("pool map squares", root.querySelectorAll(".map button").length, 128);
     expect("sender ID rows", root.querySelectorAll(".sid-row").length, 2);
+    const sidText = root.getElementById("sidText");
+    sidText.value = "ba";
+    sidText.dispatchEvent(new Event("input"));
+    expect("search without a match", root.querySelectorAll(".sid-row").length, 0);
+    root.querySelector("[data-sid-reset]").click();
+    expect("search reset", root.querySelectorAll(".sid-row").length, 2);
+    sidText.value = "ff-b7-44-85"; // an ID finds only itself
+    sidText.dispatchEvent(new Event("input"));
+    expect("search by ID", root.querySelectorAll(".sid-row").length, 1);
+    sidText.value = "";
+    sidText.dispatchEvent(new Event("input"));
+    root.querySelector('[data-sid-state="assigned"]').click();
+    expect("assigned only", root.querySelectorAll(".sid-row.blocked").length + root.querySelectorAll(".sid-row").length, 1);
+    expect("free all hidden without blocked rows", root.getElementById("sidFreeAll").hidden, true);
+    root.querySelector('[data-sid-state=""]').click();
+    expect("free all shown", root.getElementById("sidFreeAll").hidden, false);
+    root.getElementById("sidFreeAll").click();
+    expect("free all asks first", !!root.querySelector(".confirm [data-free-confirm]"), true);
+    root.querySelector("[data-free-cancel]").click();
     expect("pool tiles", root.querySelectorAll(".ptile").length, 5); // the sample pool has IDs used elsewhere
     expect("blocked note", !!root.querySelector(".pnote"), true);
     root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
