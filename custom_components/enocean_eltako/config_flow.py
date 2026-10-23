@@ -111,7 +111,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = (
-        4  # 1.2: senders (schema 2); 1.3: rocker buttons (schema 3); 1.4: model name (4)
+        5  # 1.2: senders (2); 1.3: rocker buttons (3); 1.4: model name (4); 1.5: routing
     )
 
     def __init__(self) -> None:

@@ -3,7 +3,7 @@
 Two sender profiles can be taught in at the same time: the controller (H5-3F-7F, run time
 in the telegram) and the direction rocker (F6-02-01: 0x70 up, 0x50 down; the same direction
 again stops). The routing option picks which one moves the cover (controller,
-direction_rocker or both); positions use the controller when present, otherwise the rocker
+direction_rocker); positions use the controller when present, otherwise the rocker
 with a timed stop.
 
 Position and inaccuracy follow cover_position.CoverPosition (I6), including vent slots of
@@ -124,9 +124,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         self._attr_is_closing = False
         routing = device.options.get(OPT_ROUTING, CONTROLLER.id)
         self._via = [
-            p
-            for p in (CONTROLLER.id, DIRECTION_ROCKER.id)
-            if device.has_sender(p) and routing in (p, "both")
+            p for p in (CONTROLLER.id, DIRECTION_ROCKER.id) if device.has_sender(p) and routing == p
         ] or list(device.senders)
         self._cancel_stop: Callable[[], None] | None = None
         self._rocker_direction: bytes | None = None

@@ -550,7 +550,7 @@ async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) ->
                     {"profile": "controller", "sender_id": "FF-B7-44-91"},
                     {"profile": "direction_rocker", "sender_id": "FF-B7-44-92"},
                 ],
-                routing="both",
+                routing="direction_rocker",
                 time_opens=20,
                 time_closes=20,
             )
@@ -569,7 +569,9 @@ async def test_cover_with_controller_and_direction_rocker(hass: HomeAssistant, g
     )
     rocker_up = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x70", 0xFFB74492, 0x30))
     rocker_release = esp2.encode_radio(RadioTelegram(Rorg.RPS, b"\x00", 0xFFB74492, 0x20))
-    assert controller_up in received and rocker_up in received and rocker_release in received
+    # one sender moves it: the direction rocker, not the controller as well
+    assert rocker_up in received and rocker_release in received
+    assert controller_up not in received
     for key in ("controller", "direction_rocker"):
         assert _entity(hass, "button", f"{BASE}_05-00-00-22_1_teach_in_{key}")
 
@@ -619,7 +621,7 @@ async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
             "sender_direction_rocker": "FF-B7-44-82",
             "time_opens": 25,
             "time_closes": 21,
-            "routing": "both",
+            "routing": "direction_rocker",
         },
     )
     assert result["type"] is FlowResultType.ABORT
@@ -2112,9 +2114,13 @@ async def test_migrate_model_name_field(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
     await hass.async_block_till_done()
-    assert entry.minor_version == 4
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION  # passes on to the latest
     (subentry,) = entry.subentries.values()
-    assert subentry.data == {"schema": 4, "model": "switch", "device_id": "05-10-A2-B3"}
+    assert subentry.data == {
+        "schema": SUBENTRY_SCHEMA,
+        "model": "switch",
+        "device_id": "05-10-A2-B3",
+    }
 
 
 async def test_model_name_is_chosen_typed_and_shown(hass: HomeAssistant, gateway) -> None:

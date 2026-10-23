@@ -56,7 +56,7 @@ OPT_CHANNEL = "channel"  # VLD actuators: output channel (D2-01 I/O, D2-05 CHN)
 OPT_WALL_SWITCH = "wall_switch"  # I4: rocker whose presses set the (assumed) on/off state
 OPT_WALL_ON = "wall_on_button"  # I4: its button that switches on
 OPT_WALL_OFF = "wall_off_button"  # I4: its button that switches off (same button = toggle)
-OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker | both)
+OPT_ROUTING = "routing"  # cover: which sender moves it (controller | direction_rocker)
 OPT_STATUS_CHANNEL = "status_channel"  # switch: "1" reports 0x70/0x50, "2" 0x30/0x10
 OPT_TENTHS = "run_time_tenths"  # cover: controller run times in 100 ms (newer firmware)
 OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up

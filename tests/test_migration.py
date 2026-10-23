@@ -94,3 +94,46 @@ async def test_newer_data_is_refused(hass: HomeAssistant) -> None:
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.MIGRATION_ERROR
+
+
+async def test_cover_routing_both_becomes_one_sender(hass: HomeAssistant) -> None:
+    """1.4 -> 1.5: "both" keeps the controller, or the only sender a cover has."""
+
+    def cover(title: str, device_id: str, profiles: list[str], routing: str) -> ConfigSubentryData:
+        return ConfigSubentryData(
+            data={
+                "schema": 4,
+                "model": "cover",
+                "device_id": device_id,
+                "senders": [
+                    {"profile": p, "sender_id": f"FF-B7-44-{0x80 + i:02X}"}
+                    for i, p in enumerate(profiles)
+                ],
+                "routing": routing,
+            },
+            subentry_type="device",
+            title=title,
+            unique_id=device_id,
+        )
+
+    entry = _entry(
+        4,
+        [
+            cover("Beide", "05-00-00-30", ["controller", "direction_rocker"], "both"),
+            cover("Nur Taster", "05-00-00-31", ["direction_rocker"], "both"),
+            cover(
+                "Taster gewählt",
+                "05-00-00-32",
+                ["controller", "direction_rocker"],
+                "direction_rocker",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await async_migrate_entry(hass, entry)
+    data = {s.title: s.data for s in entry.subentries.values()}
+    assert data["Beide"]["routing"] == "controller"
+    assert data["Nur Taster"]["routing"] == "direction_rocker"
+    assert data["Taster gewählt"]["routing"] == "direction_rocker"  # a chosen one stays
+    assert all(d["schema"] == SUBENTRY_SCHEMA for d in data.values())
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION

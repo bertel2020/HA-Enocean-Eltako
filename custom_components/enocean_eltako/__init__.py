@@ -24,6 +24,7 @@ from homeassistant.helpers.typing import ConfigType
 from .catalog import (
     CATALOG,
     CENTRAL,
+    CONTROLLER,
     DIRECTION_ROCKER,
     GENERIC_EEP,
     GROUP_VIRTUAL,
@@ -32,6 +33,7 @@ from .catalog import (
     OPT_PLATFORM,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
+    OPT_ROUTING,
     OPT_STATUS_REQUEST,
     PLATFORMS,
     ROCKER,
@@ -141,6 +143,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
 
     1.3 -> 1.4: the optional "model_name" (the device's type, display only) is new; nothing
     to convert (schema 4).
+
+    1.4 -> 1.5: the cover routing "both" is gone, a cover moves through one sender; it keeps
+    the controller (the direction rocker where it has no controller) (schema 5).
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -178,6 +183,19 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             data["schema"] = 4
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=4)
+    if entry.minor_version < 5:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 5:
+                continue
+            if data.get(OPT_ROUTING) == "both":
+                profiles = [s[CONF_PROFILE] for s in data.get(CONF_SENDERS, ())]
+                data[OPT_ROUTING] = (
+                    CONTROLLER.id if CONTROLLER.id in profiles or not profiles else profiles[0]
+                )
+            data["schema"] = 5
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=5)
     return True
 
 
