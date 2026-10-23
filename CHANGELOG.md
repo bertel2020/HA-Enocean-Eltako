@@ -6,6 +6,32 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [0.1.11] - 2026-10-23
+
+#### Added
+
+- **Cover automation mode:** every cover has a select "Automation mode" (Off, Morning, Evening, Both; Both until chosen
+  otherwise) for your own automations, like the old Eltako integration's. It moves nothing by itself and is kept across
+  restarts.
+- **Cover state and driven time:** FSB covers have a "State" sensor (opening, closing, open, closed, stopped) and a
+  "Driven time" sensor (with the direction) from the actuator's confirmation telegrams.
+- **Panel:** an Integration link in the header bar and in the gateway details, straight to that gateway's entry.
+
+#### Changed
+
+- **Cover routing:** a cover moves through one sender, the controller or the direction rocker. "Both" is gone: it sent two
+  telegrams per run, and the direction rocker stops a run on the same direction again. Existing covers with "Both" keep
+  the controller (the direction rocker where they have no controller).
+- **Takeover:** a rocker (F6-02-01, F6-02-02) of the old binary_sensor platform becomes a rocker contact with its device
+  class and inverted flag, not a button. The takeover stays on the selection when nothing is left to switch over and
+  says so in step 3.
+
+#### Fixed
+
+- **Rocker and wall switch buttons:** the collapsed sections show the button in use (or the default) preselected instead
+  of no choice at all.
+- **Device page:** the EEP is listed once, as model ID, not also in the model.
+
 ### [0.1.10] - 2026-10-23
 
 #### Changed
@@ -351,6 +377,32 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [0.1.11] - 2026-10-23
+
+#### Hinzugefügt
+
+- **Automatikmodus der Cover:** Jedes Cover hat eine Auswahl „Automatikmodus" (Aus, Morgens, Abends, Beides; bis zur Wahl
+  Beides) für deine eigenen Automationen, wie in der alten Eltako-Integration. Sie fährt nichts selbst und bleibt über
+  Neustarts erhalten.
+- **Zustand und Fahrzeit der Cover:** FSB-Cover haben einen Sensor „Zustand" (fährt auf, fährt zu, offen, geschlossen,
+  gestoppt) und einen Sensor „Fahrzeit" (mit der Richtung) aus den Bestätigungstelegrammen des Aktors.
+- **Panel:** ein Integrations-Link in der Kopfleiste und in den Gateway-Details, direkt zum Eintrag dieses Gateways.
+
+#### Geändert
+
+- **Routing der Cover:** Ein Cover fährt über einen Sender, den Controller oder den Richtungstaster. „Beide" entfällt:
+  Es sendete zwei Telegramme je Fahrt, und der Richtungstaster stoppt eine Fahrt bei erneutem Druck in dieselbe Richtung.
+  Bestehende Cover mit „Beide" behalten den Controller (den Richtungstaster, wo sie keinen Controller haben).
+- **Übernahme:** Ein Taster (F6-02-01, F6-02-02) der alten Plattform binary_sensor wird ein Taster-Kontakt mit seiner
+  Geräteklasse und dem Invertieren, kein Knopf. Die Übernahme bleibt bei der Auswahl, wenn nichts mehr umzustellen ist,
+  und sagt das in Schritt 3.
+
+#### Behoben
+
+- **Tasten von Taster und Wandtaster:** Die eingeklappten Bereiche zeigen die genutzte Taste (oder den Standard)
+  vorausgewählt, statt gar keine Auswahl.
+- **Geräteseite:** Die EEP steht einmal, als Modell-ID, nicht zusätzlich im Modell.
 
 ### [0.1.10] - 2026-10-23
 
