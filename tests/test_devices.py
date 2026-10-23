@@ -2146,7 +2146,7 @@ async def test_model_name_is_chosen_typed_and_shown(hass: HomeAssistant, gateway
     page = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, f"{BASE}_05-10-A2-B3"), entry.entry_id
     )
-    assert page is not None and page.model == "FSR14-4x (M5-38-08)"
+    assert page is not None and page.model == "FSR14-4x"
 
     # a model of its own is typed in; leaving it empty stores nothing
     subentry_id = next(iter(entry.subentries))

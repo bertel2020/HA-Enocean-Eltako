@@ -170,14 +170,12 @@ class EnOceanDevice:
 
     @property
     def _registry_model(self) -> str:
-        """Model as the device page lists it: the type, then the EEP it speaks."""
+        """Model as the device page lists it: the type; the EEP (with variant) is the model ID
+        the page shows next to it, so it only stands here when there is no type."""
         label = self._model_label
-        if self.model.receive is None:
+        if self.model.receive is None or label:
             return label
-        eep = self.model.receive.eep
-        if not label:
-            return eep
-        return label if eep in label else f"{label} ({eep})"
+        return self.model.receive.eep
 
     @property
     def device_info(self) -> DeviceInfo:
