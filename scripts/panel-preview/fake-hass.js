@@ -86,6 +86,19 @@ export function fakeHass(params = new URLSearchParams()) {
       switch (msg.type) {
         case "enocean_eltako/gateways":
           return gateways;
+        case "enocean_eltako/device_details": {
+          const actuator = msg.device === "sub1";
+          return {
+            key: msg.device, entry_id: msg.entry_id, gateway_name: "FAM-USB Keller", category: "lighting",
+            model: actuator ? "FSR14-4x" : "", model_name: actuator ? "FSR14-4x" : "", models: ["FSR14-4x", "FSR61NP-230V", "FL62"],
+            eep: actuator ? "M5-38-08:eltako" : "A5-38-08:eltako", eep_extra: [],
+            signal: { rssi: -62, min: -78, max: -55 }, repeat: 0, telegrams: 1284, interval: null, silent: false,
+            senders: actuator ? [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] : [],
+            commands: actuator ? { sent: 86, confirmed: 84, rate: 97.7, latency_avg: 1.4, latency_max: 3.1 } : null,
+            settings: actuator ? { platform: "light", invert: false, status_request: true } : {},
+            entities: [{ name: "Licht", entity_id: "light.licht_diele", state: "on", unit: null }, { name: "Signalstärke", entity_id: "sensor.licht_diele_signal", state: "-62", unit: "dBm" }],
+          };
+        }
         case "enocean_eltako/takeover/status":
           return { available: !empty && !params.has("closed"), report: !empty, closed: params.has("closed") };
         case "enocean_eltako/sender_pools":
