@@ -102,6 +102,12 @@ OLD_GATEWAY = {
                 "invert_signal": True,
             },
             {"id": "FF-C2-4A-8F", "eep": "F6-02-01", "name": "Doppelt"},
+            {
+                "id": "FE-FC-2E-56",
+                "eep": "F6-02-01",
+                "name": "Kontakt Garagentor",
+                "device_class": "garage_door",
+            },
             {"id": "00-21-63-43", "eep": "F6-10-00", "name": "Fenster", "invert_signal": True},
         ],
         "sensor": [
@@ -200,6 +206,10 @@ def test_plan_sensors() -> None:
     door = devices["Haustür"]
     assert (door.model, door.data) == ("contact", {"device_class": "door", "invert": True})
     assert devices["Zähler"].model == "meter"
+    garage = devices[
+        "Kontakt Garagentor"
+    ]  # a rocker under binary_sensor is a contact, not a button
+    assert (garage.model, garage.data) == ("rocker_contact", {"device_class": "garage_door"})
     window = devices["Fenster"]
     assert (window.model, window.data) == ("window_handle", {"invert": True})
     motion = devices["Bewegung"]
