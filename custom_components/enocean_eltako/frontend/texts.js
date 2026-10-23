@@ -241,7 +241,7 @@ export const TEXT = {
     teachSender: "Sender ID", teachSend: "Send teach-in",
     teachSent: (name) => `Teach-in of ${name} sent`, teachArmed: (s) => `Waiting ${s} s for the actuator's request: put it into learn mode now`,
     teachFailed: "Teach-in could not be sent: gateway not loaded or device gone",
-    noGatewaysText: "Add a gateway (USB stick, bus gateway or Device Proxy) in the integration.", openIntegration: "Open the integration",
+    noGatewaysText: "Add a gateway (USB stick, bus gateway or Device Proxy) in the integration.", openIntegration: "Open the integration", integration: "Integration",
     noDevicesText: "Press a button on a device: every sender heard gets a line here.",
     noSenderIdsText: "A device that sends (actuator, central command) gets its ID here when it is set up.",
     addResult: {
@@ -482,7 +482,7 @@ export const TEXT = {
     teachSender: "Sender-ID", teachSend: "Einlernen senden",
     teachSent: (name) => `Einlerntelegramm von ${name} gesendet`, teachArmed: (s) => `Warte ${s} s auf die Anfrage des Aktors: jetzt in den Lernmodus bringen`,
     teachFailed: "Einlernen nicht möglich: Gateway nicht geladen oder Gerät nicht mehr da",
-    noGatewaysText: "Ein Gateway (USB-Stick, Bus-Gateway oder Device Proxy) in der Integration hinzufügen.", openIntegration: "Integration öffnen",
+    noGatewaysText: "Ein Gateway (USB-Stick, Bus-Gateway oder Device Proxy) in der Integration hinzufügen.", openIntegration: "Integration öffnen", integration: "Integration",
     noDevicesText: "Eine Taste an einem Gerät drücken: jeder gehörte Sender bekommt hier eine Zeile.",
     noSenderIdsText: "Ein Gerät, das sendet (Aktor, Zentralbefehl), bekommt hier beim Einrichten seine ID.",
     addResult: {
