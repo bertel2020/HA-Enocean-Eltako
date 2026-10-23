@@ -291,6 +291,15 @@ and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor
 newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
 as CSV; sending and clearing belong to the telegram list and are not offered here.
 
+**Selecting several devices:** every set-up device has a box at the start of its row, **Select all**
+above the list ticks all filtered ones. As soon as something is ticked, a bar offers what to do with
+all of them at once: set an **area**, add or remove **labels** (a tick adds the label to all, no
+tick removes it, a dash leaves it; new labels are created in the form), **disable** or **enable**
+the devices, and **remove** them. Area, labels and disabling are Home Assistant's own, so they show
+on the device page and work in automations. **Remove** asks first and deletes the devices with their
+entities; their sender IDs stay blocked until you confirm under **Sender IDs** that the actuators
+have forgotten them. A device's labels show under its name, and the search finds them.
+
 ### Send a telegram
 
 The **Send a telegram** button sends a raw telegram (type, data, status as hex) through the

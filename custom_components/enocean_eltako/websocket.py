@@ -62,6 +62,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_teach_in)
     websocket_api.async_register_command(hass, ws_device_details)
     websocket_api.async_register_command(hass, ws_set_model)
+    websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     async_setup_takeover_websocket(hass)
@@ -297,6 +298,8 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
                     len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
                 ),
                 "ha_device": entry.id if entry else None,
+                "labels": sorted(entry.labels) if entry else [],
+                "disabled": bool(entry and entry.disabled),
                 # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
                 "key": device.subentry.subentry_id,
                 "teach": [
@@ -595,6 +598,41 @@ def ws_set_model(
     if data != dict(device.subentry.data):
         hass.config_entries.async_update_subentry(entry, device.subentry, data=data)
     connection.send_result(msg["id"], {"model_name": data.get(CONF_MODEL_NAME, "")})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/remove_devices",
+        vol.Required("entry_id"): str,
+        vol.Required("devices"): vol.All([str], vol.Length(min=1)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_remove_devices(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel devices view: remove set-up devices from Home Assistant, one reload for all of them.
+
+    The sender IDs of a removed device stay blocked until the teach-out is confirmed (the
+    entry's setup releases them), so nothing is handed out again that an actuator still knows.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    keys = list(dict.fromkeys(msg["devices"]))
+    if unknown := [key for key in keys if key not in entry.subentries]:
+        connection.send_error(msg["id"], "unknown_device", f"no such device: {unknown[0]}")
+        return
+    runtime = entry.runtime_data
+    runtime.suspend_reload()
+    try:
+        for key in keys:
+            hass.config_entries.async_remove_subentry(entry, key)
+    finally:
+        await hass.config_entries.async_reload(entry.entry_id)
+    connection.send_result(msg["id"], {"removed": len(keys)})
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:
