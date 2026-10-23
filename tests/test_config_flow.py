@@ -512,6 +512,38 @@ async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize(
+    ("announced", "asks"),
+    [("fgw14_usb", False), ("mgw_eth", True), ("nope", True)],  # other protocol, unknown: ask
+)
+async def test_device_proxy_app_model_announced(hass: HomeAssistant, announced: str, asks: bool) -> None:
+    """A model in the announcement skips the question; one that does not fit is ignored."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    info = HassioServiceInfo(
+        config={
+            "host": "127.0.0.1",
+            "replay": True,
+            "gateways": [{"name": "Bus", "port": server.port, "protocol": "esp2", "model": announced}],
+        },
+        name="Device Proxy",
+        slug="abc_device_proxy",
+        uuid="1234",
+    )
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+    finally:
+        await server.stop()
+    if asks:
+        assert result["step_id"] == "proxy_confirm"
+    else:
+        assert result.get("step_id") != "proxy_confirm"
+        assert result["step_id"] == "name"  # the model is set, on to the name
+
+
+@pytest.mark.parametrize(
     "config",
     [
         {"gateways": [{"port": 9001}]},  # no host

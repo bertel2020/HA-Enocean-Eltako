@@ -478,6 +478,8 @@ Umstiegs, eo_man oder PCT14.
 
 - Die App meldet ihre Gateways an: Jedes erscheint hier als entdeckt (**Device Proxy**);
   Modell wählen, und das Gateway ist mit **Nachlieferung über den Device Proxy** eingerichtet.
+  Nennt die App das Modell in ihrer Meldung (`model`, zum Beispiel `fam_usb`), entfällt die
+  Frage; sonst wird es am Namen des Gateways erraten.
 - Nach einem Neustart von Home Assistant liefert die App die Telegramme nach, die inzwischen
   ankamen (nur Funktelegramme, standardmäßig höchstens 15 Minuten alt), mit ihrer
   Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Auf
