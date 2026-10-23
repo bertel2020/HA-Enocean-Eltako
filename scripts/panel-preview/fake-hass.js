@@ -36,13 +36,14 @@ export function fakeHass(params = new URLSearchParams()) {
     devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
     radio_devices: [
-      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [],
+      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
-      { id: "05-10-A2-B4", device: "Dimmer Flur", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [] },
+      { id: "05-10-A2-B4", device: "Dimmer Flur", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [], labels: [], disabled: false },
       { id: "05-11-11-11", device: "Temperatur Bad", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
       { id: "05-22-22-22", device: "Fensterkontakt Küche", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
     ],
   };
+  const labels = [{ label_id: "lbl_battery", name: "Battery" }, { label_id: "lbl_window", name: "Window" }];
   const gateways = empty ? [] : [gateway];
   if (params.has("two") && !empty) {
     gateways.push({ ...gateway, entry_id: "gw2", title: "MGW Garage", base_id: "FF-AA-00-80", radio_devices: [], connected: false, disconnected_since: now - 4000 });
@@ -98,6 +99,25 @@ export function fakeHass(params = new URLSearchParams()) {
             entities: [{ name: "Licht", entity_id: "light.licht_diele", state: "on", unit: null }, { name: "Signalstärke", entity_id: "sensor.licht_diele_signal", state: "-62", unit: "dBm" }],
           };
         }
+        case "config/area_registry/list":
+          return [{ area_id: "flur", name: "Flur" }, { area_id: "bad", name: "Bad" }];
+        case "config/label_registry/list":
+          return labels;
+        case "config/label_registry/create": {
+          const label = { label_id: `lbl_${msg.name.toLowerCase()}`, name: msg.name };
+          labels.push(label);
+          return label;
+        }
+        case "config/device_registry/update": {
+          const device = gateway.radio_devices.find((d) => d.ha_device === msg.device_id);
+          if ("area_id" in msg) device.area = msg.area_id === "bad" ? "Bad" : msg.area_id === "flur" ? "Flur" : null;
+          if ("labels" in msg) device.labels = msg.labels;
+          if ("disabled_by" in msg) device.disabled = msg.disabled_by !== null;
+          return {};
+        }
+        case "enocean_eltako/remove_devices":
+          gateway.radio_devices = gateway.radio_devices.filter((d) => !msg.devices.includes(d.key));
+          return { removed: msg.devices.length };
         case "enocean_eltako/set_model":
           return { model_name: msg.model_name };
         case "enocean_eltako/takeover/status":

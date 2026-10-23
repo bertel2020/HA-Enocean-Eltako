@@ -308,6 +308,17 @@ gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neue
 Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
 Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
 
+**Mehrere Geräte auswählen:** Jedes eingerichtete Gerät hat vorn ein Kästchen, **Alle auswählen**
+über der Liste wählt alle gefilterten. Sobald etwas gewählt ist, zeigt eine Leiste, was sich mit
+allen auf einmal tun lässt: einen **Bereich** setzen, **Labels** hinzufügen oder entfernen (ein
+Haken fügt das Label allen hinzu, ohne Haken wird es entfernt, ein Strich lässt es; neue Labels
+legst du im Formular an), die Geräte **deaktivieren** oder wieder **aktivieren** und sie
+**entfernen**. Bereich, Labels und Deaktivieren sind die von Home Assistant, sie gelten also auch
+auf der Geräteseite und in Automationen. **Entfernen** fragt vorher nach und löscht die Geräte
+mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Sender-IDs** bestätigst, dass
+die Aktoren sie vergessen haben. Die Labels eines Geräts stehen unter seinem Namen, und die Suche
+findet sie.
+
 ### Telegramm senden
 
 Die Schaltfläche **Telegramm senden** schickt ein rohes Telegramm (Typ, Daten und Status als

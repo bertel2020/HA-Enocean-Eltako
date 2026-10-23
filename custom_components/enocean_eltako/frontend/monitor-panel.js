@@ -344,6 +344,25 @@ const STYLE = `
   .sendform label.check { display: flex; align-items: center; gap: 8px; align-self: end; height: 38px; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text); }
   .sendform label.check[hidden] { display: none; }
   .sendform .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .sendform .err { margin-top: 6px; font-size: 12px; color: var(--bad); }
+  .sendform .err[hidden] { display: none; }
+  .sendform .picklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 12px; margin-bottom: 10px; }
+  .sendform .picklist small { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .sendform ul.names { margin: 0 0 10px; padding-left: 18px; font-size: 13px; }
+  .sendform .newlabel { display: flex; gap: 8px; align-items: end; }
+  .sendform .newlabel label { flex: 1; }
+  .selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; background: var(--accent-soft); border-top: 1px solid var(--line); }
+  .selbar[hidden] { display: none; }
+  .selbar .count { font-weight: 500; margin-right: 4px; }
+  .selbar .grow { flex: 1; }
+  .selbar .chip { height: 32px; background: var(--surface); }
+  .selbar .chip.danger { color: var(--bad); border-color: var(--bad); }
+  .sendform .chip.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .selall { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; }
+  .selall[hidden] { display: none; }
+  .devices .dev .selbox { width: 16px; height: 16px; margin: 0 10px 0 0; vertical-align: -3px; cursor: pointer; accent-color: var(--accent); }
+  .devices .dev.picked { background: var(--accent-soft); }
+  .devices .dev .labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
@@ -603,7 +622,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = ["[data-sel]", ".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -697,6 +716,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._gateways = [];
     this._expanded = new Set();
     this._devOpen = new Set(); // devices view: opened rows (device keys)
+    this._sel = new Set(); // devices view: ticked rows (device keys)
+    this._pick = null; // the open form of the selection: "area", "labels" or "remove"
+    this._areas = [];
+    this._labels = [];
     this._devDetails = new Map(); // device key -> what the server knows of it
     this._devOrder = null; // order kept while a row is open, so it does not move away
     this._keys = new Set(); // rows shown or pending, so a repeated history is not added twice
@@ -920,7 +943,9 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text dev-only" id="tkReport" hidden>${esc(t.tkReportButton)}</button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text dev-only" id="tkReport" hidden>${esc(t.tkReportButton)}</button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="selbar dev-only" id="selBar" hidden></div>
+          <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
           <div class="senders" id="senders"></div>
           <div class="takeover" id="takeover"></div>
@@ -1002,7 +1027,32 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._freeing = null;
       this._renderSenderIds();
     });
+    $("selAll").addEventListener("change", (e) => this._selectAll(e.target.checked));
+    $("selBar").addEventListener("click", (e) => {
+      const act = e.target.closest("[data-sel-act]")?.dataset.selAct;
+      if (act === "clear") this._clearSel();
+      else if (act === "toggle") this._toggleDisabled();
+      else if (act) this._openPick(act);
+    });
+    $("pickForm").addEventListener("click", (e) => {
+      if (e.target.closest("[data-pick-cancel]")) this._openPick(null);
+      else if (e.target.closest("[data-pick-new]")) this._createLabel();
+    });
+    $("pickForm").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || e.target.id !== "pickNew") return;
+      e.preventDefault();
+      this._createLabel();
+    });
+    $("pickForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      this._applyPick();
+    });
     $("devices").addEventListener("click", (e) => {
+      const box = e.target.closest("[data-sel]");
+      if (box) {
+        this._toggleSel(box.dataset.sel, box.checked);
+        return;
+      }
       if (e.target.closest(".reset")) {
         this._resetFilters();
         return;
@@ -1411,6 +1461,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("panel").setAttribute("aria-label", title);
     if (view === "senders") this._loadPools();
     if (view === "takeover") this._loadTakeover();
+    if (view === "devices") this._loadRegistries().then(() => this._view === "devices" && this._render(true));
     for (const button of $("view").querySelectorAll("button")) {
       // tabs: only the chosen one is in the tab order, the arrow keys move between them
       button.setAttribute("aria-selected", String(button.dataset.view === view));
@@ -2382,7 +2433,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
         hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
         eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
-        model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null,
+        model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null, labels: info?.labels || [], disabled: !!info?.disabled,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
         dbm: r.dbm, trend: d.dbm, fields: d.fields, data: r.data, teach: d.teach, candidates: d.candidates, rorg: r.rorg,
       });
@@ -2391,7 +2442,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
         key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
-        eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities,
+        eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
       });
@@ -2415,7 +2466,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
     return (
-      [d.name, d.eepFull, d.model, d.area, d.gateway_name, d.data, d.teach, ...(d.candidates || [])].some((v) => v && String(v).toLowerCase().includes(text)) ||
+      [d.name, d.eepFull, d.model, d.area, d.gateway_name, d.data, d.teach, ...(d.candidates || []), ...this._labelNames(d)].some((v) => v && String(v).toLowerCase().includes(text)) ||
       (d.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
       (!!compact && d.id.replace(/-/g, "").toLowerCase().includes(compact))
     );
@@ -2469,6 +2520,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (this._offset >= total) this._offset = total ? Math.floor((total - 1) / this._pageSize) * this._pageSize : 0;
     const page = devices.slice(this._offset, this._offset + this._pageSize);
     this.shadowRoot.getElementById("count").textContent = t.devCount(total, all.length);
+    this._renderSel(all, devices);
     this._renderPager(total, page.length);
     // the area filter offers the areas in use (and a chosen one that has just emptied)
     const areas = [...new Set([...all.map((d) => d.area).filter(Boolean), ...(this._filter.area ? [this._filter.area] : [])])].sort(collator.compare);
@@ -2500,6 +2552,211 @@ class EnOceanEltakoPanel extends HTMLElement {
       })
       .join("")}<span></span></div>`;
     this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
+  }
+
+  _labelNames(d) {
+    return (d.labels || []).map((id) => this._labels.find((l) => l.label_id === id)?.name).filter(Boolean);
+  }
+
+  async _loadRegistries() {
+    // the areas and labels of Home Assistant: for the chips, the search and the forms of the selection
+    try {
+      const [areas, labels] = await Promise.all([this._hass.callWS({ type: "config/area_registry/list" }), this._hass.callWS({ type: "config/label_registry/list" })]);
+      this._areas = areas;
+      this._labels = labels;
+    } catch (err) {
+      // the lists stay as they were
+    }
+  }
+
+  _selected() {
+    const seen = new Set();
+    return this._deviceItems().filter((d) => d.devKey && this._sel.has(d.devKey) && !seen.has(d.devKey) && seen.add(d.devKey));
+  }
+
+  _toggleSel(key, on) {
+    if (on) this._sel.add(key);
+    else this._sel.delete(key);
+    this._render();
+  }
+
+  _selectAll(on) {
+    for (const d of this._deviceList()) {
+      if (!d.devKey) continue;
+      if (on) this._sel.add(d.devKey);
+      else this._sel.delete(d.devKey);
+    }
+    this._render();
+  }
+
+  _clearSel() {
+    this._sel.clear();
+    this._pick = null;
+    this._render();
+  }
+
+  _renderSel(all, devices) {
+    // the bar over the list: what can be done with the ticked devices; the "select all" box in the header line
+    const t = this._t;
+    const $ = (id) => this.shadowRoot.getElementById(id);
+    const present = new Set(all.filter((d) => d.devKey).map((d) => d.devKey));
+    for (const key of this._sel) if (!present.has(key)) this._sel.delete(key);
+    const listed = devices.filter((d) => d.devKey);
+    const ticked = listed.filter((d) => this._sel.has(d.devKey)).length;
+    $("selAllRow").hidden = !listed.length;
+    const box = $("selAll");
+    box.checked = !!listed.length && ticked === listed.length;
+    box.indeterminate = ticked > 0 && ticked < listed.length;
+    const items = all.filter((d) => d.devKey && this._sel.has(d.devKey));
+    if (!items.length) this._pick = null;
+    const bar = $("selBar");
+    bar.hidden = !items.length;
+    $("pickForm").hidden = !this._pick;
+    if (!items.length) return;
+    const off = items.every((d) => d.disabled);
+    this._replace(bar, `<span class="count">${esc(t.selCount(items.length))}</span>
+      <button class="chip" data-sel-act="area" aria-expanded="${this._pick === "area"}">${svg(ICON.pin)}${esc(t.selArea)}</button>
+      <button class="chip" data-sel-act="labels" aria-expanded="${this._pick === "labels"}">${svg(ICON.label)}${esc(t.selLabel)}</button>
+      <button class="chip" data-sel-act="toggle">${svg(off ? ICON.play : ICON.pause)}${esc(off ? t.selEnable : t.selDisable)}</button>
+      <span class="grow"></span>
+      <button class="chip" data-sel-act="clear">${esc(t.selClear)}</button>
+      <button class="chip danger" data-sel-act="remove" aria-expanded="${this._pick === "remove"}">${svg(ICON.clear)}${esc(t.selRemove)}</button>`);
+  }
+
+  async _openPick(kind) {
+    this._pick = kind && this._pick !== kind ? kind : null;
+    if (this._pick === "area" || this._pick === "labels") await this._loadRegistries();
+    this._renderPick();
+    this._renderSel(this._deviceItems(), this._deviceList());
+    this.shadowRoot.getElementById("pickForm").querySelector("select, input, button")?.focus();
+  }
+
+  _renderPick(draft) {
+    const t = this._t;
+    const form = this.shadowRoot.getElementById("pickForm");
+    const items = this._selected();
+    form.hidden = !this._pick || !items.length;
+    if (form.hidden) return;
+    const active = this.shadowRoot.activeElement;
+    if (active && form.contains(active)) active.blur(); // the form is drawn anew: focus leaves it first
+    const n = items.length;
+    const buttons = (label, cls = "primary") => `<div class="buttons"><button class="chip" type="button" data-pick-cancel>${esc(t.sendCancel)}</button><button class="chip ${cls}" type="submit">${esc(label)}</button></div>`;
+    if (this._pick === "area") {
+      const areas = [...this._areas].sort((a, b) => collator.compare(a.name, b.name));
+      form.innerHTML = `<h3>${esc(t.areaTitle(n))}</h3><div class="fields"><label><span>${esc(t.devCols.area)}</span><select class="select" id="pickArea">
+        <option value="__keep">${esc(t.areaKeep)}</option><option value="">${esc(t.areaNone)}</option>${areas.map((a) => `<option value="${esc(a.area_id)}">${esc(a.name)}</option>`).join("")}</select></label></div>${buttons(t.pickApply)}`;
+    } else if (this._pick === "labels") {
+      const labels = [...this._labels].sort((a, b) => collator.compare(a.name, b.name));
+      const rows = labels
+        .map((l) => {
+          const c = items.filter((d) => d.labels.includes(l.label_id)).length;
+          const state = draft?.get(l.label_id) || { checked: c === n, indeterminate: c > 0 && c < n };
+          return `<label class="check"><input type="checkbox" data-label="${esc(l.label_id)}" data-indeterminate="${state.indeterminate}"${state.checked ? " checked" : ""}><span>${esc(l.name)}</span><small>${c}/${n}</small></label>`;
+        })
+        .join("");
+      form.innerHTML = `<h3>${esc(t.labelTitle(n))}</h3><p>${esc(t.labelHint)}</p>${rows ? `<div class="picklist">${rows}</div>` : `<p>${esc(t.labelNone)}</p>`}
+        <div class="newlabel"><label><span>${esc(t.labelNew)}</span><input class="text" id="pickNew" autocomplete="off" maxlength="64"></label><button class="chip" type="button" data-pick-new>${esc(t.labelCreate)}</button></div>
+        <div class="err" id="pickErr" role="alert" hidden></div>${buttons(t.pickApply)}`;
+      for (const cb of form.querySelectorAll("[data-label]")) cb.indeterminate = cb.dataset.indeterminate === "true";
+    } else {
+      const named = items.map((d) => `<li>${esc(d.name || d.id)} <span class="mono">${esc(d.id)}</span></li>`).join("");
+      form.innerHTML = `<h3>${esc(t.rmTitle(n))}</h3><ul class="names">${named}</ul><p>${esc(t.rmText)}</p><p>${esc(t.rmBlocked)}</p>${buttons(t.rmRun(n), "primary danger")}`;
+    }
+  }
+
+  async _createLabel() {
+    const t = this._t;
+    const form = this.shadowRoot.getElementById("pickForm");
+    const input = form.querySelector("#pickNew");
+    const err = form.querySelector("#pickErr");
+    const name = input.value.trim();
+    if (!name) {
+      err.textContent = t.labelNameEmpty;
+      err.hidden = false;
+      input.focus();
+      return;
+    }
+    const draft = new Map([...form.querySelectorAll("[data-label]")].map((cb) => [cb.dataset.label, { checked: cb.checked, indeterminate: cb.indeterminate }]));
+    try {
+      const label = await this._hass.callWS({ type: "config/label_registry/create", name });
+      this._labels = [...this._labels, label];
+      draft.set(label.label_id, { checked: true, indeterminate: false });
+    } catch (e) {
+      err.textContent = e.message || t.selFailed(1);
+      err.hidden = false;
+      return;
+    }
+    this._renderPick(draft);
+    this.shadowRoot.getElementById("pickNew")?.focus();
+  }
+
+  async _bulkDevices(items, update, message) {
+    // Home Assistant's own device registry does the area, labels and disabling; devices not in it are skipped
+    let failed = 0;
+    for (const d of items) {
+      const patch = d.page ? update(d) : null;
+      if (!patch) continue;
+      try {
+        await this._hass.callWS({ type: "config/device_registry/update", device_id: d.page, ...patch });
+      } catch (err) {
+        failed += 1;
+      }
+    }
+    this._pick = null;
+    await this._refreshStatus();
+    this._notice(failed ? this._t.selFailed(failed) : message, !failed);
+  }
+
+  async _applyPick() {
+    const t = this._t;
+    const items = this._selected();
+    const form = this.shadowRoot.getElementById("pickForm");
+    if (this._pick === "area") {
+      const area = form.querySelector("#pickArea").value;
+      if (area === "__keep") return this._openPick(null);
+      return this._bulkDevices(items, () => ({ area_id: area || null }), t.areaDone(items.length));
+    }
+    if (this._pick === "labels") {
+      const wanted = [...form.querySelectorAll("[data-label]")].filter((cb) => !cb.indeterminate).map((cb) => [cb.dataset.label, cb.checked]);
+      return this._bulkDevices(
+        items,
+        (d) => {
+          const labels = new Set(d.labels);
+          for (const [id, on] of wanted) {
+            if (on) labels.add(id);
+            else labels.delete(id);
+          }
+          return labels.size === d.labels.length && d.labels.every((l) => labels.has(l)) ? null : { labels: [...labels] };
+        },
+        t.labelsDone(items.length)
+      );
+    }
+    if (this._pick === "remove") return this._removeSelected(items);
+  }
+
+  _toggleDisabled() {
+    const t = this._t;
+    const items = this._selected();
+    const off = !items.every((d) => d.disabled);
+    return this._bulkDevices(items, (d) => (d.disabled === off ? null : { disabled_by: off ? "user" : null }), (off ? t.disabledDone : t.enabledDone)(items.length));
+  }
+
+  async _removeSelected(items) {
+    const t = this._t;
+    const byGateway = new Map();
+    for (const d of items) byGateway.set(d.gateway, [...(byGateway.get(d.gateway) || []), d.devKey]);
+    this._notice("");
+    try {
+      for (const [entry_id, devices] of byGateway) await this._hass.callWS({ type: "enocean_eltako/remove_devices", entry_id, devices });
+    } catch (err) {
+      this._notice(t.rmFailed);
+      return;
+    } finally {
+      this._pick = null;
+      this._sel.clear();
+      await this._refreshStatus();
+    }
+    this._notice(t.rmDone(items.length), true);
   }
 
   _openTeach(key) {
@@ -2583,7 +2840,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
         (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "") +
         (d.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span>` : "")
-      : d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "";
+      : (d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "") + (d.disabled ? `<span class="tag">${esc(t.selDisabledTag)}</span>` : "");
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const stats = d.quiet
@@ -2601,8 +2858,11 @@ class EnOceanEltakoPanel extends HTMLElement {
           d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
-    return `<div class="dev${d.quiet ? " quiet" : ""}${open ? " open" : ""}${d.devKey ? " expandable" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}"${d.devKey ? ` data-dev="${esc(d.devKey)}" data-gateway="${esc(d.gateway)}"` : ""}>
-      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}</div>
+    const picked = !!d.devKey && this._sel.has(d.devKey);
+    const box = d.devKey ? `<input type="checkbox" class="selbox" data-sel="${esc(d.devKey)}"${picked ? " checked" : ""} aria-label="${esc(t.selBoxLabel(d.name || d.id))}">` : "";
+    const labels = this._labelNames(d);
+    return `<div class="dev${d.quiet ? " quiet" : ""}${open ? " open" : ""}${picked ? " picked" : ""}${d.devKey ? " expandable" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}"${d.devKey ? ` data-dev="${esc(d.devKey)}" data-gateway="${esc(d.gateway)}"` : ""}>
+      <div class="ident"><div class="line1">${box}${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div>
       <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
       <div class="c-area">${d.area ? esc(d.area) : none}</div>
       <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>

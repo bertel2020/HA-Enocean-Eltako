@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
@@ -17,7 +18,9 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.diagnostics import async_get_config_entry_diagnostics
 from custom_components.enocean_eltako.protocol import esp2
+from custom_components.enocean_eltako.protocol.ids import parse_id
 from custom_components.enocean_eltako.protocol.models import Protocol
+from custom_components.enocean_eltako.protocol.sender_pool import SenderState
 from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
 
 from .fake_gateway import FakeGateway
@@ -286,6 +289,8 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "area": None,
             "entities": 3,
             "ha_device": registered.id,
+            "labels": [],
+            "disabled": False,
             "key": next(iter(entry.subentries)),
             "teach": [{"profile": "central", "id": "FF-B7-44-81", "ute": False}],
         }
@@ -607,5 +612,89 @@ async def test_websocket_set_model(hass: HomeAssistant, hass_ws_client) -> None:
         assert not reply["success"] and reply["error"]["code"] == code
     reply = await call(6, "Licht Diele", "x" * 65)
     assert not reply["success"] and reply["error"]["code"] == "invalid_format"
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_websocket_remove_devices(hass: HomeAssistant, hass_ws_client) -> None:
+    """The devices view removes devices at once: one reload, their sender IDs stay blocked."""
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 4,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            ),
+            ConfigSubentryData(
+                data={"schema": 4, "model": "weather", "device_id": "FF-85-EF-81"},
+                subentry_type="device",
+                title="Wetter",
+                unique_id="FF-85-EF-81",
+            ),
+            ConfigSubentryData(
+                data={"schema": 4, "model": "co2", "device_id": "01-82-0A-11"},
+                subentry_type="device",
+                title="Bad",
+                unique_id="01-82-0A-11",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    by_title = {s.title: sid for sid, s in entry.subentries.items()}
+
+    async def call(msg_id: int, devices: list[str], entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/remove_devices",
+                "entry_id": entry_id or entry.entry_id,
+                "devices": devices,
+            }
+        )
+        return await client.receive_json()
+
+    for msg_id, devices, entry_id, code in (
+        (1, ["nope"], None, "unknown_device"),
+        (2, [by_title["Bad"], "nope"], None, "unknown_device"),
+        (3, [by_title["Bad"]], "nope", "not_found"),
+    ):
+        reply = await call(msg_id, devices, entry_id)
+        assert not reply["success"] and reply["error"]["code"] == code
+    assert len(entry.subentries) == 3  # a refused request removes nothing
+
+    from custom_components.enocean_eltako.subentry_flow import sender_owner
+
+    store = entry.runtime_data.senders
+    store.pool.assign(parse_id("FF-B7-44-81"), sender_owner(parse_id("05-10-A2-B3"), "central"))
+    await store.async_save()
+    reply = await call(4, [by_title["Licht Diele"], by_title["Bad"], by_title["Bad"]])
+    assert reply["success"] and reply["result"] == {"removed": 2}
+    await hass.async_block_till_done()
+    assert [s.title for s in entry.subentries.values()] == ["Wetter"]
+    assert entry.state is ConfigEntryState.LOADED
+    # the removed device's sender ID is blocked, not free, until its teach-out is confirmed
+    pool = entry.runtime_data.senders.pool
+    assert pool.get(parse_id("FF-B7-44-81")).state is SenderState.BLOCKED
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
