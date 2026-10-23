@@ -22,9 +22,8 @@
 
 <p align="center"><em><a href="README.md">English version</a></em></p>
 
-> **Status: frühe Entwicklung.** Noch nicht mit echter Hardware getestet; nicht produktiv
-> einsetzen. Die bestehende Integration `eltako` läuft parallel weiter; diese hier hat die
-> eigene Domain `enocean_eltako`.
+> Die bestehende Integration `eltako` läuft parallel weiter; diese hier hat die eigene Domain
+> `enocean_eltako`. Bekannte Einschränkungen: [Benutzerhandbuch](docs/USER-GUIDE.de.md#bekannte-einschränkungen).
 
 EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere EnOcean-Geräte in Home Assistant ein. Die Integration ist neu geschrieben, braucht keine fremde EnOcean-Bibliothek und wird komplett über die Oberfläche eingerichtet: ein Eintrag pro Gateway, ein Untereintrag pro Gerät, kein YAML.
 
@@ -35,6 +34,7 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 - **Rollläden** mit Controller- und Richtungstaster-Sender parallel, Positionsverfolgung, Lüftungsschlitzen, Lamellenstellung und Laufzeit-Assistent.
 - **Virtuelle Sensoren:** Home-Assistant-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur, -Helligkeit, -Wetter oder -Taster senden, z. B. für die Beschattungsautomatik eines Aktors.
 - **Anlernen, Discovery und ein Live-Telegramm-Monitor** im Seitenleisten-Panel **EnOcean**, dazu Mitschnitt und Diagnosedaten für Fehlerberichte.
+- **App Device Proxy:** teilt ein Gateway zwischen Home Assistant und anderen Programmen, liefert die beim Neustart verpassten Telegramme nach und wird anhand ihrer Meldung eingerichtet.
 - **Übernahme** der Geräte der alten Integration `eltako`, ohne die Aktoren neu einzulernen.
 - **Sicherheit bleibt im Aktor:** Wind-, Regen-, Frost- und Aussperrschutz werden nie ersetzt.
 

@@ -22,9 +22,8 @@
 
 <p align="center"><em><a href="README.de.md">Deutsche Version</a></em></p>
 
-> **Status: early development.** Not tested on real hardware yet; do not use it in
-> production. The existing `eltako` integration keeps running in parallel; this one uses
-> its own domain `enocean_eltako`.
+> The existing `eltako` integration keeps running in parallel; this one uses its own domain
+> `enocean_eltako`. Known limitations: [User guide](docs/USER-GUIDE.md#known-limitations).
 
 EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOcean devices into Home Assistant. It is written from scratch, needs no third-party EnOcean library and is configured entirely in the UI: one entry per gateway, one sub-entry per device, no YAML.
 
@@ -35,6 +34,7 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 - **Covers** with controller and direction-rocker senders in parallel, position tracking, vent slots, slat tilt and a travel time assistant.
 - **Virtual sensors:** Home Assistant entities sent as EnOcean contact, motion, temperature, brightness, weather or rocker, e.g. to feed the shading automatic of an actuator.
 - **Teach-in, discovery and a live telegram monitor** in the **EnOcean** sidebar panel, plus capture and diagnostics for bug reports.
+- **Device Proxy app:** shares one gateway between Home Assistant and other programs, replays the telegrams missed during a restart and is set up from its announcement.
 - **Takeover** of the devices of the old `eltako` integration without teaching the actuators in again.
 - **Safety stays in the actuator:** wind, rain, frost and lock-out protection are never replaced.
 

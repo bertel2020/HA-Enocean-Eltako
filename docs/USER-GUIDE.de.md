@@ -511,7 +511,6 @@ Umstiegs, eo_man oder PCT14.
 
 ## Bekannte Einschränkungen
 
-- **Noch nicht mit echter Hardware getestet.** Nicht produktiv einsetzen.
 - **Bus-Speicher:** Lesen und Schreiben des FAM14-Bus-Speichers (Import, Verknüpfungsansicht,
   Aktor-Konfiguration) ist noch nicht gebaut; dafür fehlen Mitschnitte zwischen PCT14 und FAM14.
 - **Netzwerk-Gateways bedienen eine Verbindung:** Das PioTek MGW-ETH nimmt weitere

@@ -479,7 +479,6 @@ or PCT14.
 
 ## Known limitations
 
-- **Not tested on real hardware yet.** Do not use it in production.
 - **Bus memory:** reading or writing the FAM14 bus memory (import, link view, actuator
   configuration) is not built yet; it needs captures of the PCT14 ↔ FAM14 exchange.
 - **Network gateways serve one connection:** the PioTek MGW-ETH accepts further connections
