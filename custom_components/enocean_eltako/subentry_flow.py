@@ -435,7 +435,7 @@ class DeviceForm:
         if OPT_ROUTING in model.options:
             schema[vol.Required(OPT_ROUTING, default=model.senders[0].id)] = SelectSelector(
                 SelectSelectorConfig(
-                    options=[*(p.id for p in model.senders), "both"],
+                    options=[p.id for p in model.senders],
                     translation_key=OPT_ROUTING,
                 )
             )

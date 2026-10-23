@@ -192,8 +192,7 @@
     "routing": {
       "options": {
         "controller": "Controller",
-        "direction_rocker": "Direction rocker",
-        "both": "Both"
+        "direction_rocker": "Direction rocker"
       }
     },
     "rocker_button": {
