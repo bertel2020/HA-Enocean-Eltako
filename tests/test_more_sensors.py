@@ -174,3 +174,46 @@ async def test_weather_sun_side_and_rain_recently(hass: HomeAssistant, weather) 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=90))
     await hass.async_block_till_done()
     assert state("05-13-00-01", "binary_sensor", "rain_recent") == "off"
+
+
+async def test_rain_recently_keeps_its_hold_through_a_replay(hass: HomeAssistant, weather) -> None:
+    """Rain that came and stopped while Home Assistant restarted: the rain sensor ends where it
+    began, "rain recently" turns on once and runs out after its hold."""
+    from datetime import timedelta
+
+    from homeassistant.util import dt as dt_util
+    from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
+    from custom_components.enocean_eltako.hub import async_get_hub
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+
+    device, sender = "05-13-00-01", 0x05130001
+    rain = _entity(hass, "binary_sensor", uid(device, "rain"))
+    recent = _entity(hass, "binary_sensor", uid(device, "rain_recent"))
+    _push(weather, BS4, bytes([0x40, 0x80, 0x10, 0x18]), sender)  # dry
+    await _settle(hass)
+    assert hass.states.get(rain).state == "off"
+    assert hass.states.get(recent).state == "unknown"  # nothing reported since the start
+    changes: list[tuple[str, str]] = []
+    hass.bus.async_listen(
+        "state_changed",
+        lambda e: changes.append((e.data["entity_id"], e.data["new_state"].state)),
+    )
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    weather_device = next(iter(entry.runtime_data.devices.values()))
+    dispatcher = async_get_hub(hass).dispatcher
+    for stamp, data in ((100.0, 0x1A), (200.0, 0x18)):  # it rained, then it was dry
+        weather_device.replaying = True
+        dispatcher.dispatch(
+            entry.entry_id,
+            RadioTelegram(Rorg.BS4, bytes([0x40, 0x80, 0x10, data]), sender),
+            timestamp=stamp,
+        )
+    await hass.async_block_till_done()
+    assert changes == []  # waiting for the end of the replay
+    weather_device.end_replay()
+    await hass.async_block_till_done()
+    assert changes == [(recent, "on")]  # the rain sensor ended where it began
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=90))
+    await hass.async_block_till_done()
+    assert hass.states.get(recent).state == "off"  # the hold still runs out
