@@ -247,6 +247,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     async def async_step_hassio(self, discovery_info: HassioServiceInfo) -> ConfigFlowResult:
         """The Device Proxy app announced its gateways.
 
+        Each gateway carries name, port, protocol and optionally the model key ("fam_usb" ...).
+
         The Supervisor keeps one message per app and service, so the app lists all gateways
         in one message; this flow takes the first unconfigured one and starts a flow of its
         own for each further one. A gateway that was set up through the app before and now
@@ -313,6 +315,10 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._proxy = {**config, **gateway}
         self._connection = TcpConnection(host, port)
         self.context["title_placeholders"] = {"name": f"{gateway.get('name', host)} (Device Proxy)"}
+        # an app that names the model needs no question; a model of the other protocol is ignored
+        model = MODELS.get(str(gateway.get("model", "")))
+        if model is not None and model.protocol.value == (gateway.get("protocol") or "esp2"):
+            return await self.async_step_proxy_confirm({CONF_MODEL: model.key})
         return await self.async_step_proxy_confirm()
 
     async def async_step_proxy_confirm(
