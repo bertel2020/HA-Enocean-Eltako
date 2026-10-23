@@ -6,6 +6,14 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Discovered devices:** a gateway that heard unknown senders shows one card under Settings → Devices & services →
+  Discovered (with the number of senders) instead of a notification. The card lists them and points to **Add device →
+  Discovered devices** of the gateway; it goes away when there is nothing left to discover.
+
 ### [1.0.2] - 2026-10-23
 
 #### Fixed
@@ -454,6 +462,14 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Entdeckte Geräte:** Ein Gateway, das unbekannte Sender gehört hat, zeigt eine Karte unter Einstellungen → Geräte &
+  Dienste → Entdeckt (mit der Anzahl der Sender) statt einer Benachrichtigung. Die Karte listet sie auf und weist auf
+  **Gerät hinzufügen → Entdeckte Geräte** am Gateway hin; sie verschwindet, wenn nichts mehr zu entdecken ist.
 
 ### [1.0.2] - 2026-10-23
 

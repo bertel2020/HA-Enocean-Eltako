@@ -89,6 +89,10 @@
       "same_base_id": {
         "title": "Gleiche Basis-ID",
         "description": "Ein Gateway mit der Basis-ID {base_id} ist schon eingerichtet ({gateways}). Dieses als zweites Gateway mit derselben Basis-ID hinzufügen? Das ist z. B. für zwei Funkgateways einer Anlage gedacht. Sender-IDs werden über alle Gateways nie doppelt vergeben, aber ein Aktor, der an einem Gateway eingelernt wurde, reagiert auf die Telegramme des anderen nur, wenn er dort ebenfalls eingelernt ist."
+      },
+      "discovered_senders": {
+        "title": "Entdeckte Geräte",
+        "description": "**{name}** hat {count} Sender gehört, die noch nicht eingerichtet sind:\n\n{senders}\n\nMit **Senden** erfährst du, wo du sie hinzufügst."
       }
     },
     "error": {
@@ -110,7 +114,9 @@
       "reconfigure_successful": "Die Verbindung wurde geändert.",
       "wrong_gateway": "Das ist ein anderes Gateway (andere Base-ID). Lege es stattdessen als neues Gateway an.",
       "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
-      "invalid_discovery_info": "Die Device-Proxy-App hat Gateway-Angaben gesendet, die diese Version nicht lesen kann. Integration und App aktualisieren."
+      "invalid_discovery_info": "Die Device-Proxy-App hat Gateway-Angaben gesendet, die diese Version nicht lesen kann. Integration und App aktualisieren.",
+      "no_discovered": "Es gibt keine entdeckten Geräte (mehr).",
+      "discovered_hint": "Öffne [{name}]({url}) und wähle **Gerät hinzufügen → Entdeckte Geräte**. Dort richtest du einen Sender ein oder blendest die aus, die nicht dir gehören."
     }
   },
   "selector": {
