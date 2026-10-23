@@ -1,10 +1,16 @@
 """Discovery: unknown senders are offered under "Add device" of the gateway."""
 
+from datetime import timedelta
+
 import pytest
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
+from custom_components.enocean_eltako.const import DOMAIN
+from custom_components.enocean_eltako.discovery import CARD_DELAY
 from custom_components.enocean_eltako.protocol.eep.teach_in import encode_teach_in_4bs
 
 from .test_devices import _push, _settle, _subentry, gateway  # noqa: F401
@@ -27,7 +33,15 @@ async def test_unknown_rocker_becomes_device(hass: HomeAssistant, gateway) -> No
     _push(server, 0x05, b"\x70", 0x002A0B0C, 0x30)
     _push(server, 0x05, b"\x00", 0x002A0B0C, 0x20)  # the same sender: listed once
     await _settle(hass)
-    assert any("discovered_" in n["notification_id"] for n in _notifications(hass))
+    cards = await _cards(hass)
+    assert len(cards) == 1  # one card for the gateway, not one per sender
+    assert "1 " in cards[0]["context"]["title_placeholders"]["name"]
+    result = await hass.config_entries.flow.async_configure(cards[0]["flow_id"])
+    assert result["step_id"] == "discovered_senders"
+    assert "00-2A-0B-0C" in result["description_placeholders"]["senders"]
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["reason"] == "discovered_hint"
+    assert not await _cards(hass)  # seen: the card goes until something new is heard
 
     result = await _menu(hass, entry)
     assert result["menu_options"][0] == "discovered"
@@ -126,7 +140,7 @@ async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noq
     result = await configure(result["flow_id"], {"device_id": "00-2A-0B-0F", "hide": True})
     assert result["reason"] == "sender_hidden"
     assert hub.hidden[entry.entry_id] == {0x002A0B0F}
-    assert not _notifications(hass)  # nothing left to announce
+    assert not await _cards(hass)  # nothing left to announce
 
     _push(server, 0x05, b"\x00", 0x002A0B0F, 0x20)  # still hidden when heard again
     await _settle(hass)
@@ -169,7 +183,30 @@ async def test_list_is_capped(hass: HomeAssistant, gateway) -> None:  # noqa: F8
     assert len(entry.runtime_data.hub.discovered) == MAX_DISCOVERED
 
 
-def _notifications(hass: HomeAssistant):
-    from homeassistant.components import persistent_notification
+async def _cards(hass: HomeAssistant):
+    """The discovery cards in progress, after the short delay that takes bursts together."""
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=CARD_DELAY + 1))
+    await hass.async_block_till_done()
+    return [
+        flow
+        for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+        if flow["context"].get("source") == "integration_discovery"
+    ]
 
-    return list(persistent_notification._async_get_or_create_notifications(hass).values())
+
+async def test_card_follows_the_count(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, server = gateway
+    _push(server, 0x05, b"\x70", 0x002A0B10, 0x30)
+    await _settle(hass)
+    (card,) = await _cards(hass)
+    assert "1" in card["context"]["title_placeholders"]["name"]
+    _push(server, 0x05, b"\x70", 0x002A0B11, 0x30)
+    _push(server, 0x05, b"\x70", 0x002A0B12, 0x30)
+    await _settle(hass)
+    (again,) = await _cards(hass)  # replaced, not added
+    assert again["flow_id"] != card["flow_id"]
+    assert "3" in again["context"]["title_placeholders"]["name"]
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert not await _cards(hass)

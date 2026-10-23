@@ -1,10 +1,11 @@
 """Discovery: senders no device listens to are offered under "Add device" of the gateway.
 
 The hub keeps the last telegram of each unknown sender (the newest MAX_DISCOVERED); the
-device flow lists them as "Discovered devices". One notification per gateway announces new
-ones and is refreshed whenever the gateway loads. Senders that are not the user's can be
-hidden per gateway (stored, shown again from the gateway's options). Our own sender IDs
-(pools) are skipped; a gateway can switch discovery off in its options.
+device flow lists them as "Discovered devices". One card per gateway in
+Home Assistant's "Discovered" area announces them (a config flow of its own, replaced
+whenever the count changes) and is refreshed whenever the gateway loads. Senders that are
+not the user's can be hidden per gateway (stored, shown again from the gateway's options).
+Our own sender IDs (pools) are skipped; a gateway can switch discovery off in its options.
 """
 
 from __future__ import annotations
@@ -12,8 +13,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from homeassistant.components import persistent_notification
+from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import discovery_flow
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 
 from .const import CONF_DISCOVERY, DOMAIN
@@ -54,25 +57,72 @@ async def async_remove_hidden(hass: HomeAssistant, entry_id: str) -> None:
     await _store(hass, entry_id).async_remove()
 
 
+CARD_DELAY = 5  # seconds: a burst of new senders makes one card, not one each
+
+_TITLES = {
+    "en": "{name}: {count} discovered devices",
+    "de": "{name}: {count} entdeckte Geräte",
+}
+
+
+def card_unique_id(entry: EnOceanEltakoConfigEntry) -> str:
+    return f"discovered_{entry.entry_id}"
+
+
+def card_title(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, count: int) -> str:
+    return _TITLES.get(hass.config.language, _TITLES["en"]).format(name=entry.title, count=count)
+
+
 @callback
 def async_update_notification(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Name the number of discovered senders; no notification when there are none."""
-    notification_id = f"{DOMAIN}_discovered_{entry.entry_id}"
-    if count := len(pending(entry)):
-        persistent_notification.async_create(
+    """Refresh the gateway's discovery card shortly (bursts of senders are taken together)."""
+    hub = entry.runtime_data.hub
+    if (cancel := hub.card_timer.pop(entry.entry_id, None)) is not None:
+        cancel()
+
+    @callback
+    def refresh(_now: object) -> None:
+        hub.card_timer.pop(entry.entry_id, None)
+        async_refresh_card(hass, entry)
+
+    hub.card_timer[entry.entry_id] = async_call_later(hass, CARD_DELAY, refresh)
+
+
+@callback
+def async_refresh_card(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """One card in "Discovered" with the number of senders; none when there are none."""
+    count = len(pending(entry))
+    unique_id = card_unique_id(entry)
+    flows = [
+        flow
+        for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+        if flow["context"].get("unique_id") == unique_id
+    ]
+    title = card_title(hass, entry, count)
+    if count and any(
+        f["context"].get("title_placeholders", {}).get("name") == title for f in flows
+    ):
+        return  # the card says the right number already
+    for flow in flows:
+        hass.config_entries.flow.async_abort(flow["flow_id"])
+    if count:
+        discovery_flow.async_create_flow(
             hass,
-            _MESSAGES.get(hass.config.language, _MESSAGES["en"]).format(count=count),
-            title=entry.title,
-            notification_id=notification_id,
+            DOMAIN,
+            {"source": SOURCE_INTEGRATION_DISCOVERY},
+            {"entry_id": entry.entry_id},
         )
-    else:
-        persistent_notification.async_dismiss(hass, notification_id)
 
 
-_MESSAGES = {
-    "en": 'Discovered devices: {count}. Add them under "Add device" of this gateway.',
-    "de": "Entdeckte Geräte: {count}. Füge sie beim Gateway unter „Gerät hinzufügen“ hinzu.",
-}
+@callback
+def async_remove_card(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """The gateway unloads: its card and a pending refresh go."""
+    hub = entry.runtime_data.hub
+    if (cancel := hub.card_timer.pop(entry.entry_id, None)) is not None:
+        cancel()
+    for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN):
+        if flow["context"].get("unique_id") == card_unique_id(entry):
+            hass.config_entries.flow.async_abort(flow["flow_id"])
 
 
 def pending(entry: EnOceanEltakoConfigEntry) -> list[ReceivedTelegram]:
@@ -115,4 +165,11 @@ def async_setup_discovery(
             async_update_notification(hass, entry)
 
     async_update_notification(hass, entry)  # after a reload: the count is current again
-    return hub.dispatcher.add_unknown_listener(heard)
+    remove = hub.dispatcher.add_unknown_listener(heard)
+
+    @callback
+    def stop() -> None:
+        remove()
+        async_remove_card(hass, entry)
+
+    return stop

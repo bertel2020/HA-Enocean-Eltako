@@ -62,7 +62,7 @@ from .const import (
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
-from .discovery import async_set_hidden
+from .discovery import async_set_hidden, card_title, card_unique_id, pending
 from .entity_ids import free_gateway_number, rename_entities, taken_gateway_numbers
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
@@ -125,6 +125,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._options: dict[str, Any] = {}
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
         self._proxy: dict[str, Any] | None = None  # gateway announced by a proxy app
+        self._gateway_entry: ConfigEntry | None = None  # the discovery card's gateway
         self._device_model: DeviceModel | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -329,6 +330,53 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         if model is not None and model.protocol.value == (gateway.get("protocol") or "esp2"):
             return await self.async_step_proxy_confirm({CONF_MODEL: model.key})
         return await self.async_step_proxy_confirm()
+
+    async def async_step_integration_discovery(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """The card of a gateway that heard unknown senders (discovery.py)."""
+        entry = self.hass.config_entries.async_get_entry(discovery_info["entry_id"])
+        if entry is None or getattr(entry, "runtime_data", None) is None or not pending(entry):
+            return self.async_abort(reason="no_discovered")
+        await self.async_set_unique_id(card_unique_id(entry))
+        self._abort_if_unique_id_configured()
+        self._gateway_entry = entry
+        self.context["title_placeholders"] = {
+            "name": card_title(self.hass, entry, len(pending(entry)))
+        }
+        return await self.async_step_discovered_senders()
+
+    async def async_step_discovered_senders(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Who was heard; the devices are added at the gateway, which this points to."""
+        entry = self._gateway_entry
+        assert entry is not None
+        heard = pending(entry) if getattr(entry, "runtime_data", None) is not None else []
+        if not heard:
+            return self.async_abort(reason="no_discovered")
+        gateway_page = f"/config/integrations/integration/{DOMAIN}#config_entry={entry.entry_id}"
+        if user_input is not None:
+            return self.async_abort(
+                reason="discovered_hint",
+                description_placeholders={"name": entry.title, "url": gateway_page},
+            )
+        lines = [
+            f"- `{format_id(t.sender)}` ({t.telegram.rorg:02X}"
+            + (f", {t.telegram.dbm} dBm)" if t.telegram.dbm is not None else ")")
+            for t in heard[:10]
+        ]
+        if len(heard) > 10:
+            lines.append(f"- … +{len(heard) - 10}")
+        return self.async_show_form(
+            step_id="discovered_senders",
+            description_placeholders={
+                "name": entry.title,
+                "count": str(len(heard)),
+                "senders": "\n".join(lines),
+                "url": gateway_page,
+            },
+        )
 
     async def async_step_proxy_confirm(
         self, user_input: dict[str, Any] | None = None

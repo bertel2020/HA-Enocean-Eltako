@@ -117,8 +117,8 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
 - **Eigene Definition**: Sensoren, die du selbst beschreibst, siehe unten.
 
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
-steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Benachrichtigung
-meldet neue). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
+steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Karte unter **Einstellungen →
+Geräte & Dienste → Entdeckt** nennt die Anzahl und weist hierher). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
 vom Nachbarn) lassen sich dort mit **Diesen Sender ausblenden** verstecken; **Konfigurieren →
 Ausgeblendete Sender** am Gateway zeigt sie wieder an. Die Liste behält die neuesten 100
 Sender und beginnt nach einem Neustart leer; ausgeblendete Sender werden gemerkt. In den

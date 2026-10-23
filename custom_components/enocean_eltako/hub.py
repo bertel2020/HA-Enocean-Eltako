@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from homeassistant.core import HomeAssistant
@@ -33,6 +34,9 @@ class Hub:
     # unknown senders heard (last telegram each), offered under "Add device"
     discovered: dict[int, ReceivedTelegram] = field(default_factory=dict)
     hidden: dict[str, set[int]] = field(default_factory=dict)  # per gateway entry, stored
+    card_timer: dict[str, Callable[[], None]] = field(
+        default_factory=dict
+    )  # pending card refreshes
     _bus_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def __post_init__(self) -> None:
