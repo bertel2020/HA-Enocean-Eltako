@@ -248,6 +248,23 @@ def nest_sections(values: dict[str, Any]) -> dict[str, Any]:
     return nested
 
 
+def _section_defaults(schema: dict[Any, Any], values: dict[str, Any] | None) -> dict[Any, Any]:
+    """Give each section the values its fields start with (the form's current ones, else the
+    defaults). The frontend prefills a section from its own default only, so a bare ``{}``
+    would leave the radio buttons unselected."""
+    result: dict[Any, Any] = {}
+    for key, value in schema.items():
+        if isinstance(value, section):
+            current = (values or {}).get(str(key), {})
+            inner = {
+                str(k): current.get(str(k), k.default() if k.default is not vol.UNDEFINED else None)
+                for k in value.schema.schema
+            }
+            key = vol.Optional(str(key), default={k: v for k, v in inner.items() if v is not None})
+        result[key] = value
+    return result
+
+
 def _buttons_section(fields: dict[Any, Any], buttons: tuple[tuple[str, str], ...]) -> section:
     """A collapsed section: the given fields plus one rocker button choice per option."""
     for opt, default in buttons:
@@ -313,7 +330,7 @@ class DeviceForm:
         return self.async_show_form(  # type: ignore[attr-defined]
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(  # type: ignore[attr-defined]
-                vol.Schema(schema), values
+                vol.Schema(_section_defaults(schema, values)), values
             ),
             errors=errors,
             description_placeholders={
