@@ -62,14 +62,14 @@ for (const lang of ["en", "de"]) {
   await check(`lang=${lang}`, async ({ root, fake, view, expect }) => {
     await view("telegrams");
     expect("telegram rows", root.querySelectorAll("tr.row").length, 4);
-    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele" });
+    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele", device_key: "sub1" });
     await settle();
     expect("telegram rows after a new one", root.querySelectorAll("tr.row").length, 5);
     root.querySelector("tr.row").click();
     await settle();
     expect("open details", root.querySelectorAll("tr.detail-row").length, 1);
     // an open telegram holds new ones back; closing it lets them in
-    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", dbm: -61, device: "Licht Diele" });
+    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", dbm: -61, device: "Licht Diele", device_key: "sub1" });
     await settle();
     expect("telegram rows while one is open", root.querySelectorAll("tr.row").length, 5);
     expect("held back while one is open", root.getElementById("live").classList.contains("paused"), true);
@@ -80,6 +80,15 @@ for (const lang of ["en", "de"]) {
     expect("live again after closing", root.getElementById("live").classList.contains("paused"), false);
     root.querySelector("tr.row").click();
     await settle();
+    // from a telegram to its device's row in the Devices view, opened
+    const link = root.querySelector("[data-dev-panel]");
+    expect("telegram has a link to its device", !!link, true);
+    link.click();
+    await settle();
+    expect("devices view after the link", root.querySelector('#view [data-view="devices"]').getAttribute("aria-selected"), "true");
+    expect("device opened by the link", !!root.querySelector(`.dev[data-dev="${link.dataset.devPanel}"] .dev-detail`), true);
+    root.querySelector(`.dev[data-dev="${link.dataset.devPanel}"] .expand`).click();
+    await view("telegrams");
     // the sent telegram of the samples: "send again" sends it, a rocker press with its release
     const sent = [...root.querySelectorAll("tr.row")].find((row) => row.querySelector(".dir.tx"));
     sent.click();
@@ -138,6 +147,11 @@ for (const lang of ["en", "de"]) {
     await view("senders");
     expect("pool map squares", root.querySelectorAll(".map button").length, 128);
     expect("sender ID rows", root.querySelectorAll(".sid-row").length, 2);
+    root.querySelector(".sid-name[data-dev-panel]").click();
+    await settle();
+    expect("devices view after the sender ID link", root.querySelector('#view [data-view="devices"]').getAttribute("aria-selected"), "true");
+    expect("device opened by the sender ID link", root.querySelectorAll(".dev-detail").length, 1);
+    await view("senders");
     expect("takeover tab shown", root.querySelector('#view [data-view="takeover"]').hidden, false);
     await view("takeover");
     const tk = (sel) => root.querySelector(`.takeover ${sel}`);
