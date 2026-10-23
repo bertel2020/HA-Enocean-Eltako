@@ -12,7 +12,8 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.catalog import CATALOG
-from custom_components.enocean_eltako.const import DOMAIN
+from custom_components.enocean_eltako.config_flow import EnOceanEltakoConfigFlow
+from custom_components.enocean_eltako.const import DOMAIN, SUBENTRY_SCHEMA
 from custom_components.enocean_eltako.protocol import esp2
 from custom_components.enocean_eltako.protocol.eep.teach_in import encode_teach_in_4bs
 from custom_components.enocean_eltako.protocol.models import Protocol
@@ -683,12 +684,12 @@ async def test_migrate_subentries_to_sender_list(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
     await hass.async_block_till_done()
-    assert entry.minor_version == 3
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION
     by_title = {s.title: s.data for s in entry.subentries.values()}
     assert by_title["Licht"]["senders"] == [{"profile": "central", "sender_id": "FF-B7-44-81"}]
     assert "sender_id" not in by_title["Licht"]
     assert "rocker_on_button" not in by_title["Licht"]  # no rocker sender
-    assert by_title["Kontakt"]["schema"] == 3 and "senders" not in by_title["Kontakt"]
+    assert by_title["Kontakt"]["schema"] == SUBENTRY_SCHEMA and "senders" not in by_title["Kontakt"]
 
 
 async def test_migrate_rocker_buttons_explicit(hass: HomeAssistant) -> None:
@@ -728,7 +729,7 @@ async def test_migrate_rocker_buttons_explicit(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
     await hass.async_block_till_done()
-    assert entry.minor_version == 3
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION
     data = {s.title: s.data for s in entry.subentries.values()}
     assert {k: data["05-10-A2-B3"][k] for k in ("rocker_on_button", "rocker_off_button")} == {
         "rocker_on_button": "b0",
@@ -737,7 +738,7 @@ async def test_migrate_rocker_buttons_explicit(hass: HomeAssistant) -> None:
     assert data["05-10-A2-B4"]["rocker_on_button"] == "a0"  # chosen ones stay
     assert data["05-00-00-23"]["rocker_off_button"] == "b1"
     assert "rocker_on_button" not in data["05-10-A2-B5"]
-    assert all(d["schema"] == 3 for d in data.values())
+    assert all(d["schema"] == SUBENTRY_SCHEMA for d in data.values())
 
 
 async def _start_device_flow(hass: HomeAssistant, entry, model: str):
@@ -2080,3 +2081,93 @@ async def test_two_channel_actuator(hass: HomeAssistant, gateway) -> None:
     assert result["reason"] == "reconfigure_successful"
     await hass.async_block_till_done()
     assert entry.subentries[subentry_id].data["status_channel"] == "2"  # stays
+
+
+async def test_migrate_model_name_field(hass: HomeAssistant) -> None:
+    """1.4: the optional model name is new, nothing to convert; only the schema moves on."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=BASE,
+        version=1,
+        minor_version=3,
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": 1},
+            "base_id": BASE,
+        },
+        subentries_data=[
+            ConfigSubentryData(
+                data={"schema": 3, "model": "switch", "device_id": "05-10-A2-B3"},
+                subentry_type="device",
+                title="Licht",
+                unique_id="05-10-A2-B3",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)  # retries: gateway offline
+    await hass.async_block_till_done()
+    assert entry.minor_version == 4
+    (subentry,) = entry.subentries.values()
+    assert subentry.data == {"schema": 4, "model": "switch", "device_id": "05-10-A2-B3"}
+
+
+async def test_model_name_is_chosen_typed_and_shown(hass: HomeAssistant, gateway) -> None:
+    """The type is not on the air: the user may pick it (or type another), display only."""
+    entry, _ = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "switch")
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    field = next(k for k in result["data_schema"].schema if k == "model_name")
+    config = result["data_schema"].schema[field].config
+    assert "FSR14-4x" in config["options"] and "FSR61NP-230V" in config["options"]
+    assert config["custom_value"] is True
+    result = await configure(
+        result["flow_id"],
+        {
+            "name": "TWWP Freigabe PV",
+            "device_id": "05-10-A2-B3",
+            "sender_central": "FF-B7-44-81",
+            "platform": "switch",
+            "model_name": " FSR14-4x ",
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["model_name"] == "FSR14-4x"
+    await hass.async_block_till_done()
+    page = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, f"{BASE}_05-10-A2-B3"), entry.entry_id
+    )
+    assert page is not None and page.model == "FSR14-4x (M5-38-08)"
+
+    # a model of its own is typed in; leaving it empty stores nothing
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    suggested = {str(k): k.description for k in result["data_schema"].schema if k == "model_name"}
+    assert suggested["model_name"]["suggested_value"] == "FSR14-4x"
+    result = await configure(
+        result["flow_id"],
+        {
+            "name": "TWWP Freigabe PV",
+            "sender_central": "FF-B7-44-81",
+            "platform": "switch",
+            "model_name": "",
+        },
+    )
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    assert "model_name" not in entry.subentries[subentry_id].data
+
+
+def test_catalog_models_of_the_kinds() -> None:
+    """The models to pick come with the kinds that share an EEP; FWG14 is the FWG14MS."""
+    assert CATALOG["contact"].example_list == ("FTK", "FTKB")
+    assert CATALOG["weather"].models == ("FWS61", "FWS61-24V DC", "FWG14MS")
+    assert CATALOG["weather"].example_list == ("FWS61", "FWG14MS")
+    for kind in ("switch", "dimmer", "cover", "heating_actuator"):
+        assert CATALOG[kind].models
+    # every model the user may pick is a plain type designation, no free-form text
+    assert all(m == m.strip() and m for c in CATALOG.values() for m in c.models)

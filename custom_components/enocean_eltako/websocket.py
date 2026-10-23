@@ -175,8 +175,10 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                 data["device"] = device.subentry.title
                 data["device_key"] = device.subentry.subentry_id
                 data["ha_device"] = ha_device_id(device)
-                if device.model.examples:
-                    data["model"] = device.model.examples.split(",")[0].strip()
+                if label := device._model_label:
+                    data["model"] = label
+                elif device.model.example_list:
+                    data["models"] = list(device.model.example_list)  # which of these is unknown
                 for ref in (device.model.receive, *device.model.receive_extra):
                     if ref is not None and (values := decode_telegram(ref, telegram)):
                         data["eep"] = str(ref)
@@ -279,6 +281,7 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
                 "silent": device.silent,
                 "eep": str(device.model.receive) if device.model.receive else None,
                 "model": device._model_label,
+                "models": [] if device._model_label else list(device.model.example_list),
                 "category": device.model.category,
                 "area": area.name if area else None,
                 "entities": (

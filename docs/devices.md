@@ -46,7 +46,7 @@ Home Assistant uses to control it, each with its own sender ID from the gateway'
 | Sensors | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor |
 | Sensors | Multisensor with contact (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor |
 | Sensors | CO2 sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor |
-| Sensors | Weather station (FWS61, FWG14) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
+| Sensors | Weather station (FWS61, FWG14MS) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
 | Meters | Energy meter (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor |
 | Meters | Gas meter (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor |
 | Meters | Water meter (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor |

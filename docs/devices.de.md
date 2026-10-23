@@ -46,7 +46,7 @@ mit denen Home Assistant es steuert, je mit eigener Sender-ID aus dem Pool des G
 | Sensoren | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor |
 | Sensoren | Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor |
 | Sensoren | CO2-Sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor |
-| Sensoren | Wetterstation (FWS61, FWG14) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
+| Sensoren | Wetterstation (FWS61, FWG14MS) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor |
 | Zähler | Energiezähler (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor |
 | Zähler | Gaszähler (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor |
 | Zähler | Wasserzähler (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor |

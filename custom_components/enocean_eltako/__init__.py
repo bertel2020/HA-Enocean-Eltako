@@ -138,6 +138,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
 
     1.2 -> 1.3: the rocker sender's buttons default to A0/A1; devices with a rocker sender
     keep the B0/B1 they pressed so far as explicit options (schema 3).
+
+    1.3 -> 1.4: the optional "model_name" (the device's type, display only) is new; nothing
+    to convert (schema 4).
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -167,6 +170,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             data["schema"] = 3
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=3)
+    if entry.minor_version < 4:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 4:
+                continue
+            data["schema"] = 4
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=4)
     return True
 
 

@@ -12,6 +12,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.enocean_eltako.const import SUBENTRY_SCHEMA
 from custom_components.enocean_eltako.takeover import (
     async_predicted_ids,
     find_gateway,
@@ -233,7 +234,7 @@ def test_plan_tolerates_broken_config() -> None:
 def test_subentry_data() -> None:
     light = _by_name(plan(OLD_GATEWAY))["Licht Büro"]
     assert subentry_data(light, light.senders) == {
-        "schema": 3,
+        "schema": SUBENTRY_SCHEMA,
         "model": "switch",
         "device_id": "FF-C2-4A-8F",
         "platform": "light",

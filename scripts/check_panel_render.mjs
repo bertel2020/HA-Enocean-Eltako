@@ -61,10 +61,10 @@ async function check(query, run) {
 for (const lang of ["en", "de"]) {
   await check(`lang=${lang}`, async ({ root, fake, view, expect }) => {
     await view("telegrams");
-    expect("telegram rows", root.querySelectorAll("tr.row").length, 3);
+    expect("telegram rows", root.querySelectorAll("tr.row").length, 4);
     fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele" });
     await settle();
-    expect("telegram rows after a new one", root.querySelectorAll("tr.row").length, 4);
+    expect("telegram rows after a new one", root.querySelectorAll("tr.row").length, 5);
     root.querySelector("tr.row").click();
     await settle();
     expect("open details", root.querySelectorAll("tr.detail-row").length, 1);
@@ -79,7 +79,7 @@ for (const lang of ["en", "de"]) {
     root.getElementById("filterBtn").click();
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     await view("devices");
-    expect("device rows", root.querySelectorAll(".dev").length, 4);
+    expect("device rows", root.querySelectorAll(".dev").length, 5);
     root.getElementById("weakHint").click();
     await settle();
     expect("weak-signal devices", root.querySelectorAll(".dev").length, 1);

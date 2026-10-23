@@ -163,7 +163,7 @@
         "fbh": "Bewegungs- und Helligkeitssensor (FBH65 …)",
         "co2": "CO2-Sensor (FCO2TF65)",
         "room_controller": "Raumregler (FUTH, FTR65HS …)",
-        "weather": "Wetterstation (FWS61, FWG14)",
+        "weather": "Wetterstation (FWS61, FWG14MS)",
         "psc": "Permundo PSC132 / PSC234 Zwischenstecker",
         "rocker_contact": "Kontakt über Tastertelegramme (FTS14EM, Garagentor …)",
         "heating_actuator": "Heizungsaktor, Home Assistant regelt (FHK14, FAE14 …)",
@@ -532,7 +532,7 @@
             "model_fbh": "FBH65",
             "model_co2": "FCO2TF65",
             "model_room_controller": "FUTH, FTR65HS",
-            "model_weather": "FWS61, FWG14",
+            "model_weather": "FWS61, FWG14MS",
             "model_rocker_contact": "FTS14EM, Garagentor",
             "model_heating_actuator": "FHK14, FAE14",
             "model_enocean_rocker": "NodOn, PEHA, Jung",
@@ -613,7 +613,8 @@
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
             "weather_brightness": "Helligkeit",
-            "run_time_tenths": "Fahrzeiten in 100 ms"
+            "run_time_tenths": "Fahrzeiten in 100 ms",
+            "model_name": "Modell (optional)"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -643,7 +644,8 @@
             "weather_rain": "Optional, ein = Regen.",
             "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
-            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht."
+            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
+            "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden."
           },
           "sections": {
             "rocker_buttons": {
@@ -722,7 +724,8 @@
             "weather_wind": "Windgeschwindigkeit",
             "weather_rain": "Regen",
             "weather_brightness": "Helligkeit",
-            "run_time_tenths": "Fahrzeiten in 100 ms"
+            "run_time_tenths": "Fahrzeiten in 100 ms",
+            "model_name": "Modell (optional)"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -748,7 +751,8 @@
             "weather_rain": "Optional, ein = Regen.",
             "weather_brightness": "Optional, in lx; zugleich Sonne auf allen Seiten und Tag/Nacht (Nacht unter 10 lx).",
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
-            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht."
+            "invert": "Kontakte und Fenstergriffe: Ein heißt geschlossen. Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
+            "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden."
           },
           "sections": {
             "rocker_buttons": {

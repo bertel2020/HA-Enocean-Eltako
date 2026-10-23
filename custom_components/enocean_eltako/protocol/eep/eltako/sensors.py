@@ -14,7 +14,7 @@ A5-12-01/02/03:eltako (FWZ12, FSDG14, DSZ14DRS, F3Z14D for electricity, gas and 
     with DB0 = 0x8F (TI 8, DT 1, DIV 3), which a standard decoder would read as a current value:
     DB3..DB1 = S1 S0 00 and S3 S2 01. They are returned as serial parts, not as readings.
 
-A5-13-01:eltako (FWS61, FWG14): weather station sending two telegrams under one ID, told
+A5-13-01:eltako (FWS61, FWG14MS): weather station sending two telegrams under one ID, told
     apart by the identifier in DB0.7...4 (1 = official A5-13-01 layout, 2 = A5-13-02).
 """
 
