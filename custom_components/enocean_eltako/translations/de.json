@@ -92,7 +92,7 @@
       },
       "discovered_senders": {
         "title": "Entdeckte Geräte",
-        "description": "**{name}** hat {count} Sender gehört, die noch nicht eingerichtet sind:\n\n{senders}\n\nMit **Senden** erfährst du, wo du sie hinzufügst."
+        "description": "**{name}** hat {count} Sender gehört, die noch nicht eingerichtet sind: {kinds}.\n\n[Gateway öffnen]({url}) und **Gerät hinzufügen → Entdeckte Geräte** wählen. Dort einen Sender einrichten oder die ausblenden, die nicht dir gehören."
       }
     },
     "error": {
@@ -116,7 +116,7 @@
       "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
       "invalid_discovery_info": "Die Device-Proxy-App hat Gateway-Angaben gesendet, die diese Version nicht lesen kann. Integration und App aktualisieren.",
       "no_discovered": "Es gibt keine entdeckten Geräte (mehr).",
-      "discovered_hint": "Öffne [{name}]({url}) und wähle **Gerät hinzufügen → Entdeckte Geräte**. Dort richtest du einen Sender ein oder blendest die aus, die nicht dir gehören."
+      "discovered_hint": "Füge die Geräte bei [{name}]({url}) unter **Gerät hinzufügen → Entdeckte Geräte** hinzu."
     }
   },
   "selector": {

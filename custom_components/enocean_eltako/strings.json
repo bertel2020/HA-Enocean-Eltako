@@ -92,7 +92,7 @@
       },
       "discovered_senders": {
         "title": "Discovered devices",
-        "description": "**{name}** heard {count} senders that are not set up yet:\n\n{senders}\n\nSelect **Submit** for where to add them."
+        "description": "**{name}** heard {count} senders that are not set up yet: {kinds}.\n\n[Open the gateway]({url}) and choose **Add device → Discovered devices**. Pick a sender to set it up, or hide the ones that are not yours."
       }
     },
     "error": {
@@ -116,7 +116,7 @@
       "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
       "invalid_discovery_info": "The Device Proxy app sent gateway information this version cannot read. Update the integration and the app.",
       "no_discovered": "There are no discovered devices (any more).",
-      "discovered_hint": "Open [{name}]({url}), then **Add device → Discovered devices**. Pick a sender there to set it up, or hide the ones that are not yours."
+      "discovered_hint": "Add the devices at [{name}]({url}) under **Add device → Discovered devices**."
     }
   },
   "selector": {
