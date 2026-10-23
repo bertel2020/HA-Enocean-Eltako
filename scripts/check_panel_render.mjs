@@ -147,6 +147,15 @@ for (const lang of ["en", "de"]) {
     await view("senders");
     expect("pool map squares", root.querySelectorAll(".map button").length, 128);
     expect("sender ID rows", root.querySelectorAll(".sid-row").length, 2);
+    expect("pool tiles", root.querySelectorAll(".ptile").length, 5); // the sample pool has IDs used elsewhere
+    expect("blocked note", !!root.querySelector(".pnote"), true);
+    root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
+    await settle();
+    expect("chosen square is read out", root.querySelector(".pread").textContent.includes("Licht Diele"), true);
+    expect("chosen square marked", root.querySelectorAll(".map button.sel").length, 1);
+    root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
+    await settle();
+    expect("square unchosen", root.querySelectorAll(".map button.sel").length, 0);
     root.querySelector(".sid-name[data-dev-panel]").click();
     await settle();
     expect("devices view after the sender ID link", root.querySelector('#view [data-view="devices"]').getAttribute("aria-selected"), "true");
