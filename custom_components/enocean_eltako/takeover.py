@@ -154,8 +154,12 @@ def _rocker_buttons(side: str) -> dict[str, str]:
     return {OPT_ROCKER_ON: f"{rocker}0", OPT_ROCKER_OFF: f"{rocker}1"}
 
 
-def _sensor(device: TakeoverDevice, eep: str, conf: Mapping[str, Any]) -> None:
-    if (model_id := SENSOR_MODELS.get(eep)) is not None:
+def _sensor(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str, Any]) -> None:
+    if platform == Platform.BINARY_SENSOR and eep in ROCKER_EEPS:
+        model_id: str | None = "rocker_contact"  # a contact kept as state, not a button's events
+    else:
+        model_id = SENSOR_MODELS.get(eep)
+    if model_id is not None:
         device.model = model_id
         options = CATALOG[model_id].options
         if OPT_DEVICE_CLASS in options and conf.get("device_class"):
@@ -263,7 +267,7 @@ def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
                 continue
             seen.add(device_id)
             if platform in (Platform.BINARY_SENSOR, Platform.SENSOR):
-                _sensor(device, eep, conf)
+                _sensor(device, str(platform), eep, conf)
             elif platform in (Platform.LIGHT, Platform.SWITCH, Platform.COVER, Platform.CLIMATE):
                 _actuator(device, str(platform), eep, conf)
             elif platform == Platform.BUTTON:
