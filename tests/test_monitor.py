@@ -524,3 +524,88 @@ async def test_websocket_device_details(hass: HomeAssistant, hass_ws_client) -> 
         assert not reply["success"] and reply["error"]["code"] == code
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_websocket_set_model(hass: HomeAssistant, hass_ws_client) -> None:
+    """The devices view picks a device's model; empty clears it; a kind without models refuses."""
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    "schema": 4,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B3",
+                    "senders": [{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                },
+                subentry_type="device",
+                title="Licht Diele",
+                unique_id="05-10-A2-B3",
+            ),
+            ConfigSubentryData(
+                data={"schema": 4, "model": "weather", "device_id": "FF-85-EF-81"},
+                subentry_type="device",
+                title="Wetter",
+                unique_id="FF-85-EF-81",
+            ),
+            ConfigSubentryData(
+                data={"schema": 4, "model": "co2", "device_id": "01-82-0A-11"},
+                subentry_type="device",
+                title="Bad",
+                unique_id="01-82-0A-11",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    by_title = {s.title: sid for sid, s in entry.subentries.items()}
+
+    async def call(msg_id: int, title: str, model_name: str, **extra):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/set_model",
+                "entry_id": entry.entry_id,
+                "device": by_title.get(title, title),
+                "model_name": model_name,
+                **extra,
+            }
+        )
+        return await client.receive_json()
+
+    reply = await call(1, "Licht Diele", " FSR14-4x ")
+    assert reply["success"] and reply["result"] == {"model_name": "FSR14-4x"}
+    await hass.async_block_till_done()
+    assert entry.subentries[by_title["Licht Diele"]].data["model_name"] == "FSR14-4x"
+
+    # the entry reloaded with the change; a pick not among the models is fine, empty clears it
+    assert (await call(2, "Licht Diele", "FSR14-4x special"))["success"]
+    await hass.async_block_till_done()
+    assert entry.subentries[by_title["Licht Diele"]].data["model_name"] == "FSR14-4x special"
+    assert (await call(3, "Licht Diele", ""))["result"] == {"model_name": ""}
+    await hass.async_block_till_done()
+    assert "model_name" not in entry.subentries[by_title["Licht Diele"]].data
+
+    for msg_id, title, code in (
+        (4, "Bad", "no_models"),
+        (5, "nope", "unknown_device"),
+    ):
+        reply = await call(msg_id, title, "X")
+        assert not reply["success"] and reply["error"]["code"] == code
+    reply = await call(6, "Licht Diele", "x" * 65)
+    assert not reply["success"] and reply["error"]["code"] == "invalid_format"
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()

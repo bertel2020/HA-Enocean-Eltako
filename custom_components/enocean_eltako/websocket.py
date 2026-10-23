@@ -61,6 +61,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_send)
     websocket_api.async_register_command(hass, ws_teach_in)
     websocket_api.async_register_command(hass, ws_device_details)
+    websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     async_setup_takeover_websocket(hass)
@@ -556,6 +557,44 @@ def ws_device_details(
         connection.send_error(msg["id"], "unknown_device", "no such device")
         return
     connection.send_result(msg["id"], device_details(device))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_model",
+        vol.Required("entry_id"): str,
+        vol.Required("device"): str,
+        vol.Required("model_name"): vol.All(str, vol.Length(max=64)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_model(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel devices view: the model of a set-up device (display only); empty clears it.
+
+    Changing the device data reloads the gateway's entry, like any change of a device.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    device = entry.runtime_data.devices.get(msg["device"])
+    if device is None:
+        connection.send_error(msg["id"], "unknown_device", "no such device")
+        return
+    if not device.model.models:
+        connection.send_error(msg["id"], "no_models", "the kind of this device has no models")
+        return
+    data = dict(device.subentry.data)
+    if model_name := msg["model_name"].strip():
+        data[CONF_MODEL_NAME] = model_name
+    else:
+        data.pop(CONF_MODEL_NAME, None)
+    if data != dict(device.subentry.data):
+        hass.config_entries.async_update_subentry(entry, device.subentry, data=data)
+    connection.send_result(msg["id"], {"model_name": data.get(CONF_MODEL_NAME, "")})
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:
