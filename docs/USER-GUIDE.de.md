@@ -411,6 +411,11 @@ zeigen, wo du stehst; die Ansicht öffnet beim ersten Schritt, in dem noch etwas
    (optional): Automationen und Dashboards laufen dann unverändert, die Historie geht unter der
    alten ID weiter; was in der Zwischenzeit unter der neuen ID aufgezeichnet wurde, bleibt dort,
    und Home Assistant protokolliert je Entität einmal, dass es das nicht verschieben konnte.
+   Automationen mit einem **Geräte-Trigger, einer Geräte-Bedingung oder -Aktion** (im Editor
+   über das Gerät gewählt) überstehen das nicht: sie halten die Registry-ID der alten Entität,
+   nicht ihre Entity-ID, und die geht mit der alten Integration. Stelle sie unter **Umstellen**
+   auf das neue Gerät um, oder auf einen Zustands-Trigger mit der Entity-ID, bevor du die alte
+   Integration löschst.
    **Übernahme abschließen** blendet den Tab aus.
 
 Die Integration speichert die Zuordnung selbst, der Bericht bleibt deshalb nach dem Löschen der
@@ -471,6 +476,15 @@ Umstiegs, eo_man oder PCT14.
   ankamen (nur Funktelegramme, standardmäßig höchstens 15 Minuten alt), mit ihrer
   Empfangszeit, damit Rollladenpositionen, Zählerstände und „Zuletzt gehört“ stimmen. Auf
   Wunsch hebt die App sie auch über ihren eigenen Neustart auf.
+- Was die Nachlieferung damit macht: Kontakte und andere Binärsensoren nehmen sie in einem Zug
+  auf und schreiben ihren Zustand einmal, wenn sie durch ist. Eine zwischendurch geöffnete und
+  geschlossene Tür lässt den Sensor also nicht mehrfach umschalten und löst nicht für jeden
+  Wechsel Trigger aus; ein Zustand, der am Ende dort steht, wo er begann, löst nichts aus. Der
+  Verlauf zeigt die Änderung zum Zeitpunkt des Neustarts, nicht zur echten Zeit (Home Assistant
+  kann sie nicht zurückdatieren); „Zuletzt gehört“ hat die echte Zeit. Tasterdrücke sind
+  Ereignisse, keine Zustände: nachgelieferte lösen keine Taster-Ereignisse aus, es läuft also
+  keine Automation mit einem Druck von vor dem Neustart. Ohne Nachlieferung behält ein Kontakt
+  seinen letzten Zustand, bis er sich wieder meldet.
 - Ihre Oberfläche zeigt jedes Telegramm live, testet das Gateway, sendet einzelne Telegramme,
   nimmt Mitschnitte auf (z. B. PCT14 mit FAM14) und zeigt die Funkbelegung gegenüber dem
   1-%-Limit.

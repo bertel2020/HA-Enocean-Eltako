@@ -387,6 +387,10 @@ show where you are; the view opens on the first one with something left to do.
    entities the old entity IDs back instead (optional): automations and dashboards then work
    unchanged and the history goes on under the old ID; what was recorded under the new ID in
    the meantime stays there, and Home Assistant logs once per entity that it could not move it.
+   Automations with a **device trigger, condition or action** (picked by device in the editor)
+   do not survive this: they hold the old entity's registry ID, which goes with the old
+   integration, not its entity ID. Switch those over in **Switch over** to the new device, or to
+   a state trigger on the entity ID, before you delete the old integration.
    **Finish the takeover** hides the tab.
 
 The integration keeps the mapping in its own storage, so the report stays readable after the
@@ -445,6 +449,13 @@ or PCT14.
   telegrams only, up to 15 minutes old by default) with their reception time, so cover
   positions, meter readings and "last seen" stay right. If wanted, the app keeps them over its
   own restart too.
+- What the replay does with them: contacts and other binary sensors take it in one go and
+  write their state once when it is through, so a door opened and closed meanwhile does not
+  flip the sensor several times or fire triggers for each change; a state that ends where it
+  began fires none. The history shows the change at the restart, not at the real time (Home
+  Assistant cannot backdate it); "last seen" has the real time. Rocker presses are events, not
+  states: replayed ones fire no rocker events, so no automation runs with a press from before
+  the restart. Without the replay a contact keeps its last state until it reports again.
 - Its web interface shows every frame live, tests the gateway, sends a single frame, records
   captures (for example PCT14 with a FAM14) and shows the air time against the 1 % limit.
 - A gateway the app moves to another port is found again by its base ID and updated by itself.
