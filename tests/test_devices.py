@@ -585,6 +585,23 @@ async def test_cover_with_controller_and_direction_rocker(hass: HomeAssistant, g
     assert rocker_up not in bytes(server.received)
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("cover", "05-00-00-22", "Jalousie", routing="controller")]],
+    indirect=True,
+)
+async def test_cover_automation_mode(hass: HomeAssistant, gateway) -> None:
+    """Every cover has a mode for the user's own automations: Both until chosen otherwise."""
+    entity_id = _entity(hass, "select", f"{BASE}_05-00-00-22_1_automation_mode")
+    state = hass.states.get(entity_id)
+    assert state is not None and state.state == "both"
+    assert state.attributes["options"] == ["off", "morning", "evening", "both"]
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": entity_id, "option": "morning"}, blocking=True
+    )
+    assert hass.states.get(entity_id).state == "morning"
+
+
 async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:
     entry, _ = gateway
     result = await hass.config_entries.subentries.async_init(
