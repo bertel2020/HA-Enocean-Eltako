@@ -443,7 +443,12 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
 
     async def free_all(msg_id: int, **extra):
         await client.send_json(
-            {"id": msg_id, "type": "enocean_eltako/sender_pools/free_all", "pool": result["id"], **extra}
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/sender_pools/free_all",
+                "pool": result["id"],
+                **extra,
+            }
         )
         return await client.receive_json()
 
