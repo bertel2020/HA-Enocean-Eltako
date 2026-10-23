@@ -21,6 +21,21 @@ def _value(kind: str, key: str, values: dict) -> object:
     return next(d for d in SENSORS[kind] if d.key == key).value_fn(values)
 
 
+def test_weather_station_display() -> None:
+    """Whole lux for dawn and sun, one decimal for the wind, rain without a leak sensor's class."""
+    from custom_components.enocean_eltako.binary_sensor import BINARY_SENSORS
+
+    dawn = _value("weather", "dawn", {"DWS": 998.6})
+    assert dawn == 999 and isinstance(dawn, int)
+    assert _value("weather", "dawn", {}) is None
+    by_key = {d.key: d for d in SENSORS["weather"]}
+    for key in ("dawn", "sun_west", "sun_south", "sun_east"):
+        assert by_key[key].suggested_display_precision == 0
+    assert by_key["wind_speed"].suggested_display_precision == 1
+    (rain,) = BINARY_SENSORS["weather"]
+    assert rain.key == "rain" and rain.device_class is None
+
+
 def test_voc_scale_and_unit() -> None:
     assert _value("voc", "voc", {"Conc": 500.0, "SCM": 1}) == 50.0  # x0.1
     assert _value("voc", "voc", {"Conc": 500.0, "SCM": 3}) == 5000.0

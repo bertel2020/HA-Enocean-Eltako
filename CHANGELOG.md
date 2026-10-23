@@ -6,6 +6,16 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Weather station:** dawn and the three sun sensors show whole lux (dawn no longer "999,0 lx"), the wind one decimal.
+  Rain is a plain on/off sensor shown as "Rain" / "No rain" with the rain icons, no longer a "moisture" (leak) sensor
+  that assistants might treat as a leak alarm. The wind's unit (m/s, km/h, Beaufort) is the entity's display unit
+  setting in Home Assistant.
+- **Device page:** a device without a named type lists its EEP once, as the model, not again as the model ID.
+
 ### [0.1.12] - 2026-10-23
 
 #### Added
@@ -388,6 +398,16 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Wetterstation:** Dämmerung und die drei Sonnensensoren zeigen ganze Lux (die Dämmerung nicht mehr „999,0 lx“), der
+  Wind eine Nachkommastelle. Regen ist ein einfacher Ein/Aus-Sensor mit den Anzeigen „Regen“ / „Kein Regen“ und den
+  Regen-Symbolen, kein „Feuchtigkeits“-Sensor (Leck) mehr, den Assistenten als Leckalarm behandeln könnten. Die Einheit
+  des Winds (m/s, km/h, Beaufort) ist die Anzeigeeinheit der Entität in Home Assistant.
+- **Geräteseite:** ein Gerät ohne benannten Typ nennt sein EEP einmal, als Modell, nicht noch einmal als Modell-ID.
 
 ### [0.1.12] - 2026-10-23
 

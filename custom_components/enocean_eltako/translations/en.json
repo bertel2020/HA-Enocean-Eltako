@@ -1078,7 +1078,11 @@
     },
     "binary_sensor": {
       "rain": {
-        "name": "Rain"
+        "name": "Rain",
+        "state": {
+          "on": "Rain",
+          "off": "No rain"
+        }
       },
       "gateway_connection": {
         "name": "Connection",

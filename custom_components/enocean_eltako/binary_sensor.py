@@ -107,8 +107,7 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
     "weather": (
         EnOceanBinarySensorDescription(
             key="rain",
-            translation_key="rain",
-            device_class=BinarySensorDeviceClass.MOISTURE,
+            translation_key="rain",  # no device class: "moisture" is a leak sensor to assistants
             value_fn=lambda v: None if "RAN" not in v else v["RAN"] == 1,
         ),
     ),

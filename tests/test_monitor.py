@@ -274,7 +274,8 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
     )
     assert (
         registered is not None and registered.model == "M5-38-08"
-    )  # several FSRs: the EEP is all we know
+    )  # several FSRs: the EEP is all we know, and it is not repeated as the model ID
+    assert registered.model_id is None
     # configured devices for the panel's "not heard" list: nothing heard yet
     assert status["radio_devices"] == [
         {
