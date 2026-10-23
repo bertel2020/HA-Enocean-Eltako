@@ -512,6 +512,47 @@ async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize(
+    ("status", "asks"),
+    [
+        ({"gateways": [{"port": 0, "base_id": "FF-B7-44-80"}]}, False),  # the app knows it
+        ({"gateways": [{"port": 0, "base_id": None}]}, True),  # the app does not: ask
+        ({"gateways": []}, True),
+    ],
+)
+async def test_device_proxy_app_base_id_from_status(
+    hass: HomeAssistant, aioclient_mock, status: dict, asks: bool
+) -> None:
+    """A gateway that does not answer the base ID read: the app's status has it."""
+    from homeassistant.helpers.service_info.hassio import HassioServiceInfo
+
+    server = await FakeGateway(Protocol.ESP2, base_id=None).start()
+    for gateway in status["gateways"]:
+        gateway["port"] = server.port
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json=status)
+    info = HassioServiceInfo(
+        config={
+            "host": "127.0.0.1",
+            "status_port": 9199,
+            "replay": True,
+            "gateways": [{"name": "FAM-USB", "port": server.port, "protocol": "esp2"}],
+        },
+        name="Device Proxy",
+        slug="abc_device_proxy",
+        uuid="1234",
+    )
+    try:
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"model": "fam_usb"}
+        )
+    finally:
+        await server.stop()
+    assert result["step_id"] == ("base_id" if asks else "name")
+
+
+@pytest.mark.parametrize(
     ("announced", "asks"),
     [("fgw14_usb", False), ("mgw_eth", True), ("nope", True)],  # other protocol, unknown: ask
 )

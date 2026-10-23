@@ -6,6 +6,7 @@ import logging
 from typing import Any
 from uuid import uuid4
 
+import aiohttp
 import probatio as vol
 from homeassistant.config_entries import (
     SOURCE_HASSIO,
@@ -20,6 +21,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.helpers import discovery_flow
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     BooleanSelector,
     NumberSelector,
@@ -66,7 +68,7 @@ from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
 from .protocol.transport import Connection, SerialConnection, TcpConnection
-from .proxy_status import CONF_PROXY_STATUS_PORT
+from .proxy_status import CONF_PROXY_STATUS_PORT, DEFAULT_STATUS_PORT, TIMEOUT
 from .subentry_flow import (
     SUBENTRY_FLOWS,
     DeviceForm,
@@ -468,6 +470,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("Cannot connect to %s: %s", self._connection, err)
             errors["base"] = "cannot_connect"
             return None
+        if base_id is None or not is_valid_base_id(base_id):
+            base_id = await self._async_proxy_base_id() or base_id
         if base_id is not None and is_valid_base_id(base_id):
             return await self._async_create(base_id)
         if self.source == SOURCE_RECONFIGURE:  # FAM14 or silent: keep the stored base ID
@@ -475,6 +479,21 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         if base_id is not None:
             _LOGGER.warning("%s reported an invalid base ID %s", self._model.name, hex(base_id))
         return await self.async_step_base_id()
+
+    async def _async_proxy_base_id(self) -> int | None:
+        """A gateway behind the Device Proxy that did not answer the read: the app knows it."""
+        if self._proxy is None:
+            return None
+        port = self._proxy.get("status_port") or DEFAULT_STATUS_PORT
+        url = f"http://{self._proxy['host']}:{port}/api/status"
+        try:
+            async with async_get_clientsession(self.hass).get(url, timeout=TIMEOUT) as response:
+                status = await response.json()
+            gateway = next(g for g in status["gateways"] if g["port"] == self._proxy["port"])
+            base_id = parse_id(str(gateway["base_id"]))
+        except (aiohttp.ClientError, TimeoutError, KeyError, TypeError, ValueError, StopIteration):
+            return None
+        return base_id if is_valid_base_id(base_id) else None
 
     async def _async_create(self, base_id: int) -> ConfigFlowResult:
         assert self._model is not None

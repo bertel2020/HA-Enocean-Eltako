@@ -6,6 +6,13 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Fixed
+
+- **Device Proxy, base ID:** when the gateway behind the app does not answer the base ID read while it is set up, the
+  integration takes the base ID from the app's status instead of asking for it.
+
 ### [1.0.0] - 2026-10-23
 
 #### Added
@@ -440,6 +447,13 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Behoben
+
+- **Device Proxy, Base-ID:** Antwortet das Gateway hinter der App beim Einrichten nicht auf das Lesen der Base-ID, nimmt die
+  Integration sie aus dem Status der App, statt danach zu fragen.
 
 ### [1.0.0] - 2026-10-23
 
