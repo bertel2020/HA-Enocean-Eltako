@@ -246,8 +246,8 @@ several gateways, the gateway.
 ### Search, filters, pause
 
 Search by device, ID (with or without dashes), value name or data (key `/`) and received or
-sent are right above the list. **Filter** opens the others: a gateway, a telegram type (RPS, 1BS,
-4BS, VLD …), unknown senders only or with repetitions. Set filters show as chips above the list;
+sent are right above the list. **Unknown only** sits right next to them. **Filter** opens the others: a gateway, a telegram type (RPS, 1BS,
+4BS, VLD …) or repetitions. Set filters show as chips above the list;
 their cross removes one, **Reset filters** clears them all. The panel remembers the filters in the
 browser. Pause (key `P`) keeps collecting (up to 1,000) and shows how many telegrams arrived;
 export saves all telegrams matching the filter (every page) as JSON lines; on a phone, export
@@ -290,10 +290,10 @@ teach-in button; for a VLD actuator (UTE) send first, then put the actuator into
 within 60 s.
 
 Above the list a hint counts the senders with a weak signal; a click shows only them, weakest
-first (also the status **Weak signal** under **Filter**).
+first (also the status **Weak signal**).
 
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
-search box and, under **Filter**, the gateway, the status (**All devices / Set up / Unknown / Silent / Weak signal**) and the area narrow the list,
+search box, the status chips (**All devices / Set up / Unknown / Silent / Weak signal**) and, under **Filter**, the gateway and the area narrow the list (**Filter** only shows with several gateways or areas),
 and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
 newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
 as CSV; sending and clearing belong to the telegram list and are not offered here.

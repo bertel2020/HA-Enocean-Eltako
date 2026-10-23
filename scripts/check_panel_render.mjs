@@ -135,7 +135,8 @@ for (const lang of ["en", "de"]) {
     root.getElementById("weakHint").click();
     await settle();
     expect("weak-signal devices", root.querySelectorAll(".dev").length, 1);
-    root.querySelector('[data-unset="devStatus"]').click();
+    expect("weak status chip pressed", root.querySelector('#devStatus [data-status="weak"]').getAttribute("aria-pressed"), "true");
+    root.querySelector('#devStatus [data-status=""]').click();
     await settle();
     root.querySelector("[data-teach]").click();
     await settle();
