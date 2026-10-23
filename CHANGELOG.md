@@ -21,6 +21,8 @@ All notable changes to this project are documented here, in English and German
   longer shows the first example of the kind (FSR61 for an FSR14). Without a chosen model it lists
   the possible models; the device page shows the EEP only.
 - **Weather station:** the example FWG14 is named FWG14MS.
+- **Devices view:** the list always opens sorted by name; a column sort you click applies until the
+  panel is closed and is no longer kept.
 - **Telegram monitor:** an open telegram pauses the list: new telegrams wait (the live badge shows
   "Paused" with their number) while you read the details and appear when you close the last open
   one. A pause you set yourself stays until you resume.
@@ -339,6 +341,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   mehr das erste Beispiel der Art (FSR61 bei einem FSR14). Ohne gewähltes Modell steht dort die
   Liste der möglichen Modelle, die Geräteseite zeigt nur das EEP.
 - **Wetterstation:** Das Beispiel FWG14 heißt FWG14MS.
+- **Geräteansicht:** Die Liste öffnet immer nach Namen sortiert; eine angeklickte Spaltensortierung
+  gilt, bis das Panel geschlossen wird, und wird nicht mehr gemerkt.
 - **Telegramm-Monitor:** Ein aufgeklapptes Telegramm hält die Liste an: neue Telegramme warten (die
   Live-Anzeige zeigt „Pausiert" mit ihrer Anzahl), solange du die Details liest, und erscheinen,
   wenn du das letzte geöffnete zuklappst. Eine selbst gesetzte Pause bleibt, bis du sie aufhebst.

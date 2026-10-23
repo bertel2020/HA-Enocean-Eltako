@@ -582,7 +582,6 @@ const DEV_SORTERS = {
 };
 const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
 const DEV_STATUS = ["", "known", "unknown", "silent", "weak"];
-const OLD_DEV_SORTS = { name: { key: "name", desc: false }, recent: { key: "heard", desc: true }, weak: { key: "signal", desc: false }, busy: { key: "busy", desc: true } };
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
 
@@ -598,7 +597,7 @@ function loadView() {
       view: VIEWS.includes(view.view) ? view.view : "telegrams",
       pageSize: PAGE_SIZES.includes(view.pageSize) ? view.pageSize : 50,
       sort: SORTERS[view.sort?.key] ? { key: view.sort.key, desc: !!view.sort.desc } : fallback.sort,
-      devSort: DEV_SORTERS[view.devSort?.key] ? { key: view.devSort.key, desc: !!view.devSort.desc } : OLD_DEV_SORTS[view.devSort] || fallback.devSort,
+      devSort: fallback.devSort, // not kept: the device list always opens by name
       filter: {
         gateway: text(saved.gateway),
         text: text(saved.text),
@@ -1269,7 +1268,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _saveView() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ view: this._view, pageSize: this._pageSize, sort: this._sort, devSort: this._devSort, filter: this._filter }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ view: this._view, pageSize: this._pageSize, sort: this._sort, filter: this._filter }));
     } catch (err) {
       // private window or blocked storage: the view just is not remembered
     }
