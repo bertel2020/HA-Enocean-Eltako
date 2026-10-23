@@ -33,7 +33,7 @@ from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayConnectionSensor
-from .sensor import HANDLE_POSITIONS
+from .sensor import HANDLE_POSITIONS, HANDLE_UPSIDE_DOWN
 
 PARALLEL_UPDATES = 0
 
@@ -43,8 +43,10 @@ class EnOceanBinarySensorDescription(BinarySensorEntityDescription):
     value_fn: Callable[[dict[str, Any]], bool | None]
 
 
-def _handle_open(values: dict[str, Any]) -> bool | None:
+def _handle_open(values: dict[str, Any], upside_down: bool = False) -> bool | None:
     position = HANDLE_POSITIONS.get(values.get("WIN", -1))
+    if position is not None and upside_down:
+        position = HANDLE_UPSIDE_DOWN[position]
     return None if position is None else position != "closed"
 
 
@@ -211,7 +213,10 @@ class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
         self.entity_description = description
         # the options describe the device's contact, not its battery or other inputs
         configurable = description.key not in ("battery",)
-        self._invert = configurable and bool(device.options.get(OPT_INVERT))
+        invert = configurable and bool(device.options.get(OPT_INVERT))
+        # a window handle is turned over, not flipped: closed and tilted trade places
+        self._upside_down = invert and description.key == "window"
+        self._invert = invert and not self._upside_down
         if configurable and (device_class := device.options.get(OPT_DEVICE_CLASS)):
             self._attr_device_class = BinarySensorDeviceClass(device_class)
 
@@ -224,6 +229,8 @@ class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
         value = self.entity_description.value_fn(values)
         if value is None:
             return False
+        if self._upside_down:
+            value = _handle_open(values, upside_down=True)
         value = value != self._invert
         if value == self._attr_is_on:
             return False
