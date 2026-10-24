@@ -6,6 +6,27 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [1.2.0] - 2026-10-24
+
+#### Changed
+
+- **Takeover, three steps instead of four:** Select, Review & take over, Retire the old integration. The old
+  "Switch over" and "Clean up" steps are gone, and with them **Finish the takeover**.
+- **Review shows what comes along:** for every option you tick, the preview lists per device the actual values (area,
+  labels, names, icons, hidden/disabled, voice assistants), also per entity. Devices already set up are completed in
+  the same step.
+- **Retire the old integration:** you first choose how the old entity IDs are dealt with, either keep them (delete the
+  old integration, give the new entities the old IDs back, remove `eltako:`) or use the new ones (switch the places
+  that use old IDs, delete, remove). The steps follow from the choice.
+- **Reports:** one report per takeover, always reachable under **Reports** in the Takeover view, openable and deletable.
+  The old reports are migrated (one per gateway and day).
+
+#### Fixed
+
+- **Restore old IDs** no longer renames a new ID that an automation, script, scene or dashboard already uses.
+- **Virtual rockers** (old buttons) get a report entry and are completed by "Devices already set up".
+- A device taken over after its old entities are gone still gets a report.
+
 ### [1.1.1] - 2026-10-24
 
 #### Changed
@@ -469,6 +490,29 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [1.2.0] - 2026-10-24
+
+#### Geändert
+
+- **Übernahme in drei Schritten statt vier:** Auswählen, Prüfen & übernehmen, Alte Integration ablösen. Die bisherigen
+  Schritte „Umstellen“ und „Aufräumen“ entfallen, ebenso **Übernahme abschließen**.
+- **Prüfen zeigt, was mitkommt:** zu jeder angehakten Option listet die Vorschau je Gerät die tatsächlichen Werte
+  (Bereich, Labels, Namen, Symbole, ausgeblendet/deaktiviert, Sprachsteuerung), auch je Entität. Schon eingerichtete
+  Geräte werden im selben Schritt ergänzt.
+- **Alte Integration ablösen:** zuerst wählst du, wie die alten Entity-IDs behandelt werden: behalten (alte Integration
+  löschen, den neuen Entitäten die alten IDs zurückgeben, `eltako:` entfernen) oder die neuen verwenden (Fundstellen mit
+  alten IDs umstellen, löschen, entfernen). Die Schritte ergeben sich aus der Wahl.
+- **Berichte:** ein Bericht je Übernahme, jederzeit unter **Berichte** in der Ansicht Übernahme erreichbar, zu öffnen und
+  zu löschen. Die bisherigen Berichte werden migriert (einer je Gateway und Tag).
+
+#### Behoben
+
+- **Alte IDs wiederherstellen** benennt keine neue ID mehr um, die eine Automation, ein Skript, eine Szene oder ein
+  Dashboard schon nutzt.
+- **Virtuelle Taster** (alte Buttons) bekommen einen Berichtseintrag und werden von „Schon eingerichtete Geräte“
+  ergänzt.
+- Ein Gerät, das übernommen wird, nachdem die alten Entitäten weg sind, bekommt trotzdem einen Bericht.
 
 ### [1.1.1] - 2026-10-24
 

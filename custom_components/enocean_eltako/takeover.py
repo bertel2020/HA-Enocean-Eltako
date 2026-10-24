@@ -20,8 +20,10 @@ from homeassistant.config_entries import ConfigEntryState, ConfigSubentry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import label_registry as lr
 from homeassistant.helpers.translation import async_get_translations
 
 from .catalog import (
@@ -109,6 +111,11 @@ class TakeoverDevice:
     @property
     def target_id(self) -> int:
         return self.device_id if self.new_id is None else self.new_id
+
+
+def new_ids(devices: list[TakeoverDevice] | None) -> dict[int, int]:
+    """Old device ID -> its ID here: a virtual rocker's ID is its sender, not the old ID."""
+    return {d.device_id: d.target_id for d in devices or []}
 
 
 async def async_old_config(hass: HomeAssistant) -> Mapping[str, Any] | None:
@@ -430,6 +437,50 @@ def carried_from(hass: HomeAssistant, entries: list[er.RegistryEntry]) -> Carrie
     if carried.main is not None:
         carried.area_id = carried.area_id or carried.main.area_id
     return carried
+
+
+def area_name(hass: HomeAssistant, area_id: str) -> str:
+    area = ar.async_get(hass).async_get_area(area_id)
+    return area.name if area is not None else area_id
+
+
+def label_names(hass: HomeAssistant, label_ids: set[str]) -> list[str]:
+    registry = lr.async_get(hass)
+    return [label.name if (label := registry.async_get_label(i)) else i for i in label_ids]
+
+
+def carry_details(hass: HomeAssistant, carried: Carried) -> dict[str, Any]:
+    """The values behind the options, as the old device and its entities have them.
+
+    The preview shows them before the takeover, the report keeps them. Entities appear by
+    their old entity ID, and only when something is set on them.
+    """
+    entities = []
+    for entry in sorted(carried.entities, key=lambda e: (e is not carried.main, e.entity_id)):
+        values: dict[str, Any] = {}
+        if entry.labels:
+            values["labels"] = sorted(label_names(hass, entry.labels))
+        if entry.name:
+            values["name"] = entry.name
+        if entry.icon:
+            values["icon"] = entry.icon
+        hidden = []
+        if entry.hidden_by is er.RegistryEntryHider.USER:
+            hidden.append("hidden")
+        if entry.disabled_by is er.RegistryEntryDisabler.USER:
+            hidden.append("disabled")
+        if hidden:
+            values["visibility"] = hidden
+        if exposure := _exposure(entry):
+            values["voice"] = exposure
+        if values:
+            entities.append({"old": entry.entity_id, **values})
+    return {
+        "area": area_name(hass, carried.area_id) if carried.area_id else None,
+        "labels": sorted(label_names(hass, carried.labels)),
+        "name": carried.name,
+        "entities": entities,
+    }
 
 
 def _exposure(entry: er.RegistryEntry) -> dict[str, bool]:

@@ -211,7 +211,7 @@ skipped; imported ones are only replaced with `overwrite: true`.
 ## The EnOcean panel
 
 The **EnOcean** sidebar panel (admins only) has the views **Telegrams**, **Devices**, **Sender
-IDs** and, until the takeover is finished, **Takeover** (tabs; the arrow keys move
+IDs** and, while there is something to take over or a report to read, **Takeover** (tabs; the arrow keys move
 between them). Above Telegrams and Devices it shows a compact summary per gateway:
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
 With several gateways, **Telegrams** on a gateway filters by it. **Details** expands the connection, send queue
@@ -363,45 +363,56 @@ Repairs point out what needs a hand:
 
 The **Takeover** view of the panel reads the devices of the old `eltako` integration from
 `configuration.yaml` (the gateway with the same base ID) and sets up the chosen ones with their
-IDs, names and sender IDs, so the actuators need no new teach-in. Four steps across the top
-show where you are; the view opens on the first one with something left to do.
+IDs, names and sender IDs, so the actuators need no new teach-in. Three steps across the top
+show where you are; the view opens on the first one with something left to do. **Reports**
+next to the steps keeps what each takeover did (see below).
 
 1. **Select** lists the devices not set up yet, grouped by area, each with its old platform
    and EEP and the number of places using it. Counters above show how many are in
-   `configuration.yaml`, how many are set up already (a click leads to them under Switch over)
-   and how many cannot be taken over (folded away at the end, with the reason).
-2. **Carry over** shows what comes along from the old integration as cards: **Area**,
+   `configuration.yaml`, how many are set up already (a click leads to them in step 2) and how
+   many cannot be taken over (folded away at the end, with the reason).
+2. **Review & take over** shows what comes along from the old integration as cards: **Area**,
    **Labels**, **Voice assistants**, **Own names** (names given in Home Assistant), **Icons** and
    **Hidden / disabled**, each with its values and for how many of the chosen devices it is
    set. Nothing is chosen at first; the panel remembers your choice in this browser; values
-   already set on the new device are never overwritten. Below, the preview: each old entity ID
-   next to the one its new entity will probably get (Home Assistant gives the ID only when the
-   entity is added; for the main entity and the ID sensor it is predicted, a taken ID gets
-   "_2"). Nothing is written before **Take over n devices now**.
-3. **Switch over** shows where the old entity IDs are still used, in three views:
-   **By place** (default) lists each automation, script, scene and dashboard with its old and
-   new IDs and **Open the editor**, so you switch it over in one go; **By device** lists every
-   device set up here that the old integration had, taken over or set up by hand, with what it
-   still lacks and, opened, what it was in the old integration (platform, EEP, names, area,
-   labels, sender IDs, when it was taken over and what came along); **Report** is the mapping
-   as a table, with copy and CSV. **Check again** after editing; **Carry over…** fills in later
-   what a device still lacks. Places written in YAML, templates and other tools such as
-   Node-RED are not found: search them yourself with the CSV.
-4. **Clean up** is a checklist, each item found from the current state: devices taken over,
-   mapping saved, old IDs switched over, old integration deleted, `eltako:` removed from
-   `configuration.yaml`. Once the old integration is deleted, **Restore old IDs** gives the new
-   entities the old entity IDs back instead (optional): automations and dashboards then work
-   unchanged and the history goes on under the old ID; what was recorded under the new ID in
-   the meantime stays there, and Home Assistant logs once per entity that it could not move it.
-   Automations with a **device trigger, condition or action** (picked by device in the editor)
-   do not survive this: they hold the old entity's registry ID, which goes with the old
-   integration, not its entity ID. Switch those over in **Switch over** to the new device, or to
-   a state trigger on the entity ID, before you delete the old integration.
-   **Finish the takeover** hides the tab.
+   already set on the new device are never overwritten. Below, the preview has one row per
+   device; for every option you tick, the values that device brings show up right in the row
+   (for example *Area: Hall*, *Labels: Light, Matter hub*). Opened, a device lists its area,
+   labels and name, and per entity the old entity ID next to the one its new entity will
+   probably get (Home Assistant gives the ID only when the entity is added; for the main entity
+   and the ID sensor it is predicted, a taken ID gets "_2") with the name, icon, labels,
+   visibility and voice settings that go to it. Of the other entities only some have a
+   counterpart, so their values are marked "if a counterpart exists". Nothing is written before
+   **Take over n devices now**. Devices already set up that still lack values of the old
+   integration are completed at the bottom (**Devices already set up**), with the same options.
+3. **Retire the old integration** starts with one choice, because the old entity IDs can be
+   dealt with in two ways that exclude each other (you can change it later):
+   - **Keep the old IDs:** delete the old integration, then **Restore old IDs** gives the new
+     entities the old entity IDs back, then remove `eltako:` from `configuration.yaml`.
+     Automations, scripts and dashboards work unchanged and the history goes on under the old
+     ID; what was recorded under the new ID in the meantime stays there, and Home Assistant
+     logs once per entity that it could not move it. An ID that an automation, script, scene or
+     dashboard already uses as a *new* ID stays as it is.
+   - **Use the new IDs:** the places that still use old IDs are listed by automation, script,
+     scene and dashboard with their old and new IDs and **Open the editor**, so you switch each
+     one in one go; **Check again** after editing. Then delete the old integration and remove
+     `eltako:`. Places written in YAML, templates and other tools such as Node-RED are not
+     found: search them yourself with the CSV of the report.
 
-The integration keeps the mapping in its own storage, so the report stays readable after the
-old integration is deleted and after the takeover is finished: **Takeover report** in the
-Devices view opens it. A device of the old configuration not set up yet brings the tab back.
+   Automations with a **device trigger, condition or action** (picked by device in the editor)
+   do not survive the deletion either way: they hold the old entity's registry ID, which goes
+   with the old integration, not its entity ID. Switch those to the new device, or to a state
+   trigger on the entity ID, before you delete the old integration.
+
+Every takeover leaves a **report** in the integration's own storage: when it happened, which
+settings came along and, per device, what it was in the old integration (platform, EEP, names,
+area, labels, sender IDs, the settings of its entities) and its old → new entity IDs. Devices
+set up by hand that the old integration had get one report of their own. The reports stay
+readable after the old integration is deleted. **Reports** next to the steps (or **Takeover
+reports** in the Devices view) lists them; a report opens with copy and CSV, and **Delete**
+removes it after a confirmation: the mapping of its devices is gone then, and their old IDs
+can no longer be given back. The tab stays as long as there is a report; the steps come back
+when a device of the old configuration is not set up yet.
 
 - A rocker sender's `left`/`right` becomes the rocker buttons it presses, `invert_signal` of
   switches and window handles becomes **Invert**, cover times are carried over. Covers get whole
