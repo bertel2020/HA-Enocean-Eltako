@@ -9,11 +9,13 @@
 // the takeover view: two devices to take over, one already set up and still in use
 const none = { automation: [], script: [], scene: [], dashboard: [] };
 const takeoverDevices = [
-  { id: "05-10-A2-B3", name: "Licht Diele", old: "light A5-38-08", ready: true, area: "Flur", labels: [], carry: ["area", "voice"], used: 2,
-    entities: [{ old: "light.eltako_0510a2b3", new: "light.licht_diele" }, { old: "sensor.eltako_0510a2b3_id", new: "sensor.licht_diele_enocean_id" }],
+  { id: "05-10-A2-B3", name: "Licht Diele", old: "light A5-38-08", ready: true, area: "Flur", labels: ["Licht"], carry: ["area", "labels", "voice"], used: 2,
+    details: { area: "Flur", labels: ["Licht"], name: null },
+    entities: [{ old: "light.eltako_0510a2b3", new: "light.licht_diele", voice: { conversation: true, "cloud.alexa": false } }, { old: "sensor.eltako_0510a2b3_id", new: "sensor.licht_diele_enocean_id" }],
     places: ["automation:Flur Bewegung", "dashboard:Übersicht"] },
-  { id: "05-10-A2-B4", name: "Rollladen Süd", old: "cover G5-3F-7F", ready: true, area: "Wohnzimmer", labels: ["Beschattung"], carry: ["area", "labels", "names"], used: 0,
-    entities: [{ old: "cover.eltako_0510a2b4", new: "cover.rollladen_sud" }, { old: "sensor.eltako_0510a2b4_power", new: null }], places: [] },
+  { id: "05-10-A2-B4", name: "Rollladen Süd", old: "cover G5-3F-7F", ready: true, area: "Wohnzimmer", labels: ["Beschattung"], carry: ["area", "labels", "names", "icons"], used: 0,
+    details: { area: "Wohnzimmer", labels: [], name: "Südfenster" },
+    entities: [{ old: "cover.eltako_0510a2b4", new: "cover.rollladen_sud", labels: ["Beschattung"], icon: "mdi:blinds" }, { old: "sensor.eltako_0510a2b4_power", new: null, name: "Leistung Süd" }], places: [] },
   { id: "01-90-8C-14", name: "Zwischenstecker", old: "switch M5-38-08", ready: false, reason: "takeover_exists", area: "Küche", labels: [], carry: ["area"], used: 1 },
 ];
 const takeoverRows = [
@@ -21,13 +23,19 @@ const takeoverRows = [
     usage: { ...none, automation: [{ name: "Kaffee aus", path: "/config/automation/edit/1" }], dashboard: [{ name: "Küche", path: "/lovelace" }] } },
   { device: "Zwischenstecker", id: "01-90-8C-14", area: "Küche", taken: true, primary: false, old: "sensor.eltako_01908c14_id", new: "sensor.zwischenstecker_enocean_id", restored: false, usage: none },
 ];
-// what the integration keeps per device set up: the report
+// what the integration keeps per device set up, in one report per takeover
 const takeoverStored = {
   "01-90-8C-14": { name: "Zwischenstecker", taken_at: "2026-10-12T09:30:00+00:00", carried: ["area", "labels"],
-    old: { config: "switch M5-38-08", name: "Zwischenstecker", senders: ["FF-B7-44-B2"], device_name: "Kaffeemaschine", area: "Küche", labels: ["Morgens"] } },
+    old: { config: "switch M5-38-08", name: "Zwischenstecker", senders: ["FF-B7-44-B2"], device_name: "Kaffeemaschine", area: "Küche", labels: ["Morgens"],
+      details: { area: "Küche", labels: ["Morgens"], name: "Kaffeemaschine", entities: [{ old: "switch.eltako_01908c14", icon: "mdi:coffee", voice: { "cloud.alexa": true } }] } } },
 };
+const makeRuns = () => [
+  { id: "run1", entry_id: "gw1", gateway: "FAM-USB Keller", at: "2026-10-12T09:30:00+00:00", manual: false, carry: ["area", "labels"], devices: 1, entities: 2, restored: 0 },
+  { id: "run0", entry_id: "gw1", gateway: "FAM-USB Keller", at: null, manual: true, carry: [], devices: 3, entities: 5, restored: 5 },
+];
 
 export function fakeHass(params = new URLSearchParams()) {
+  const takeoverRuns = makeRuns();
   const now = Date.now() / 1000;
   const empty = params.has("empty");
   const gateway = {
@@ -121,7 +129,7 @@ export function fakeHass(params = new URLSearchParams()) {
         case "enocean_eltako/set_model":
           return { model_name: msg.model_name };
         case "enocean_eltako/takeover/status":
-          return { available: !empty && !params.has("closed"), report: !empty, closed: params.has("closed") };
+          return { available: !empty && !params.has("closed"), reports: empty ? 0 : takeoverRuns.length };
         case "enocean_eltako/sender_pools":
           return empty ? [] : [pool];
         case "enocean_eltako/sender_pools/free_all":
@@ -129,10 +137,17 @@ export function fakeHass(params = new URLSearchParams()) {
         case "enocean_eltako/takeover/preview":
           return { devices: takeoverDevices, old_active: true };
         case "enocean_eltako/takeover/mapping":
-          return { rows: takeoverRows, devices: takeoverStored, missing: { "01-90-8C-14": ["area", "names"] }, old_active: true, old_entities: true };
+          return { rows: takeoverRows, devices: takeoverStored, missing: { "01-90-8C-14": ["area", "names"] }, old_active: true, old_entities: true, strategy: params.get("strategy") };
         case "enocean_eltako/takeover/restore":
-          return { restored: 2, blocked: 0 };
-        case "enocean_eltako/takeover/close":
+          return { restored: 2, blocked: 0, in_use: 0 };
+        case "enocean_eltako/takeover/strategy":
+          return {};
+        case "enocean_eltako/takeover/reports":
+          return takeoverRuns;
+        case "enocean_eltako/takeover/report":
+          return { ...takeoverRuns.find((r) => r.id === msg.run_id), rows: takeoverRows, devices: takeoverStored, totals: {} };
+        case "enocean_eltako/takeover/report_delete":
+          takeoverRuns.splice(takeoverRuns.findIndex((r) => r.id === msg.run_id), 1);
           return {};
         case "enocean_eltako/takeover/run":
         case "enocean_eltako/takeover/carry":

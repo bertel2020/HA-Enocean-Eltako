@@ -219,7 +219,7 @@ Die Definitionen stehen sofort unter **Gerät hinzufügen → Eigene Definition*
 ## Das Panel EnOcean
 
 Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) hat die Ansichten **Telegramme**,
-**Geräte**, **Sender-IDs** und, bis die Übernahme abgeschlossen ist, **Übernahme** (Tabs; die
+**Geräte**, **Sender-IDs** und, solange etwas zu übernehmen ist oder ein Bericht zu lesen, **Übernahme** (Tabs; die
 Pfeiltasten wechseln zwischen ihnen). Über Telegramme und Geräte steht eine kompakte
 Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
 und freie Sender-IDs. Bei mehreren Gateways filtert **Telegramme** auf das jeweilige Gateway. **Details** zeigt
@@ -384,49 +384,60 @@ Reparaturen weisen darauf hin, wo etwas zu tun ist:
 
 Die Ansicht **Übernahme** des Panels liest die Geräte der alten Integration `eltako` aus der
 `configuration.yaml` (das Gateway mit derselben Base-ID) und richtet die gewählten mit ihren
-IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Vier Schritte oben
+IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Drei Schritte oben
 zeigen, wo du stehst; die Ansicht öffnet beim ersten Schritt, in dem noch etwas offen ist.
+**Berichte** neben den Schritten hält fest, was jede Übernahme getan hat (siehe unten).
 
 1. **Auswählen** listet die noch nicht eingerichteten Geräte nach Bereich, jedes mit alter
    Plattform und EEP und der Zahl seiner Fundstellen. Zähler darüber zeigen, wie viele in der
-   `configuration.yaml` stehen, wie viele schon eingerichtet sind (ein Klick führt zu ihnen
-   unter Umstellen) und wie viele nicht übernehmbar sind (am Ende eingeklappt, mit Grund).
-2. **Mitnehmen** zeigt als Kacheln, was aus der alten Integration mitkommt: **Bereich**,
-   **Labels**, **Sprachsteuerung**, **Eigene Namen** (in Home Assistant vergebene Namen),
-   **Symbole** und **Ausgeblendet / deaktiviert**, jeweils mit den Werten und bei wie vielen der
-   gewählten Geräte es gesetzt ist. Anfangs ist nichts gewählt; das Panel merkt sich deine Wahl
-   in diesem Browser; am neuen Gerät schon gesetzte Werte werden nie überschrieben. Darunter die
-   Vorschau: jede alte Entity-ID neben der, die die neue Entität voraussichtlich bekommt (Home
-   Assistant vergibt die ID erst beim Anlegen; für die Hauptentität und den ID-Sensor wird sie
-   vorhergesagt, eine belegte ID bekommt „_2“). Vor **n Geräte jetzt übernehmen** wird nichts
-   geschrieben.
-3. **Umstellen** zeigt, wo die alten Entity-IDs noch verwendet werden, in drei Ansichten:
-   **Nach Fundstelle** (Standard) listet jede Automation, jedes Skript, jede Szene und jedes
-   Dashboard mit alten und neuen IDs und **Im Editor öffnen**, so stellst du sie in einem Zug
-   um; **Nach Gerät** listet jedes hier eingerichtete Gerät, das die alte Integration kannte,
-   ob übernommen oder von Hand angelegt, mit dem, was ihm noch fehlt, und aufgeklappt, wie es
-   in der alten Integration aussah (Plattform, EEP, Namen, Bereich, Labels, Sender-IDs, wann es
-   übernommen wurde und was mitkam); **Bericht** ist die Zuordnung als Tabelle, mit Kopieren
-   und CSV. **Neu prüfen** nach dem Bearbeiten; **Nachträglich übernehmen…** ergänzt, was einem
-   Gerät noch fehlt. Stellen in YAML, Templates und andere Werkzeuge wie Node-RED findet sie
-   nicht: die mit der CSV selbst durchsuchen.
-4. **Aufräumen** ist eine Checkliste, jeder Punkt aus dem aktuellen Stand erkannt: Geräte
-   übernommen, Zuordnung gespeichert, alte IDs umgestellt, alte Integration gelöscht, `eltako:`
-   aus der `configuration.yaml` entfernt. Sobald die alte Integration gelöscht ist, gibt
-   **Alte IDs wiederherstellen** den neuen Entitäten stattdessen die alten Entity-IDs zurück
-   (optional): Automationen und Dashboards laufen dann unverändert, die Historie geht unter der
-   alten ID weiter; was in der Zwischenzeit unter der neuen ID aufgezeichnet wurde, bleibt dort,
-   und Home Assistant protokolliert je Entität einmal, dass es das nicht verschieben konnte.
-   Automationen mit einem **Geräte-Trigger, einer Geräte-Bedingung oder -Aktion** (im Editor
-   über das Gerät gewählt) überstehen das nicht: sie halten die Registry-ID der alten Entität,
-   nicht ihre Entity-ID, und die geht mit der alten Integration. Stelle sie unter **Umstellen**
-   auf das neue Gerät um, oder auf einen Zustands-Trigger mit der Entity-ID, bevor du die alte
-   Integration löschst.
-   **Übernahme abschließen** blendet den Tab aus.
+   `configuration.yaml` stehen, wie viele schon eingerichtet sind (ein Klick führt zu ihnen in
+   Schritt 2) und wie viele nicht übernehmbar sind (am Ende eingeklappt, mit Grund).
+2. **Prüfen & übernehmen** zeigt als Kacheln, was aus der alten Integration mitkommt:
+   **Bereich**, **Labels**, **Sprachsteuerung**, **Eigene Namen** (in Home Assistant vergebene
+   Namen), **Symbole** und **Ausgeblendet / deaktiviert**, jeweils mit den Werten und bei wie
+   vielen der gewählten Geräte es gesetzt ist. Anfangs ist nichts gewählt; das Panel merkt sich
+   deine Wahl in diesem Browser; am neuen Gerät schon gesetzte Werte werden nie überschrieben.
+   Darunter die Vorschau mit einer Zeile je Gerät; zu jeder angehakten Option stehen die Werte,
+   die das Gerät mitbringt, gleich in der Zeile (zum Beispiel *Bereich: Flur*, *Labels: Licht,
+   Matter-Hub*). Aufgeklappt zeigt ein Gerät Bereich, Labels und Namen und je Entität die alte
+   Entity-ID neben der, die die neue Entität voraussichtlich bekommt (Home Assistant vergibt
+   die ID erst beim Anlegen; für die Hauptentität und den ID-Sensor wird sie vorhergesagt, eine
+   belegte ID bekommt „_2“), mit Name, Symbol, Labels, Sichtbarkeit und Sprachsteuerung, die an
+   sie gehen. Von den übrigen Entitäten haben nur einige ein Gegenstück; ihre Werte sind mit
+   „falls es ein Gegenstück gibt“ markiert. Vor **n Geräte jetzt übernehmen** wird nichts
+   geschrieben. Schon eingerichtete Geräte, denen noch Werte der alten Integration fehlen,
+   ergänzt der Abschnitt unten (**Schon eingerichtete Geräte**) mit denselben Optionen.
+3. **Alte Integration ablösen** beginnt mit einer Wahl, weil sich die alten Entity-IDs auf zwei
+   Wegen behandeln lassen, die sich ausschließen (du kannst sie später ändern):
+   - **Alte IDs behalten:** alte Integration löschen, dann gibt **Alte IDs wiederherstellen**
+     den neuen Entitäten die alten Entity-IDs zurück, dann `eltako:` aus der
+     `configuration.yaml` entfernen. Automationen, Skripte und Dashboards laufen unverändert,
+     die Historie geht unter der alten ID weiter; was in der Zwischenzeit unter der neuen ID
+     aufgezeichnet wurde, bleibt dort, und Home Assistant protokolliert je Entität einmal, dass
+     es das nicht verschieben konnte. Eine ID, die eine Automation, ein Skript, eine Szene oder
+     ein Dashboard schon als *neue* ID nutzt, bleibt wie sie ist.
+   - **Neue IDs verwenden:** die Fundstellen mit alten IDs stehen nach Automation, Skript, Szene
+     und Dashboard mit alten und neuen IDs und **Im Editor öffnen**, so stellst du jede in einem
+     Zug um; **Neu prüfen** nach dem Bearbeiten. Danach alte Integration löschen und `eltako:`
+     entfernen. Stellen in YAML, Templates und andere Werkzeuge wie Node-RED findet sie nicht:
+     die mit der CSV des Berichts selbst durchsuchen.
 
-Die Integration speichert die Zuordnung selbst, der Bericht bleibt deshalb nach dem Löschen der
-alten Integration und nach dem Abschluss abrufbar: **Übernahme-Bericht** in der Ansicht Geräte
-öffnet ihn. Ein noch nicht eingerichtetes Gerät der alten Konfiguration bringt den Tab zurück.
+   Automationen mit einem **Geräte-Trigger, einer Geräte-Bedingung oder -Aktion** (im Editor
+   über das Gerät gewählt) überstehen das Löschen in beiden Fällen nicht: sie halten die
+   Registry-ID der alten Entität, nicht ihre Entity-ID, und die geht mit der alten Integration.
+   Stelle sie auf das neue Gerät um, oder auf einen Zustands-Trigger mit der Entity-ID, bevor du
+   die alte Integration löschst.
+
+Jede Übernahme hinterlässt einen **Bericht** im eigenen Speicher der Integration: wann sie
+stattfand, welche Einstellungen mitkamen und je Gerät, was es in der alten Integration war
+(Plattform, EEP, Namen, Bereich, Labels, Sender-IDs, Einstellungen seiner Entitäten) und seine
+alte → neue Entity-ID. Von Hand eingerichtete Geräte, die die alte Integration kannte, bekommen
+einen eigenen Bericht. Die Berichte bleiben nach dem Löschen der alten Integration abrufbar.
+**Berichte** neben den Schritten (oder **Übernahme-Berichte** in der Ansicht Geräte) listet
+sie; ein Bericht öffnet sich mit Kopieren und CSV, und **Löschen** entfernt ihn nach einer
+Rückfrage: die Zuordnung seiner Geräte ist dann weg, und ihre alten IDs lassen sich nicht mehr
+zurückgeben. Der Tab bleibt, solange es einen Bericht gibt; die Schritte kommen zurück, wenn
+ein Gerät der alten Konfiguration noch nicht eingerichtet ist.
 
 - `left`/`right` eines Taster-Senders wird zu den Tasten, die er drückt, `invert_signal` von
   Schaltern und Fenstergriffen zu **Umkehren**, Fahrzeiten von Rollläden werden übernommen.

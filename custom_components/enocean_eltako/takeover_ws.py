@@ -1,8 +1,9 @@
 """Websocket API of the panel's takeover view: preview, take over, old -> new entity IDs,
-and carrying settings of the old integration over to devices already set up."""
+carrying settings of the old integration over to devices already set up, and the reports."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import probatio as vol
@@ -18,25 +19,28 @@ from .takeover import (
     CARRY_OPTIONS,
     Carried,
     apply_carried,
+    area_name,
     async_old_config,
     async_predicted_ids,
     async_take_over,
     carried_from,
+    carry_details,
     find_gateway,
+    label_names,
     missing_carried,
     new_entity,
+    new_ids,
     old_active,
     old_entities,
     plan,
     primary_entity,
 )
 from .takeover_report import (
-    area_name,
+    STRATEGIES,
     async_get_report,
     async_record,
     async_restore_ids,
     current_new,
-    label_names,
     set_up_entities,
 )
 from .usage import KINDS, Usage, async_usage
@@ -51,8 +55,11 @@ def async_setup_takeover_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_takeover_run)
     websocket_api.async_register_command(hass, ws_takeover_mapping)
     websocket_api.async_register_command(hass, ws_takeover_carry)
-    websocket_api.async_register_command(hass, ws_takeover_close)
+    websocket_api.async_register_command(hass, ws_takeover_strategy)
     websocket_api.async_register_command(hass, ws_takeover_restore)
+    websocket_api.async_register_command(hass, ws_takeover_reports)
+    websocket_api.async_register_command(hass, ws_takeover_report)
+    websocket_api.async_register_command(hass, ws_takeover_report_delete)
 
 
 def _loaded_entry(hass: HomeAssistant, entry_id: str) -> Any:
@@ -86,28 +93,11 @@ async def _plan(hass: HomeAssistant, entry: Any) -> tuple[list[Any] | None, str 
 async def ws_takeover_status(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Whether there is anything to take over: the panel shows the view only then."""
+    """Whether there is anything to do: the panel shows the wizard only then; the reports stay."""
     report = await async_get_report(hass)
     config = await async_old_config(hass)
-    if report.closed:
-        # closed by the user: back only when the old configuration has a new device
-        available = config is not None and await _anything_new(hass)
-    else:
-        available = config is not None or bool(old_entities(hass)) or not report.empty
-    connection.send_result(
-        msg["id"], {"available": available, "report": not report.empty, "closed": report.closed}
-    )
-
-
-async def _anything_new(hass: HomeAssistant) -> bool:
-    """A device of the old configuration that can be taken over and is not set up yet."""
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.state is not ConfigEntryState.LOADED:
-            continue
-        devices, _ = await _plan(hass, entry)
-        if any(d.model is not None for d in devices or []):
-            return True
-    return False
+    available = config is not None or bool(old_entities(hass)) or report.pending_restore(hass)
+    connection.send_result(msg["id"], {"available": available, "reports": len(report.runs)})
 
 
 @websocket_api.websocket_command(
@@ -139,6 +129,8 @@ async def ws_takeover_preview(
         carried = carried_from(hass, entries)
         places = _places([usage[e.entity_id] for e in entries])
         labels = carried.labels.union(*(e.labels for e in entries))
+        details = carry_details(hass, carried)
+        extras = {e["old"]: e for e in details.pop("entities")}
         result.append(
             {
                 "id": format_id(device.device_id),
@@ -150,9 +142,17 @@ async def ws_takeover_preview(
                 "labels": sorted(label_names(hass, labels)),
                 "carry": sorted(carried.available()),
                 "used": len(places),
-                # the confirmation: old -> probable new entity ID (None: known only afterwards)
+                # the values behind the options: the area and labels of the device itself
+                "details": details,
+                # the confirmation: old -> probable new entity ID (None: known only afterwards),
+                # with what is set on the old entity
                 "entities": [
-                    {"old": e.entity_id, "new": predicted.get(e.entity_id)} for e in entries
+                    {
+                        **extras.get(e.entity_id, {}),
+                        "old": e.entity_id,
+                        "new": predicted.get(e.entity_id),
+                    }
+                    for e in entries
                 ],
                 "places": places,
             }
@@ -200,6 +200,34 @@ async def ws_takeover_run(
     )
 
 
+def _stored_rows(hass: HomeAssistant, devices: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The rows of the devices in a report: the new entity found by its unique ID."""
+    rows = []
+    for key, device in sorted(devices.items()):
+        for row in device["entities"]:
+            rows.append(
+                {
+                    "device": device["name"],
+                    "id": key,
+                    "area": device["old"]["area"],
+                    "taken": True,
+                    "old": row["old"],
+                    "new": current_new(hass, row),
+                    "primary": row["primary"],
+                    "restored": row["restored"],
+                }
+            )
+    return rows
+
+
+async def _with_usage(hass: HomeAssistant, rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Where each old ID is used, set on the rows; the number of places by kind."""
+    usage = await async_usage(hass, [r["old"] for r in rows])
+    for row in rows:
+        row["usage"] = usage[row["old"]]
+    return {kind: len({n for u in usage.values() for n in u[kind]}) for kind in KINDS}
+
+
 @websocket_api.websocket_command(
     {vol.Required("type"): "enocean_eltako/takeover/mapping", vol.Required("entry_id"): str}
 )
@@ -214,12 +242,15 @@ async def ws_takeover_mapping(
         return
     planned, _ = await _plan(hass, entry)
     await async_record(hass, entry, planned)
+    ids = new_ids(planned)
     taken = set_up_entities(hass, entry)
-    stored = (await async_get_report(hass)).devices(entry.entry_id)
+    report = await async_get_report(hass)
+    stored = report.devices(entry.entry_id)
     rows: list[dict[str, Any]] = []
     olds: dict[int, Carried] = {}
     live = old_entities(hass)
     for device_id, entries in sorted(live.items()):
+        target = ids.get(device_id, device_id)
         if format_id(device_id) in stored:
             olds[device_id] = carried_from(hass, entries)
             continue  # from the report below
@@ -227,7 +258,7 @@ async def ws_takeover_mapping(
         carried = carried_from(hass, entries)
         old_device = _old_device_name(hass, entries)
         for old in sorted(entries, key=lambda e: (e is not main, e.entity_id)):
-            replacement = new_entity(old, main, taken[device_id]) if device_id in taken else None
+            replacement = new_entity(old, main, taken[target]) if target in taken else None
             rows.append(
                 {
                     "device": old_device or format_id(device_id),
@@ -240,31 +271,17 @@ async def ws_takeover_mapping(
                     "restored": False,
                 }
             )
-    devices: dict[str, Any] = {}
-    for key, device in sorted(stored.items()):
-        devices[key] = {k: v for k, v in device.items() if k != "entities"}
-        for row in device["entities"]:
-            rows.append(
-                {
-                    "device": device["name"],
-                    "id": key,
-                    "area": device["old"]["area"],
-                    "taken": True,
-                    "old": row["old"],
-                    "new": current_new(hass, row),
-                    "primary": row["primary"],
-                    "restored": row["restored"],
-                }
-            )
-    usage = await async_usage(hass, [r["old"] for r in rows])
-    for row in rows:
-        row["usage"] = usage[row["old"]]
-    totals = {kind: len({n for u in usage.values() for n in u[kind]}) for kind in KINDS}
-    # per set-up device what the old integration had that it still lacks
+    rows += _stored_rows(hass, stored)
+    totals = await _with_usage(hass, rows)
+    # per set-up device what the old integration had that it still lacks, by its old ID
+    back = {target: device_id for device_id, target in ids.items()}
     missing = {
-        format_id(device_id): sorted(changes)
-        for device_id, changes in missing_carried(hass, entry, olds).items()
+        format_id(back.get(target, target)): sorted(changes)
+        for target, changes in missing_carried(
+            hass, entry, {ids.get(i, i): c for i, c in olds.items()}
+        ).items()
     }
+    devices = {k: {n: v for n, v in d.items() if n != "entities"} for k, d in stored.items()}
     connection.send_result(
         msg["id"],
         {
@@ -274,6 +291,7 @@ async def ws_takeover_mapping(
             "missing": missing,
             "old_active": old_active(hass),
             "old_entities": bool(live),
+            "strategy": report.strategy.get(entry.entry_id),
         },
     )
 
@@ -294,7 +312,11 @@ async def ws_takeover_carry(
     if (entry := _loaded_entry(hass, msg["entry_id"])) is None:
         connection.send_error(msg["id"], "gateway_not_loaded", "gateway not loaded")
         return
-    carried = {i: carried_from(hass, entries) for i, entries in old_entities(hass).items()}
+    planned, _ = await _plan(hass, entry)
+    ids = new_ids(planned)
+    carried = {
+        ids.get(i, i): carried_from(hass, entries) for i, entries in old_entities(hass).items()
+    }
     connection.send_result(
         msg["id"], {"carried": apply_carried(hass, entry, carried, set(msg["carry"]))}
     )
@@ -308,15 +330,21 @@ def _old_device_name(hass: HomeAssistant, entries: list[er.RegistryEntry]) -> st
     return None
 
 
-@websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/takeover/close"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/takeover/strategy",
+        vol.Required("entry_id"): str,
+        vol.Required("strategy"): vol.In(STRATEGIES),
+    }
+)
 @websocket_api.require_admin
 @websocket_api.async_response
-async def ws_takeover_close(
+async def ws_takeover_strategy(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The takeover is done: the view goes, the report stays under Devices."""
+    """How the old entity IDs are dealt with, chosen per gateway: given back, or switched."""
     report = await async_get_report(hass)
-    report.closed = True
+    report.strategy[msg["entry_id"]] = msg["strategy"]
     await report.async_save()
     connection.send_result(msg["id"], {})
 
@@ -336,5 +364,76 @@ async def ws_takeover_restore(
     if old_active(hass) or old_entities(hass):
         connection.send_error(msg["id"], "old_present", "the old entities still exist")
         return
-    restored, blocked = await async_restore_ids(hass, entry)
-    connection.send_result(msg["id"], {"restored": restored, "blocked": blocked})
+    restored, blocked, in_use = await async_restore_ids(hass, entry)
+    connection.send_result(msg["id"], {"restored": restored, "blocked": blocked, "in_use": in_use})
+
+
+def _summary(hass: HomeAssistant, run_id: str, run: Mapping[str, Any]) -> dict[str, Any]:
+    gateway = hass.config_entries.async_get_entry(run["entry_id"])
+    rows = [row for device in run["devices"].values() for row in device["entities"]]
+    return {
+        "id": run_id,
+        "entry_id": run["entry_id"],
+        "gateway": gateway.title if gateway is not None else None,
+        "at": run["at"],
+        "manual": run["manual"],
+        "carry": run["carry"],
+        "devices": len(run["devices"]),
+        "entities": len(rows),
+        "restored": sum(1 for row in rows if row["restored"]),
+    }
+
+
+@websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/takeover/reports"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_takeover_reports(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The reports, newest first (the one of devices set up by hand last)."""
+    report = await async_get_report(hass)
+    runs = sorted(report.runs.items(), key=lambda i: (i[1]["at"] is not None, i[1]["at"] or ""))
+    connection.send_result(
+        msg["id"], [_summary(hass, run_id, run) for run_id, run in reversed(runs)]
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "enocean_eltako/takeover/report", vol.Required("run_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_takeover_report(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """One report: its devices as they were, and the old -> new entity IDs as they are now."""
+    report = await async_get_report(hass)
+    if (run := report.runs.get(msg["run_id"])) is None:
+        connection.send_error(msg["id"], "not_found", "no such report")
+        return
+    rows = _stored_rows(hass, run["devices"])
+    totals = await _with_usage(hass, rows)
+    devices = {
+        k: {n: v for n, v in d.items() if n != "entities"} for k, d in run["devices"].items()
+    }
+    connection.send_result(
+        msg["id"],
+        {**_summary(hass, msg["run_id"], run), "rows": rows, "devices": devices, "totals": totals},
+    )
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "enocean_eltako/takeover/report_delete", vol.Required("run_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_takeover_report_delete(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Delete a report: the old -> new mapping of its devices is gone with it."""
+    report = await async_get_report(hass)
+    if report.runs.pop(msg["run_id"], None) is None:
+        connection.send_error(msg["id"], "not_found", "no such report")
+        return
+    await report.async_save()
+    connection.send_result(msg["id"], {})

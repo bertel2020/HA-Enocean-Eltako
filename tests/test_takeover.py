@@ -21,7 +21,7 @@ from custom_components.enocean_eltako.takeover import (
     registered_device,
     subentry_data,
 )
-from custom_components.enocean_eltako.takeover_report import async_get_report
+from custom_components.enocean_eltako.takeover_report import async_get_report, migrate_v1
 from custom_components.enocean_eltako.usage import async_usage
 
 from .test_devices import BASE, _subentry, gateway  # noqa: F401
@@ -308,7 +308,7 @@ async def _ws(hass_ws_client, hass, msg_id: int, type_: str, **fields):
 
 
 async def test_takeover_status(hass: HomeAssistant, gateway, hass_ws_client, old_yaml) -> None:  # noqa: F811
-    nothing = {"available": False, "report": False, "closed": False}
+    nothing = {"available": False, "reports": 0}
     assert (await _ws(hass_ws_client, hass, 1, "status"))["result"] == nothing
     old_yaml["config"] = {"eltako": OLD_CONFIG}
     assert (await _ws(hass_ws_client, hass, 2, "status"))["result"]["available"] is True
@@ -362,9 +362,20 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     old_id = old_light.replace("light.", "sensor.") + "_id"
     # the confirmation: the main entity first, with the IDs the new entities will probably get
     assert devices["FF-C2-4A-8F"]["entities"] == [
-        {"old": old_light, "new": "light.licht_buro"},
+        {
+            "old": old_light,
+            "new": "light.licht_buro",
+            "labels": ["matter_hub"],
+            "icon": "mdi:desk-lamp",
+        },
         {"old": old_id, "new": "sensor.licht_buro_enocean_id"},
     ]
+    # the values behind the options, shown before anything is carried over
+    assert devices["FF-C2-4A-8F"]["details"] == {
+        "area": "Büro",
+        "labels": [],
+        "name": "Schreibtisch",
+    }
     assert devices["FF-C2-4A-8F"]["places"] == []
     assert not devices["05-00-00-12"]["ready"]  # already set up
     assert devices["05-00-00-12"]["reason"] == "takeover_exists"
@@ -451,27 +462,145 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
 
     # the new entities get the old IDs back; the history goes on under them
     report = await async_get_report(hass)
-    (taken,) = report.devices(entry.entry_id).values()  # an old entity of another domain
+    taken = report.devices(entry.entry_id)["FF-C2-4A-8F"]  # an old entity of another domain
     other = {**taken["entities"][0], "old": "binary_sensor.alt", "primary": False}
     taken["entities"].append(other)
     reply = await _ws(hass_ws_client, hass, 10, "restore", entry_id=entry.entry_id)
-    assert reply["result"] == {"restored": 2, "blocked": 0}
+    assert reply["result"] == {"restored": 2, "blocked": 0, "in_use": 0}
     assert registry.async_get(old_light).platform == "enocean_eltako"
     assert registry.async_get(old_id).unique_id.endswith("enocean_id")
     mapping = (await _ws(hass_ws_client, hass, 11, "mapping", entry_id=entry.entry_id))["result"]
     rows = {r["old"]: r for r in mapping["rows"]}
     assert rows[old_light]["restored"] and rows[old_light]["new"] == old_light
     reply = await _ws(hass_ws_client, hass, 12, "restore", entry_id=entry.entry_id)
-    assert reply["result"] == {"restored": 0, "blocked": 0}
+    assert reply["result"] == {"restored": 0, "blocked": 0, "in_use": 0}
 
-    # closed: the view goes, the report stays
+    # nothing left to do: the wizard goes, the report stays
     status = (await _ws(hass_ws_client, hass, 13, "status"))["result"]
-    assert status == {"available": True, "report": True, "closed": False}
-    await _ws(hass_ws_client, hass, 14, "close")
-    status = (await _ws(hass_ws_client, hass, 15, "status"))["result"]
-    assert status == {"available": False, "report": True, "closed": True}
+    assert status == {"available": False, "reports": 1}
     old_yaml["config"] = {"eltako": OLD_CONFIG}  # a device not taken over yet: back again
-    assert (await _ws(hass_ws_client, hass, 16, "status"))["result"]["available"] is True
+    assert (await _ws(hass_ws_client, hass, 14, "status"))["result"]["available"] is True
+    old_yaml["config"] = {}
+
+    # the reports: one per takeover, readable and deletable
+    (summary,) = (await _ws(hass_ws_client, hass, 15, "reports"))["result"]
+    assert summary["gateway"] == entry.title and not summary["manual"]
+    assert summary["carry"] == ["area", "labels"] and summary["devices"] == 4
+    assert summary["entities"] == 3 and summary["restored"] == 2
+    one = (await _ws(hass_ws_client, hass, 16, "report", run_id=summary["id"]))["result"]
+    assert {old_light, old_id} <= {r["old"] for r in one["rows"]}
+    assert one["devices"]["FF-C2-4A-8F"]["old"]["details"]["name"] == "Schreibtisch"
+    assert (await _ws(hass_ws_client, hass, 17, "report", run_id="nope"))["error"]["code"] == (
+        "not_found"
+    )
+    assert "result" in await _ws(hass_ws_client, hass, 18, "report_delete", run_id=summary["id"])
+    assert (await _ws(hass_ws_client, hass, 19, "reports"))["result"] == []
+    assert (await _ws(hass_ws_client, hass, 20, "report_delete", run_id="nope"))["error"]
+
+
+async def test_takeover_strategy_decides_whether_restoring_is_pending(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    old_yaml,
+    hass_ws_client,
+) -> None:
+    entry, _ = gateway
+    report = await async_get_report(hass)
+    registry = er.async_get(hass)
+    new = registry.async_get_or_create("light", "enocean_eltako", "x", suggested_object_id="neu")
+    report.runs["r"] = {
+        "entry_id": entry.entry_id,
+        "at": "2026-10-01T10:00:00+00:00",
+        "manual": False,
+        "carry": [],
+        "devices": {
+            "FF-C2-4A-8F": {
+                "name": "Licht",
+                "old": {"area": None, "labels": []},
+                "entities": [
+                    {
+                        "old": "light.alt",
+                        "new": new.entity_id,
+                        "uid": ["light", "x"],
+                        "primary": True,
+                        "restored": False,
+                    }
+                ],
+            }
+        },
+    }
+    status = (await _ws(hass_ws_client, hass, 1, "status"))["result"]
+    assert status["available"] is False  # no strategy chosen: nothing is waited for
+    reply = await _ws(hass_ws_client, hass, 2, "strategy", entry_id=entry.entry_id, strategy="x")
+    assert reply["error"]["code"] == "invalid_format"
+    await _ws(hass_ws_client, hass, 3, "strategy", entry_id=entry.entry_id, strategy="keep")
+    assert (await _ws(hass_ws_client, hass, 4, "status"))["result"]["available"] is True
+    # a place that uses the new ID: renaming it would break it, so it stays
+    hass.states.async_set("automation.a", "on", {"id": "1"})
+    with patch(
+        "custom_components.enocean_eltako.takeover_report.async_usage",
+        return_value={
+            new.entity_id: {
+                "automation": [{"name": "A"}],
+                "script": [],
+                "scene": [],
+                "dashboard": [],
+            }
+        },
+    ):
+        reply = await _ws(hass_ws_client, hass, 5, "restore", entry_id=entry.entry_id)
+    assert reply["result"] == {"restored": 0, "blocked": 0, "in_use": 1}
+    reply = await _ws(hass_ws_client, hass, 6, "restore", entry_id=entry.entry_id)
+    assert reply["result"] == {"restored": 1, "blocked": 0, "in_use": 0}
+    assert (await _ws(hass_ws_client, hass, 7, "status"))["result"]["available"] is False
+    await _ws(hass_ws_client, hass, 8, "strategy", entry_id=entry.entry_id, strategy="new")
+    assert report.strategy[entry.entry_id] == "new"
+
+
+def test_report_storage_migrates_from_one_snapshot_per_device() -> None:
+    old = {
+        "closed": True,
+        "entries": {
+            "e1": {
+                "FF-00-00-01": {
+                    "name": "A",
+                    "taken_at": "2026-10-01T08:00:00+00:00",
+                    "carried": ["area"],
+                    "old": {},
+                    "entities": [],
+                },
+                "FF-00-00-02": {
+                    "name": "B",
+                    "taken_at": "2026-10-01T09:00:00+00:00",
+                    "carried": ["labels"],
+                    "old": {},
+                    "entities": [],
+                },
+                "FF-00-00-03": {
+                    "name": "C",
+                    "taken_at": "2026-10-05T09:00:00+00:00",
+                    "carried": [],
+                    "old": {},
+                    "entities": [],
+                },
+                "FF-00-00-04": {
+                    "name": "D",
+                    "taken_at": None,
+                    "carried": [],
+                    "old": {},
+                    "entities": [],
+                },
+            }
+        },
+    }
+    runs = sorted(migrate_v1(old)["runs"].values(), key=lambda r: r["at"] or "~")
+    assert [(r["at"] and r["at"][:10], r["manual"], sorted(r["devices"])) for r in runs] == [
+        ("2026-10-01", False, ["FF-00-00-01", "FF-00-00-02"]),
+        ("2026-10-05", False, ["FF-00-00-03"]),
+        (None, True, ["FF-00-00-04"]),
+    ]
+    assert runs[0]["carry"] == ["area", "labels"]
+    assert "taken_at" not in runs[0]["devices"]["FF-00-00-01"]
 
 
 async def test_usage_finds_automations_scenes_and_dashboards(hass: HomeAssistant) -> None:
@@ -619,3 +748,29 @@ async def test_predicted_ids_taken_and_prefixed(hass: HomeAssistant, gateway) ->
     prefixed = SimpleNamespace(options={"entity_prefix": True, "gateway_number": 2})
     predicted = await async_predicted_ids(hass, prefixed, devices, old_entities(hass))
     assert predicted[old_light] == "light.eno_gw2_licht_buro"
+
+
+async def test_takeover_virtual_rocker_is_found_by_its_old_id(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    old_yaml,
+    hass_ws_client,
+) -> None:
+    """A button becomes a virtual rocker under its sender's ID: report and carrying find it."""
+    entry, server = gateway
+    old_yaml["config"] = {"eltako": OLD_CONFIG}
+    old = MockConfigEntry(domain="eltako", state=ConfigEntryState.LOADED)
+    old.add_to_hass(hass)
+    _old_device(hass, old, "Knopf", "FF-C2-4A-96", "Flur")
+    reply = await _ws(
+        hass_ws_client, hass, 1, "run", entry_id=entry.entry_id, devices=["FF-C2-4A-96"], carry=[]
+    )
+    assert reply["result"]["count"] == 1
+    await server.connected.wait()
+    mapping = (await _ws(hass_ws_client, hass, 2, "mapping", entry_id=entry.entry_id))["result"]
+    assert mapping["devices"]["FF-C2-4A-96"]["old"]["area"] == "Flur"
+    assert {r["id"] for r in mapping["rows"]} == {"FF-C2-4A-96"}
+    assert all(r["taken"] for r in mapping["rows"])
+    assert mapping["missing"]["FF-C2-4A-96"] == ["area"]  # found, and still to carry over
+    reply = await _ws(hass_ws_client, hass, 3, "carry", entry_id=entry.entry_id, carry=["area"])
+    assert reply["result"] == {"carried": 1}
