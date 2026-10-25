@@ -522,7 +522,7 @@ export const takeover = {
       const entities = chosen.reduce((n, d) => n + (d.entities || []).length, 0);
       const places = new Set(chosen.flatMap((d) => d.places || [])).size;
       const shown = chosen
-        .filter((d) => this._tkMatches(d.name, d.id, d.area, d.old, ...(d.entities || []).flatMap((e) => [e.old, e.new])))
+        .filter((d) => this._tkMatches(d.name, d.id, d.area, d.old, ...(d.labels || []), ...(d.details?.labels || []), ...(d.entities || []).flatMap((e) => [e.old, e.new, e.name, ...(e.labels || [])])))
         .sort((x, y) => x.name.localeCompare(y.name));
       const all = chosen.every((d) => tk.open.has(d.id));
       preview = `<div class="section"><h3>${esc(t.tkPreview)} <span class="sub">· ${esc(t.tkPreviewSum(chosen.length, entities, places))}</span></h3>
@@ -674,7 +674,7 @@ export const takeover = {
     const blocks = this._tkBlocks(run.rows);
     const q = tk.q.trim();
     const html = [...blocks.entries()]
-      .filter(([, items]) => items.some((r) => this._tkMatches(r.device, r.id, r.old, r.new, r.area)))
+      .filter(([id, items]) => items.some((r) => this._tkMatches(r.device, r.id, r.old, r.new, r.area, ...(run.devices[id]?.old?.details?.labels || run.devices[id]?.old?.labels || []))))
       .map(([id, items]) => {
         const open = tk.openRun.has(id) || !!q;
         const device = run.devices[id];
