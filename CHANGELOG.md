@@ -10,6 +10,8 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Signal curve** in the device view takes the colour of the last value, ends in a dot and shows the weak-signal line (-85 dBm).
+- **Search** shows the `/` shortcut as a small key in the field instead of a tooltip over the whole label; the column headers lose their sort tooltip (the sort state stays in the arrow and for screen readers).
 - **Telegram list** can hide an unknown sender from discovery with one click (button in the opened row). It is shown again under Configure → Hidden senders.
 - **Could be** (profile candidates of an unknown sender) now sits below the value and lists two profiles plus "+n" (all of them in the tooltip), in the telegram list and the device view.
 - **Sender IDs** show the number counted from the base ID (1 to 127) instead of the decimal ID, in the list and on the map.
@@ -509,6 +511,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Signalkurve** in der Geräteansicht übernimmt die Farbe des letzten Werts, endet in einem Punkt und zeigt die Linie für schwaches Signal (-85 dBm).
+- **Suche** zeigt das Kürzel `/` als kleine Taste im Feld statt als Tooltip über dem ganzen Label; die Spaltenköpfe verlieren den Sortier-Tooltip (der Sortierzustand bleibt im Pfeil und für Screenreader erhalten).
 - **Telegrammliste** kann einen unbekannten Sender mit einem Klick aus der Discovery ausblenden (Button in der aufgeklappten Zeile). Wieder anzeigen unter Konfigurieren → Ausgeblendete Sender.
 - **Könnte sein** (Profil-Vorschläge für unbekannte Sender) steht jetzt unter dem Wert und zeigt zwei Profile plus „+n“ (alle im Tooltip), in der Telegrammliste und der Geräteansicht.
 - **Sender-IDs** zeigen statt der Dezimal-ID die Nummer ab der Basis-ID (1 bis 127), in der Liste und auf der Karte.
