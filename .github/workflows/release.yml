@@ -47,11 +47,9 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           version="$VERSION"
-          # the section of this version in each language, without its heading
+          # the section of this version (English and German part), without its heading
           awk -v v="$version" '
-            /^## /      { lang = $0; sub(/^## /, "", lang) }
-            /^### \[/   { on = index($0, "[" v "]") > 0; if (on) print "## " lang; next }
-            /^## /      { on = 0 }
+            /^### \[/   { on = index($0, "[" v "]") > 0; next }
             on          { print }
           ' CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then
