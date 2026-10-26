@@ -10,6 +10,7 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Devices** show the status chips, the search and the filters in one row.
 - **Sender IDs** show the status chips, the search and the sorting in one row.
 - **Telegram list** puts a small dot before the sender: filled for known devices, hollow for unknown ones.
 - **Signal bars** in the telegram list and the device view are coloured by strength: green, amber or red.
@@ -505,6 +506,7 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Geräte** zeigen Status-Chips, Suche und Filter in einer Zeile.
 - **Sender-IDs** zeigen Status-Chips, Suche und Sortierung in einer Zeile.
 - **Telegrammliste** setzt einen kleinen Punkt vor den Sender: gefüllt für bekannte Geräte, hohl für unbekannte.
 - **Signalbalken** in der Telegrammliste und der Geräteansicht sind nach Stärke eingefärbt: grün, gelb oder rot.
