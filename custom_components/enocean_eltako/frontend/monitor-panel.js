@@ -490,7 +490,7 @@ const STYLE = `
   }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 2.4fr) 150px auto; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 1.2fr) minmax(250px, 1.2fr) auto; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -543,7 +543,7 @@ const STYLE = `
   .spark .weak { stroke: var(--line); stroke-dasharray: 2 2; }
   .spark.ok { color: var(--ok); } .spark.warn { color: var(--warn); } .spark.bad { color: var(--bad); }
   .spark circle { fill: currentColor; }
-  .spark polyline { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+  .spark polyline { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
@@ -3013,7 +3013,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     // the signal of the last telegrams as a small curve; the band is fixed (-100 to -30 dBm),
     // so curves of different senders compare
     if (dbm.length < 2) return "";
-    const [w, h] = [72, 18];
+    const [w, h] = [150, 34];
     const y = (v) => (h - 2 - ((Math.min(-30, Math.max(-100, v)) + 100) / 70) * (h - 4)).toFixed(1);
     const points = dbm.map((v, i) => `${((i / (dbm.length - 1)) * w).toFixed(1)},${y(v)}`).join(" ");
     const title = this._t.trend(dbm.length, Math.min(...dbm), Math.max(...dbm));
@@ -3021,7 +3021,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const last = dbm[dbm.length - 1];
     const tone = last >= -80 ? "ok" : last >= -90 ? "warn" : "bad";
     const end = points.slice(points.lastIndexOf(" ") + 1).split(",");
-    return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><line class="weak" x1="0" x2="${w}" y1="${y(WEAK_DBM)}" y2="${y(WEAK_DBM)}"/><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="2"/></svg>`;
+    return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><line class="weak" x1="0" x2="${w}" y1="${y(WEAK_DBM)}" y2="${y(WEAK_DBM)}"/><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="3"/></svg>`;
   }
 
   _deviceRow(d, now) {
