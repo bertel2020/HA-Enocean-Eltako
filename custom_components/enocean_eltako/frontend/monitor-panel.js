@@ -2348,12 +2348,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     const q = f.text.trim().toLowerCase();
     const qId = /^[0-9a-f\s-]+$/.test(q) ? q.replace(/[\s-]/g, "") : "";
     const isBlocked = (r) => r.state === "blocked";
+    const nr = (r) => r.decimal - pool.first + 1; // the number counted from the base ID: first ID = 1
     // a device name or profile finds all its IDs, an ID or decimal only itself
     const matches = (r) =>
       (!q ||
         (r.device || t.deletedDevice).toLowerCase().includes(q) ||
         (qId && r.id.replace(/-/g, "").toLowerCase().includes(qId)) ||
-        String(r.decimal).includes(q) ||
+        String(nr(r)).includes(q) || String(r.decimal).includes(q) ||
         (r.profile && (r.profile.toLowerCase().includes(q) || this._profile(r.profile).toLowerCase().includes(q)))) &&
       (!f.state || r.state === f.state);
     const groups = new Map();
@@ -2384,7 +2385,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           : `<span class="sid-name deleted" title="${esc(g.ref || "")}">${esc(t.deletedDevice)}</span>`;
         const rows = g.rows
           .map((r) => `<div class="sid-row${isBlocked(r) ? " blocked" : ""}" data-key="${esc(r.id)}">
-            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-dec mono" title="${esc(t.colDecimal)}">${esc(r.decimal)}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
+            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-dec mono" title="${esc(t.colNumber)}">${esc(nr(r))}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
             <span class="sid-state"><span class="tag ${isBlocked(r) ? "warn" : "ok"}">${esc(isBlocked(r) ? t.stateBlocked : t.stateAssigned)}</span></span>
             <span class="act">${isBlocked(r) ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</span>
           </div>`)
@@ -2412,9 +2413,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       const state = r ? r.state : away.has(n) ? "unavailable" : "free";
       const label = { assigned: t.stateAssigned, blocked: t.stateBlocked, unavailable: t.stateUnavailable, free: t.stateFree }[state];
       const who = r?.device ? ` · ${r.device}` : "";
-      const text = `${hex} (${n}) · ${label}${who}`;
+      const text = `${hex} (${i + 1}) · ${label}${who}`;
       const chosen = this._poolSel === hex;
-      if (chosen) readout = `<span class="mono"><b>${esc(hex)}</b></span><span>${n}</span><span>${esc(label)}</span>${r?.device ? `<span><b>${esc(r.device)}</b>${r.profile ? ` · ${esc(this._profile(r.profile))}` : ""}</span>` : ""}`;
+      if (chosen) readout = `<span class="mono"><b>${esc(hex)}</b></span><span>${i + 1}</span><span>${esc(label)}</span>${r?.device ? `<span><b>${esc(r.device)}</b>${r.profile ? ` · ${esc(this._profile(r.profile))}` : ""}</span>` : ""}`;
       // a label starts every row: its range, every 32 IDs (16 on phones, which break in between)
       const range = (len) => `${lastByte(n)}–${lastByte(Math.min(n + len - 1, lastId))}`;
       const row = i % 16 ? "" : `<span class="row-id${i % 32 ? " half" : ""}" aria-hidden="true" title="${esc(hex)}">${i % 32 ? "" : `<span class="lf">${range(32)}</span>`}<span class="lh">${range(16)}</span></span>`;
@@ -2463,7 +2464,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const none = pool.rows.length
       ? this._emptyState(ICON.search, t.sidNoMatch, "", `<button class="chip" data-sid-reset>${esc(t.resetFilters)}</button>`, true)
       : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true);
-    this._replace($("sidList"), `${confirmAll}${list.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colDecimal)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : none}`);
+    this._replace($("sidList"), `${confirmAll}${list.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colNumber)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : none}`);
   }
 
   _sendersClick(e) {
