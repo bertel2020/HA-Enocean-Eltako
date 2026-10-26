@@ -212,6 +212,10 @@ const STYLE = `
     font-size: 14px; color: var(--text); }
   .search input::placeholder { color: var(--muted); }
   .search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
+  .search .key { flex: none; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border: 1px solid var(--input-line); border-radius: 5px;
+    font: 12px/18px var(--code-font-family, ui-monospace, monospace); color: var(--muted); text-align: center; }
+  .search:focus-within .key, .search:has(input:not(:placeholder-shown)) .key { display: none; }
+  @media (hover: none) { .search .key { display: none; } }
   .search .icon-btn { width: 30px; height: 30px; }
   .search .icon-btn svg { width: 18px; height: 18px; }
   .segmented { display: inline-flex; border: 1px solid var(--input-line); border-radius: 10px; overflow: hidden; }
@@ -522,7 +526,10 @@ const STYLE = `
   .dev-detail input.mini { margin-top: 4px; width: 100%; border: 1px solid var(--input-line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
   .devices .dev.quiet .name { color: var(--muted); }
   .spark { display: block; }
-  .spark polyline { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+  .spark .weak { stroke: var(--line); stroke-dasharray: 2 2; }
+  .spark.ok { color: var(--ok); } .spark.warn { color: var(--warn); } .spark.bad { color: var(--bad); }
+  .spark circle { fill: currentColor; }
+  .spark polyline { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
@@ -941,9 +948,10 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div class="statusrow dev-only list-only" id="devStatus" role="group" aria-label="${esc(t.filterStatus)}">${Object.entries(t.devStatus)
               .map(([key, label]) => `<button class="chip" data-status="${key}" aria-pressed="false">${esc(label)}</button>`)
               .join("")}</div>
-            <label class="search" title="${esc(t.searchKey)}">
+            <label class="search">
               ${svg(ICON.search)}
-              <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off">
+              <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off" aria-keyshortcuts="/">
+              <kbd class="key" title="${esc(t.searchKey)}" aria-hidden="true">/</kbd>
               <button class="icon-btn" id="clearText" aria-label="${esc(t.clearSearch)}" title="${esc(t.clearSearch)}" hidden>${svg(ICON.close)}</button>
             </label>
             <div class="segmented tg-only" role="group" id="dir">
@@ -2066,7 +2074,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         if (!sort) return `<th scope="col"><span>${esc(label)}</span></th>`;
         const active = this._sort.key === sort;
         const state = active ? ` aria-sort="${this._sort.desc ? "descending" : "ascending"}"` : "";
-        return `<th scope="col"${state}><button data-sort="${sort}" title="${esc(t.sortHint)}" aria-label="${esc(aria || label)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></th>`;
+        return `<th scope="col"${state}><button data-sort="${sort}" aria-label="${esc(aria || label)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></th>`;
       })
       .join("")}</tr>`;
     if (focused) $("thead").querySelector(`[data-sort="${focused}"]`)?.focus({ preventScroll: true });
@@ -2712,7 +2720,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       .map(([key, label, cls]) => {
         if (!DEV_SORTERS[key]) return `<span>${esc(label)}</span>`;
         const state = this._devSort.key === key ? ` aria-sort="${this._devSort.desc ? "descending" : "ascending"}"` : "";
-        return `<span class="${cls || ""}"><button data-dsort="${key}"${state} title="${esc(t.sortHint)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></span>`;
+        return `<span class="${cls || ""}"><button data-dsort="${key}"${state} aria-label="${esc(`${t.sortHint}: ${label}`)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></span>`;
       })
       .join("")}<span></span></div>`;
     this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
@@ -2984,7 +2992,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     const y = (v) => (h - 2 - ((Math.min(-30, Math.max(-100, v)) + 100) / 70) * (h - 4)).toFixed(1);
     const points = dbm.map((v, i) => `${((i / (dbm.length - 1)) * w).toFixed(1)},${y(v)}`).join(" ");
     const title = this._t.trend(dbm.length, Math.min(...dbm), Math.max(...dbm));
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><polyline points="${points}"/></svg>`;
+    // the colour follows the last value like the bars; the dashed line is the "weak" threshold
+    const last = dbm[dbm.length - 1];
+    const tone = last >= -80 ? "ok" : last >= -90 ? "warn" : "bad";
+    const end = points.slice(points.lastIndexOf(" ") + 1).split(",");
+    return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><line class="weak" x1="0" x2="${w}" y1="${y(WEAK_DBM)}" y2="${y(WEAK_DBM)}"/><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="2"/></svg>`;
   }
 
   _deviceRow(d, now) {
