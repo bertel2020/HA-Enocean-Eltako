@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in English and German: 
 has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
-### [Unreleased]
+### [1.3.0] - 2026-10-26
 
 **English**
 
