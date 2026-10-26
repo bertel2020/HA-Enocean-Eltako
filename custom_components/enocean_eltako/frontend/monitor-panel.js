@@ -241,6 +241,7 @@ const STYLE = `
   .filters:has(+ .statusrow) { border-bottom: 0; }
   .filters[hidden], .statusrow[hidden] { display: none; }
   .statusrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
+  .filters > .statusrow { padding: 0; border: 0; }
   .statusrow .chip { min-height: 32px; color: var(--text); }
   .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); }
   /* the filter menu */
@@ -974,17 +975,17 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="senders" id="senders">
             <div id="sidTop"></div>
             <div class="filters" id="sidTools" hidden>
+              <div class="statusrow" id="sidState" role="group" aria-label="${esc(t.colStatus)}">
+                <button class="chip" data-sid-state="" aria-pressed="true">${esc(t.dirAll)}</button>
+                <button class="chip" data-sid-state="assigned" aria-pressed="false">${esc(t.poolAssigned)} <b class="count"></b></button>
+                <button class="chip" data-sid-state="blocked" aria-pressed="false">${esc(t.poolBlocked)} <b class="count"></b></button>
+              </div>
               <label class="search">
                 ${svg(ICON.search)}
                 <input id="sidText" type="search" placeholder="${esc(t.sidSearch)}" aria-label="${esc(t.sidSearch)}" autocomplete="off">
               </label>
               <select class="select" id="sidSort" aria-label="${esc(t.sortLabel)}"><option value="state">${esc(t.sidSortState)}</option><option value="name">${esc(t.devCols.name)}</option><option value="id">${esc(t.colId)}</option></select>
               <button class="chip" id="sidFreeAll" hidden></button>
-            </div>
-            <div class="statusrow" id="sidState" role="group" aria-label="${esc(t.colStatus)}">
-              <button class="chip" data-sid-state="" aria-pressed="true">${esc(t.dirAll)}</button>
-              <button class="chip" data-sid-state="assigned" aria-pressed="false">${esc(t.poolAssigned)} <b class="count"></b></button>
-              <button class="chip" data-sid-state="blocked" aria-pressed="false">${esc(t.poolBlocked)} <b class="count"></b></button>
             </div>
             <div id="sidList"></div>
           </div>
