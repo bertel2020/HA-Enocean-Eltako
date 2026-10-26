@@ -928,6 +928,9 @@ class EnOceanEltakoPanel extends HTMLElement {
             </span>
           </div>
           <div class="filters list-only">
+            <div class="statusrow dev-only list-only" id="devStatus" role="group" aria-label="${esc(t.filterStatus)}">${Object.entries(t.devStatus)
+              .map(([key, label]) => `<button class="chip" data-status="${key}" aria-pressed="false">${esc(label)}</button>`)
+              .join("")}</div>
             <label class="search" title="${esc(t.searchKey)}">
               ${svg(ICON.search)}
               <input id="text" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" autocomplete="off">
@@ -944,9 +947,6 @@ class EnOceanEltakoPanel extends HTMLElement {
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
             <select class="select m-only dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}"></select>
           </div>
-          <div class="statusrow dev-only list-only" id="devStatus" role="group" aria-label="${esc(t.filterStatus)}">${Object.entries(t.devStatus)
-            .map(([key, label]) => `<button class="chip" data-status="${key}" aria-pressed="false">${esc(label)}</button>`)
-            .join("")}</div>
           <div class="filtermenu list-only" id="filterMenu" role="group" aria-label="${esc(t.filters)}" hidden>
             <label class="field" id="gatewayRow" hidden><span>${esc(t.gateway)}</span><select class="select" id="gatewayFilter"></select></label>
             <label class="field tg-only"><span>${esc(t.type)}</span><select class="select" id="typeFilter"></select></label>
