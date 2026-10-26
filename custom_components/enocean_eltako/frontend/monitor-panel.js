@@ -634,6 +634,15 @@ const STYLE = `
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 `;
 
+// the profile candidates of an unknown sender: the first two, the rest as "+n" (all in the tooltip)
+const MAYBE_SHOWN = 2;
+function maybeTag(t, candidates) {
+  if (!candidates?.length) return "";
+  const shown = candidates.slice(0, MAYBE_SHOWN).join(", ");
+  const more = candidates.length > MAYBE_SHOWN ? ` +${candidates.length - MAYBE_SHOWN}` : "";
+  return `<div class="maybe"><span class="tag" title="${esc(`${t.maybeHint}: ${candidates.join(", ")}`)}">${esc(t.maybe)} ${esc(shown)}${more}</span></div>`;
+}
+
 function bars(dbm) {
   if (dbm == null) return "";
   dbm = Number(dbm);
@@ -1609,6 +1618,12 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _listClick(e) {
+    const hide = e.target.closest("[data-hide]");
+    if (hide) {
+      e.stopPropagation();
+      this._hideSender(hide.dataset.gateway, hide.dataset.hide);
+      return;
+    }
     const add = e.target.closest(".add");
     if (add) {
       e.stopPropagation();
@@ -1663,6 +1678,19 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._renderCards();
     this._renderFilters();
     this._render();
+  }
+
+  async _hideSender(gateway, sender) {
+    this._notice("");
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/hide_sender", entry_id: gateway, sender });
+    } catch (err) {
+      this._notice(this._t.hideResult[err.code] || this._t.hideResult.failed);
+      return;
+    }
+    await this._refreshStatus();
+    this._render();
+    this._notice(this._t.hideResult.done(sender), true);
   }
 
   async _addDevice(sender) {
@@ -2225,7 +2253,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const tags = (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra = r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "";
-    const maybe = r.candidates ? `<div class="maybe"><span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span></div>` : "";
+    const maybe = maybeTag(t, r.candidates);
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
     const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
@@ -2262,7 +2290,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : r.models?.length ? `<div class="wide"><dt>${esc(t.models)}</dt><dd>${esc(r.models.join(", "))}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.device_key && this._inPanel(r.device_key) ? `<button class="chip" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}">${svg(ICON.list)}${esc(t.inPanel)}</button>` : ""}${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button>` : ""}${
+          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.device_key && this._inPanel(r.device_key) ? `<button class="chip" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}">${svg(ICON.list)}${esc(t.inPanel)}</button>` : ""}${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button><button class="chip" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}">${svg(ICON.close)}${esc(t.hideSender)}</button>` : ""}${
             this._canResend(r) ? `<button class="chip" data-resend="${esc(key)}" title="${esc(t.resendHint)}">${svg(ICON.send)}${esc(t.resend)}</button>` : ""
           }</div>
         </dl></td></tr>`
@@ -2979,7 +3007,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
         (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
       : (d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "") + (d.disabled ? `<span class="tag">${esc(t.selDisabledTag)}</span>` : "");
-    const maybe = d.unknown && d.candidates ? `<div class="maybe"><span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span></div>` : "";
+    const maybe = d.unknown ? maybeTag(t, d.candidates) : "";
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const stats = d.quiet

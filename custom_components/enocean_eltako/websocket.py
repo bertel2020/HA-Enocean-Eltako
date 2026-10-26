@@ -34,6 +34,7 @@ from .const import (
     DOMAIN,
 )
 from .device import UTE_WINDOW
+from .discovery import async_set_hidden
 from .hub import async_get_hub
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
@@ -63,6 +64,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_device_details)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
+    websocket_api.async_register_command(hass, ws_hide_sender)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     websocket_api.async_register_command(hass, ws_free_senders)
@@ -634,6 +636,40 @@ async def ws_remove_devices(
     finally:
         await hass.config_entries.async_reload(entry.entry_id)
     connection.send_result(msg["id"], {"removed": len(keys)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/hide_sender",
+        vol.Required("entry_id"): str,
+        vol.Required("sender"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_hide_sender(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel telegram list: hide an unknown sender from this gateway's discovery.
+
+    Shown again under Configure -> Hidden senders. A sender of a set-up device is refused.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    try:
+        sender = parse_id(msg["sender"])
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    runtime = entry.runtime_data
+    if any(device.device_id == sender for device in runtime.devices.values()):
+        connection.send_error(msg["id"], "known_device", "this sender is a set-up device")
+        return
+    hidden = runtime.hub.hidden.get(entry.entry_id, set())
+    await async_set_hidden(hass, entry, {*hidden, sender})
+    connection.send_result(msg["id"])
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:

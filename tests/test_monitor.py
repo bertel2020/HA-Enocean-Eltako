@@ -729,3 +729,63 @@ async def test_websocket_remove_devices(hass: HomeAssistant, hass_ws_client) -> 
     assert pool.get(parse_id("FF-B7-44-81")).state is SenderState.BLOCKED
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_websocket_hide_sender(hass: HomeAssistant, hass_ws_client) -> None:
+    """The telegram list hides an unknown sender from discovery; a set-up device is refused."""
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={"schema": 4, "model": "weather", "device_id": "FF-85-EF-81"},
+                subentry_type="device",
+                title="Wetter",
+                unique_id="FF-85-EF-81",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+
+    async def hide(msg_id: int, sender: str, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/hide_sender",
+                "entry_id": entry_id or entry.entry_id,
+                "sender": sender,
+            }
+        )
+        return await client.receive_json()
+
+    for msg_id, sender, entry_id, code in (
+        (1, "01-90-8C-14", "nope", "not_found"),
+        (2, "nope", None, "invalid_id"),
+        (3, "FF-85-EF-81", None, "known_device"),
+    ):
+        reply = await hide(msg_id, sender, entry_id)
+        assert not reply["success"] and reply["error"]["code"] == code
+    hidden = entry.runtime_data.hub.hidden
+    assert not hidden.get(entry.entry_id)  # a refused request hides nothing
+
+    assert (await hide(4, "01-90-8C-14"))["success"]
+    assert (await hide(5, "00-00-05-20"))["success"]
+    assert hidden[entry.entry_id] == {0x01908C14, 0x00000520}
+    await client.send_json({"id": 6, "type": "enocean_eltako/gateways"})
+    (status,) = (await client.receive_json())["result"]
+    assert status["hidden"] == ["00-00-05-20", "01-90-8C-14"]
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
