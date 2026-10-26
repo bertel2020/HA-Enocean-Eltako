@@ -10,6 +10,7 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Sender IDs** show the number counted from the base ID (1 to 127) instead of the decimal ID, in the list and on the map.
 - **Devices** show the status chips, the search and the filters in one row.
 - **Sender IDs** show the status chips, the search and the sorting in one row.
 - **Telegram list** puts a small dot before the sender: filled for known devices, hollow for unknown ones.
@@ -506,6 +507,7 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Sender-IDs** zeigen statt der Dezimal-ID die Nummer ab der Basis-ID (1 bis 127), in der Liste und auf der Karte.
 - **Geräte** zeigen Status-Chips, Suche und Filter in einer Zeile.
 - **Sender-IDs** zeigen Status-Chips, Suche und Sortierung in einer Zeile.
 - **Telegrammliste** setzt einen kleinen Punkt vor den Sender: gefüllt für bekannte Geräte, hohl für unbekannte.
