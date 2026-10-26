@@ -480,7 +480,7 @@ const STYLE = `
   }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: 28px minmax(170px, 2fr) 96px minmax(64px, 1fr) 76px minmax(0, 1.6fr) 140px auto; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 2.4fr) 150px auto; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -497,6 +497,10 @@ const STYLE = `
   .devices .dev .acts .icon-btn { width: 36px; height: 36px; }
   .devices .dev .acts .icon-btn svg { width: 18px; height: 18px; }
   .devices .dev .acts .chip { height: 32px; padding: 0 12px; margin-left: 4px; }
+  /* "add" is the one action of an unknown sender: a round filled button, its name is the tooltip */
+  .devices .dev .acts .chip.add { width: 32px; padding: 0; border-radius: 50%; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .devices .dev .acts .chip.add:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
+  .devices .dev .acts .chip.add .lbl { display: none; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev .ident { min-width: 0; }
   .devices .dev .c-area, .devices .dev .c-ent { font-size: 13px; overflow-wrap: anywhere; }
@@ -547,7 +551,6 @@ const STYLE = `
     .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
     .devices .dev .values { grid-column: 2; grid-row: 2; }
-    /* phones: "add" shrinks to its icon, next to the values */
     .devices .dev .acts { grid-column: 3; grid-row: 2; flex-wrap: nowrap; }
     .devices .dev .acts .chip { width: 32px; padding: 0; }
     .devices .dev .acts .lbl { display: none; }

@@ -10,6 +10,7 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Devices** list: wider values column, narrower area and entity columns, and "Add device" is a round filled plus button (its name stays as the tooltip).
 - **Signal curve** in the device view takes the colour of the last value, ends in a dot and shows the weak-signal line (-85 dBm).
 - **Search** shows the `/` shortcut as a small key in the field instead of a tooltip over the whole label; the column headers lose their sort tooltip (the sort state stays in the arrow and for screen readers).
 - **Telegram list** can hide an unknown sender from discovery with one click (button in the opened row). It is shown again under Configure → Hidden senders.
@@ -511,6 +512,7 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Geräteliste**: breitere Spalte für die Werte, schmalere für Bereich und Entitäten, und „Gerät hinzufügen“ ist ein runder, gefüllter Plus-Button (der Name bleibt als Tooltip).
 - **Signalkurve** in der Geräteansicht übernimmt die Farbe des letzten Werts, endet in einem Punkt und zeigt die Linie für schwaches Signal (-85 dBm).
 - **Suche** zeigt das Kürzel `/` als kleine Taste im Feld statt als Tooltip über dem ganzen Label; die Spaltenköpfe verlieren den Sortier-Tooltip (der Sortierzustand bleibt im Pfeil und für Screenreader erhalten).
 - **Telegrammliste** kann einen unbekannten Sender mit einem Klick aus der Discovery ausblenden (Button in der aufgeklappten Zeile). Wieder anzeigen unter Konfigurieren → Ausgeblendete Sender.
