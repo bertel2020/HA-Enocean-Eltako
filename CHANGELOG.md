@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to this project are documented here, in English and German
-(Deutsche Fassung weiter unten: [Deutsch](#deutsch)). The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-
-## English
+All notable changes to this project are documented here, in English and German: every release
+has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
 ### [Unreleased]
+
+**English**
 
 #### Changed
 
@@ -24,7 +24,27 @@ All notable changes to this project are documented here, in English and German
 - **Telegram list** tints sent telegrams slightly and marks them with an accent bar, so they stand out from received ones.
 - **Takeover search** also finds labels, in the review preview (device and entities) and in the reports.
 
+**Deutsch**
+
+#### Geändert
+
+- **Telegramm-Details** zeigen zuerst die Daten, darunter das vorherige Telegramm, die geänderten Bytes sind in beiden markiert (dazu eine Zeile wie „Byte 3 geändert: 44 → 49“). Die Metadaten stehen in zwei Zeilen, das Signal entfällt (es steht in der Zeile), und die Aktionen sind Icon-Buttons.
+- **Geräteliste**: breitere Spalte für die Werte, schmalere für Bereich und Entitäten, und „Gerät hinzufügen“ ist ein runder, gefüllter Plus-Button (der Name bleibt als Tooltip).
+- **Signalkurve** in der Geräteansicht übernimmt die Farbe des letzten Werts, endet in einem Punkt und zeigt die Linie für schwaches Signal (-85 dBm).
+- **Suche** zeigt das Kürzel `/` als kleine Taste im Feld statt als Tooltip über dem ganzen Label; die Spaltenköpfe verlieren den Sortier-Tooltip (der Sortierzustand bleibt im Pfeil und für Screenreader erhalten).
+- **Telegrammliste** kann einen unbekannten Sender mit einem Klick aus der Discovery ausblenden (Button in der aufgeklappten Zeile). Wieder anzeigen unter Konfigurieren → Ausgeblendete Sender.
+- **Könnte sein** (Profil-Vorschläge für unbekannte Sender) steht jetzt unter dem Wert und zeigt zwei Profile plus „+n“ (alle im Tooltip), in der Telegrammliste und der Geräteansicht.
+- **Sender-IDs** zeigen statt der Dezimal-ID die Nummer ab der Basis-ID (1 bis 127), in der Liste und auf der Karte.
+- **Geräte** zeigen Status-Chips, Suche und Filter in einer Zeile.
+- **Sender-IDs** zeigen Status-Chips, Suche und Sortierung in einer Zeile.
+- **Telegrammliste** setzt einen kleinen Punkt vor den Sender: gefüllt für bekannte Geräte, hohl für unbekannte.
+- **Signalbalken** in der Telegrammliste und der Geräteansicht sind nach Stärke eingefärbt: grün, gelb oder rot.
+- **Telegrammliste** hinterlegt gesendete Telegramme leicht farbig und markiert sie mit einem Akzentbalken, damit sie sich von empfangenen abheben.
+- **Suche in der Übernahme** findet jetzt auch Labels, in der Vorschau der Prüfung (Gerät und Entitäten) und in den Berichten.
+
 ### [1.2.0] - 2026-10-24
+
+**English**
 
 #### Changed
 
@@ -45,14 +65,48 @@ All notable changes to this project are documented here, in English and German
 - **Virtual rockers** (old buttons) get a report entry and are completed by "Devices already set up".
 - A device taken over after its old entities are gone still gets a report.
 
+**Deutsch**
+
+#### Geändert
+
+- **Übernahme in drei Schritten statt vier:** Auswählen, Prüfen & übernehmen, Alte Integration ablösen. Die bisherigen
+  Schritte „Umstellen“ und „Aufräumen“ entfallen, ebenso **Übernahme abschließen**.
+- **Prüfen zeigt, was mitkommt:** zu jeder angehakten Option listet die Vorschau je Gerät die tatsächlichen Werte
+  (Bereich, Labels, Namen, Symbole, ausgeblendet/deaktiviert, Sprachsteuerung), auch je Entität. Schon eingerichtete
+  Geräte werden im selben Schritt ergänzt.
+- **Alte Integration ablösen:** zuerst wählst du, wie die alten Entity-IDs behandelt werden: behalten (alte Integration
+  löschen, den neuen Entitäten die alten IDs zurückgeben, `eltako:` entfernen) oder die neuen verwenden (Fundstellen mit
+  alten IDs umstellen, löschen, entfernen). Die Schritte ergeben sich aus der Wahl.
+- **Berichte:** ein Bericht je Übernahme, jederzeit unter **Berichte** in der Ansicht Übernahme erreichbar, zu öffnen und
+  zu löschen. Die bisherigen Berichte werden migriert (einer je Gateway und Tag).
+
+#### Behoben
+
+- **Alte IDs wiederherstellen** benennt keine neue ID mehr um, die eine Automation, ein Skript, eine Szene oder ein
+  Dashboard schon nutzt.
+- **Virtuelle Taster** (alte Buttons) bekommen einen Berichtseintrag und werden von „Schon eingerichtete Geräte“
+  ergänzt.
+- Ein Gerät, das übernommen wird, nachdem die alten Entitäten weg sind, bekommt trotzdem einen Bericht.
+
 ### [1.1.1] - 2026-10-24
+
+**English**
 
 #### Changed
 
 - **Discovery card:** the dialog names how many senders were heard by type (for example "15 sensors (A5), 9 rockers
   (F6)") and links to the gateway, instead of listing ten IDs.
 
+**Deutsch**
+
+#### Geändert
+
+- **Entdeckt-Karte:** Der Dialog nennt, wie viele Sender nach Typ gehört wurden (zum Beispiel „15 Sensoren (A5), 9 Taster
+  (F6)“), und verlinkt aufs Gateway, statt zehn IDs aufzulisten.
+
 ### [1.1.0] - 2026-10-23
+
+**English**
 
 #### Changed
 
@@ -60,21 +114,49 @@ All notable changes to this project are documented here, in English and German
   Discovered (with the number of senders) instead of a notification. The card lists them and points to **Add device →
   Discovered devices** of the gateway; it goes away when there is nothing left to discover.
 
+**Deutsch**
+
+#### Geändert
+
+- **Entdeckte Geräte:** Ein Gateway, das unbekannte Sender gehört hat, zeigt eine Karte unter Einstellungen → Geräte &
+  Dienste → Entdeckt (mit der Anzahl der Sender) statt einer Benachrichtigung. Die Karte listet sie auf und weist auf
+  **Gerät hinzufügen → Entdeckte Geräte** am Gateway hin; sie verschwindet, wenn nichts mehr zu entdecken ist.
+
 ### [1.0.2] - 2026-10-23
+
+**English**
 
 #### Fixed
 
 - **PioTek MGW-ETH behind the Device Proxy:** the gateway is no longer offered again as discovered on its own address
   once an MGW-ETH is set up through the app (it serves one connection only, the app holds it).
 
+**Deutsch**
+
+#### Behoben
+
+- **PioTek MGW-ETH hinter dem Device Proxy:** Das Gateway wird nicht mehr unter seiner eigenen Adresse als entdeckt
+  angeboten, sobald ein MGW-ETH über die App eingerichtet ist (es bedient nur eine Verbindung, die hält die App).
+
 ### [1.0.1] - 2026-10-23
+
+**English**
 
 #### Fixed
 
 - **Device Proxy, base ID:** when the gateway behind the app does not answer the base ID read while it is set up, the
   integration takes the base ID from the app's status instead of asking for it.
 
+**Deutsch**
+
+#### Behoben
+
+- **Device Proxy, Base-ID:** Antwortet das Gateway hinter der App beim Einrichten nicht auf das Lesen der Base-ID, nimmt die
+  Integration sie aus dem Status der App, statt danach zu fragen.
+
 ### [1.0.0] - 2026-10-23
+
+**English**
 
 #### Added
 
@@ -99,7 +181,35 @@ All notable changes to this project are documented here, in English and German
 - **Device Proxy replay, rockers:** replayed rocker presses fire no rocker events. Gestures are timed live, so a replayed
   press became a short press (or two a double press) at the restart and ran automations with a press from minutes ago.
 
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Ansicht Sender-IDs:** eine Suche (Gerätename, Profil, ID mit oder ohne Bindestriche, dezimal), Chips für Alle /
+  Zugewiesen / Gesperrt und eine Sortierung (Gesperrte zuerst, Name, Sender-ID). **Alle freigeben** gibt jede gesperrte
+  ID frei, die die Liste zeigt, nach einer Rückfrage.
+- **Entdeckung über den Device Proxy:** Nennt die App das Modell eines Gateways in ihrer Meldung (`model`, zum Beispiel
+  `fam_usb`), entfällt die Frage nach dem Modell; ohne bleibt es beim Erraten am Namen.
+
+#### Geändert
+
+- **Filter im Panel:** Der Gerätestatus ist eine Chip-Reihe statt eines Dropdowns im Filtermenü, und „Nur unbekannte
+  Sender“ ist ein Schalter neben RX / TX in der Telegrammansicht. **Filter** erscheint in der Geräteansicht nur, wenn
+  mehrere Gateways oder Bereiche zur Auswahl stehen.
+
+#### Behoben
+
+- **Nachlieferung über den Device Proxy, Binärsensoren:** Kontakte, Fenstergriffe, Bewegungs- und Regensensoren nehmen die
+  nachgelieferten Telegramme aus der Zeit des Neustarts in einem Zug auf: der Zustand wird einmal geschrieben, wenn die
+  Nachlieferung durch ist. Eine zwischendurch geöffnete und geschlossene Tür lässt den Sensor nicht mehr mehrfach
+  umschalten (und Trigger feuern), und ein Zustand, der am Ende dort steht, wo er begann, löst nichts aus.
+- **Nachlieferung über den Device Proxy, Taster:** nachgelieferte Tasterdrücke lösen keine Taster-Ereignisse aus. Gesten
+  werden live gemessen, ein nachgelieferter Druck wurde beim Neustart zum kurzen Druck (zwei zum Doppelklick) und
+  startete Automationen mit einem Druck von vor Minuten.
+
 ### [0.1.13] - 2026-10-23
+
+**English**
 
 #### Added
 
@@ -126,7 +236,37 @@ All notable changes to this project are documented here, in English and German
   table head above them (on phones it stays in the line above the list). The bar of the ticked devices takes the place
   of the count line, the row icons are subdued until the pointer is over the row, and "not heard" is muted.
 
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Wetterstation:** ein Sensor „Sonnigste Seite“ (Süd, Ost, West oder keine Sonne unter 2 klx auf allen Seiten) und ein
+  Sensor „Regen kürzlich“, der nach dem Regen noch einige Minuten an bleibt, damit Rollläden und Markisen nicht auf eine
+  nasse Fläche zurückfahren. Die Minuten sind eine Geräteeinstellung (Vorgabe 15, 0 = kein Nachlauf).
+- **Blueprint „Rollläden nach der Sonne beschatten“:** fährt Rollläden in eine Beschattungsposition, wenn die Sonne auf einer
+  Seite stark genug bleibt, und zurück, wenn sie eine Weile schwach war; auf Wunsch nur bei Wärme; lässt Rollläden in Ruhe,
+  deren „Automatikmodus“ Aus ist, und solche, die du von Hand bewegt hast.
+- **Blueprint „Rollläden und Licht bei Dämmerung“:** schließt Rollläden und schaltet Licht ein, wenn es eine Weile dunkel
+  ist, öffnet und schaltet morgens aus; der „Automatikmodus“ eines Rollladens entscheidet (Abends und Beides am Abend,
+  Morgens und Beides am Morgen, Aus nie), mit frühesten Zeiten, damit eine Gewitterwolke am Mittag nichts schließt.
+- **Blueprint „Wetterwarnung bei offenem Fenster“:** eine Meldung (eine Aktion deiner Wahl), wenn es zu regnen beginnt oder
+  weht, während ein Fenster offen ist, und wenn ein Fenster bei schlechtem Wetter geöffnet wird. Es bewegt nichts.
+
+#### Geändert
+
+- **Wetterstation:** Dämmerung und die drei Sonnensensoren zeigen ganze Lux (die Dämmerung nicht mehr „999,0 lx“), der
+  Wind eine Nachkommastelle. Regen ist ein einfacher Ein/Aus-Sensor mit den Anzeigen „Regen“ / „Kein Regen“ und den
+  Regen-Symbolen, kein „Feuchtigkeits“-Sensor (Leck) mehr, den Assistenten als Leckalarm behandeln könnten. Die Einheit
+  des Winds (m/s, km/h, Beaufort) ist die Anzeigeeinheit der Entität in Home Assistant.
+- **Geräteseite:** ein Gerät ohne benannten Typ nennt sein EEP einmal, als Modell, nicht noch einmal als Modell-ID.
+- **Panel, Ansicht Geräte:** die Kästchen haben eine eigene Spalte, so fluchten Name und ID, und „Alle auswählen“ steht
+  im Tabellenkopf darüber (auf dem Handy bleibt es in der Zeile über der Liste). Die Leiste der gewählten Geräte
+  ersetzt die Zeile mit der Anzahl, die Symbole der Zeilen sind gedämpft, bis der Zeiger über der Zeile steht, und
+  „nicht gehört“ ist abgeschwächt.
+
 ### [0.1.12] - 2026-10-23
+
+**English**
 
 #### Added
 
@@ -137,7 +277,22 @@ All notable changes to this project are documented here, in English and German
   the teach-out is confirmed under Sender IDs.
 - **Panel:** a device's labels show under its name, a disabled device is tagged, and the search finds labels.
 
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Panel, Ansicht Geräte:** mehrere Geräte auswählen (ein Kästchen je Zeile, „Alle auswählen“ für die gefilterten) und
+  mit einer Leiste einen **Bereich** setzen, **Labels** hinzufügen oder entfernen (neue Labels lassen sich gleich
+  anlegen), sie **deaktivieren** oder **aktivieren** oder in einem Zug aus Home Assistant **entfernen**. Bereich, Labels
+  und Deaktivieren sind die von Home Assistant, sie erscheinen also auch auf der Geräteseite. Das Entfernen fragt vorher
+  nach, lädt das Gateway nur einmal neu und lässt die Sender-IDs der Geräte gesperrt, bis das Abmelden unter Sender-IDs
+  bestätigt ist.
+- **Panel:** die Labels eines Geräts stehen unter seinem Namen, ein deaktiviertes Gerät trägt eine Markierung, und die
+  Suche findet Labels.
+
 ### [0.1.11] - 2026-10-23
+
+**English**
 
 #### Added
 
@@ -163,7 +318,35 @@ All notable changes to this project are documented here, in English and German
   of no choice at all.
 - **Device page:** the EEP is listed once, as model ID, not also in the model.
 
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Automatikmodus der Cover:** Jedes Cover hat eine Auswahl „Automatikmodus" (Aus, Morgens, Abends, Beides; bis zur Wahl
+  Beides) für deine eigenen Automationen, wie in der alten Eltako-Integration. Sie fährt nichts selbst und bleibt über
+  Neustarts erhalten.
+- **Zustand und Fahrzeit der Cover:** FSB-Cover haben einen Sensor „Zustand" (fährt auf, fährt zu, offen, geschlossen,
+  gestoppt) und einen Sensor „Fahrzeit" (mit der Richtung) aus den Bestätigungstelegrammen des Aktors.
+- **Panel:** ein Integrations-Link in der Kopfleiste und in den Gateway-Details, direkt zum Eintrag dieses Gateways.
+
+#### Geändert
+
+- **Routing der Cover:** Ein Cover fährt über einen Sender, den Controller oder den Richtungstaster. „Beide" entfällt:
+  Es sendete zwei Telegramme je Fahrt, und der Richtungstaster stoppt eine Fahrt bei erneutem Druck in dieselbe Richtung.
+  Bestehende Cover mit „Beide" behalten den Controller (den Richtungstaster, wo sie keinen Controller haben).
+- **Übernahme:** Ein Taster (F6-02-01, F6-02-02) der alten Plattform binary_sensor wird ein Taster-Kontakt mit seiner
+  Geräteklasse und dem Invertieren, kein Knopf. Die Übernahme bleibt bei der Auswahl, wenn nichts mehr umzustellen ist,
+  und sagt das in Schritt 3.
+
+#### Behoben
+
+- **Tasten von Taster und Wandtaster:** Die eingeklappten Bereiche zeigen die genutzte Taste (oder den Standard)
+  vorausgewählt, statt gar keine Auswahl.
+- **Geräteseite:** Die EEP steht einmal, als Modell-ID, nicht zusätzlich im Modell.
+
 ### [0.1.10] - 2026-10-23
+
+**English**
 
 #### Changed
 
@@ -176,7 +359,23 @@ All notable changes to this project are documented here, in English and German
   (with a button to the first one), a pool map whose rows name their ID range, and a line under the map that
   tells ID, number, state and device of the chosen square. The legend shows the numbers.
 
+**Deutsch**
+
+#### Geändert
+
+- **Links zum Gerät im Panel:** Ein aufgeklapptes Telegramm hat den Knopf „Gerät im Panel", und der Gerätename einer
+  Sender-ID-Gruppe ist ein Link: beide öffnen die Zeile des Geräts in der Geräteansicht. „Gerät öffnen" heißt jetzt
+  „In Home Assistant öffnen".
+- **Aussehen des Panels:** Logo und Reiter richten sich am Inhalt aus (höchstens 1200 px, zentriert) statt an den
+  Fensterrändern, wie in der Device-Proxy-App.
+- **Sender-IDs:** Der Kopf der Ansicht ist klarer: Kacheln für freie, zugewiesene und gesperrte IDs und die nächste
+  freie ID (mit Kopieren-Knopf), ein Balken für den belegten Anteil, ein Hinweis, wenn gesperrte IDs auf ihr
+  Teach-out warten (mit Knopf zur ersten), eine Pool-Karte, deren Zeilen ihren ID-Bereich nennen, und eine Zeile
+  unter der Karte mit ID, Nummer, Status und Gerät des gewählten Felds. Die Legende zeigt die Zahlen.
+
 ### [0.1.9] - 2026-10-23
+
+**English**
 
 #### Added
 
@@ -211,7 +410,47 @@ All notable changes to this project are documented here, in English and German
   "Paused" with their number) while you read the details and appear when you close the last open
   one. A pause you set yourself stays until you resume.
 
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Gerätemodell:** Ein Gerät einer Art, die mehrere Eltako-Modelle teilen (Schaltaktoren,
+  Dimmer, Rollladenaktoren, Heizungsaktoren, Zähler ...), hat ein optionales Feld „Modell": FSR14-4x,
+  FUD61NPN-230V ... wählen oder ein anderes eintippen. Es erscheint im Telegramm-Monitor und auf
+  der Geräteseite und ändert kein Verhalten. Neue Version der Gerätedaten (Schema 4, Migration
+  inklusive).
+
+#### Geändert
+
+- **Telegramm-Monitor:** Das Funktelegramm verrät das Modell nicht, deshalb zeigt der Monitor nicht
+  mehr das erste Beispiel der Art (FSR61 bei einem FSR14). Ohne gewähltes Modell steht dort die
+  Liste der möglichen Modelle, die Geräteseite zeigt nur das EEP.
+- **Wetterstation:** Das Beispiel FWG14 heißt FWG14MS.
+- **Geräteansicht:** Die Zeile eines eingerichteten Geräts klappt an Ort und Stelle auf und zeigt alles,
+  was wir kennen: Identität (Modell, EEP, Bereich, Gateway, ID), Funk (zuletzt gehört, Signal mit
+  Minimum und Maximum, Repeater-Stufen, Telegrammzahl, erwartetes Intervall), letzte Werte,
+  Sender-IDs mit Art des Einlernens, Befehlsstatistik (gesendet, bestätigt, Antwortzeit),
+  Einstellungen und Entitäten mit ihren Zuständen. Mehrere Zeilen können offen sein, sie bleiben
+  aktuell, und die Liste behält ihre Reihenfolge, solange eine offen ist. Ein Klick auf die Zeile
+  springt nicht mehr zu den Telegrammen: Das macht der Filter-Knopf der Zeile.
+- **Geräteansicht:** Das Modell eines Geräts wird in seiner aufgeklappten Zeile gesetzt: Dropdown mit den
+  Modellen seiner Art, „Nicht angegeben" oder „Anderes Modell …" zum Eintippen. Es wird sofort
+  gespeichert (der Eintrag des Gateways lädt neu, wie nach jeder Änderung an einem Gerät).
+- **Geräteansicht:** Die aufgeklappte Zeile zeigt ihre Werte als kleine Kacheln und Tabellen auf Weiß, wie die
+  Statistiken der Device-Proxy-App; der Anteil bestätigter Befehle ist ein farbiger Chip.
+- **Aussehen des Panels:** Das Panel sieht aus wie die Device-Proxy-App: deren Seitenfarbe, größere
+  abgerundete Karten mit weichem Schatten und Reiter als Pillen. Die Akzentfarbe ist immer das Blau
+  der App und folgt nicht mehr der Primärfarbe eines Home-Assistant-Themes (hell und dunkel folgen
+  ihm weiterhin).
+- **Geräteansicht:** Die Liste öffnet immer nach Namen sortiert; eine angeklickte Spaltensortierung
+  gilt, bis das Panel geschlossen wird, und wird nicht mehr gemerkt.
+- **Telegramm-Monitor:** Ein aufgeklapptes Telegramm hält die Liste an: neue Telegramme warten (die
+  Live-Anzeige zeigt „Pausiert" mit ihrer Anzahl), solange du die Details liest, und erscheinen,
+  wenn du das letzte geöffnete zuklappst. Eine selbst gesetzte Pause bleibt, bis du sie aufhebst.
+
 ### [0.1.8] - 2026-10-22
+
+**English**
 
 #### Changed
 
@@ -224,7 +463,22 @@ All notable changes to this project are documented here, in English and German
   (during a Home Assistant start or a proxy hiccup): the parts load with retries, and if they
   still fail the panel shows a message with a Reload button.
 
+**Deutsch**
+
+#### Geändert
+
+- **Device Proxy:** die Gateway-Karte und der Verbindungssensor des Gateways zeigen, ob das
+  Ausweich-Gateway der App einspringt und ob es bereit ist.
+
+#### Behoben
+
+- **Panel:** das EnOcean-Panel bleibt nicht mehr leer, wenn eine seiner Dateien einmal nicht
+  lädt (beim Start von Home Assistant oder bei einem Proxy-Aussetzer): die Teile laden mit
+  Wiederholungen, und scheitern sie dennoch, zeigt das Panel eine Meldung mit Neu-laden-Knopf.
+
 ### [0.1.7] - 2026-10-22
+
+**English**
 
 #### Changed
 
@@ -318,426 +572,7 @@ All notable changes to this project are documented here, in English and German
   skipped, so it no longer holds back the live telegrams for the rest of the connection.
 - **Diagnostics:** the network address of a LAN gateway is redacted.
 
-### [0.1.6] - 2026-10-22
-
-#### Added
-
-- **Panel, teach in:** a device with a sender ID of its own can be taught into its actuator
-  from the Devices view (graduation cap), with the steps and a choice of sender ID; it sends what
-  the device's teach-in button sends (websocket `enocean_eltako/teach_in`).
-- **Panel, weak signal:** a hint above the Devices list counts the senders with a weak signal and
-  shows only them on a click; status filter **Weak signal**.
-- **Panel, send again:** the details of a sent telegram can send it once more.
-- **Development:** a preview page of the panel with sample data (`scripts/panel-preview`) and a
-  CI check that renders every view in a simulated browser.
-
-#### Fixed
-
-- **Panel in English:** milliseconds stand before AM/PM; the gateway card counts in lower case
-  and in the singular for one.
-
-### [0.1.5] - 2026-10-22
-
-#### Added
-
-- **Sender IDs:** the decimal value of an ID is an attribute (`decimal`) of the EnOcean ID and
-  Sender ID diagnostics sensors and an own column in the panel's Sender IDs view. The view
-  also shows a pool map (one square per ID, click to jump to its row), the next free ID, and
-  device groups can be collapsed.
-- **Swap a gateway:** reconfiguring a gateway now also asks for the model, so a defective
-  gateway or a FAM-USB can be replaced by another model (for example a network gateway)
-  without losing devices or sender IDs. The new gateway has to report the same base ID,
-  otherwise the change is refused. Bus gateways (FGW14-USB, FAM14) swap among themselves.
-
-#### Changed
-
-- **Panel, Devices:** one line per device with EEP, area and entity count, also for set-up
-  devices not heard yet; sortable by column, filterable by status (set up, unknown, silent),
-  area, gateway and text, with pages of 25 to 200 rows. The CSV export saves the whole filtered
-  list.
-- **Device page:** the model of a device lists the EEP it speaks, for example "FSR61
-  (M5-38-08)", so the integration page shows it in the device row. Existing devices update on
-  the next start; nothing is migrated.
-- **Sender IDs:** a radio gateway hands out base ID + 1 ... 127; the base ID itself is no
-  longer used (127 IDs per gateway). A device that already sends from the base ID keeps
-  working and is reported in the log: give it another sender ID.
-- **Panel:** senders hidden from a gateway's discovery are tagged "hidden" and not offered as a
-  new device; "x s ago" and last heard use the server's clock; times and numbers follow your
-  profile (time format, browser or server time zone, number format); the view is remembered,
-  and links like `/enocean-eltako?view=devices&sender=<ID>` open a filtered view; "Open
-  device" leads to the device page; success messages disappear after 4 s; sending a rocker
-  telegram can press and release; screen readers hear a lost connection and every message.
-- **Panel look:** one **Filter** button opens the rarer filters, and the set ones show as chips
-  with a cross above the list; the bar of the list stays on top while scrolling and shows the
-  gateways' state once their cards are out of view; empty views explain what to do (send a
-  telegram, reset the filters, open the integration); a compact pool map with a legend; one
-  button style (filled, outlined, text); own-styled lists and checkboxes; quieter column heads.
-  On phones the view tabs fit the width and the Takeover steps stand one below the other.
-
-#### Fixed
-
-- **Panel:** command and answer are paired by the device, not its name (two devices may share
-  a name); the Takeover view goes once nothing is left, without a reload; CSV exports guard
-  against spreadsheet formulas.
-
-### [0.1.4] - 2026-10-22
-
-#### Changed
-
-- **Discovered devices:** senders a gateway hears but no device listens to are listed under
-  **Add device → Discovered devices** of that gateway instead of as cards on the integration
-  page and in the "Add hub" list. One notification per gateway announces new ones.
-- **Teach-in hints:** the device form names the learn function and the rotary switch
-  positions for switching actuators, dimmers and cover actuators (Eltako series 14).
-- **Panel:** "Add device" on an unknown sender opens the integration page and highlights its
-  gateway.
-- **Panel:** the gateway cards stand only above Telegrams and Devices, a single gateway has no
-  filter button; the views are tabs (arrow keys); the export button says it saves every
-  telegram matching the filter; a theme or primary colour of your own becomes the accent
-  colour; the takeover shows three steps (the never usable "Old IDs" step is gone), and
-  "Old integration off" opens the old integration's page; durations know days; on phones
-  export and clear sit in a ⋮ menu; Devices offers no send and clear, its export is a CSV of
-  the sender list.
-
-#### Added
-
-- **Old integration on the same gateway:** a repair issue names a gateway that the old
-  `eltako` integration also uses (same USB port, or same host and port).
-- **Sharing device definitions:** the actions `enocean_eltako.export_custom_devices` and
-  `enocean_eltako.import_custom_devices` hand definitions over as YAML text; imported ones are
-  stored as files in `enocean_eltako/custom_devices/`, your own file is never changed.
-- **Energy dashboard:** the action `enocean_eltako.add_energy_devices` adds the electricity
-  meters of your devices (with their power sensor) to the Energy dashboard.
-- **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
-  again under **Configure → Hidden senders**. The list keeps the newest 100 senders.
-- **Panel:** Devices lists your devices with no telegram in the monitor, with when they were
-  last heard and whether they are silent; the Live badge shows Connecting and No connection;
-  the send form gives an example of the right length per telegram type and checks the data
-  before sending.
-
-#### Fixed
-
-- **Panel:** clearing the display twice no longer brings back the telegrams of the first clear
-  after a reconnect; `/` and `P` no longer act in Sender IDs and Takeover; closing the send
-  form hides its hint; Devices searches data and values like Telegrams; older browsers without
-  `light-dark()` (iOS before 17.5) get the panel's colours; no status requests while the
-  browser tab is hidden.
-
-### [0.1.3] - 2026-10-22
-
-#### Added
-
-- **Device Proxy app:** its EnOcean gateways are discovered like those of the EnOcean Proxy app,
-  titled "(Device Proxy)", with replay and the status in the panel. The update issue for old
-  EnOcean Proxy versions does not apply to it (it names the version of the contract instead).
-- **Moving from the EnOcean Proxy to the Device Proxy:** a gateway set up through one proxy app
-  and announced by another is found by its base ID; its entry only gets the new address and
-  status port, devices and entities stay
-
-#### Fixed
-
-- **Panel on phones:** the view tabs in the header stay on one line and scroll sideways
-  instead of wrapping into a second line
-
-### [0.1.2] - 2026-10-21
-
-#### Changed
-
-- **Panel:** new look like the Device Proxy app: white header with the views as tabs, rounded
-  cards and buttons, its own light and dark colours that follow Home Assistant's theme
-- **Documentation:** the teach-in guide lists which virtual sensor each actuator accepts
-
-### [0.1.1] - 2026-10-21
-
-#### Changed
-
-- **Panel:**
-  - Devices: values in one column, buttons for a sender's telegrams and for adding an unknown
-    sender, sorting by name, last heard, weakest signal or most telegrams, more about unknown
-    senders (telegram type, teach-in or possible profiles)
-  - Sender IDs: grouped by device, blocked IDs first with their note, readable profile names
-  - Takeover: after taking devices over the view moves on to checking the old IDs that are still
-    in use, the mapping is shorter per device
-  - the heading names the view, layouts for phones
-
-### [0.1.0] - 2026-10-21
-
-First version of the integration.
-
-#### Added
-
-- **Gateways:** Eltako FGW14-USB, FAM14 and FAM-USB, PioTek MGW-ETH (found through zeroconf), Symcon
-  EnOcean LAN Gateway and generic ESP2/ESP3 gateways. Serial ports use
-  Home Assistant's port picker, TCP (ser2net, LAN gateways) is supported too. Several gateways
-  work side by side, and the FAM14 bus can be used through bus groups with failover.
-- **Configuration only through the UI:** one config entry per gateway, one subentry per device.
-  Devices are added by learning the ID from a telegram, by category and kind, or by EEP.
-  Reconfigure is available for gateways and devices.
-- **Devices:** switching and dimming actuators (also channel 2 of two-channel actuators),
-  covers with position, vent slots and slat tilt, heating actuators and room controllers
-  (with cooling mode), meters (electricity, gas, water, energy dashboard ready), window
-  handles, contacts, wall switches, weather and air quality sensors, Permundo PSC plugs and
-  all standard EEP profiles as generic devices. [docs/devices.md](docs/devices.md) lists them.
-- **Several senders per actuator** (central command, rocker, controller, direction rocker),
-  with a sender ID pool: IDs are taken from base ID + 0...127 and stay blocked until the
-  teach-out is confirmed.
-- **Covers:** position tracking that anchors on end positions, a travel time assistant and
-  calibration (also on a schedule through a blueprint).
-- **Rocker gestures** (single, double, long press) with device triggers, plus blueprints for
-  lights, covers, scenes and calibration.
-- **Virtual devices:** Home Assistant sends as a contact (also with priority for lock-out
-  protection), temperature, motion and brightness sensor, weather station, scene button or
-  rocker with selectable buttons.
-- **Telegram monitor panel:** live telegram list with details, filters, sorting, exports,
-  signal quality per sender, gateway cards, sender ID table, sending a telegram and adding
-  unknown senders as devices.
-- **Takeover from the old `eltako` integration** in the panel: preview, selection, area and
-  label carry-over and a mapping of old to new entity IDs with their usage.
-- **Gateway care:** last-seen monitoring, state reconciliation at startup, repairs for an
-  unstable or silent connection, diagnostic sensors and diagnostics download.
-- **EnOcean Proxy** gateways are set up through Supervisor discovery.
-- Translations in German and English, brand images, German and English READMEs and a user
-  guide.
-
-#### Notes
-
-- The protocol layer (ESP2/ESP3, EEPs, FAM14 bus) is implemented in this repository without
-  EnOcean or Eltako libraries.
-- The official EnOcean Alliance files are not part of the repository (see [NOTICE](NOTICE)).
-
-## Deutsch
-
-Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
-
-### [Unreleased]
-
-#### Geändert
-
-- **Telegramm-Details** zeigen zuerst die Daten, darunter das vorherige Telegramm, die geänderten Bytes sind in beiden markiert (dazu eine Zeile wie „Byte 3 geändert: 44 → 49“). Die Metadaten stehen in zwei Zeilen, das Signal entfällt (es steht in der Zeile), und die Aktionen sind Icon-Buttons.
-- **Geräteliste**: breitere Spalte für die Werte, schmalere für Bereich und Entitäten, und „Gerät hinzufügen“ ist ein runder, gefüllter Plus-Button (der Name bleibt als Tooltip).
-- **Signalkurve** in der Geräteansicht übernimmt die Farbe des letzten Werts, endet in einem Punkt und zeigt die Linie für schwaches Signal (-85 dBm).
-- **Suche** zeigt das Kürzel `/` als kleine Taste im Feld statt als Tooltip über dem ganzen Label; die Spaltenköpfe verlieren den Sortier-Tooltip (der Sortierzustand bleibt im Pfeil und für Screenreader erhalten).
-- **Telegrammliste** kann einen unbekannten Sender mit einem Klick aus der Discovery ausblenden (Button in der aufgeklappten Zeile). Wieder anzeigen unter Konfigurieren → Ausgeblendete Sender.
-- **Könnte sein** (Profil-Vorschläge für unbekannte Sender) steht jetzt unter dem Wert und zeigt zwei Profile plus „+n“ (alle im Tooltip), in der Telegrammliste und der Geräteansicht.
-- **Sender-IDs** zeigen statt der Dezimal-ID die Nummer ab der Basis-ID (1 bis 127), in der Liste und auf der Karte.
-- **Geräte** zeigen Status-Chips, Suche und Filter in einer Zeile.
-- **Sender-IDs** zeigen Status-Chips, Suche und Sortierung in einer Zeile.
-- **Telegrammliste** setzt einen kleinen Punkt vor den Sender: gefüllt für bekannte Geräte, hohl für unbekannte.
-- **Signalbalken** in der Telegrammliste und der Geräteansicht sind nach Stärke eingefärbt: grün, gelb oder rot.
-- **Telegrammliste** hinterlegt gesendete Telegramme leicht farbig und markiert sie mit einem Akzentbalken, damit sie sich von empfangenen abheben.
-- **Suche in der Übernahme** findet jetzt auch Labels, in der Vorschau der Prüfung (Gerät und Entitäten) und in den Berichten.
-
-### [1.2.0] - 2026-10-24
-
-#### Geändert
-
-- **Übernahme in drei Schritten statt vier:** Auswählen, Prüfen & übernehmen, Alte Integration ablösen. Die bisherigen
-  Schritte „Umstellen“ und „Aufräumen“ entfallen, ebenso **Übernahme abschließen**.
-- **Prüfen zeigt, was mitkommt:** zu jeder angehakten Option listet die Vorschau je Gerät die tatsächlichen Werte
-  (Bereich, Labels, Namen, Symbole, ausgeblendet/deaktiviert, Sprachsteuerung), auch je Entität. Schon eingerichtete
-  Geräte werden im selben Schritt ergänzt.
-- **Alte Integration ablösen:** zuerst wählst du, wie die alten Entity-IDs behandelt werden: behalten (alte Integration
-  löschen, den neuen Entitäten die alten IDs zurückgeben, `eltako:` entfernen) oder die neuen verwenden (Fundstellen mit
-  alten IDs umstellen, löschen, entfernen). Die Schritte ergeben sich aus der Wahl.
-- **Berichte:** ein Bericht je Übernahme, jederzeit unter **Berichte** in der Ansicht Übernahme erreichbar, zu öffnen und
-  zu löschen. Die bisherigen Berichte werden migriert (einer je Gateway und Tag).
-
-#### Behoben
-
-- **Alte IDs wiederherstellen** benennt keine neue ID mehr um, die eine Automation, ein Skript, eine Szene oder ein
-  Dashboard schon nutzt.
-- **Virtuelle Taster** (alte Buttons) bekommen einen Berichtseintrag und werden von „Schon eingerichtete Geräte“
-  ergänzt.
-- Ein Gerät, das übernommen wird, nachdem die alten Entitäten weg sind, bekommt trotzdem einen Bericht.
-
-### [1.1.1] - 2026-10-24
-
-#### Geändert
-
-- **Entdeckt-Karte:** Der Dialog nennt, wie viele Sender nach Typ gehört wurden (zum Beispiel „15 Sensoren (A5), 9 Taster
-  (F6)“), und verlinkt aufs Gateway, statt zehn IDs aufzulisten.
-
-### [1.1.0] - 2026-10-23
-
-#### Geändert
-
-- **Entdeckte Geräte:** Ein Gateway, das unbekannte Sender gehört hat, zeigt eine Karte unter Einstellungen → Geräte &
-  Dienste → Entdeckt (mit der Anzahl der Sender) statt einer Benachrichtigung. Die Karte listet sie auf und weist auf
-  **Gerät hinzufügen → Entdeckte Geräte** am Gateway hin; sie verschwindet, wenn nichts mehr zu entdecken ist.
-
-### [1.0.2] - 2026-10-23
-
-#### Behoben
-
-- **PioTek MGW-ETH hinter dem Device Proxy:** Das Gateway wird nicht mehr unter seiner eigenen Adresse als entdeckt
-  angeboten, sobald ein MGW-ETH über die App eingerichtet ist (es bedient nur eine Verbindung, die hält die App).
-
-### [1.0.1] - 2026-10-23
-
-#### Behoben
-
-- **Device Proxy, Base-ID:** Antwortet das Gateway hinter der App beim Einrichten nicht auf das Lesen der Base-ID, nimmt die
-  Integration sie aus dem Status der App, statt danach zu fragen.
-
-### [1.0.0] - 2026-10-23
-
-#### Hinzugefügt
-
-- **Ansicht Sender-IDs:** eine Suche (Gerätename, Profil, ID mit oder ohne Bindestriche, dezimal), Chips für Alle /
-  Zugewiesen / Gesperrt und eine Sortierung (Gesperrte zuerst, Name, Sender-ID). **Alle freigeben** gibt jede gesperrte
-  ID frei, die die Liste zeigt, nach einer Rückfrage.
-- **Entdeckung über den Device Proxy:** Nennt die App das Modell eines Gateways in ihrer Meldung (`model`, zum Beispiel
-  `fam_usb`), entfällt die Frage nach dem Modell; ohne bleibt es beim Erraten am Namen.
-
-#### Geändert
-
-- **Filter im Panel:** Der Gerätestatus ist eine Chip-Reihe statt eines Dropdowns im Filtermenü, und „Nur unbekannte
-  Sender“ ist ein Schalter neben RX / TX in der Telegrammansicht. **Filter** erscheint in der Geräteansicht nur, wenn
-  mehrere Gateways oder Bereiche zur Auswahl stehen.
-
-#### Behoben
-
-- **Nachlieferung über den Device Proxy, Binärsensoren:** Kontakte, Fenstergriffe, Bewegungs- und Regensensoren nehmen die
-  nachgelieferten Telegramme aus der Zeit des Neustarts in einem Zug auf: der Zustand wird einmal geschrieben, wenn die
-  Nachlieferung durch ist. Eine zwischendurch geöffnete und geschlossene Tür lässt den Sensor nicht mehr mehrfach
-  umschalten (und Trigger feuern), und ein Zustand, der am Ende dort steht, wo er begann, löst nichts aus.
-- **Nachlieferung über den Device Proxy, Taster:** nachgelieferte Tasterdrücke lösen keine Taster-Ereignisse aus. Gesten
-  werden live gemessen, ein nachgelieferter Druck wurde beim Neustart zum kurzen Druck (zwei zum Doppelklick) und
-  startete Automationen mit einem Druck von vor Minuten.
-
-### [0.1.13] - 2026-10-23
-
-#### Hinzugefügt
-
-- **Wetterstation:** ein Sensor „Sonnigste Seite“ (Süd, Ost, West oder keine Sonne unter 2 klx auf allen Seiten) und ein
-  Sensor „Regen kürzlich“, der nach dem Regen noch einige Minuten an bleibt, damit Rollläden und Markisen nicht auf eine
-  nasse Fläche zurückfahren. Die Minuten sind eine Geräteeinstellung (Vorgabe 15, 0 = kein Nachlauf).
-- **Blueprint „Rollläden nach der Sonne beschatten“:** fährt Rollläden in eine Beschattungsposition, wenn die Sonne auf einer
-  Seite stark genug bleibt, und zurück, wenn sie eine Weile schwach war; auf Wunsch nur bei Wärme; lässt Rollläden in Ruhe,
-  deren „Automatikmodus“ Aus ist, und solche, die du von Hand bewegt hast.
-- **Blueprint „Rollläden und Licht bei Dämmerung“:** schließt Rollläden und schaltet Licht ein, wenn es eine Weile dunkel
-  ist, öffnet und schaltet morgens aus; der „Automatikmodus“ eines Rollladens entscheidet (Abends und Beides am Abend,
-  Morgens und Beides am Morgen, Aus nie), mit frühesten Zeiten, damit eine Gewitterwolke am Mittag nichts schließt.
-- **Blueprint „Wetterwarnung bei offenem Fenster“:** eine Meldung (eine Aktion deiner Wahl), wenn es zu regnen beginnt oder
-  weht, während ein Fenster offen ist, und wenn ein Fenster bei schlechtem Wetter geöffnet wird. Es bewegt nichts.
-
-#### Geändert
-
-- **Wetterstation:** Dämmerung und die drei Sonnensensoren zeigen ganze Lux (die Dämmerung nicht mehr „999,0 lx“), der
-  Wind eine Nachkommastelle. Regen ist ein einfacher Ein/Aus-Sensor mit den Anzeigen „Regen“ / „Kein Regen“ und den
-  Regen-Symbolen, kein „Feuchtigkeits“-Sensor (Leck) mehr, den Assistenten als Leckalarm behandeln könnten. Die Einheit
-  des Winds (m/s, km/h, Beaufort) ist die Anzeigeeinheit der Entität in Home Assistant.
-- **Geräteseite:** ein Gerät ohne benannten Typ nennt sein EEP einmal, als Modell, nicht noch einmal als Modell-ID.
-- **Panel, Ansicht Geräte:** die Kästchen haben eine eigene Spalte, so fluchten Name und ID, und „Alle auswählen“ steht
-  im Tabellenkopf darüber (auf dem Handy bleibt es in der Zeile über der Liste). Die Leiste der gewählten Geräte
-  ersetzt die Zeile mit der Anzahl, die Symbole der Zeilen sind gedämpft, bis der Zeiger über der Zeile steht, und
-  „nicht gehört“ ist abgeschwächt.
-
-### [0.1.12] - 2026-10-23
-
-#### Hinzugefügt
-
-- **Panel, Ansicht Geräte:** mehrere Geräte auswählen (ein Kästchen je Zeile, „Alle auswählen“ für die gefilterten) und
-  mit einer Leiste einen **Bereich** setzen, **Labels** hinzufügen oder entfernen (neue Labels lassen sich gleich
-  anlegen), sie **deaktivieren** oder **aktivieren** oder in einem Zug aus Home Assistant **entfernen**. Bereich, Labels
-  und Deaktivieren sind die von Home Assistant, sie erscheinen also auch auf der Geräteseite. Das Entfernen fragt vorher
-  nach, lädt das Gateway nur einmal neu und lässt die Sender-IDs der Geräte gesperrt, bis das Abmelden unter Sender-IDs
-  bestätigt ist.
-- **Panel:** die Labels eines Geräts stehen unter seinem Namen, ein deaktiviertes Gerät trägt eine Markierung, und die
-  Suche findet Labels.
-
-### [0.1.11] - 2026-10-23
-
-#### Hinzugefügt
-
-- **Automatikmodus der Cover:** Jedes Cover hat eine Auswahl „Automatikmodus" (Aus, Morgens, Abends, Beides; bis zur Wahl
-  Beides) für deine eigenen Automationen, wie in der alten Eltako-Integration. Sie fährt nichts selbst und bleibt über
-  Neustarts erhalten.
-- **Zustand und Fahrzeit der Cover:** FSB-Cover haben einen Sensor „Zustand" (fährt auf, fährt zu, offen, geschlossen,
-  gestoppt) und einen Sensor „Fahrzeit" (mit der Richtung) aus den Bestätigungstelegrammen des Aktors.
-- **Panel:** ein Integrations-Link in der Kopfleiste und in den Gateway-Details, direkt zum Eintrag dieses Gateways.
-
-#### Geändert
-
-- **Routing der Cover:** Ein Cover fährt über einen Sender, den Controller oder den Richtungstaster. „Beide" entfällt:
-  Es sendete zwei Telegramme je Fahrt, und der Richtungstaster stoppt eine Fahrt bei erneutem Druck in dieselbe Richtung.
-  Bestehende Cover mit „Beide" behalten den Controller (den Richtungstaster, wo sie keinen Controller haben).
-- **Übernahme:** Ein Taster (F6-02-01, F6-02-02) der alten Plattform binary_sensor wird ein Taster-Kontakt mit seiner
-  Geräteklasse und dem Invertieren, kein Knopf. Die Übernahme bleibt bei der Auswahl, wenn nichts mehr umzustellen ist,
-  und sagt das in Schritt 3.
-
-#### Behoben
-
-- **Tasten von Taster und Wandtaster:** Die eingeklappten Bereiche zeigen die genutzte Taste (oder den Standard)
-  vorausgewählt, statt gar keine Auswahl.
-- **Geräteseite:** Die EEP steht einmal, als Modell-ID, nicht zusätzlich im Modell.
-
-### [0.1.10] - 2026-10-23
-
-#### Geändert
-
-- **Links zum Gerät im Panel:** Ein aufgeklapptes Telegramm hat den Knopf „Gerät im Panel", und der Gerätename einer
-  Sender-ID-Gruppe ist ein Link: beide öffnen die Zeile des Geräts in der Geräteansicht. „Gerät öffnen" heißt jetzt
-  „In Home Assistant öffnen".
-- **Aussehen des Panels:** Logo und Reiter richten sich am Inhalt aus (höchstens 1200 px, zentriert) statt an den
-  Fensterrändern, wie in der Device-Proxy-App.
-- **Sender-IDs:** Der Kopf der Ansicht ist klarer: Kacheln für freie, zugewiesene und gesperrte IDs und die nächste
-  freie ID (mit Kopieren-Knopf), ein Balken für den belegten Anteil, ein Hinweis, wenn gesperrte IDs auf ihr
-  Teach-out warten (mit Knopf zur ersten), eine Pool-Karte, deren Zeilen ihren ID-Bereich nennen, und eine Zeile
-  unter der Karte mit ID, Nummer, Status und Gerät des gewählten Felds. Die Legende zeigt die Zahlen.
-
-### [0.1.9] - 2026-10-23
-
-#### Hinzugefügt
-
-- **Gerätemodell:** Ein Gerät einer Art, die mehrere Eltako-Modelle teilen (Schaltaktoren,
-  Dimmer, Rollladenaktoren, Heizungsaktoren, Zähler ...), hat ein optionales Feld „Modell": FSR14-4x,
-  FUD61NPN-230V ... wählen oder ein anderes eintippen. Es erscheint im Telegramm-Monitor und auf
-  der Geräteseite und ändert kein Verhalten. Neue Version der Gerätedaten (Schema 4, Migration
-  inklusive).
-
-#### Geändert
-
-- **Telegramm-Monitor:** Das Funktelegramm verrät das Modell nicht, deshalb zeigt der Monitor nicht
-  mehr das erste Beispiel der Art (FSR61 bei einem FSR14). Ohne gewähltes Modell steht dort die
-  Liste der möglichen Modelle, die Geräteseite zeigt nur das EEP.
-- **Wetterstation:** Das Beispiel FWG14 heißt FWG14MS.
-- **Geräteansicht:** Die Zeile eines eingerichteten Geräts klappt an Ort und Stelle auf und zeigt alles,
-  was wir kennen: Identität (Modell, EEP, Bereich, Gateway, ID), Funk (zuletzt gehört, Signal mit
-  Minimum und Maximum, Repeater-Stufen, Telegrammzahl, erwartetes Intervall), letzte Werte,
-  Sender-IDs mit Art des Einlernens, Befehlsstatistik (gesendet, bestätigt, Antwortzeit),
-  Einstellungen und Entitäten mit ihren Zuständen. Mehrere Zeilen können offen sein, sie bleiben
-  aktuell, und die Liste behält ihre Reihenfolge, solange eine offen ist. Ein Klick auf die Zeile
-  springt nicht mehr zu den Telegrammen: Das macht der Filter-Knopf der Zeile.
-- **Geräteansicht:** Das Modell eines Geräts wird in seiner aufgeklappten Zeile gesetzt: Dropdown mit den
-  Modellen seiner Art, „Nicht angegeben" oder „Anderes Modell …" zum Eintippen. Es wird sofort
-  gespeichert (der Eintrag des Gateways lädt neu, wie nach jeder Änderung an einem Gerät).
-- **Geräteansicht:** Die aufgeklappte Zeile zeigt ihre Werte als kleine Kacheln und Tabellen auf Weiß, wie die
-  Statistiken der Device-Proxy-App; der Anteil bestätigter Befehle ist ein farbiger Chip.
-- **Aussehen des Panels:** Das Panel sieht aus wie die Device-Proxy-App: deren Seitenfarbe, größere
-  abgerundete Karten mit weichem Schatten und Reiter als Pillen. Die Akzentfarbe ist immer das Blau
-  der App und folgt nicht mehr der Primärfarbe eines Home-Assistant-Themes (hell und dunkel folgen
-  ihm weiterhin).
-- **Geräteansicht:** Die Liste öffnet immer nach Namen sortiert; eine angeklickte Spaltensortierung
-  gilt, bis das Panel geschlossen wird, und wird nicht mehr gemerkt.
-- **Telegramm-Monitor:** Ein aufgeklapptes Telegramm hält die Liste an: neue Telegramme warten (die
-  Live-Anzeige zeigt „Pausiert" mit ihrer Anzahl), solange du die Details liest, und erscheinen,
-  wenn du das letzte geöffnete zuklappst. Eine selbst gesetzte Pause bleibt, bis du sie aufhebst.
-
-### [0.1.8] - 2026-10-22
-
-#### Geändert
-
-- **Device Proxy:** die Gateway-Karte und der Verbindungssensor des Gateways zeigen, ob das
-  Ausweich-Gateway der App einspringt und ob es bereit ist.
-
-#### Behoben
-
-- **Panel:** das EnOcean-Panel bleibt nicht mehr leer, wenn eine seiner Dateien einmal nicht
-  lädt (beim Start von Home Assistant oder bei einem Proxy-Aussetzer): die Teile laden mit
-  Wiederholungen, und scheitern sie dennoch, zeigt das Panel eine Meldung mit Neu-laden-Knopf.
-
-### [0.1.7] - 2026-10-22
+**Deutsch**
 
 #### Geändert
 
@@ -839,6 +674,26 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### [0.1.6] - 2026-10-22
 
+**English**
+
+#### Added
+
+- **Panel, teach in:** a device with a sender ID of its own can be taught into its actuator
+  from the Devices view (graduation cap), with the steps and a choice of sender ID; it sends what
+  the device's teach-in button sends (websocket `enocean_eltako/teach_in`).
+- **Panel, weak signal:** a hint above the Devices list counts the senders with a weak signal and
+  shows only them on a click; status filter **Weak signal**.
+- **Panel, send again:** the details of a sent telegram can send it once more.
+- **Development:** a preview page of the panel with sample data (`scripts/panel-preview`) and a
+  CI check that renders every view in a simulated browser.
+
+#### Fixed
+
+- **Panel in English:** milliseconds stand before AM/PM; the gateway card counts in lower case
+  and in the singular for one.
+
+**Deutsch**
+
 #### Hinzugefügt
 
 - **Panel, Einlernen:** ein Gerät mit eigener Sender-ID lässt sich in der Ansicht Geräte
@@ -856,6 +711,52 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   geschrieben und bei eins im Singular.
 
 ### [0.1.5] - 2026-10-22
+
+**English**
+
+#### Added
+
+- **Sender IDs:** the decimal value of an ID is an attribute (`decimal`) of the EnOcean ID and
+  Sender ID diagnostics sensors and an own column in the panel's Sender IDs view. The view
+  also shows a pool map (one square per ID, click to jump to its row), the next free ID, and
+  device groups can be collapsed.
+- **Swap a gateway:** reconfiguring a gateway now also asks for the model, so a defective
+  gateway or a FAM-USB can be replaced by another model (for example a network gateway)
+  without losing devices or sender IDs. The new gateway has to report the same base ID,
+  otherwise the change is refused. Bus gateways (FGW14-USB, FAM14) swap among themselves.
+
+#### Changed
+
+- **Panel, Devices:** one line per device with EEP, area and entity count, also for set-up
+  devices not heard yet; sortable by column, filterable by status (set up, unknown, silent),
+  area, gateway and text, with pages of 25 to 200 rows. The CSV export saves the whole filtered
+  list.
+- **Device page:** the model of a device lists the EEP it speaks, for example "FSR61
+  (M5-38-08)", so the integration page shows it in the device row. Existing devices update on
+  the next start; nothing is migrated.
+- **Sender IDs:** a radio gateway hands out base ID + 1 ... 127; the base ID itself is no
+  longer used (127 IDs per gateway). A device that already sends from the base ID keeps
+  working and is reported in the log: give it another sender ID.
+- **Panel:** senders hidden from a gateway's discovery are tagged "hidden" and not offered as a
+  new device; "x s ago" and last heard use the server's clock; times and numbers follow your
+  profile (time format, browser or server time zone, number format); the view is remembered,
+  and links like `/enocean-eltako?view=devices&sender=<ID>` open a filtered view; "Open
+  device" leads to the device page; success messages disappear after 4 s; sending a rocker
+  telegram can press and release; screen readers hear a lost connection and every message.
+- **Panel look:** one **Filter** button opens the rarer filters, and the set ones show as chips
+  with a cross above the list; the bar of the list stays on top while scrolling and shows the
+  gateways' state once their cards are out of view; empty views explain what to do (send a
+  telegram, reset the filters, open the integration); a compact pool map with a legend; one
+  button style (filled, outlined, text); own-styled lists and checkboxes; quieter column heads.
+  On phones the view tabs fit the width and the Takeover steps stand one below the other.
+
+#### Fixed
+
+- **Panel:** command and answer are paired by the device, not its name (two devices may share
+  a name); the Takeover view goes once nothing is left, without a reload; CSV exports guard
+  against spreadsheet formulas.
+
+**Deutsch**
 
 #### Hinzugefügt
 
@@ -904,6 +805,51 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### [0.1.4] - 2026-10-22
 
+**English**
+
+#### Changed
+
+- **Discovered devices:** senders a gateway hears but no device listens to are listed under
+  **Add device → Discovered devices** of that gateway instead of as cards on the integration
+  page and in the "Add hub" list. One notification per gateway announces new ones.
+- **Teach-in hints:** the device form names the learn function and the rotary switch
+  positions for switching actuators, dimmers and cover actuators (Eltako series 14).
+- **Panel:** "Add device" on an unknown sender opens the integration page and highlights its
+  gateway.
+- **Panel:** the gateway cards stand only above Telegrams and Devices, a single gateway has no
+  filter button; the views are tabs (arrow keys); the export button says it saves every
+  telegram matching the filter; a theme or primary colour of your own becomes the accent
+  colour; the takeover shows three steps (the never usable "Old IDs" step is gone), and
+  "Old integration off" opens the old integration's page; durations know days; on phones
+  export and clear sit in a ⋮ menu; Devices offers no send and clear, its export is a CSV of
+  the sender list.
+
+#### Added
+
+- **Old integration on the same gateway:** a repair issue names a gateway that the old
+  `eltako` integration also uses (same USB port, or same host and port).
+- **Sharing device definitions:** the actions `enocean_eltako.export_custom_devices` and
+  `enocean_eltako.import_custom_devices` hand definitions over as YAML text; imported ones are
+  stored as files in `enocean_eltako/custom_devices/`, your own file is never changed.
+- **Energy dashboard:** the action `enocean_eltako.add_energy_devices` adds the electricity
+  meters of your devices (with their power sensor) to the Energy dashboard.
+- **Hide sender:** senders that are not yours can be hidden (remembered per gateway) and shown
+  again under **Configure → Hidden senders**. The list keeps the newest 100 senders.
+- **Panel:** Devices lists your devices with no telegram in the monitor, with when they were
+  last heard and whether they are silent; the Live badge shows Connecting and No connection;
+  the send form gives an example of the right length per telegram type and checks the data
+  before sending.
+
+#### Fixed
+
+- **Panel:** clearing the display twice no longer brings back the telegrams of the first clear
+  after a reconnect; `/` and `P` no longer act in Sender IDs and Takeover; closing the send
+  form hides its hint; Devices searches data and values like Telegrams; older browsers without
+  `light-dark()` (iOS before 17.5) get the panel's colours; no status requests while the
+  browser tab is hidden.
+
+**Deutsch**
+
 #### Geändert
 
 - **Entdeckte Geräte:** Sender, die ein Gateway hört und auf die kein Gerät hört, stehen beim
@@ -948,6 +894,24 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### [0.1.3] - 2026-10-22
 
+**English**
+
+#### Added
+
+- **Device Proxy app:** its EnOcean gateways are discovered like those of the EnOcean Proxy app,
+  titled "(Device Proxy)", with replay and the status in the panel. The update issue for old
+  EnOcean Proxy versions does not apply to it (it names the version of the contract instead).
+- **Moving from the EnOcean Proxy to the Device Proxy:** a gateway set up through one proxy app
+  and announced by another is found by its base ID; its entry only gets the new address and
+  status port, devices and entities stay
+
+#### Fixed
+
+- **Panel on phones:** the view tabs in the header stay on one line and scroll sideways
+  instead of wrapping into a second line
+
+**Deutsch**
+
 #### Neu
 
 - **App Device Proxy:** ihre EnOcean-Gateways werden wie die der App EnOcean Proxy gefunden,
@@ -965,6 +929,16 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### [0.1.2] - 2026-10-21
 
+**English**
+
+#### Changed
+
+- **Panel:** new look like the Device Proxy app: white header with the views as tabs, rounded
+  cards and buttons, its own light and dark colours that follow Home Assistant's theme
+- **Documentation:** the teach-in guide lists which virtual sensor each actuator accepts
+
+**Deutsch**
+
 #### Geändert
 
 - **Panel:** neues Aussehen wie die Device-Proxy-App: weiße Kopfzeile mit den Ansichten als
@@ -973,6 +947,21 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Dokumentation:** die Anlernanleitung nennt, welchen virtuellen Sensor jeder Aktor annimmt
 
 ### [0.1.1] - 2026-10-21
+
+**English**
+
+#### Changed
+
+- **Panel:**
+  - Devices: values in one column, buttons for a sender's telegrams and for adding an unknown
+    sender, sorting by name, last heard, weakest signal or most telegrams, more about unknown
+    senders (telegram type, teach-in or possible profiles)
+  - Sender IDs: grouped by device, blocked IDs first with their note, readable profile names
+  - Takeover: after taking devices over the view moves on to checking the old IDs that are still
+    in use, the mapping is shorter per device
+  - the heading names the view, layouts for phones
+
+**Deutsch**
 
 #### Geändert
 
@@ -988,6 +977,53 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   - die Überschrift nennt die Ansicht, Darstellung für das Handy
 
 ### [0.1.0] - 2026-10-21
+
+**English**
+
+First version of the integration.
+
+#### Added
+
+- **Gateways:** Eltako FGW14-USB, FAM14 and FAM-USB, PioTek MGW-ETH (found through zeroconf), Symcon
+  EnOcean LAN Gateway and generic ESP2/ESP3 gateways. Serial ports use
+  Home Assistant's port picker, TCP (ser2net, LAN gateways) is supported too. Several gateways
+  work side by side, and the FAM14 bus can be used through bus groups with failover.
+- **Configuration only through the UI:** one config entry per gateway, one subentry per device.
+  Devices are added by learning the ID from a telegram, by category and kind, or by EEP.
+  Reconfigure is available for gateways and devices.
+- **Devices:** switching and dimming actuators (also channel 2 of two-channel actuators),
+  covers with position, vent slots and slat tilt, heating actuators and room controllers
+  (with cooling mode), meters (electricity, gas, water, energy dashboard ready), window
+  handles, contacts, wall switches, weather and air quality sensors, Permundo PSC plugs and
+  all standard EEP profiles as generic devices. [docs/devices.md](docs/devices.md) lists them.
+- **Several senders per actuator** (central command, rocker, controller, direction rocker),
+  with a sender ID pool: IDs are taken from base ID + 0...127 and stay blocked until the
+  teach-out is confirmed.
+- **Covers:** position tracking that anchors on end positions, a travel time assistant and
+  calibration (also on a schedule through a blueprint).
+- **Rocker gestures** (single, double, long press) with device triggers, plus blueprints for
+  lights, covers, scenes and calibration.
+- **Virtual devices:** Home Assistant sends as a contact (also with priority for lock-out
+  protection), temperature, motion and brightness sensor, weather station, scene button or
+  rocker with selectable buttons.
+- **Telegram monitor panel:** live telegram list with details, filters, sorting, exports,
+  signal quality per sender, gateway cards, sender ID table, sending a telegram and adding
+  unknown senders as devices.
+- **Takeover from the old `eltako` integration** in the panel: preview, selection, area and
+  label carry-over and a mapping of old to new entity IDs with their usage.
+- **Gateway care:** last-seen monitoring, state reconciliation at startup, repairs for an
+  unstable or silent connection, diagnostic sensors and diagnostics download.
+- **EnOcean Proxy** gateways are set up through Supervisor discovery.
+- Translations in German and English, brand images, German and English READMEs and a user
+  guide.
+
+#### Notes
+
+- The protocol layer (ESP2/ESP3, EEPs, FAM14 bus) is implemented in this repository without
+  EnOcean or Eltako libraries.
+- The official EnOcean Alliance files are not part of the repository (see [NOTICE](NOTICE)).
+
+**Deutsch**
 
 Erste Version der Integration.
 
