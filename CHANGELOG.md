@@ -6,6 +6,13 @@ All notable changes to this project are documented here, in English and German
 
 ## English
 
+### [Unreleased]
+
+#### Changed
+
+- **Telegram list** tints sent telegrams slightly and marks them with an accent bar, so they stand out from received ones.
+- **Takeover search** also finds labels, in the review preview (device and entities) and in the reports.
+
 ### [1.2.0] - 2026-10-24
 
 #### Changed
@@ -490,6 +497,13 @@ First version of the integration.
 ## Deutsch
 
 Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
+
+### [Unreleased]
+
+#### Geändert
+
+- **Telegrammliste** hinterlegt gesendete Telegramme leicht farbig und markiert sie mit einem Akzentbalken, damit sie sich von empfangenen abheben.
+- **Suche in der Übernahme** findet jetzt auch Labels, in der Vorschau der Prüfung (Gerät und Entitäten) und in den Berichten.
 
 ### [1.2.0] - 2026-10-24
 

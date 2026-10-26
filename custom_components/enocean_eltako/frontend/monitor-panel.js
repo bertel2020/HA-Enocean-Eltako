@@ -294,6 +294,8 @@ const STYLE = `
   .telegrams td:first-child { padding-left: 16px; }
   .telegrams tbody tr:first-child td { border-top: 0; }
   tr.row { cursor: pointer; }
+  tr.row.tx > td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  tr.row.tx > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
   tr.row:hover > td { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   tr.row.open > td, tr.detail-row > td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   tr.row.fresh > td { animation: fresh 1.2s ease-out; }
@@ -579,7 +581,8 @@ const STYLE = `
     tr.row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 4px 10px; padding: 12px;
       grid-template-areas: "dir who who time" "dir values signal end"; border-top: 1px solid var(--line); }
     .telegrams tbody tr:first-child { border-top: 0; }
-    tr.row > td { display: block; padding: 0; border: 0; background: none !important; }
+    tr.row > td { display: block; padding: 0; border: 0; background: none !important; box-shadow: none !important; }
+    tr.row.tx { background: color-mix(in srgb, var(--accent) 5%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
     tr.row:hover, tr.row.open { background: color-mix(in srgb, var(--soft) 60%, transparent); }
     tr.row.fresh { animation: fresh 1.2s ease-out; }
     tr.row > td.time { grid-area: time; font-size: 12px; text-align: right; }
@@ -2257,7 +2260,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           }</div>
         </dl></td></tr>`
       : "";
-    const classes = ["row", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
+    const classes = ["row", r.dir === "tx" ? "tx" : "", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
     return `<tr class="${classes}" data-key="${esc(key)}">
       <td class="time">${clock}</td>
       <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
