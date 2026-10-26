@@ -330,6 +330,9 @@ const STYLE = `
   .bars { width: 18px; height: 14px; }
   .bars rect { fill: var(--line); }
   .bars rect.on { fill: var(--muted); }
+  .bars.ok rect.on { fill: var(--ok); }
+  .bars.warn rect.on { fill: var(--warn); }
+  .bars.bad rect.on { fill: var(--bad); }
   .details { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 20px;
     margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
   .details div { min-width: 0; }
@@ -634,7 +637,8 @@ function bars(dbm) {
   const rects = [0, 1, 2, 3]
     .map((i) => `<rect x="${i * 5}" y="${10 - i * 3}" width="3" height="${4 + i * 3}" rx="1" class="${i < level ? "on" : ""}"></rect>`)
     .join("");
-  return `<svg class="bars" viewBox="0 0 18 14" role="img" aria-label="${dbm} dBm"><title>${dbm} dBm</title>${rects}</svg>`;
+  const tone = level >= 3 ? "ok" : level === 2 ? "warn" : "bad"; // colour follows the bars
+  return `<svg class="bars ${tone}" viewBox="0 0 18 14" role="img" aria-label="${dbm} dBm"><title>${dbm} dBm</title>${rects}</svg>`;
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
