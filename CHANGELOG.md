@@ -10,6 +10,7 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Telegram details** put the data first, with the previous telegram right below it and the changed bytes marked in both (plus a line like "Byte 3 changed: 44 → 49"). The metadata sits in two rows, the signal is left out (it is in the row), and the actions are icon buttons.
 - **Devices** list: wider values column, narrower area and entity columns, and "Add device" is a round filled plus button (its name stays as the tooltip).
 - **Signal curve** in the device view takes the colour of the last value, ends in a dot and shows the weak-signal line (-85 dBm).
 - **Search** shows the `/` shortcut as a small key in the field instead of a tooltip over the whole label; the column headers lose their sort tooltip (the sort state stays in the arrow and for screen readers).
@@ -512,6 +513,7 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Telegramm-Details** zeigen zuerst die Daten, darunter das vorherige Telegramm, die geänderten Bytes sind in beiden markiert (dazu eine Zeile wie „Byte 3 geändert: 44 → 49“). Die Metadaten stehen in zwei Zeilen, das Signal entfällt (es steht in der Zeile), und die Aktionen sind Icon-Buttons.
 - **Geräteliste**: breitere Spalte für die Werte, schmalere für Bereich und Entitäten, und „Gerät hinzufügen“ ist ein runder, gefüllter Plus-Button (der Name bleibt als Tooltip).
 - **Signalkurve** in der Geräteansicht übernimmt die Farbe des letzten Werts, endet in einem Punkt und zeigt die Linie für schwaches Signal (-85 dBm).
 - **Suche** zeigt das Kürzel `/` als kleine Taste im Feld statt als Tooltip über dem ganzen Label; die Spaltenköpfe verlieren den Sortier-Tooltip (der Sortierzustand bleibt im Pfeil und für Screenreader erhalten).

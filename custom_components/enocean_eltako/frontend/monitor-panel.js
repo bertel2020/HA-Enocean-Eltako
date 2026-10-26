@@ -340,14 +340,24 @@ const STYLE = `
   .bars.ok rect.on { fill: var(--ok); }
   .bars.warn rect.on { fill: var(--warn); }
   .bars.bad rect.on { fill: var(--bad); }
-  .details { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 20px;
-    margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+  .details { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
   .details div { min-width: 0; }
-  .details dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-  .details dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+  .details .hero { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: baseline; align-self: start; background: var(--soft); border-radius: 8px; padding: 10px 12px; }
+  .details .hero .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .details .hero .v { font-size: 16px; letter-spacing: .06em; overflow-wrap: anywhere; }
+  .details .hero .v.prev { color: var(--muted); }
+  .details .hero .hint { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+  .details .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; align-items: flex-start; }
+  .details .acts .icon-btn { width: 34px; height: 34px; border: 1px solid var(--input-line); color: var(--accent); background: var(--surface); }
+  .details .acts .icon-btn:hover { background: var(--accent-soft); color: var(--accent-hover); }
+  .details .acts .icon-btn svg { width: 18px; height: 18px; }
+  .details .acts .icon-btn.add { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .details .acts .icon-btn.add:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .details .meta { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px 16px; margin: 0; padding-top: 12px; border-top: 1px solid var(--line); }
+  .details dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .details dd { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
   .details .wide { grid-column: 1 / -1; }
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
-  .details .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
   .m-only { display: none; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .sendform { padding: 12px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 8%, transparent); }
@@ -665,7 +675,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = ["[data-sel]", ".expand", "[data-copy]", "[data-only]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = ["[data-sel]", ".expand", "[data-copy]", "[data-only]", "[data-hide]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -2207,14 +2217,18 @@ class EnOceanEltakoPanel extends HTMLElement {
     const bytes = r.data.match(/../g) || [];
     const before = prev.data.match(/../g) || [];
     const same = bytes.length === before.length;
-    const raw = bytes.map((b, i) => (same && b === before[i] ? esc(b) : `<span class="chg">${esc(b)}</span>`)).join(" ");
+    const mark = (list) => list.map((b, i) => (same && b === (list === bytes ? before : bytes)[i] ? esc(b) : `<span class="chg">${esc(b)}</span>`)).join(" ");
+    const raw = mark(bytes);
+    const differing = same ? bytes.flatMap((b, i) => (b === before[i] ? [] : [i])) : [];
+    const bytesText = differing.length === 1 ? this._t.byteChanged(differing[0] + 1, before[differing[0]], bytes[differing[0]]) : differing.length > 1 ? this._t.bytesChanged(differing.length) : "";
     const now = new Map((r.fields || []).map((f) => [f.label, f]));
     const changes = (prev.fields || [])
       .map((old) => [old, now.get(old.label)])
       .filter(([old, cur]) => cur && cur.value !== old.value)
       .map(([old, cur]) => `${this._label(cur.label)}: ${this._value(old.value)} → ${this._value(cur.value)}${cur.unit ? ` ${cur.unit}` : ""}`);
     const unchanged = same && r.data === prev.data;
-    return { raw, prev: prev.data, text: changes.length ? changes.join(" · ") : unchanged ? this._t.noChange : "" };
+    const text = changes.length ? changes.join(" · ") : unchanged ? this._t.noChange : "";
+    return { raw, prev: mark(before), text: [bytesText, text].filter(Boolean).join(" · ") };
   }
 
   _repeats(r) {
@@ -2284,16 +2298,26 @@ class EnOceanEltakoPanel extends HTMLElement {
     const copies = expanded && !r.duplicate ? this._repeats(r) : 0;
     const hops = parseInt(r.status, 16) & 0x0f; // low nibble of the status byte: repeater count
     const details = expanded
-      ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><dl class="details">
+      ? `<tr class="detail-row" data-key="${esc(key)}"><td colspan="${this._multi ? 8 : 7}"><div class="details">
+          <div class="hero">
+            <span class="l">${esc(t.raw)}</span><span class="v mono">${diff ? diff.raw : esc(r.data)}</span>
+            ${diff ? `<span class="l">${esc(t.before)}</span><span class="v prev mono">${diff.prev}</span>` : ""}
+            ${diff?.text ? `<span class="hint">${esc(diff.text)}</span>` : ""}
+          </div>
+          <div class="acts">
+            <button class="icon-btn" data-copy="${esc(key)}" title="${esc(t.copy)}" aria-label="${esc(t.copy)}">${svg(ICON.copy)}</button>
+            <button class="icon-btn" data-only="${esc(r.device || r.sender)}" title="${esc(r.device ? t.filterDevice : t.filterSender)}" aria-label="${esc(r.device ? t.filterDevice : t.filterSender)}">${svg(ICON.filter)}</button>
+            ${r.device_key && this._inPanel(r.device_key) ? `<button class="icon-btn" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}" aria-label="${esc(t.inPanel)}">${svg(ICON.list)}</button>` : ""}
+            ${r.ha_device ? `<button class="icon-btn" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDevice)}">${svg(ICON.open)}</button>` : ""}
+            ${this._canResend(r) ? `<button class="icon-btn" data-resend="${esc(key)}" title="${esc(t.resendHint)}" aria-label="${esc(t.resend)}">${svg(ICON.send)}</button>` : ""}
+            ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
+          </div>
+          <dl class="meta">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true, true))}</dd></div>
           <div><dt>${esc(t.gateway)}</dt><dd>${esc(r.gateway_name)}</dd></div>
           <div><dt>${esc(t.type)}</dt><dd>${esc(type)} (${esc(r.rorg)})</dd></div>
-          <div><dt>${esc(t.raw)}</dt><dd class="mono">${diff ? diff.raw : esc(r.data)}</dd></div>
-          ${diff ? `<div><dt>${esc(t.previous)}</dt><dd class="mono">${esc(diff.prev)}</dd></div>` : ""}
-          ${diff?.text ? `<div class="wide"><dt>${esc(t.change)}</dt><dd>${esc(diff.text)}</dd></div>` : ""}
-          <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           <div><dt>${esc(t.destination)}</dt><dd class="mono">${esc(r.destination)}</dd></div>
-          <div><dt>${esc(t.signal)}</dt><dd>${r.dbm != null ? `${esc(r.dbm)} dBm` : esc(t.unavailable)}</dd></div>
+          <div><dt>${esc(t.status)}</dt><dd class="mono">${esc(r.status)}</dd></div>
           ${hops ? `<div><dt>${esc(t.repeater)}</dt><dd>${hops}</dd></div>` : ""}
           ${copies ? `<div><dt>${esc(t.repeated)}</dt><dd>${esc(t.heardTimes(copies))}</dd></div>` : ""}
           ${r.candidates ? `<div class="wide"><dt>${esc(t.maybe)}</dt><dd class="mono">${esc(r.candidates.join(", "))}</dd></div>` : ""}
@@ -2301,10 +2325,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : r.models?.length ? `<div class="wide"><dt>${esc(t.models)}</dt><dd>${esc(r.models.join(", "))}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
           ${r.profile ? `<div><dt>${esc(t.profile)}</dt><dd>${esc(this._profile(r.profile))}</dd></div>` : ""}
-          <div class="actions"><button class="chip" data-copy="${esc(key)}">${svg(ICON.copy)}${esc(t.copy)}</button><button class="chip" data-only="${esc(r.device || r.sender)}">${svg(ICON.filter)}${esc(r.device ? t.filterDevice : t.filterSender)}</button>${r.device_key && this._inPanel(r.device_key) ? `<button class="chip" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}">${svg(ICON.list)}${esc(t.inPanel)}</button>` : ""}${r.ha_device ? `<button class="chip" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${unknown && !hidden ? `<button class="chip add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}">${svg(ICON.plus)}${esc(t.add)}</button><button class="chip" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}">${svg(ICON.close)}${esc(t.hideSender)}</button>` : ""}${
-            this._canResend(r) ? `<button class="chip" data-resend="${esc(key)}" title="${esc(t.resendHint)}">${svg(ICON.send)}${esc(t.resend)}</button>` : ""
-          }</div>
-        </dl></td></tr>`
+          </dl>
+        </div></td></tr>`
       : "";
     const classes = ["row", r.dir === "tx" ? "tx" : "", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
     return `<tr class="${classes}" data-key="${esc(key)}">
