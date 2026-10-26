@@ -526,6 +526,7 @@ const STYLE = `
   .devices .dev .sub { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 0; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
+  .values .maybe { flex: 1 0 100%; min-width: 0; }
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   @media (max-width: 760px) {
     .devices { grid-template-columns: 28px minmax(0, 1fr) auto; }
@@ -2223,9 +2224,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       : `<i class="mark" aria-hidden="true"></i><span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
     const tags = (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
-    const extra =
-      (r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "") +
-      (r.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span>` : "");
+    const extra = r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "";
+    const maybe = r.candidates ? `<div class="maybe"><span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(r.candidates.join(", "))}</span></div>` : "";
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
     const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
@@ -2273,7 +2273,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
       <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
       <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
-      <td class="content"><div class="values">${extra}${values}</div></td>
+      <td class="content"><div class="values">${extra}${values}${maybe}</div></td>
       <td class="sig"><span class="signal">${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span></span></td>
       ${this._multi ? `<td class="gwc"><div class="gw">${esc(r.gateway_name)}</div></td>` : ""}
       <td class="end"><button class="expand" aria-expanded="${expanded}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button></td>
@@ -2977,9 +2977,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
     const hints = d.unknown
       ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
-        (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "") +
-        (d.candidates ? `<span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span>` : "")
+        (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
       : (d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "") + (d.disabled ? `<span class="tag">${esc(t.selDisabledTag)}</span>` : "");
+    const maybe = d.unknown && d.candidates ? `<div class="maybe"><span class="tag" title="${esc(t.maybeHint)}">${esc(t.maybe)} ${esc(d.candidates.join(", "))}</span></div>` : "";
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const stats = d.quiet
@@ -3006,7 +3006,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
       <div class="c-area">${d.area ? esc(d.area) : none}</div>
       <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>
-      <div class="values">${hints}${values}</div>
+      <div class="values">${hints}${values}${maybe}</div>
       <div class="stats">${stats}</div>
       <div class="acts">${acts}${chevron}</div>
       ${open ? this._devDetail(d, now) : ""}
