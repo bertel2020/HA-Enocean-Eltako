@@ -10,6 +10,7 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
+- **Telegram list** puts a small dot before the sender: filled for known devices, hollow for unknown ones.
 - **Signal bars** in the telegram list and the device view are coloured by strength: green, amber or red.
 - **Telegram list** tints sent telegrams slightly and marks them with an accent bar, so they stand out from received ones.
 - **Takeover search** also finds labels, in the review preview (device and entities) and in the reports.
@@ -503,6 +504,7 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
+- **Telegrammliste** setzt einen kleinen Punkt vor den Sender: gefüllt für bekannte Geräte, hohl für unbekannte.
 - **Signalbalken** in der Telegrammliste und der Geräteansicht sind nach Stärke eingefärbt: grün, gelb oder rot.
 - **Telegrammliste** hinterlegt gesendete Telegramme leicht farbig und markiert sie mit einem Akzentbalken, damit sie sich von empfangenen abheben.
 - **Suche in der Übernahme** findet jetzt auch Labels, in der Vorschau der Prüfung (Gerät und Entitäten) und in den Berichten.

@@ -310,6 +310,8 @@ const STYLE = `
   .dir.tx { color: var(--accent); background: var(--accent-soft); }
   .who .line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .who .name { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who .mark { flex: none; width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--muted); }
+  .who .mark.known { border-color: var(--accent); background: var(--accent); }
   .who .name.unknown { font-weight: 400; color: var(--muted); }
   .who .line2 { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
   .tag { flex: none; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: var(--tag-bg); color: var(--tag-text); white-space: nowrap; }
@@ -2216,8 +2218,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const unknown = !r.device && r.dir === "rx";
     const hidden = unknown && this._isHidden(r.gateway, r.sender);
     const name = r.device
-      ? `<span class="name">${esc(r.device)}</span>`
-      : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
+      ? `<i class="mark known" aria-hidden="true"></i><span class="name">${esc(r.device)}</span>`
+      : `<i class="mark" aria-hidden="true"></i><span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
     const tags = (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra =
