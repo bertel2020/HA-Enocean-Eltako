@@ -10,7 +10,8 @@ All notable changes to this project are documented here, in English and German
 
 #### Changed
 
-- **Could be** (profile candidates of an unknown sender) now sits below the value, in the telegram list and the device view.
+- **Telegram list** can hide an unknown sender from discovery with one click (button in the opened row). It is shown again under Configure → Hidden senders.
+- **Could be** (profile candidates of an unknown sender) now sits below the value and lists two profiles plus "+n" (all of them in the tooltip), in the telegram list and the device view.
 - **Sender IDs** show the number counted from the base ID (1 to 127) instead of the decimal ID, in the list and on the map.
 - **Devices** show the status chips, the search and the filters in one row.
 - **Sender IDs** show the status chips, the search and the sorting in one row.
@@ -508,7 +509,8 @@ Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 #### Geändert
 
-- **Könnte sein** (Profil-Vorschläge für unbekannte Sender) steht jetzt unter dem Wert, in der Telegrammliste und der Geräteansicht.
+- **Telegrammliste** kann einen unbekannten Sender mit einem Klick aus der Discovery ausblenden (Button in der aufgeklappten Zeile). Wieder anzeigen unter Konfigurieren → Ausgeblendete Sender.
+- **Könnte sein** (Profil-Vorschläge für unbekannte Sender) steht jetzt unter dem Wert und zeigt zwei Profile plus „+n“ (alle im Tooltip), in der Telegrammliste und der Geräteansicht.
 - **Sender-IDs** zeigen statt der Dezimal-ID die Nummer ab der Basis-ID (1 bis 127), in der Liste und auf der Karte.
 - **Geräte** zeigen Status-Chips, Suche und Filter in einer Zeile.
 - **Sender-IDs** zeigen Status-Chips, Suche und Sortierung in einer Zeile.
