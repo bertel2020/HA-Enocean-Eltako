@@ -539,7 +539,7 @@ const STYLE = `
   .dev-detail .mini { height: 32px; max-width: 100%; min-width: 12em; }
   .dev-detail input.mini { margin-top: 4px; width: 100%; border: 1px solid var(--input-line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
   .devices .dev.quiet .name { color: var(--muted); }
-  .spark { display: block; }
+  .spark { display: block; flex: none; }
   .spark .weak { stroke: var(--line); stroke-dasharray: 2 2; }
   .spark.ok { color: var(--ok); } .spark.warn { color: var(--warn); } .spark.bad { color: var(--bad); }
   .spark circle { fill: currentColor; }
@@ -3010,18 +3010,23 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _sparkline(dbm) {
-    // the signal of the last telegrams as a small curve; the band is fixed (-100 to -30 dBm),
-    // so curves of different senders compare
+    // the signal of the last telegrams as a curve; the band follows the data (at least 16 dB
+    // wide, so a steady sender stays calm), the dashed "weak" line shows only inside the band
     if (dbm.length < 2) return "";
-    const [w, h] = [150, 34];
-    const y = (v) => (h - 2 - ((Math.min(-30, Math.max(-100, v)) + 100) / 70) * (h - 4)).toFixed(1);
+    const [w, h] = [96, 32];
+    const lo0 = Math.min(...dbm);
+    const hi0 = Math.max(...dbm);
+    const span = Math.max(16, hi0 - lo0);
+    const lo = (hi0 + lo0) / 2 - span / 2;
+    const y = (v) => (h - 3 - ((v - lo) / span) * (h - 6)).toFixed(1);
     const points = dbm.map((v, i) => `${((i / (dbm.length - 1)) * w).toFixed(1)},${y(v)}`).join(" ");
-    const title = this._t.trend(dbm.length, Math.min(...dbm), Math.max(...dbm));
-    // the colour follows the last value like the bars; the dashed line is the "weak" threshold
+    const title = this._t.trend(dbm.length, lo0, hi0);
+    // the colour follows the last value like the bars
     const last = dbm[dbm.length - 1];
     const tone = last >= -80 ? "ok" : last >= -90 ? "warn" : "bad";
     const end = points.slice(points.lastIndexOf(" ") + 1).split(",");
-    return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title><line class="weak" x1="0" x2="${w}" y1="${y(WEAK_DBM)}" y2="${y(WEAK_DBM)}"/><polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="3"/></svg>`;
+    const weak = WEAK_DBM > lo && WEAK_DBM < lo + span ? `<line class="weak" x1="0" x2="${w}" y1="${y(WEAK_DBM)}" y2="${y(WEAK_DBM)}"/>` : "";
+    return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${weak}<polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="3"/></svg>`;
   }
 
   _deviceRow(d, now) {
