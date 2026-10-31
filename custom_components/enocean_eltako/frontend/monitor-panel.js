@@ -539,7 +539,7 @@ const STYLE = `
   .dev-detail .mini { height: 32px; max-width: 100%; min-width: 12em; }
   .dev-detail input.mini { margin-top: 4px; width: 100%; border: 1px solid var(--input-line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
   .devices .dev.quiet .name { color: var(--muted); }
-  .spark { display: block; flex: none; }
+  .spark { display: block; flex: none; width: 96px; height: 32px; }
   .spark .weak { stroke: var(--line); stroke-dasharray: 2 2; }
   .spark.ok { color: var(--ok); } .spark.warn { color: var(--warn); } .spark.bad { color: var(--bad); }
   .spark circle { fill: currentColor; }

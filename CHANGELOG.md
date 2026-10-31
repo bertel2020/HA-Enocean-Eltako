@@ -10,13 +10,13 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
-- **Signal curve** in the devices list is larger (96 × 32 px, no longer squeezed) and zooms to the data: the band is at least 16 dB wide, so a steady sender no longer shows a flat line. The weak-signal line appears only when it lies inside the band.
+- **Signal curve** in the devices list is larger (96 × 32 px; the global 20 px icon size no longer squeezes it) and zooms to the data: the band is at least 16 dB wide, so a steady sender no longer shows a flat line. The weak-signal line appears only when it lies inside the band.
 
 **Deutsch**
 
 #### Geändert
 
-- **Signalkurve** in der Geräteliste ist größer (96 × 32 px, nicht mehr gestaucht) und passt sich den Daten an: der Bereich ist mindestens 16 dB breit, ein gleichmäßiger Sender zeigt also keine flache Linie mehr. Die Linie für schwaches Signal erscheint nur, wenn sie im Bereich liegt.
+- **Signalkurve** in der Geräteliste ist größer (96 × 32 px; die globale Icon-Größe von 20 px staucht sie nicht mehr) und passt sich den Daten an: der Bereich ist mindestens 16 dB breit, ein gleichmäßiger Sender zeigt also keine flache Linie mehr. Die Linie für schwaches Signal erscheint nur, wenn sie im Bereich liegt.
 
 ### [1.3.0] - 2026-10-26
 
