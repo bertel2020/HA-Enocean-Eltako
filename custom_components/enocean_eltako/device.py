@@ -43,6 +43,8 @@ from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.eltako import switching
+from .protocol.eep.model import out_of_range
+from .protocol.eep.std.profiles import PROFILES
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.eep.ute import decode_ute_request, encode_ute_response
 from .protocol.ids import BROADCAST, format_id, parse_id
@@ -100,7 +102,8 @@ class RadioStats:
     rssi_max: int | None = None
     repeat_count: int | None = None  # status bits 0...3
     telegrams: int = 0
-    mismatches: int = 0  # telegrams in a row that fit none of the device's profiles
+    mismatches: int = 0  # telegrams in a row that fit none of the device's profiles ...
+    mismatch_range: bool = False  # ... or whose values lie outside the profile's ranges
     commands: int = 0
     confirmed: int = 0
     heard: dict[str, GatewayHeard] = field(default_factory=dict)  # per gateway entry ID
@@ -308,11 +311,12 @@ class EnOceanDevice:
         if received.telegram.rorg == Rorg.UTE:
             self._answer_ute(received.telegram)
             return
-        values = None
+        values, matched = None, None
         for ref in (self.model.receive, *self.model.receive_extra):
             if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
+                matched = ref
                 break
-        self._count_mismatch(received.telegram, values)
+        self._count_mismatch(received.telegram, values, matched)
         if values is None or values.get("channel", self.channel) != self.channel:
             return
         self.last_received = received
@@ -321,14 +325,23 @@ class EnOceanDevice:
         for listener in list(self._listeners):
             listener(values)
 
-    def _count_mismatch(self, telegram: RadioTelegram, values: dict[str, Any] | None) -> None:
-        """Count telegrams in a row that fit none of the profiles (a repair after a few)."""
+    def _count_mismatch(
+        self, telegram: RadioTelegram, values: dict[str, Any] | None, matched: EEPRef | None
+    ) -> None:
+        """Count telegrams in a row that fit none of the profiles or whose values lie outside
+        the ranges of a standard profile (a repair after a few)."""
         if values is not None:
-            self.stats.mismatches = 0
+            profile = PROFILES.get(matched.eep) if matched and matched.variant == "std" else None
+            if profile is not None and out_of_range(profile, telegram.data, telegram.status):
+                self.stats.mismatches += 1
+                self.stats.mismatch_range = True
+            else:
+                self.stats.mismatches = 0
         elif self.model.receive is not None and not (
             telegram.rorg == Rorg.BS4 and decode_teach_in_4bs(telegram.data) is not None
         ):  # a teach-in telegram is not a mismatch
             self.stats.mismatches += 1
+            self.stats.mismatch_range = False
 
     def has_sender(self, profile: str) -> bool:
         return profile in self.senders

@@ -417,8 +417,9 @@ Reparaturen weisen darauf hin, wo etwas zu tun ist:
 - Bus-Aktoren bestätigen Befehle im Mittel erst nach mehr als 3 s: der FAM14 gibt
   Bestätigungen nur in Betriebsart 5 mit einer per PCT14 erstellten Geräteliste sofort weiter
 - ein Gerät, dessen letzte 5 Telegramme hintereinander zu keinem seiner Profile passen (etwa
-  ein Tastertelegramm von einem Zähler): es wurde sehr wahrscheinlich mit der falschen Art
-  angelegt. Einlerntelegramme zählen nicht, ein passendes Telegramm hebt die Reparatur auf
+  ein Tastertelegramm von einem Zähler) oder bei einem Standardprofil Werte außerhalb seiner
+  Bereiche haben: es wurde sehr wahrscheinlich mit der falschen Art angelegt. Im ersten Fall
+  nennt die Reparatur Geräte, für die solche Telegramme typisch sind. Einlerntelegramme zählen nicht, ein passendes Telegramm hebt die Reparatur auf
 
 ## Übernahme der alten Integration eltako
 

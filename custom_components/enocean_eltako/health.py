@@ -15,15 +15,19 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_track_time_interval
 
+from .catalog import CATALOG
 from .const import CONF_DEVICE, CONF_MODEL, CONF_PATH, DOMAIN
 from .protocol.models import MODELS
+from .protocol.telegram import Rorg
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
     from .device import EnOceanDevice
+    from .protocol.telegram import RadioTelegram
 
 CHECK_INTERVAL = timedelta(minutes=1)
 GATEWAY_REPAIR_AFTER = 5 * 60  # seconds
+MAX_SUGGESTIONS = 3
 PROFILE_MISMATCH_AFTER = 5  # telegrams in a row that fit none of a device's profiles
 SLOW_CONFIRMATION = 3.0  # E11: median seconds from command to the bus actor's answer
 SLOW_MIN_SAMPLES = 5
@@ -161,14 +165,32 @@ def _check_profile(hass: HomeAssistant, device: EnOceanDevice) -> None:
         issue_id,
         is_fixable=False,
         severity=ir.IssueSeverity.WARNING,
-        translation_key="device_profile_mismatch",
+        translation_key="device_profile_range"
+        if device.stats.mismatch_range
+        else "device_profile_mismatch",
         translation_placeholders={
             "name": device.subentry.title,
             "profile": str(device.model.receive),
             "rorg": f"{telegram.rorg:02X}",
             "count": str(device.stats.mismatches),
+            "suggestions": _suggestions(device, telegram),
         },
     )
+
+
+def _suggestions(device: EnOceanDevice, telegram: RadioTelegram) -> str:
+    """Devices whose telegrams look like this one, from the add-device suggestions."""
+    from .protocol.eep.teach_in import decode_teach_in_4bs  # noqa: PLC0415
+    from .subentry_flow import candidates  # noqa: PLC0415 - the flow imports a lot
+
+    teach_in = decode_teach_in_4bs(telegram.data) if telegram.rorg == Rorg.BS4 else None
+    names = []
+    for kind in candidates(telegram.rorg, teach_in, telegram.data):
+        model = CATALOG.get(kind)
+        if model is None or model.id == device.model.id:
+            continue
+        names.append((model.example_list or (model.id,))[0])
+    return ", ".join(dict.fromkeys(names[:MAX_SUGGESTIONS])) or "-"
 
 
 def _check_silent(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
