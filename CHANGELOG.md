@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Record and report** for unknown senders: listens to the sender for 60 seconds first, so the telegrams of what you do with the device are in the device report.
 - The **profile check repair** also fires for values outside the ranges of a standard profile, and names devices that telegrams of the unexpected type are typical for.
 - **Import notes from JSON** in the Devices view menu: reads the notes and further devices of an earlier documentation export back (matched by base ID and device address), filling in only what is empty. Devices are never imported.
 - A gateway's details offer to **remove the notes of deleted devices**, which otherwise stay for when the device returns.
@@ -37,6 +38,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Aufnehmen und melden** bei unbekannten Sendern: hört den Sender zuerst 60 Sekunden ab, damit die Telegramme dessen, was du mit dem Gerät machst, im Gerätebericht stehen.
 - Die **Reparatur „Profil passt nicht“** greift auch bei Werten außerhalb der Bereiche eines Standardprofils und nennt Geräte, für die Telegramme des unerwarteten Typs typisch sind.
 - **Notizen aus JSON importieren** im Menü der Geräteansicht: liest die Notizen und weiteren Geräte eines früheren Dokumentations-Exports wieder ein (zugeordnet über Base-ID und Geräteadresse) und füllt nur Leeres. Geräte werden nie importiert.
 - Die Details eines Gateways bieten an, die **Notizen gelöschter Geräte zu entfernen**; sonst bleiben sie, falls das Gerät zurückkehrt.

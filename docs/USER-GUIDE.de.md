@@ -258,7 +258,10 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
   Capture-Zeilen und öffnet die Geräteanfrage auf GitHub, in die du sie einfügst. Sender-IDs,
   Gateway-Name und Zeiten werden ersetzt, bevor etwas kopiert wird; Telegrammdaten, Status und
   Signalstärke bleiben, weil die Decoder sie brauchen. Home Assistant sendet nichts, und im Link
-  stehen keine Daten.
+  stehen keine Daten. **Aufnehmen und melden** (Play-Knopf) hört den Sender zuerst 60 Sekunden
+  ab, damit die Telegramme dessen, was du mit dem Gerät machst, im Bericht stehen: Tasten
+  drücken oder das Gerät auslösen, dann die Details des Senders wieder öffnen und die
+  aufgenommenen Telegramme kopieren.
 
 ### Suchen, Filter, Anhalten
 
