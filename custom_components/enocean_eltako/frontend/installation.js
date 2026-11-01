@@ -36,6 +36,7 @@ export const INSTALLATION_STYLE = `
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .installation .itable td.name { min-width: 160px; }
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
+  .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
