@@ -35,6 +35,7 @@ from .const import (
 )
 from .device import UTE_WINDOW
 from .discovery import async_set_hidden
+from .documentation import collect as collect_documentation
 from .hub import async_get_hub
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
@@ -64,6 +65,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_teach_in)
     websocket_api.async_register_command(hass, ws_device_details)
     websocket_api.async_register_command(hass, ws_sender_test)
+    websocket_api.async_register_command(hass, ws_documentation)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
@@ -596,6 +598,16 @@ def ws_device_details(
         connection.send_error(msg["id"], "unknown_device", "no such device")
         return
     connection.send_result(msg["id"], device_details(device))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/documentation"})
+@websocket_api.require_admin
+@callback
+def ws_documentation(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The installation documentation: print view, CSV and JSON of the panel are made from it."""
+    connection.send_result(msg["id"], collect_documentation(hass))
 
 
 @websocket_api.websocket_command(
