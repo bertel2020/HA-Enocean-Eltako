@@ -15,6 +15,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .catalog import (
+    CENTRAL,
     DIRECTION_ROCKER,
     GROUP_VIRTUAL,
     OPT_ROCKER_OFF,
@@ -146,6 +147,7 @@ class EnOceanDevice:
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
         self._ute_profile: str | None = None  # VLD: profile whose teach-in is armed ...
         self._ute_until = 0.0  # ... until this time.monotonic()
+        self.last_values: dict[str, Any] = {}  # the last decoded values of the device's channel
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
 
     @property
@@ -320,6 +322,7 @@ class EnOceanDevice:
         if values is None or values.get("channel", self.channel) != self.channel:
             return
         self.last_received = received
+        self.last_values = values
         if "on" in values:
             self.wall_state = bool(values["on"])
         for listener in list(self._listeners):
@@ -402,10 +405,15 @@ class EnOceanDevice:
 
     def sender_test_error(self) -> str | None:
         """Why the senders cannot be tested (a code for the panel), None when they can: only
-        switching actuators with a known state, as the test repeats that state."""
-        if self.model.kind != "switch" or not self.senders:
+        switching actuators and dimmers with a known state, as the test repeats that state.
+        Covers are not tested: every command moves them or interrupts a run."""
+        if self.model.kind not in ("switch", "dimmer") or not self.senders:
             return "unsupported"
-        return "state_unknown" if self.wall_state is None else None
+        if self.wall_state is None or (
+            self.model.kind == "dimmer" and self.wall_state and "brightness" not in self.last_values
+        ):
+            return "state_unknown"
+        return None
 
     async def async_test_senders(self) -> list[dict[str, str]]:
         """Send the actuator's current state through each sender in turn: harmless, and an
@@ -415,7 +423,19 @@ class EnOceanDevice:
         results = []
         for profile_id, sender_id in self.senders.items():
             profile = self.model.sender_profile(profile_id)
-            if profile.switch_fn is not None:
+            if self.model.kind == "dimmer":
+                # the brightness it has now (command 2 sets it exactly); a rocker press or a
+                # switch-on command would go to the stored brightness and could change it
+                result = (
+                    await self._test_telegram(
+                        profile,
+                        sender_id,
+                        switching.encode_dim(self.last_values.get("brightness", 0), on=state),
+                    )
+                    if profile_id == CENTRAL.id
+                    else "skipped"
+                )
+            elif profile.switch_fn is not None:
                 result = await self._test_telegram(profile, sender_id, profile.switch_fn(state))
             elif profile_id == ROCKER.id and self.options.get(
                 OPT_ROCKER_ON, "a0"
