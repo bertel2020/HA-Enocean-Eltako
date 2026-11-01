@@ -156,6 +156,16 @@ ${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.
 </section>`;
     })
     .join("");
+  // several gateways: a first page with one line each
+  const count = (gw) => {
+    const pool = gw.pools.flatMap((p) => p.senders);
+    return [gw.devices.length, pool.length, pool.filter((s) => s.state === "blocked").length, (gw.heard ?? []).length];
+  };
+  const overview = doc.gateways.length > 1
+    ? `<section class="gw"><h2>${esc(d.overview)}</h2><table><thead><tr><th>${esc(d.cols.gateway)}</th><th>Base ID</th><th>${esc(d.devices)}</th><th>${esc(d.cols.senderIds)}</th><th>${esc(d.cols.blocked)}</th><th>${esc(d.cols.heard)}</th></tr></thead><tbody>${doc.gateways
+        .map((gw) => `<tr>${cell(`${esc(gw.title)}${gw.note ? `<div class="sub">${esc(gw.note)}</div>` : ""}`)}${cell(`<span class="mono">${esc(gw.base_id ?? "")}</span>`)}${count(gw).map((n) => cell(esc(n))).join("")}</tr>`)
+        .join("")}</tbody></table></section>`
+    : "";
   return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>
 body{font:13px/1.45 system-ui,sans-serif;color:#1c1c1a;margin:24px}
 h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0}h3{font-size:14px;font-weight:500;margin:18px 0 6px}
@@ -166,7 +176,7 @@ section.gw{break-after:page;margin-top:24px}.gwnote{margin:2px 0 4px;font-style:
 @page{margin:14mm}
 </style></head><body>
 <h1>${esc(d.title)}</h1><p class="sub">${esc(d.generated(when))}</p>
-${gateways}
+${overview}${gateways}
 <div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
 </body></html>`;
 }

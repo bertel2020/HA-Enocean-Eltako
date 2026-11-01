@@ -314,7 +314,7 @@ drucken**, **Dokumentation als CSV** und **Dokumentation als JSON**. Alle drei u
 Gateway: Geräte mit Adresse, EEP, Bereich und Wandschalter, die von Home Assistant vergebenen
 Sender (mit Art des Einlernens und dem Ergebnis des letzten Sendertests, das erhalten bleibt) und den
 Sender-ID-Pool, auch IDs, die nach dem Löschen eines Geräts blockiert bleiben, und die unbekannten Sender, die
-das Gateway seit dem Neustart gehört hat, die aber nicht eingerichtet sind. Der Ausdruck hat
+das Gateway seit dem Neustart gehört hat, die aber nicht eingerichtet sind. Bei mehreren Gateways beginnt der Ausdruck mit einer Übersichtsseite, eine Zeile pro Gateway. Er hat
 pro Gateway eine Seite und einen Hinweis darauf, was Home Assistant nicht wissen kann: was ein
 Aktor wirklich gelernt hat und direkt eingelernte Taster. In den Details jedes Geräts gibt es ein Feld **Notizen** und in den
 Details jedes Gateways ein eigenes Notizfeld (Ort, Klemme, Sicherung, Batteriedatum, Repeater):
