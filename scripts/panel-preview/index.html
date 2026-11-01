@@ -22,6 +22,20 @@
   document.body.append(panel);
   panel.hass = fake.hass;
   // for the console: preview.push({ dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", time: new Date().toISOString() })
+  // ?open=devices:sub1 shows the Devices view with that device opened, ?open=telegrams:gateway the
+  // first gateway's details; for screenshots
+  const [view, what] = (new URLSearchParams(location.search).get("open") || "").split(":");
+  if (view) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    panel._setView(view);
+    if (what === "gateway") panel._gatewayDetails.add("gw1");
+    else if (what) {
+      panel._devOpen.add(what);
+      await panel._loadDevDetail(what, "gw1");
+    }
+    panel._renderCards();
+    panel._render();
+  }
   window.preview = { panel, ...fake };
 </script>
 </body>

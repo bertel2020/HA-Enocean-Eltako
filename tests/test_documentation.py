@@ -56,7 +56,7 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
 
     (shown,) = doc["gateways"]
     assert shown["entry_id"] == entry.entry_id and shown["base_id"] == BASE
-    assert shown["model"] == "fam_usb"
+    assert shown["model"] == "fam_usb" and shown["model_name"] == "Eltako FAM-USB"
     names = [d["name"] for d in shown["devices"]]
     assert names == ["Licht Flur", "Waschmaschine"]
 

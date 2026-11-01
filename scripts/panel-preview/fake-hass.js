@@ -4,7 +4,8 @@
 //
 // Options (query string of the preview page): lang=en|de, dark, primary (own primary colour),
 // two (a second gateway), hide (an unknown sender hidden from discovery), skew=<s> (server clock
-// ahead of the browser), empty (no gateways and no telegrams).
+// ahead of the browser), empty (no gateways and no telegrams), open=<view>[:<device key>|gateway]
+// (a view, with a device's details or the gateway's details opened; for screenshots).
 
 // the takeover view: two devices to take over, one already set up and still in use
 const none = { automation: [], script: [], scene: [], dashboard: [] };
@@ -38,11 +39,16 @@ export function fakeHass(params = new URLSearchParams()) {
   const takeoverRuns = makeRuns();
   const now = Date.now() / 1000;
   const empty = params.has("empty");
+  const english = params.get("lang") === "en"; // sample notes in the language of the page
   const gateway = {
     entry_id: "gw1", title: "FAM-USB Keller", model: "Eltako FAM-USB", base_id: "FF-B7-44-80", loaded: true, connected: true,
     on_demand: false, connection: "tcp 127.0.0.1:9100", per_minute: 4, last_telegram: now - 3, queue: 0, unconfirmed: 0,
     devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
+    note: english ? "Basement, right of the meter" : "Keller, rechts neben dem Zähler", orphan_notes: 0,
+    manual: english
+      ? [{ id: "m1", name: "Hallway button left", address: "00-12-34-56", function: "taught in directly to Licht Diele" }, { id: "m2", name: "Motion sensor basement", address: "00-8A-12-3F", function: "FBH65, belongs to another system" }]
+      : [{ id: "m1", name: "Taster Flur links", address: "00-12-34-56", function: "direkt auf Licht Diele eingelernt" }, { id: "m2", name: "Bewegungsmelder Keller", address: "00-8A-12-3F", function: "FBH65, von einem anderen System" }],
     radio_devices: [
       { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
@@ -102,7 +108,7 @@ export function fakeHass(params = new URLSearchParams()) {
             eep: actuator ? "M5-38-08:eltako" : "A5-38-08:eltako", eep_extra: [],
             signal: { rssi: -62, min: -78, max: -55 }, repeat: 0,
             heard_by: actuator ? { gateways: [{ entry_id: msg.entry_id, name: "FAM-USB Keller", count: 900, direct: 880, rssi: -62, last: 0 }, { entry_id: "gw2", name: "MGW-ETH Dach", count: 384, direct: 0, rssi: -81, last: 0 }], best: msg.entry_id, repeater_only: false } : { gateways: [{ entry_id: msg.entry_id, name: "FAM-USB Keller", count: 12, direct: 0, rssi: -84, last: 0 }], best: null, repeater_only: true },
-            sender_test: actuator,
+            sender_test: actuator, note: actuator ? (english ? "Cabinet 2, slot 4, fuse F3" : "Schrank 2, Platz 4, Sicherung F3") : "",
             telegrams: 1284, interval: null, silent: false,
             senders: actuator ? [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] : [],
             commands: actuator ? { sent: 86, confirmed: 84, rate: 97.7, latency_avg: 1.4, latency_max: 3.1 } : null,
