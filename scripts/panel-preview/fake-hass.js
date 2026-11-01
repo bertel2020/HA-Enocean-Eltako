@@ -133,6 +133,14 @@ export function fakeHass(params = new URLSearchParams()) {
           return { model_name: msg.model_name };
         case "enocean_eltako/takeover/status":
           return { available: !empty && !params.has("closed"), reports: empty ? 0 : takeoverRuns.length };
+        case "enocean_eltako/documentation":
+          return {
+            version: 1, generated: new Date().toISOString(), gateways: [{
+              entry_id: "gw1", title: "FAM-USB Keller", model: "fam_usb", base_id: "FF-B7-44-80", hidden_senders: [],
+              devices: [{ name: "Licht Flur", key: "sub1", id: "05-10-A2-C1", eep: "M5-38-08:eltako", eep_extra: [], area: "Flur", model: "FSR14-4x", kind: "switch", category: "lighting", virtual: false, entities: 2, wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-91", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-92", ute: false, test: "unconfirmed" }] }],
+              pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-91", device: "Licht Flur", profile: "central", state: "assigned" }, { id: "FF-B7-44-95", device: null, profile: "central", state: "blocked" }] }],
+            }],
+          };
         case "enocean_eltako/sender_pools":
           return empty ? [] : [pool];
         case "enocean_eltako/sender_pools/free_all":

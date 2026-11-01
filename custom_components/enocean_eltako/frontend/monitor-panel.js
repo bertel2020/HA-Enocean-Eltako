@@ -9,7 +9,7 @@
 // a failed import is remembered by the browser, so a top-level await here would leave the panel
 // blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-let ICON, MAX_ROWS, anonymisedCapture, csv, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
+let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
 const LOAD_TRIES = 4;
 
 async function loadParts() {
@@ -23,7 +23,7 @@ async function loadParts() {
         import(`./texts.js${v}`),
         import(`./takeover.js${v}`),
       ]);
-      ({ ICON, MAX_ROWS, anonymisedCapture, csv, esc, svg } = shared);
+      ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg } = shared);
       ({ TEXT } = texts);
       ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
       return;
@@ -958,6 +958,9 @@ class EnOceanEltakoPanel extends HTMLElement {
               <span class="menu" id="moreMenu" role="menu" hidden>
                 <button role="menuitem" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
                 <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-print">${svg(ICON.print)}${esc(t.doc.print)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-json">${svg(ICON.download)}${esc(t.doc.jsonItem)}</button>
               </span>
             </span>
           </div>
@@ -1310,6 +1313,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (!item) return;
       this._toggleMenu(false);
       if (item.dataset.act === "export") this._export();
+      else if (item.dataset.act.startsWith("doc-")) this._documentation(item.dataset.act.slice(4));
       else $("clear").click();
     });
     $("moreMenu").addEventListener("keydown", (e) => {
@@ -2015,6 +2019,35 @@ class EnOceanEltakoPanel extends HTMLElement {
       d.time != null ? new Date(d.time).toISOString() : "", d.count, d.perMinute, d.dbm ?? "", d.silent ? t.silent : values(d.fields, d.data),
     ]);
     this._download(csv([head, ...lines]), "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
+  }
+
+  async _documentation(kind) {
+    // the installation documentation of every gateway: a page to print, a CSV or the JSON
+    this._notice("");
+    let doc;
+    try {
+      doc = await this._hass.callWS({ type: "enocean_eltako/documentation" });
+    } catch (err) {
+      this._notice(this._t.doc.failed);
+      return;
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const profile = (p) => this._profile(p);
+    if (kind === "json") this._download(JSON.stringify(doc, null, 2) + "\n", "application/json", `enocean-documentation-${stamp}.json`);
+    else if (kind === "csv") this._download(documentationCsv(doc, this._t, profile), "text/csv", `enocean-documentation-${stamp}.csv`);
+    else {
+      const page = documentationHtml(doc, this._t, profile, this._hass.language || "en");
+      const win = window.open("", "_blank");
+      if (!win) {
+        this._download(page, "text/html", `enocean-documentation-${stamp}.html`); // pop-ups blocked: open the file and print it
+        this._notice(this._t.doc.popupBlocked, true);
+        return;
+      }
+      win.document.write(page);
+      win.document.close();
+      win.focus();
+      win.print();
+    }
   }
 
   _download(text, type, name) {

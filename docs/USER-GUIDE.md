@@ -292,6 +292,15 @@ through each of its senders in turn (so nothing changes, at background priority)
 sender **answered** or **no answer**. No answer does not prove that the sender is unknown to the
 actuator, as an actuator may stay silent; a rocker that toggles is not tested. The test does not
 count in the command statistics.
+
+**Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation
+documentation**, **Documentation as CSV** and **Documentation as JSON**. All three cover every
+gateway: devices with address, EEP, area and wall switch, the senders Home Assistant assigned
+(with the teach-in kind and the last sender test since the restart) and the sender ID pool,
+including IDs that stay blocked after a device was deleted. The printout has one gateway per
+page and a note on what Home Assistant cannot know: what an actuator has really learned, and
+buttons taught in directly. The JSON is versioned and also meant for support. If the browser
+blocks the print window, the page is saved as a file to open and print.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.
 

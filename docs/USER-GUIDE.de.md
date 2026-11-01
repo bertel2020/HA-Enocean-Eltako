@@ -308,6 +308,16 @@ Zustand nacheinander über jeden seiner Sender (es ändert sich also nichts, mit
 Priorität) und markiert jeden Sender mit **Antwort** oder **keine Antwort**. Keine Antwort
 beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm bleiben; ein
 umschaltender Wipptaster wird nicht getestet. Der Test zählt nicht in der Befehlsstatistik.
+
+**Installationsdokumentation:** In der Geräteansicht bietet das ⋮-Menü **Installationsdokumentation
+drucken**, **Dokumentation als CSV** und **Dokumentation als JSON**. Alle drei umfassen jedes
+Gateway: Geräte mit Adresse, EEP, Bereich und Wandschalter, die von Home Assistant vergebenen
+Sender (mit Art des Einlernens und dem letzten Sendertest seit dem Neustart) und den
+Sender-ID-Pool, auch IDs, die nach dem Löschen eines Geräts blockiert bleiben. Der Ausdruck hat
+pro Gateway eine Seite und einen Hinweis darauf, was Home Assistant nicht wissen kann: was ein
+Aktor wirklich gelernt hat und direkt eingelernte Taster. Das JSON ist versioniert und auch für
+den Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
+gespeichert, die du öffnest und druckst.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 

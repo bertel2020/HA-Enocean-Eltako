@@ -42,6 +42,37 @@ if (lines[0].destination !== "FF-FF-FF-FF" || lines[0].gateway !== "gw1") errors
 if (lines[0].time !== "2000-01-01T00:00:00.000Z" || lines[1].time !== "2000-01-01T00:00:02.500Z") errors.push("shared.js: anonymisedCapture does not replace the times");
 if (lines[0].data !== "70" || lines[0].status !== "30" || lines[0].dbm !== -61) errors.push("shared.js: anonymisedCapture changes the telegram data");
 
+// the documentation: CSV with one row per sender plus blocked IDs, and a printable page
+const { documentationCsv, documentationHtml } = await import(new URL("shared.js?v=check", frontend).href);
+const doc = {
+  version: 1,
+  generated: "2026-11-01T14:20:00+00:00",
+  gateways: [
+    {
+      entry_id: "g1",
+      title: "FAM-USB <Keller>",
+      model: "fam_usb",
+      base_id: "FF-B7-44-80",
+      hidden_senders: ["00-11-22-33"],
+      devices: [
+        { name: "Licht Flur", id: "05-10-A2-C1", eep: "M5-38-08:eltako", eep_extra: [], area: "Flur", model: null, virtual: false, wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-91", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-92", ute: false, test: null }] },
+        { name: "Fenster", id: "00-8A-12-3F", eep: "D5-00-01:std", eep_extra: [], area: null, model: null, virtual: false, wall_switch: null, senders: [] },
+      ],
+      pools: [{ id: "radio:g1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-91", device: "Licht Flur", profile: "central", state: "assigned" }, { id: "FF-B7-44-95", device: null, profile: "central", state: "blocked" }] }],
+    },
+  ],
+};
+const profile = (p) => TEXT.en.profiles[p] || p;
+for (const lang of ["en", "de"]) {
+  const t = TEXT[lang];
+  const rows = documentationCsv(doc, t, profile).trim().split("\n");
+  if (rows.length !== 1 + 2 + 1 + 1) errors.push(`shared.js: documentationCsv (${lang}) has ${rows.length} rows, expected 5`);
+  const page = documentationHtml(doc, t, profile, lang);
+  if (!page.includes("FF-B7-44-91") || !page.includes("05-10-AA-01") || !page.includes("00-11-22-33")) errors.push(`shared.js: documentationHtml (${lang}) misses data`);
+  if (page.includes("<Keller>") || !page.includes("&lt;Keller&gt;")) errors.push(`shared.js: documentationHtml (${lang}) does not escape the gateway name`);
+  if (/undefined|NaN/.test(page)) errors.push(`shared.js: documentationHtml (${lang}) shows undefined or NaN`);
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
