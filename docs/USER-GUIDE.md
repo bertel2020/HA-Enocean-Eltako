@@ -210,8 +210,7 @@ skipped; imported ones are only replaced with `overwrite: true`.
 
 ## The EnOcean panel
 
-The **EnOcean** sidebar panel (admins only) has the views **Telegrams**, **Devices**, **Sender
-IDs** and, while there is something to take over or a report to read, **Takeover** (tabs; the arrow keys move
+The **EnOcean** sidebar panel (admins only) has the views **Telegrams**, **Devices**, **Installation** and, while there is something to take over or a report to read, **Takeover** (tabs; the arrow keys move
 between them). Above Telegrams and Devices it shows a compact summary per gateway:
 connection status, telegrams per minute, last telegram, devices and free sender IDs.
 With several gateways, **Telegrams** on a gateway filters by it. **Details** expands the connection, send queue
@@ -391,7 +390,7 @@ all of them at once: set an **area**, add or remove **labels** (a tick adds the 
 tick removes it, a dash leaves it; new labels are created in the form), **disable** or **enable**
 the devices, and **remove** them. Area, labels and disabling are Home Assistant's own, so they show
 on the device page and work in automations. **Remove** asks first and deletes the devices with their
-entities; their sender IDs stay blocked until you confirm under **Sender IDs** that the actuators
+entities; their sender IDs stay blocked until you confirm under **Installation → Senders → Gateway senders → ID management** that the actuators
 have forgotten them. A device's labels show under its name, and the search finds them.
 
 ### Send a telegram
@@ -407,7 +406,7 @@ to any telegram; the telegram appears in the list as sent. In the details of a s
 
 ## Sender IDs
 
-The **Sender IDs** switch of the panel shows who uses which sender ID: per gateway (and per bus
+The **ID management** (Installation → Senders → Gateway senders, next to the table) shows who uses which sender ID: per gateway (and per bus
 group) the free IDs of the pool, and each device with its IDs, their profile and status, blocked
 IDs first. Radio gateways hand out base ID + 1…127. The pool map shows every ID as a small
 square (free, assigned, blocked, used elsewhere; the legend below names the colours); the tooltip

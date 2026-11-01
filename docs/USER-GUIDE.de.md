@@ -219,7 +219,7 @@ Die Definitionen stehen sofort unter **Gerät hinzufügen → Eigene Definition*
 ## Das Panel EnOcean
 
 Das Seitenleisten-Panel **EnOcean** (nur für Administratoren) hat die Ansichten **Telegramme**,
-**Geräte**, **Sender-IDs** und, solange etwas zu übernehmen ist oder ein Bericht zu lesen, **Übernahme** (Tabs; die
+**Geräte**, **Anlage** und, solange etwas zu übernehmen ist oder ein Bericht zu lesen, **Übernahme** (Tabs; die
 Pfeiltasten wechseln zwischen ihnen). Über Telegramme und Geräte steht eine kompakte
 Zusammenfassung je Gateway: Verbindung, Telegramme pro Minute, letztes Telegramm, Geräte
 und freie Sender-IDs. Bei mehreren Gateways filtert **Telegramme** auf das jeweilige Gateway. **Details** zeigt
@@ -421,7 +421,7 @@ Haken fügt das Label allen hinzu, ohne Haken wird es entfernt, ein Strich läss
 legst du im Formular an), die Geräte **deaktivieren** oder wieder **aktivieren** und sie
 **entfernen**. Bereich, Labels und Deaktivieren sind die von Home Assistant, sie gelten also auch
 auf der Geräteseite und in Automationen. **Entfernen** fragt vorher nach und löscht die Geräte
-mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Sender-IDs** bestätigst, dass
+mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Anlage → Sender → Gateway-Sender → ID-Verwaltung** bestätigst, dass
 die Aktoren sie vergessen haben. Die Labels eines Geräts stehen unter seinem Namen, und die Suche
 findet sie.
 
@@ -439,7 +439,7 @@ als gesendet. In den Details eines gesendeten Telegramms schickt **Nochmal sende
 
 ## Sender-IDs
 
-Der Schalter **Sender-IDs** im Panel zeigt, wer welche Sender-ID nutzt: je Gateway (und je
+Die **ID-Verwaltung** (Anlage → Sender → Gateway-Sender, neben der Tabelle) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
 Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
 gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127. Die Pool-Karte zeigt jede ID als
 kleines Feld (frei, zugewiesen, gesperrt, anderweitig belegt; die Legende darunter nennt die
