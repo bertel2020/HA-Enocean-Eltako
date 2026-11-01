@@ -131,7 +131,7 @@ def unit_of(profile: Profile, data: bytes, shortcut: str, status: int = 0) -> st
         return None
     if f.unit_ref is not None:
         ref = next((r for r in case.fields if r.shortcut == f.unit_ref), None)
-        if ref is not None:
+        if ref is not None and ref.offset + ref.size <= len(data) * 8:  # VLD: may be too short
             return ref.enum_unit.get(get_bits(data, ref.offset, ref.size))
     return f.unit
 
