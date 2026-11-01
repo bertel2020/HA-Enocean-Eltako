@@ -42,6 +42,7 @@ from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.eltako import switching
+from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.eep.ute import decode_ute_request, encode_ute_response
 from .protocol.ids import BROADCAST, format_id, parse_id
 from .protocol.send_queue import Priority, SendResult
@@ -88,6 +89,7 @@ class RadioStats:
     rssi_max: int | None = None
     repeat_count: int | None = None  # status bits 0...3
     telegrams: int = 0
+    mismatches: int = 0  # telegrams in a row that fit none of the device's profiles
     commands: int = 0
     confirmed: int = 0
     # E11: seconds from command to the actuator's answer (queue wait and retries included)
@@ -286,6 +288,7 @@ class EnOceanDevice:
         for ref in (self.model.receive, *self.model.receive_extra):
             if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
                 break
+        self._count_mismatch(received.telegram, values)
         if values is None or values.get("channel", self.channel) != self.channel:
             return
         self.last_received = received
@@ -293,6 +296,15 @@ class EnOceanDevice:
             self.wall_state = bool(values["on"])
         for listener in list(self._listeners):
             listener(values)
+
+    def _count_mismatch(self, telegram: RadioTelegram, values: dict[str, Any] | None) -> None:
+        """Count telegrams in a row that fit none of the profiles (a repair after a few)."""
+        if values is not None:
+            self.stats.mismatches = 0
+        elif self.model.receive is not None and not (
+            telegram.rorg == Rorg.BS4 and decode_teach_in_4bs(telegram.data) is not None
+        ):  # a teach-in telegram is not a mismatch
+            self.stats.mismatches += 1
 
     def has_sender(self, profile: str) -> bool:
         return profile in self.senders

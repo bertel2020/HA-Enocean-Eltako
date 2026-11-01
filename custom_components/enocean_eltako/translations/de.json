@@ -1249,6 +1249,10 @@
       "title": "{name} seit {hours} h nicht gehört",
       "description": "{name} meldet sich normalerweise regelmäßig, wurde aber seit {hours} Stunden nicht gehört. Zuletzt empfangen von: {gateway}. Batterie bzw. Stromversorgung und Funkreichweite prüfen."
     },
+    "device_profile_mismatch": {
+      "title": "{name} sendet Telegramme, die nicht zum Profil passen",
+      "description": "Die letzten {count} Telegramme von {name} passten nicht zu seinem Profil {profile}; das letzte hatte den Typ {rorg}. Vielleicht wurde das Gerät mit der falschen Art oder dem falschen Profil angelegt. Öffne das Gerät im EnOcean-Panel, vergleiche seine Telegramme mit dem Datenblatt und wähle unter Konfigurieren die passende Art."
+    },
     "gateway_disconnected": {
       "title": "{name} ist getrennt",
       "description": "Die Verbindung zu {name} ({connection}) ist seit mehr als 5 Minuten unterbrochen; Home Assistant versucht es weiter. USB-Kabel bzw. den ser2net-Dienst und das Netzwerk prüfen."

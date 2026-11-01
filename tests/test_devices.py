@@ -2325,3 +2325,32 @@ def test_catalog_models_of_the_kinds() -> None:
         assert CATALOG[kind].models
     # every model the user may pick is a plain type designation, no free-form text
     assert all(m == m.strip() and m for c in CATALOG.values() for m in c.models)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_profile_mismatch_repair(hass: HomeAssistant, gateway) -> None:
+    from homeassistant.helpers import issue_registry as ir
+
+    entry, server = gateway
+    issue_id = f"device_profile_mismatch_{BASE}_05-00-00-12"
+    for i in range(4):
+        _push(server, 0x05, bytes([0x10 * (i + 1)]), 0x05000012, 0x30)  # rocker telegrams
+    await _settle(hass)
+    entry.runtime_data.health_check()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None  # not yet
+    _push(server, 0x05, b"\x70", 0x05000012, 0x30)
+    await _settle(hass)
+    entry.runtime_data.health_check()
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, issue_id)
+    assert issue is not None and issue.translation_key == "device_profile_mismatch"
+    assert issue.translation_placeholders["rorg"] == "F6"
+    assert issue.translation_placeholders["count"] == "5"
+
+    _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)  # a telegram that fits: cleared
+    await _settle(hass)
+    entry.runtime_data.health_check()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
