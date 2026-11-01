@@ -2281,7 +2281,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t.doc;
     let reply;
     try {
-      reply = await this._hass.callWS({ type: "enocean_eltako/import_documentation", doc: JSON.parse(await file.text()) });
+      const doc = JSON.parse(await file.text());
+      reply = await this._hass.callWS({ type: "enocean_eltako/import_documentation", doc });
+      // a swapped gateway has another base ID: one gateway of the file and one set up here that
+      // got nothing belong together, if the user says so
+      const lost = reply.gateways.filter((g) => !g.matched);
+      const matched = new Set(reply.gateways.filter((g) => g.matched).map((g) => g.title));
+      const free = this._gateways.filter((g) => g.loaded && !matched.has(g.title));
+      if (lost.length === 1 && free.length === 1 && lost[0].base_id && window.confirm(t.importMap(lost[0].title, free[0].title))) {
+        reply = await this._hass.callWS({ type: "enocean_eltako/import_documentation", doc, gateway_map: { [lost[0].base_id]: free[0].entry_id } });
+      }
     } catch (err) {
       this._notice(err.code === "unsupported_version" || err instanceof SyntaxError ? t.importUnsupported : t.importFailed);
       return;

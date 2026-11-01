@@ -44,6 +44,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
     return {
         "name": device.subentry.title,
         "key": device.subentry.subentry_id,
+        "note_key": device_key(device.subentry),
         "model": device._model_label,
         "kind": model.id,
         "category": model.category,
@@ -119,6 +120,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                     }
                     for t in pending(entry)
                 ],
+                "log": notes.log,
                 "hidden_senders": sorted(
                     format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())
                 ),

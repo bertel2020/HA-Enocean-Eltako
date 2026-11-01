@@ -133,6 +133,8 @@ async def test_notes_are_saved_shown_and_kept(
         "devices": {"05-00-00-12": "Schrank 2, Platz 4"},
         "tests": {},
         "manual": [],
+        "log": [],
+        "known": {"05-00-00-12": {"name": "Waschmaschine", "senders": []}},
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -280,7 +282,7 @@ async def test_notes_come_back_from_an_export(
     # a gateway of the file that is not set up here, and files that are not exports
     other = {**export, "gateways": [{**export["gateways"][0], "base_id": "FF-80-00-00"}]}
     assert (await call(4, other))["result"]["gateways"] == [
-        {"title": entry.title, "matched": False}
+        {"title": entry.title, "base_id": "FF-80-00-00", "matched": False}
     ]
     assert (await call(5, {"version": 99, "gateways": []}))["error"][
         "code"
@@ -289,3 +291,78 @@ async def test_notes_come_back_from_an_export(
         "code"
     ] == "unsupported_version"
     assert (await call(7, {"version": 1, "gateways": ["x"]}))["result"]["gateways"] == []
+
+
+async def test_import_maps_a_swapped_gateway_and_keeps_the_second_channel(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.set_device("05-00-00-12_2", "Kanal 2, Schrank 3")
+    doc = {
+        "version": 1,
+        "gateways": [
+            {
+                "title": "Altes Gateway",
+                "base_id": "FF-80-00-80",
+                "note": "Keller",
+                "devices": [
+                    {
+                        "id": "05-00-00-12",
+                        "note_key": "05-00-00-12_2",
+                        "note": "Kanal 2, Schrank 3",
+                    },
+                    {"id": "05-00-00-12", "note_key": "05-00-00-12", "note": "Kanal 1"},
+                    {"id": "05-00-00-13", "note": "aus einem Export von 1.4.1"},
+                ],
+            }
+        ],
+    }
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, **fields):
+        await client.send_json(
+            {"id": msg_id, "type": "enocean_eltako/import_documentation", "doc": doc, **fields}
+        )
+        return await client.receive_json()
+
+    first = await call(1)
+    assert first["result"]["gateways"] == [
+        {"title": "Altes Gateway", "base_id": "FF-80-00-80", "matched": False}
+    ]
+    mapped = await call(2, gateway_map={"FF-80-00-80": entry.entry_id})
+    assert mapped["result"]["gateways"][0]["matched"] is True
+    assert notes.gateway == "Keller"
+    assert notes.devices == {
+        "05-00-00-12_2": "Kanal 2, Schrank 3",
+        "05-00-00-12": "Kanal 1",
+        "05-00-00-13": "aus einem Export von 1.4.1",
+    }
+    # a map to a gateway that is not loaded changes nothing
+    again = await call(3, gateway_map={"FF-80-00-80": "unknown"})
+    assert again["result"]["gateways"][0]["matched"] is False
+    assert notes.log[-1]["kind"] == "import"
+
+
+def test_the_event_log_notes_what_changed_between_loads() -> None:
+    from custom_components.enocean_eltako.notes import MAX_LOG, Notes
+
+    notes = Notes.__new__(Notes)  # no store needed for the bookkeeping
+    notes.known, notes.log = {}, []
+    notes._save = lambda: None
+    first = {"a": ("Licht", ["FF-B7-44-81"]), "b": ("Dimmer", [])}
+    notes.sync_known(first)
+    assert notes.log == []  # the first load is the baseline
+    notes.sync_known({"a": ("Licht", ["FF-B7-44-82"]), "c": ("Neu", [])})
+    kinds = [(e["kind"], e["device"]) for e in notes.log]
+    assert kinds == [
+        ("sender_assigned", "a"),
+        ("sender_removed", "a"),
+        ("device_added", "c"),
+        ("device_removed", "b"),
+    ]
+    for i in range(MAX_LOG + 20):
+        notes.add_log("teach_in", "a", str(i))
+    assert len(notes.log) == MAX_LOG and notes.log[-1]["detail"] == str(MAX_LOG + 19)

@@ -66,7 +66,7 @@ from .discovery import async_load_hidden, async_remove_hidden, async_setup_disco
 from .entity_ids import gateway_prefix
 from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
-from .notes import Notes
+from .notes import Notes, device_key
 from .old_integration import async_check_old_integration
 from .old_integration import issue_id as old_issue_id
 from .panel import async_register_panel
@@ -315,6 +315,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     await async_load_hidden(hass, entry)
     notes = entry.runtime_data.hub.notes[entry.entry_id] = Notes(hass, entry.entry_id)
     await notes.async_load()
+    notes.sync_known(
+        {
+            device_key(d.subentry): (
+                d.subentry.title,
+                sorted(format_id(s) for s in d.senders.values()),
+            )
+            for d in entry.runtime_data.devices.values()
+        }
+    )
     entry.async_on_unload(notes.async_flush)  # what waits for its delayed save is written now
     entry.async_on_unload(async_setup_discovery(hass, entry))
     if (stop_proxy_status := async_setup_proxy_status(hass, entry)) is not None:
