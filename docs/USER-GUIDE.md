@@ -335,7 +335,7 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
   has no value, and the sum says how many devices have none. The channels of one device count
   once if they share a **Part of** name; without it the sum counts each channel and says so. The
-  supply defaults to the 12 W of the FAM14. In the gateway's details you write down one or more
+  supply defaults to the 12 W of the FAM14. Under **Bus → Power supplies** you write down one or more
   power supplies (type, watts); with the bus addresses a supply feeds, the printout shows the load
   of each one and names addresses no supply feeds, without them only the total. Which addresses a
   supply feeds depends on how the rail is plugged together, so only you know it. Home Assistant cannot read the bus yet, so bus address, feedback ID and the
@@ -354,8 +354,9 @@ last signal, whether any telegram came without a repeater) and the unknown sende
 "via repeater only" and the list of heard senders do not start empty after a restart.
 
 **Notes and further devices:** each device's details have a **Notes** field, each gateway's
-details a note field of its own and an editor for **Further devices** (name, ID, function:
-buttons taught in directly, devices of other systems). Saved as you type, kept in a store of its
+details a note field of its own, and under **Senders → Radio senders** in the Installation tab an
+editor for **Further devices** (name, ID, function: buttons taught in directly, devices of other
+systems; bus address, feedback ID and watts when it sits on the Eltako bus). Saved as you type, kept in a store of its
 own per gateway, part of Home Assistant's backup. A device's fields belong to its address, so they
 come back if you add the device again; a gateway's details offer to forget those of deleted
 devices.

@@ -2286,8 +2286,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
-  _manualEditor(gw) {
-    // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
+  _manualEditor(gw, part = "manual") {
+    // part "manual": devices Home Assistant cannot see (buttons taught in directly ...); part "supply": the
+    // power supplies of the bus; both for the documentation
     const t = this._t.doc;
     const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
     const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
@@ -2295,7 +2296,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const supplyHead = (gw.supplies ?? []).length ? `<div class="srow mhead" aria-hidden="true"><span>${esc(t.supplyName)}</span><span>${esc(t.supplyWatts)}</span><span></span><span>${esc(t.supplyFirstHead)}</span><span>${esc(t.supplyLastHead)}</span><span></span></div>` : "";
     const power = supplyHead + (gw.supplies ?? []).map((e, i) => `<div class="srow" data-supply-row="${i}">${supply(e, "name", t.supplyName, 60)}${supply(e, "watts", t.supplyWatts, 8)}<span class="sub">W</span>${supply(e, "first", t.supplyFirst, 3)}${supply(e, "last", t.supplyLast, 3)}<button class="icon-btn" data-supply-del="${i}" title="${esc(t.supplyRemove)}" aria-label="${esc(t.supplyRemove)}">${svg(ICON.close)}</button></div>`).join("");
     const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div><button class="chip text" data-supply-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.supplyAdd)}</button></div><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
+    const supplies = `<div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div><button class="chip text" data-supply-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.supplyAdd)}</button></div>`;
+    const manual = `<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div>`;
+    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}">${part === "supply" ? supplies : manual}</div>`;
   }
 
   async _importDocumentation(file) {
@@ -2402,6 +2405,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         ? [...(gateway.supplies ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", watts: "", first: "", last: "" }]
         : gateway.supplies.filter((_, i) => i !== Number(delSupply.dataset.supplyDel));
       this._renderCards();
+      if (this._view === "installation") this._renderInstallation();
       if (delSupply) this._saveSupplies(gateway);
       return true;
     }
@@ -2411,6 +2415,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     else if (del) gateway.manual = gateway.manual.filter((_, i) => i !== Number(del.dataset.manualDel));
     else return false;
     this._renderCards();
+    if (this._view === "installation") this._renderInstallation();
     if (del) this._saveManual(gateway);
     return true;
   }
@@ -2446,7 +2451,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
-          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">${this._manualEditor(gw)}${gw.orphan_notes ? `<div><button class="chip text" data-prune-notes="${esc(gw.entry_id)}" title="${esc(t.doc.pruneHint)}">${esc(t.doc.prune(gw.orphan_notes))}</button></div>` : ""}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">${gw.orphan_notes ? `<div><button class="chip text" data-prune-notes="${esc(gw.entry_id)}" title="${esc(t.doc.pruneHint)}">${esc(t.doc.prune(gw.orphan_notes))}</button></div>` : ""}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
         </article>`;
       })
       .join(""));

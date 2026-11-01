@@ -312,7 +312,10 @@ Priorität) und markiert jeden Sender mit **Antwort** oder **keine Antwort**. Ke
 beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm bleiben; ein
 umschaltender Wipptaster wird nicht getestet. Ein Dimmer bekommt seine aktuelle Helligkeit als Dimmbefehl über den Zentralbefehl; sein Wipptaster wird nicht getestet, denn ein Druck könnte die Helligkeit ändern. Rollläden werden gar nicht getestet: jeder Befehl bewegt sie oder unterbricht eine Fahrt. Der Test zählt nicht in der Befehlsstatistik.
 
-**Ansicht Installation:** Der Reiter **Installation** bündelt die Dokumentation an einer Stelle.
+**Ansicht Anlage:** Der Reiter **Anlage** bündelt Dokumentation und Verwaltung an einer Stelle,
+in Gruppen: **Anlage** (nach Bereich, Geräte), **Sender** (Gateway-Sender, Taster, Funk-Sender),
+**Bus** (Eltako-Bus, Netzteile), **Verbindungen** und **Protokoll**. Die Tabellen der Gruppen
+Sender und Bus sind dieselben Zeilen wie im Ausdruck.
 **Nach Bereich** zeigt die Geräte jedes Gateways nach Home-Assistant-Bereich oder nach dem
 von dir notierten Ort gruppiert, mit der Zahl der Geräte ohne Ort. **Geräte** ist eine Tabelle mit
 typisierten Feldern, die du direkt bearbeitest: Ort (Schrank, Reihe, Platz), Stromkreis, Sicherung,
@@ -330,7 +333,7 @@ Lernposition. Was ein Aktor wirklich gelernt hat, steckt im Aktor und lässt sic
 sagt der Reiter auch; eine nie getestete Verbindung heißt „nicht getestet“. Drucken, CSV, JSON und
 Import sind Knöpfe des Reiters.
 
-**Ausgaben:** Die Knöpfe des Reiters Installation (und das ⋮-Menü der Geräteansicht) liefern:
+**Ausgaben:** Die Knöpfe des Reiters Anlage (und das ⋮-Menü der Geräteansicht) liefern:
 
 - **Drucken**: eine in sich geschlossene Seite mit Abschnitten, die du oben ein- oder ausschaltest
   (sie werden nicht mitgedruckt): **Übergabe** (jedes Gerät mit Adresse, EEP, Sendern und den
@@ -355,8 +358,8 @@ Import sind Knöpfe des Reiters.
   Leistungsbedarfs), mit `*` markiert. Ein Typ, den die Planungshilfe nicht kennt (neuere Geräte
   wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. Die Kanäle eines
   Geräts zählen einmal, wenn sie denselben Namen unter **Gehört zu** haben; ohne ihn zählt die
-  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. In den Details des
-  Gateways trägst du ein oder mehrere Netzteile ein (Typ, Watt); mit den Bus-Adressen, die ein
+  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. Unter **Bus → Netzteile**
+  trägst du ein oder mehrere Netzteile ein (Typ, Watt); mit den Bus-Adressen, die ein
   Netzteil versorgt, zeigt der Ausdruck die Auslastung je Netzteil und nennt Adressen, die kein
   Netzteil versorgt, ohne sie nur die Gesamtsumme. Welche Adressen ein Netzteil versorgt, hängt
   davon ab, wie die Hutschiene gesteckt ist, das weißt nur du. Home Assistant kann den Bus
@@ -378,13 +381,14 @@ einmal pro Minute geschrieben. **Gehört von**, „nur über Repeater“ und die
 Sender beginnen nach einem Neustart also nicht leer.
 
 **Notizen und weitere Geräte:** In den Details jedes Geräts gibt es ein Feld **Notizen**, in den
-Details jedes Gateways ein eigenes Notizfeld und einen Editor für **Weitere Geräte** (Name, ID,
-Funktion: direkt eingelernte Taster, Geräte anderer Systeme). Gespeichert beim Tippen, in einem
+Details jedes Gateways ein eigenes Notizfeld, und unter **Sender → Funk-Sender** im Reiter
+Anlage einen Editor für **Weitere Geräte** (Name, ID, Funktion: direkt eingelernte Taster, Geräte
+anderer Systeme; bei Geräten am Eltako-Bus auch Bus-Adresse, Rückmelde-ID und Watt). Gespeichert beim Tippen, in einem
 eigenen Speicher pro Gateway, Teil des Home-Assistant-Backups. Die Felder eines Geräts gehören zu
 seiner Adresse und sind wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten an,
 die der gelöschten Geräte zu vergessen.
 
-**Notizen aus JSON importieren** (Reiter Installation) liest einen Export wieder ein, etwa für ein
+**Notizen aus JSON importieren** (Reiter Anlage) liest einen Export wieder ein, etwa für ein
 neues Gateway: Gateways werden über die Base-ID zugeordnet, Geräte über die Adresse, und nur was
 noch leer ist, wird gefüllt. Felder, weitere Geräte, eingetragene Verbindungen und Lernpositionen
 kommen mit, die Geräte selbst nie. Hat ein Gateway eine andere Base-ID, bietet das Panel an, das

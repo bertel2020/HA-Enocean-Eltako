@@ -5,16 +5,23 @@
 // methods are added to the panel class (this = the panel).
 
 const VERSION = new URL(import.meta.url).search;
-const { ICON, esc, svg } = await import(`./shared.js${VERSION}`);
+const { ICON, docBus, docTables, esc, foldFree, svg } = await import(`./shared.js${VERSION}`);
 
 // the typed fields of a device, in table order; installed is a date
 export const INSTALLATION_FIELDS = ["location", "group", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
-const TABS = ["areas", "devices", "links", "log"];
+// the tabs in groups: the second row of chips shows the tabs of the group that is open
+const GROUPS = [
+  { id: "site", tabs: ["areas", "devices"] },
+  { id: "senders", tabs: ["gwsenders", "buttons", "radio"] },
+  { id: "bus", tabs: ["bus", "supplies"] },
+  { id: "links", tabs: ["links"] },
+  { id: "log", tabs: ["log"] },
+];
 const SAVE_DELAY = 600; // ms after the last key
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "areas", last: {}, group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -48,6 +55,28 @@ export const INSTALLATION_STYLE = `
   .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: 12px ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .installation .log td.kind { white-space: nowrap; }
   .installation .none { color: var(--muted); padding: 8px 0; }
+  .installation .itop .groups { display: flex; gap: 6px; flex: 1 1 340px; flex-wrap: wrap; }
+  .installation .isubtabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px 0; }
+  .installation details.imenu { position: relative; }
+  .installation details.imenu summary { list-style: none; cursor: pointer; }
+  .installation details.imenu summary::-webkit-details-marker { display: none; }
+  .installation .imenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 220px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .installation .imenu .items button { text-align: left; font: inherit; font-size: 13px; color: inherit; background: none; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+  .installation .imenu .items button:hover { background: var(--soft); }
+  .installation .imenu .items hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
+  .installation .itable td.num, .installation .itable th.num { text-align: right; white-space: nowrap; }
+  .installation .itable tr.free td { color: var(--muted); background: var(--soft); font-size: 12px; padding: 3px 8px 3px 0; }
+  .installation .itable td.mono, .installation .mono { font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
+  .installation .itable tr.outside td { font-weight: 500; color: var(--muted); border-top: 1px solid var(--line); }
+  .installation .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+  .installation .tag.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: inherit; }
+  .installation .tag.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: inherit; }
+  .installation .load { display: grid; grid-template-columns: minmax(120px, 220px) minmax(80px, 1fr) minmax(120px, 200px); gap: 10px; align-items: center; font-size: 13px; }
+  .installation .load .barbg { height: 8px; border-radius: 4px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
+  .installation .load .barbg i { display: block; height: 100%; background: var(--accent); }
+  .installation .load .barbg i.hot { background: var(--warn); }
+  .installation .load .r { text-align: right; color: var(--muted); }
+  .installation .notes p { margin: 2px 0; }
 `;
 
 const gateways = (doc) => doc?.gateways ?? [];
@@ -102,16 +131,108 @@ export const installation = {
       this._replace(el, `<div class="ibody"><div class="none">${esc(t.loading)}</div></div>`);
       return;
     }
-    const tab = `<button class="chip" data-in-tab="%s" aria-pressed="%p">%l</button>`;
-    const tabs = TABS.map((name) => tab.replace("%s", name).replace("%p", String(state.tab === name)).replace("%l", esc(t.inst.tabs[name]))).join("");
+    const group = GROUPS.find((g) => g.tabs.includes(state.tab)) ?? GROUPS[0];
+    state.last[group.id] = state.tab;
+    const chip = (tab, label, pressed) => `<button class="chip" data-in-tab="${tab}" aria-pressed="${pressed}">${esc(label)}</button>`;
+    const groups = GROUPS.map((g) => chip(state.last[g.id] ?? g.tabs[0], t.inst.groups[g.id], g === group)).join("");
+    const subtabs = group.tabs.length > 1 ? `<div class="isubtabs" role="group">${group.tabs.map((name) => chip(name, t.inst.tabs[name], state.tab === name)).join("")}</div>` : "";
+    const item = (act, icon, label) => `<button data-in-act="${act}">${esc(label)}</button>`;
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
-      <button class="chip" data-in-act="csv">${svg(ICON.download)}CSV</button>
-      <button class="chip" data-in-act="csv-tables">${svg(ICON.download)}${esc(t.inst.links.tablesCsv)}</button>
-      <button class="chip" data-in-act="csv-links">${svg(ICON.download)}${esc(t.inst.links.csvShort)}</button>
-      <button class="chip" data-in-act="json">${svg(ICON.download)}JSON</button>
+      <details class="imenu"><summary class="chip">${svg(ICON.download)}${esc(t.inst.output)}</summary><div class="items">${item("csv", "", t.inst.csvDevices)}${item("csv-tables", "", t.inst.links.tablesCsv)}${item("csv-links", "", t.inst.links.csvShort)}<hr>${item("json", "", "JSON")}</div></details>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
-    const body = { areas: this._instAreas(), devices: this._instDevices(), links: this._instLinks(), log: this._instLog() }[state.tab];
-    this._replace(el, `<div class="itop"><div class="tabs" role="group">${tabs}</div><div class="itools">${tools}</div></div><div class="ibody">${body}</div>`);
+    const body = { areas: () => this._instAreas(), devices: () => this._instDevices(), gwsenders: () => this._instSenders(), buttons: () => this._instButtons(), radio: () => this._instRadio(), bus: () => this._instBus(), supplies: () => this._instSupplies(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
+    this._replace(el, `<div class="itop"><div class="groups" role="group">${groups}</div><div class="itools">${tools}</div></div>${subtabs}<div class="ibody">${body}</div>`);
+  },
+
+  // ---- the tables of the sender and bus groups, from the same rows as the printout ------------------
+
+  _instTable(head, rows, cls = "") {
+    return `<div class="tablewrap"><table class="itable${cls}"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  },
+
+  _instPerGateway(build) {
+    const t = this._t;
+    const parts = gateways(this._in.doc).map((gw) => {
+      const inner = build(gw, docTables(gw, t, (p) => this._profile(p)));
+      return inner ? `<section><h3>${esc(gw.title)} <span class="isub mono">${esc(gw.base_id ?? "")}</span></h3>${inner}</section>` : "";
+    });
+    return parts.join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`;
+  },
+
+  _instSenders() {
+    const t = this._t;
+    const T = t.doc.tbl;
+    const rows = (senders, externals) => {
+      const body = foldFree(senders).map((r) => {
+        if (r.free) return `<tr class="free"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
+        if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
+        if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="7"><span class="tag warn">${esc(T.blocked)}</span></td></tr>`;
+        return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.place].filter(Boolean).join(", "))}</td><td>${esc(r.bus)}</td><td class="mono">${esc(r.feedback)}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
+      }).join("");
+      const outside = externals.length
+        ? `<tr class="outside"><td colspan="9">${esc(T.external)}</td></tr>${externals.map((r) => `<tr><td class="mono">–</td><td class="mono">${esc(r.id)}</td><td></td><td>${esc(r.device)}</td><td>${esc(r.name)}</td><td></td><td></td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`).join("")}`
+        : "";
+      return body + outside;
+    };
+    const head = [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second];
+    return `<p class="isub">${esc(T.sendersIntro)}</p><div><button class="chip" data-in-act="open-senders">${esc(t.inst.manageIds)}</button></div>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(parts.senders, parts.externals)) : ""));
+  },
+
+  _instButtons() {
+    const t = this._t;
+    const T = t.doc.tbl;
+    const side = (list) => (list.length ? list.map(esc).join("<br>") : `<span class="isub">${esc(T.unassigned)}</span>`);
+    const head = [T.id, T.device, T.place, T.description, T.left, T.right];
+    return `<p class="isub">${esc(T.buttonsIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.buttons.length ? this._instTable(head, parts.buttons.map((b) => `<tr><td class="mono">${esc(b.id)}</td><td>${esc(b.device)}</td><td>${esc(b.place)}</td><td>${esc(b.name)}</td><td>${side(b.left)}</td><td>${side(b.right)}</td></tr>`).join("")) : ""));
+  },
+
+  _instRadio() {
+    const t = this._t;
+    const T = t.doc.tbl;
+    const head = [T.id, T.device, T.place, T.description, T.eep, T.sends];
+    const rows = (radio) => radio.map((r, i) => {
+      const same = (x) => r.group && x?.group === r.group;
+      const end = radio.findIndex((x, j) => j > i && !same(x));
+      const span = !r.group ? 1 : same(radio[i - 1]) ? 0 : (end === -1 ? radio.length : end) - i;
+      const spanned = (html) => (span === 0 ? "" : `<td${span > 1 ? ` rowspan="${span}"` : ""}>${html}</td>`);
+      return `<tr><td class="mono">${esc(r.id)}</td>${spanned(esc(r.device))}${spanned(esc(r.place))}${spanned(esc(r.description))}<td class="mono">${esc(r.eep)}</td><td>${esc(r.sends)}</td></tr>`;
+    }).join("");
+    const manual = this._gateways.filter((g) => g.loaded).map((g) => this._manualEditor(g)).join("");
+    return `<p class="isub">${esc(T.radioIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.radio.length ? this._instTable(head, rows(parts.radio)) : "")) + manual;
+  },
+
+  _instBus() {
+    const t = this._t;
+    const T = t.doc.tbl;
+    const lang = this._hass?.language || "en";
+    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
+    return `<p class="isub">${esc(T.busIntro.replace(" (*)", ""))}</p>` + this._instPerGateway((gw) => {
+      const bus = docBus(gw, t, this._in.doc.bus_info);
+      if (!bus.rows.length) return `<div class="none">${esc(T.busEmpty)}</div>`;
+      const power = (r) => (r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : `${esc(num(r.power))}${r.from === "table" ? ` <span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : ""}`);
+      const rows = bus.items.map((r) => (r.free
+        ? `<tr class="free"><td class="mono">${r.from === r.to ? r.from : `${r.from} – ${r.to}`}</td><td colspan="5">${esc(T.free)}</td></tr>`
+        : `<tr><td class="mono">${r.address}</td><td>${esc(r.type)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", "))}</td><td class="mono">${esc(r.feedback)}</td><td class="num">${power(r)}</td></tr>`)).join("");
+      const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td class="num"><b>${esc(num(bus.sum))}</b></td></tr>`;
+      const load = (name, capacity, percent, text) => `<div class="load"><span>${esc(name)}</span><div class="barbg"><i class="${percent >= 80 ? "hot" : ""}" style="width:${Math.min(percent ?? 0, 100)}%"></i></div><span class="r">${esc(text)}${percent >= 80 ? ` <span class="tag warn">${esc(T.busWarn)}</span>` : ""}</span></div>`;
+      const range = (x) => (x.first !== null || x.last !== null ? `, ${T.supplyRange(x.first ?? 1, x.last ?? 126)}` : "");
+      const bars = bus.supplies.filter((x) => x.percent !== null).map((x) => load(`${x.name || T.supplyNoName}, ${num(x.capacity ?? 0)}${range(x)}`, x.capacity, x.percent, `${num(x.load)} · ${x.percent} %`)).join("");
+      const total = bus.capacity !== null && (bus.supplies.length > 1 || bus.supplies.some((x) => x.percent === null)) ? load(T.supplyTotal, bus.capacity, bus.percent, `${num(bus.sum)} ${t.inst.of} ${num(bus.capacity)} · ${bus.percent} %`) : "";
+      const notes = [
+        bus.rows.length - bus.counted ? T.busMissing(bus.rows.length - bus.counted) : "",
+        bus.fromTable ? T.busFromTable(bus.source).replace(/^\* /, "") : "",
+        bus.dups.length ? T.busDup(bus.dups.join(", ")) : "",
+        bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
+        bus.unfed.length ? T.busUnfed(bus.unfed.join(", ")) : "",
+      ].filter(Boolean).map((n) => `<p class="isub">${esc(n)}</p>`).join("");
+      return this._instTable([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum) + `<div style="display:grid;gap:6px;margin-top:12px">${bars}${total}</div><div class="notes" style="margin-top:8px">${notes}</div>`;
+    });
+  },
+
+  _instSupplies() {
+    const t = this._t;
+    const gw = this._gateways.filter((g) => g.loaded);
+    return `<p class="isub">${esc(t.doc.supplyHint)}</p>` + (gw.map((g) => `<section><h3>${esc(g.title)}</h3>${this._manualEditor(g, "supply")}</section>`).join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
   },
 
   _instAreas() {
@@ -232,6 +353,7 @@ export const installation = {
 
   _installationClick(e) {
     const state = this._in;
+    if (this._manualEdit(e)) return; // the rows of power supplies and entries by hand
     const tab = e.target.closest("[data-in-tab]");
     if (tab) {
       state.tab = tab.dataset.inTab;
@@ -257,10 +379,12 @@ export const installation = {
     }
     const act = e.target.closest("[data-in-act]")?.dataset.inAct;
     if (!act) return;
+    this.shadowRoot.querySelector("#installation details.imenu")?.removeAttribute("open");
     if (act === "print") this._documentation("print");
     else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "csv-tables") this._documentation("csv-tables");
+    else if (act === "open-senders") this._setView("senders");
     else if (act === "json") this._documentation("json");
     else if (act === "import") this.shadowRoot.getElementById("docFile").click();
     else if (act === "unpick") {
@@ -283,6 +407,7 @@ export const installation = {
 
   _installationInput(e) {
     const state = this._in;
+    if (this._manualEdit(e)) return;
     if (e.target.matches("[data-in-paste]")) {
       state.paste = e.target.value;
       return;
