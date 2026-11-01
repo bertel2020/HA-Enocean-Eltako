@@ -303,6 +303,11 @@ Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könn
 Bei mehreren Gateways zeigen die Details eines Geräts **Gehört von**: jedes Gateway mit letztem
 Signal und Telegrammzahl, das stärkste mit dem Hinweis **am besten**; ein Gerät, das kein Gateway
 direkt hört (ab 3 Telegrammen, alle wiederholt), trägt den Hinweis **nur über Repeater**.
+Bei einem Schaltaktor mit bekanntem Zustand sendet **Sender testen** in den Details diesen
+Zustand nacheinander über jeden seiner Sender (es ändert sich also nichts, mit Hintergrund-
+Priorität) und markiert jeden Sender mit **Antwort** oder **keine Antwort**. Keine Antwort
+beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm bleiben; ein
+umschaltender Wipptaster wird nicht getestet. Der Test zählt nicht in der Befehlsstatistik.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
