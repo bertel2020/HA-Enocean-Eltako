@@ -54,6 +54,14 @@ Die Screenshots zeigen Beispieldaten aus dem Seitenleisten-Panel **EnOcean**.
 | --- |
 | ![Übernahme](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/takeover-desktop-light.png) |
 
+| Gerätedetails | Installationsdokumentation |
+| --- | --- |
+| ![Gerätedetails](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/device-details-desktop-light.png) | ![Installationsdokumentation](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/documentation-print.png) |
+
+| Gateway-Notizen und weitere Geräte |
+| --- |
+| ![Gateway-Details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/gateway-details-desktop-light.png) |
+
 ## Installation
 
 ### Über HACS (empfohlen)
