@@ -189,3 +189,40 @@ async def test_manual_entries_are_validated_stored_and_documented(
 
     await client.send_json({"id": 6, "type": "enocean_eltako/gateways"})
     assert (await client.receive_json())["success"]
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_notes_of_deleted_devices_can_be_forgotten(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.set_device("05-00-00-12", "bleibt")
+    notes.set_device("05-00-00-99", "Gerät gelöscht")
+    notes.set_test("05-00-00-98", {"central": "confirmed"})  # a result without a note
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/prune_notes",
+                "entry_id": entry_id or entry.entry_id,
+            }
+        )
+        return await client.receive_json()
+
+    await client.send_json({"id": 1, "type": "enocean_eltako/gateways"})
+    status = await client.receive_json()
+    assert status["result"][0]["orphan_notes"] == 2
+
+    assert (await call(2, "unknown"))["error"]["code"] == "not_found"
+    assert (await call(3))["result"] == {"removed": 1}
+    assert notes.devices == {"05-00-00-12": "bleibt"} and notes.tests == {}
+    assert (await call(4))["result"] == {"removed": 0}  # nothing left to forget

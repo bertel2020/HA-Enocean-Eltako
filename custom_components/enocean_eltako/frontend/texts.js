@@ -184,6 +184,7 @@ export const TEXT = {
     dIdentity: "Identity", dRadio: "Radio", dSenders: "Sender IDs", dCommands: "Commands", dSettings: "Settings",
     dEntities: (n) => `Entities (${n})`,
     doc: {
+      prune: (n) => `Remove ${n} notes of deleted devices`, pruneHint: "Notes stay when a device is deleted and come back if you add it again; this forgets them",
       sheetItem: "Print cabinet sheet", sheetTitle: "Cabinet sheet", sheetFoot: "The learn function to set on an actuator depends on its type and revision: see the learn function table in the documentation of the integration (docs/teach_in.md) and the manual of the device.",
       notes: "Notes", notePlaceholder: "Where it sits, terminal, fuse, battery date …", gatewayNotePlaceholder: "Note on this gateway: place, repeater, wiring …", noteFailed: "The note could not be saved.",
       print: "Print installation documentation", csvItem: "Documentation as CSV", jsonItem: "Documentation as JSON",
@@ -484,6 +485,7 @@ export const TEXT = {
     dIdentity: "Identität", dRadio: "Funk", dSenders: "Sender-IDs", dCommands: "Befehle", dSettings: "Einstellungen",
     dEntities: (n) => `Entitäten (${n})`,
     doc: {
+      prune: (n) => `${n} Notizen gelöschter Geräte entfernen`, pruneHint: "Notizen bleiben beim Löschen eines Geräts erhalten und kommen wieder, wenn du es neu anlegst; das vergisst sie",
       sheetItem: "Schaltschrank-Blatt drucken", sheetTitle: "Schaltschrank-Blatt", sheetFoot: "Welche Lernfunktion am Aktor einzustellen ist, hängt von Typ und Revision ab: siehe die Tabelle der Einlernfunktionen in der Dokumentation der Integration (docs/teach_in.de.md) und das Handbuch des Geräts.",
       notes: "Notizen", notePlaceholder: "Einbauort, Klemme, Sicherung, Batteriedatum …", gatewayNotePlaceholder: "Notiz zu diesem Gateway: Standort, Repeater, Verdrahtung …", noteFailed: "Die Notiz konnte nicht gespeichert werden.",
       print: "Installationsdokumentation drucken", csvItem: "Dokumentation als CSV", jsonItem: "Dokumentation als JSON",

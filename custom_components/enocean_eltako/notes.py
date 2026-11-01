@@ -71,6 +71,21 @@ class Notes:
             self.devices.pop(key, None)
         self._save()
 
+    def orphans(self, keys: set[str]) -> set[str]:
+        """Keys of notes and test results whose device is gone (they return with the address)."""
+        return (set(self.devices) | set(self.tests)) - keys
+
+    def prune(self, keys: set[str]) -> int:
+        """Drop the notes and test results of devices that are gone; how many notes went."""
+        gone = self.orphans(keys)
+        removed = len(gone & set(self.devices))
+        for key in gone:
+            self.devices.pop(key, None)
+            self.tests.pop(key, None)
+        if gone:
+            self._save()
+        return removed
+
     def set_manual(self, entries: list[dict[str, str]]) -> None:
         """Replace the entries made by hand; one without any text is dropped."""
         self.manual = [

@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- A gateway's details offer to **remove the notes of deleted devices**, which otherwise stay for when the device returns.
 - **Cabinet sheet** in the Devices view menu: a dense landscape printout, one table per gateway, for the distribution board.
 - Screenshots of the sidebar panel (sample data) in both READMEs.
 - **Further devices** in a gateway's details: write down buttons taught in directly, devices of other systems and anything else Home Assistant cannot see (name, ID, function). They appear in the printout, CSV and JSON of the installation documentation.
@@ -34,6 +35,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Die Details eines Gateways bieten an, die **Notizen gelöschter Geräte zu entfernen**; sonst bleiben sie, falls das Gerät zurückkehrt.
 - **Schaltschrank-Blatt** im Menü der Geräteansicht: ein dichter Ausdruck im Querformat, eine Tabelle pro Gateway, für den Verteiler.
 - Screenshots des Seitenleisten-Panels (Beispieldaten) in beiden READMEs.
 - **Weitere Geräte** in den Details eines Gateways: direkt eingelernte Taster, Geräte anderer Systeme und alles andere, was Home Assistant nicht sieht, lassen sich eintragen (Name, ID, Funktion). Sie stehen in Ausdruck, CSV und JSON der Installationsdokumentation.
