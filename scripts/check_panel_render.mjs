@@ -104,7 +104,7 @@ for (const lang of ["en", "de"]) {
     expect("installation cards (one per area)", root.querySelectorAll("#installation .gcard").length, 4);
     root.querySelector('#installation [data-in-tab="devices"]').click();
     await settle();
-    expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 7);
+    expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 8);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
     cell.value = "F4 B10";
     cell.dispatchEvent(new Event("input", { bubbles: true }));

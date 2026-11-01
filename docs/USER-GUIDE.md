@@ -328,11 +328,15 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   ID are fields you write down per device), **Buttons** (each wall switch with the actuators on its
   left and right rocker, taken from the actuators' wall switch option), **Radio senders** (devices
   that only send, and entries made by hand) and **Eltako bus** (every device with a bus address, by
-  address, with the power it takes from the bus and the sum). The power per device is the
-  consumption at the bus from its data sheet, not the switched load; it is written down by hand,
-  like the type and watts of the bus power supply (in the gateway's details), and the sum says how
-  many devices have no value yet. Home Assistant cannot read the bus yet, so nothing there is
-  filled in by itself.
+  address 1 to 126, one per channel; free addresses are folded; an address given twice is
+  reported). The power is what a device takes from the bus, not the switched load: what you wrote
+  down, otherwise the value of Eltako's planning guide (edition 07/2014, the table of the maximum
+  power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
+  has no value, and the sum says how many devices have none. The channels of one device count
+  once if they share a **Part of** name; without it the sum counts each channel and says so. The
+  supply defaults to the 12 W of the FAM14; type and watts of another supply are written in the
+  gateway's details. Home Assistant cannot read the bus yet, so bus address, feedback ID and the
+  entries by hand are written down by you.
 - **JSON** (version 2: typed fields, links and the log; the import still reads version 1).
 
 The checklist is for moving to a radio gateway with another base ID: its sender IDs are new and

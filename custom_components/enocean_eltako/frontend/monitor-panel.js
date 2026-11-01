@@ -2289,8 +2289,8 @@ class EnOceanEltakoPanel extends HTMLElement {
   _manualEditor(gw) {
     // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
     const t = this._t.doc;
-    const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 8)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
+    const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
+    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
     const supply = (key, label, max) => `<input class="note" data-supply-field="${key}"${key === "watts" ? ' inputmode="decimal"' : ""} value="${esc(gw.supply?.[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
     const power = `<div class="srow">${supply("name", t.supplyName, 60)}${supply("watts", t.supplyWatts, 8)}<span class="sub">W</span></div>`;
     const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
@@ -2361,6 +2361,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       input.setAttribute("aria-invalid", String(bad));
       return bad;
     };
+    // a bus address: a whole number from 1 to 126
+    const badAddress = (input) => {
+      const text = input.value.trim();
+      const bad = text !== "" && !(/^\d{1,3}$/.test(text) && Number(text) >= 1 && Number(text) <= 126);
+      input.setAttribute("aria-invalid", String(bad));
+      return bad;
+    };
     if (e.type === "input" && supply) {
       gateway.supply = { name: "", watts: "", ...gateway.supply, [supply.dataset.supplyField]: supply.value };
       clearTimeout(gateway._supplySaving);
@@ -2372,7 +2379,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
       entry[field.dataset.manualField] = field.value;
       clearTimeout(gateway._manualSaving);
-      if (field.dataset.manualField !== "bus_power" || !badWatts(field)) gateway._manualSaving = setTimeout(() => this._saveManual(gateway), 600);
+      const bad = { bus_power: badWatts, bus_address: badAddress }[field.dataset.manualField]?.(field) ?? false;
+      if (!bad) gateway._manualSaving = setTimeout(() => this._saveManual(gateway), 600);
       return true;
     }
     if (e.type !== "click") return false;

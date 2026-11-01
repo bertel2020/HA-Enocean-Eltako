@@ -18,6 +18,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
 STORAGE_VERSION = 2
@@ -29,7 +30,7 @@ FIELDS = {
     "fuse": 40,
     "installed": 10,
     "group": 80,  # what it is a part of: a device that sends under several IDs
-    "bus_address": 8,  # the channel on the FAM14 bus, written down by hand
+    "bus_address": 3,  # its address on the FAM14 bus, 1 to 126 (one per channel), by hand
     "feedback_id": 16,  # the ID of its feedback telegrams (bus or decentral actuator)
     "bus_power": 8,  # watts it takes from the FAM14 bus, from its data sheet
     "revision": 40,
@@ -37,6 +38,7 @@ FIELDS = {
     "note": MAX_NOTE,
 }
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_BUS_ADDRESS = re.compile(r"\d{1,3}")
 _WATTS = re.compile(r"\d{1,4}([.,]\d{1,3})?")  # a number of watts, 1,2 or 1.2
 MAX_MANUAL = 200  # entries per gateway
 # an entry by hand; a device on the Eltako bus that Home Assistant does not hold has bus fields
@@ -44,7 +46,7 @@ MANUAL_FIELDS = {
     "name": 80,
     "address": 40,
     "function": 200,
-    "bus_address": 8,
+    "bus_address": 3,
     "feedback_id": 16,
     "bus_power": 8,
 }
@@ -59,6 +61,11 @@ LINK_FIELDS = {"from_id": 40, "from_name": 80, "to_key": 64, "to_name": 80, "rol
 MAX_HEARD = 100  # unknown senders kept per gateway
 SIGNAL_SAVE_DELAY = 60  # seconds: telegrams come all the time, the signal data is written rarely
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
+
+
+def valid_bus_address(text: str) -> bool:
+    """An address of the FAM14 bus: a whole number from 1 to 126."""
+    return bool(_BUS_ADDRESS.fullmatch(text)) and 1 <= int(text) <= ADDRESSES
 
 
 def device_key(subentry: ConfigSubentry) -> str:
@@ -214,6 +221,8 @@ class Notes:
                 return False
             if field == "bus_power" and value and not _WATTS.fullmatch(value):
                 return False
+            if field == "bus_address" and value and not valid_bus_address(value):
+                return False
             clean[field] = value
         current = self.devices.setdefault(key, {})
         for field, value in clean.items():
@@ -256,6 +265,8 @@ class Notes:
                 del gained["installed"]
             if "bus_power" in gained and not _WATTS.fullmatch(gained["bus_power"]):
                 del gained["bus_power"]
+            if "bus_address" in gained and not valid_bus_address(gained["bus_address"]):
+                del gained["bus_address"]
             fresh = {f: v for f, v in gained.items() if v != self.devices.get(key, {}).get(f)}
             if fresh and self.set_fields(key, fresh):
                 notes += len(fresh)
@@ -350,6 +361,8 @@ class Notes:
         for entry in self.manual:
             if not _WATTS.fullmatch(entry["bus_power"]):
                 entry["bus_power"] = ""  # not a number of watts
+            if entry["bus_address"] and not valid_bus_address(entry["bus_address"]):
+                entry["bus_address"] = ""  # not an address of the bus
         self._save()
 
     def set_links(self, entries: list[dict[str, str]]) -> None:

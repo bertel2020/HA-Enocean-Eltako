@@ -26,5 +26,13 @@ Eltako-specific telegram layouts are implemented from Eltako's public document
 "Inhalte der Eltako-Funktelegramme" and device manuals. No text from these
 documents is reproduced.
 
+Eltako bus figures
+------------------
+custom_components/enocean_eltako/bus_devices.py holds numbers (the power a device
+takes from the bus, the number of device addresses, the supply of the FAM14) taken
+from Eltako's public "RS485-Bus-Reiheneinbaugeraete Baureihe 14, Planungshilfe und
+Betriebsanleitung", edition 07/2014, each stated with its source. No text from the
+document is reproduced and the document is not part of this repository.
+
 EnOcean is a registered trademark of EnOcean GmbH. Eltako is a registered
 trademark of Eltako GmbH. This project is not affiliated with either company.
