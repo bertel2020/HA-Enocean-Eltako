@@ -28,6 +28,8 @@ FIELDS = {
     "circuit": 80,
     "fuse": 40,
     "installed": 10,
+    "bus_address": 8,  # the channel on the FAM14 bus, written down by hand
+    "feedback_id": 16,  # the ID of its feedback telegrams (bus or decentral actuator)
     "revision": 40,
     "power": 80,
     "note": MAX_NOTE,

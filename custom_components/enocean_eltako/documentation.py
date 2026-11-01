@@ -215,7 +215,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                         "start": format_id(store.pool.start),
                         "end": format_id(store.pool.start + store.pool.size - 1),
                         "senders": [
-                            {k: row[k] for k in ("id", "device", "profile", "state")}
+                            {k: row[k] for k in ("id", "device", "ref", "profile", "state")}
                             for row in _pool_rows(hass, store)
                         ],
                     }

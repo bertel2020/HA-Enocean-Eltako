@@ -8,7 +8,7 @@ const VERSION = new URL(import.meta.url).search;
 const { ICON, esc, svg } = await import(`./shared.js${VERSION}`);
 
 // the typed fields of a device, in table order; installed is a date
-export const INSTALLATION_FIELDS = ["location", "circuit", "fuse", "installed", "revision", "power", "note"];
+export const INSTALLATION_FIELDS = ["location", "circuit", "bus_address", "feedback_id", "fuse", "installed", "revision", "power", "note"];
 const TABS = ["areas", "devices", "links", "log"];
 const SAVE_DELAY = 600; // ms after the last key
 
@@ -104,6 +104,7 @@ export const installation = {
     const tabs = TABS.map((name) => tab.replace("%s", name).replace("%p", String(state.tab === name)).replace("%l", esc(t.inst.tabs[name]))).join("");
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
       <button class="chip" data-in-act="csv">${svg(ICON.download)}CSV</button>
+      <button class="chip" data-in-act="csv-tables">${svg(ICON.download)}${esc(t.inst.tablesCsv)}</button>
       <button class="chip" data-in-act="csv-links">${svg(ICON.download)}${esc(t.inst.links.csvShort)}</button>
       <button class="chip" data-in-act="json">${svg(ICON.download)}JSON</button>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
@@ -257,6 +258,7 @@ export const installation = {
     if (act === "print") this._documentation("print");
     else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
+    else if (act === "csv-tables") this._documentation("csv-tables");
     else if (act === "json") this._documentation("json");
     else if (act === "import") this.shadowRoot.getElementById("docFile").click();
     else if (act === "unpick") {
