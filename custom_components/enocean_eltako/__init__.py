@@ -324,6 +324,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
             for d in entry.runtime_data.devices.values()
         }
     )
+    for device in entry.runtime_data.devices.values():
+        device.seed_signal(notes.signal.get(device_key(device.subentry), {}))
     entry.async_on_unload(notes.async_flush)  # what waits for its delayed save is written now
     entry.async_on_unload(async_setup_discovery(hass, entry))
     if (stop_proxy_status := async_setup_proxy_status(hass, entry)) is not None:

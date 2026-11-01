@@ -329,6 +329,11 @@ them, each with its learn position if you wrote one down, and points to the lear
 (`docs/teach_in.md`), as the right function depends on the actuator's type and revision. Buttons
 taught in directly and wall switches are not affected.
 
+**Signal and unknown senders across restarts:** how each gateway hears a device (telegram count,
+last signal, whether any telegram came without a repeater) and the unknown senders a gateway heard
+(the newest 100) are kept in the same store and written at most once a minute, so **Heard by**,
+"via repeater only" and the list of heard senders do not start empty after a restart.
+
 **Notes and further devices:** each device's details have a **Notes** field, each gateway's
 details a note field of its own and an editor for **Further devices** (name, ID, function:
 buttons taught in directly, devices of other systems). Saved as you type, kept in a store of its

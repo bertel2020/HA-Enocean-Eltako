@@ -237,6 +237,30 @@ class EnOceanDevice:
         if received.telegram.dbm is not None:
             heard.rssi = received.telegram.dbm
         heard.last = received.timestamp
+        if (notes := self.entry.runtime_data.hub.notes.get(self.entry.entry_id)) is not None:
+            notes.touch_signal(
+                device_key(self.subentry),
+                received.gateway,
+                {
+                    "count": heard.count,
+                    "direct": heard.direct,
+                    "rssi": heard.rssi,
+                    "last": heard.last,
+                },
+            )
+
+    def seed_signal(self, saved: dict[str, dict[str, Any]]) -> None:
+        """Take over how the gateways heard this device before the restart."""
+        for gateway, values in saved.items():
+            self.stats.heard.setdefault(
+                gateway,
+                GatewayHeard(
+                    count=int(values.get("count", 0)),
+                    direct=int(values.get("direct", 0)),
+                    rssi=values.get("rssi"),
+                    last=float(values.get("last", 0)),
+                ),
+            )
 
     @callback
     def _on_wall_switch(self, received: ReceivedTelegram) -> None:

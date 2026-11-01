@@ -19,6 +19,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Heard by** and the heard but unknown senders **survive a restart**: how each gateway hears a device and the newest 100 unknown senders are kept (written at most once a minute).
 - The printout is **one page with sections** you switch on or off above it (handover, cabinet, links, checklist, sender IDs, log); it replaces the separate cabinet sheet.
 - A device's notes are now typed fields (store version 2, migrated from version 1 on first load); exports and the import carry all of them.
 
@@ -39,6 +40,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Gehört von** und die gehörten unbekannten Sender **überstehen einen Neustart**: wie jedes Gateway ein Gerät hört und die neuesten 100 unbekannten Sender bleiben erhalten (höchstens einmal pro Minute geschrieben).
 - Der Ausdruck ist **eine Seite mit Abschnitten**, die du oben ein- oder ausschaltest (Übergabe, Schaltschrank, Verbindungen, Checkliste, Sender-IDs, Protokoll); sie ersetzt das eigene Schaltschrank-Blatt.
 - Die Notizen eines Geräts sind jetzt typisierte Felder (Speicherversion 2, beim ersten Laden aus Version 1 überführt); Exporte und der Import enthalten alle.
 
