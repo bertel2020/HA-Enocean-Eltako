@@ -84,10 +84,10 @@ const tgw = {
   base_id: "FF-B6-40-80",
   hidden_senders: [], heard: [], links: [], log: [], note: "",
   supply: { name: "FSNT14-12V", watts: "1" },
-  manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }, { id: "m2", name: "Zähler F3Z14D", address: "", function: "Haus", bus_address: "12-1", feedback_id: "00008C0C", bus_power: "" }],
+  manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }, { id: "m2", name: "Zähler F3Z14D", address: "", function: "Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "" }],
   devices: [
-    tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "01-1", feedback_id: "00000081", bus_power: "0,4", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
-    tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", bus_address: "09-1", bus_power: "0.4", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
+    tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "1", feedback_id: "00000081", bus_power: "0,4", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
+    tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", bus_address: "9", bus_power_table: 0.42, wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
     tdev({ name: "Taster Haustür", id: "FE-8A-31-C2", category: "buttons", model: "F4T55E", location: "Flur" }),
     tdev({ name: "Raumregler Temperatur", id: "FE-91-2A-40", category: "climate", model: "FUTH55", group: "Raumregler Wohnzimmer", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"] }),
     tdev({ name: "Raumregler Taste", id: "FE-91-2A-41", category: "sensors", model: "FUTH55", group: "Raumregler Wohnzimmer", eep: "F6-02-01:std" }),
@@ -109,7 +109,7 @@ for (const lang of ["en", "de"]) {
   const parts = docTables(tgw, t, tprofile);
   const at = (n) => parts.senders[n];
   if (parts.senders.length !== 128 || at(0).id !== "FFB64080" || !at(0).gateway) errors.push(`shared.js: docTables (${lang}) has ${parts.senders.length} gateway sender rows or a wrong base ID`);
-  if (!at(1).free || at(29).id !== "FFB6409D" || at(29).bus !== "01-1" || at(29).feedback !== "00000081" || at(29).second !== "93 →" || at(93).second !== "← 29") errors.push(`shared.js: docTables (${lang}) gets the sender number, the fields or the second mode wrong`);
+  if (!at(1).free || at(29).id !== "FFB6409D" || at(29).bus !== "1" || at(29).feedback !== "00000081" || at(29).second !== "93 →" || at(93).second !== "← 29") errors.push(`shared.js: docTables (${lang}) gets the sender number, the fields or the second mode wrong`);
   if (!at(94).blocked || at(94).id !== "FFB640DE" || !at(127).free) errors.push(`shared.js: docTables (${lang}) misses the blocked or the free numbers`);
   const folded = foldFree(parts.senders);
   if (folded.length >= 128 || folded[1].nr !== 1 || folded[1].to !== 28) errors.push(`shared.js: foldFree (${lang}) does not fold the free numbers`);
@@ -121,9 +121,17 @@ for (const lang of ["en", "de"]) {
   const grouped = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
   if (!grouped.split('<section class="sec sec-radio">')[1]?.split("</section>")[0].includes('rowspan="2">FUTH55')) errors.push(`shared.js: documentationHtml (${lang}) does not put the IDs of one device in one block`);
   const bus = docBus(tgw, t);
-  if (bus.rows.map((r) => r.address).join() !== "01-1,09-1,12-1" || bus.sum !== 0.8 || bus.counted !== 2 || bus.percent !== 80 || bus.rows[2].power !== null) errors.push(`shared.js: docBus (${lang}) sorts, sums or compares wrongly: ${JSON.stringify(bus)}`);
+  if (bus.rows.map((r) => r.address).join() !== "1,9,12" || bus.sum !== 0.82 || bus.counted !== 2 || bus.rows[2].power !== null || bus.rows[0].from !== "user" || bus.rows[1].from !== "table") errors.push(`shared.js: docBus (${lang}) sorts, sums or takes the table wrongly: ${JSON.stringify(bus)}`);
+  if (bus.percent !== 82 || bus.capacity !== 1 || !bus.ownCapacity || bus.items.filter((x) => x.free).map((x) => `${x.from}-${x.to}`).join() !== "2-8,10-11,13-126") errors.push(`shared.js: docBus (${lang}) has the wrong load or free runs: ${JSON.stringify(bus.items.filter((x) => x.free))}`);
+  const four = { devices: [1, 2, 3, 4].map((n) => tdev({ name: `Kanal ${n}`, id: `05-10-00-0${n}`, note_key: `c${n}`, model: "FSR14-4x", bus_address: String(n), bus_power_table: 0.7, group: n < 4 ? "Flur" : "" })), manual: [], supply: {} };
+  const grouped4 = docBus(four, t, { supply_watts: 12 });
+  if (grouped4.sum !== 1.4 || grouped4.rows[1].from !== "group" || grouped4.capacity !== 12 || grouped4.ownCapacity || grouped4.multi.length !== 0) errors.push(`shared.js: docBus (${lang}) counts the channels of one device wrongly: ${JSON.stringify([grouped4.sum, grouped4.multi])}`);
+  const ungrouped = docBus({ ...four, devices: four.devices.map((d) => ({ ...d, group: "" })), supply: { watts: "" } }, t);
+  if (ungrouped.multi.join() !== "FSR14-4x" || ungrouped.sum !== 2.8) errors.push(`shared.js: docBus (${lang}) does not warn about ungrouped channels`);
+  const dup = docBus({ devices: [tdev({ name: "A", id: "1", bus_address: "5", bus_power: "1" }), tdev({ name: "B", id: "2", bus_address: "5", bus_power: "1" })], manual: [], supply: {} }, t);
+  if (dup.dups.join() !== "5") errors.push(`shared.js: docBus (${lang}) misses an address given twice`);
   const busPage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
-  if (!busPage.includes(t.doc.tbl.busWarn) || !busPage.includes(t.doc.tbl.busMissing(1)) || !busPage.includes("FSNT14-12V")) errors.push(`shared.js: documentationHtml bus (${lang}) misses the sum, the supply or the warning`);
+  if (!busPage.includes(t.doc.tbl.busWarn) || !busPage.includes(t.doc.tbl.busMissing(1)) || !busPage.includes("FSNT14-12V") || !/0[.,]42 W\*/.test(busPage)) errors.push(`shared.js: documentationHtml bus (${lang}) misses the sum, the supply, the warning or the table mark`);
   const tcsv = documentationCsv({ gateways: [tgw] }, t, tprofile, "tables").trim().split("\n");
   if (tcsv.length < 128 + 10 || !tcsv.some((r) => r.includes("FE-8A-31-C2") && r.includes("Licht Flur (29)"))) errors.push(`shared.js: documentationCsv tables (${lang}) has ${tcsv.length} rows`);
   const tpage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);

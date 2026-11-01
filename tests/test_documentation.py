@@ -185,7 +185,7 @@ async def test_manual_entries_are_validated_stored_and_documented(
     ]
     assert (await call(1, entries))["success"]
     (gateway_doc,) = collect(hass)["gateways"]
-    no_bus = {"bus_address": "", "feedback_id": "", "bus_power": ""}
+    no_bus = {"bus_address": "", "feedback_id": "", "bus_power": "", "bus_power_table": None}
     assert gateway_doc["manual"] == [
         {
             "id": "a1",
@@ -207,12 +207,14 @@ async def test_manual_entries_are_validated_stored_and_documented(
     assert (await client.receive_json())["success"]
 
     # a device of the Eltako bus that Home Assistant does not hold
-    bus = {"id": "f3", "name": "F3Z14D", "bus_address": "12-1", "bus_power": "0,5"}
+    bus = {"id": "f3", "name": "FSR14-4x", "bus_address": "12", "bus_power": "0,5"}
     assert (await call(7, [bus]))["success"]
     (manual,) = collect(hass)["gateways"][0]["manual"]
-    assert manual["bus_address"] == "12-1" and manual["bus_power"] == "0,5"
-    assert (await call(8, [{**bus, "bus_power": "viel"}]))["success"]
-    assert collect(hass)["gateways"][0]["manual"][0]["bus_power"] == ""  # not watts: dropped
+    assert manual["bus_address"] == "12" and manual["bus_power"] == "0,5"
+    assert manual["bus_power_table"] == 0.7  # the type is in the planning guide
+    assert (await call(8, [{**bus, "bus_power": "viel", "bus_address": "127"}]))["success"]
+    (manual,) = collect(hass)["gateways"][0]["manual"]
+    assert manual["bus_power"] == "" and manual["bus_address"] == ""  # not watts, not an address
 
 
 async def test_the_bus_power_supply_is_validated_stored_and_documented(
@@ -471,7 +473,7 @@ async def test_typed_fields_are_validated_stored_and_documented(
         "circuit": "Klemme 12",
         "fuse": "F3 B16",
         "group": "Waschküche",
-        "bus_address": "01-1",
+        "bus_address": "1",
         "feedback_id": "00000081",
         "installed": "2026-10-01",
         "revision": "2214",
@@ -482,7 +484,7 @@ async def test_typed_fields_are_validated_stored_and_documented(
     assert reply["result"] == {"saved": 1, "rejected": []}
     row = collect(hass)["gateways"][0]["devices"][0]
     assert row["location"] == "Schrank 2, Reihe 1, Platz 4" and row["installed"] == "2026-10-01"
-    assert row["bus_address"] == "01-1" and row["feedback_id"] == "00000081"
+    assert row["bus_address"] == "1" and row["feedback_id"] == "00000081"
     assert row["group"] == "Waschküche"
     assert all(row[f] for f in values)
 
@@ -719,3 +721,26 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     for i in range(MAX_HEARD + 1):
         notes.remember_heard(f"01-00-00-{i:02X}", "F6", None, float(i))
     assert len(notes.heard) == MAX_HEARD  # the oldest went
+
+
+def test_the_bus_table_of_the_planning_guide_and_the_bus_addresses() -> None:
+    from custom_components.enocean_eltako.bus_devices import ADDRESSES, POWER, bus_power
+    from custom_components.enocean_eltako.notes import valid_bus_address
+
+    assert bus_power("FSR14-4x") == 0.7 and bus_power(" fsr14-2X ") == 0.14
+    assert bus_power("FUD14/800 W") == 0.2  # spaces and case do not matter
+    assert bus_power("F3Z14D") is None  # newer than the guide: no value, not zero
+    assert bus_power("FSR14") is None  # the type does not say 2x or 4x
+    assert bus_power(None) is None and bus_power("") is None
+    assert all(0 < watts < 1 for watts in POWER.values())
+    assert ADDRESSES == 126
+    assert [valid_bus_address(a) for a in ("1", "126", "0", "127", "01", "1-1", "abc", "")] == [
+        True,
+        True,
+        False,
+        False,
+        True,
+        False,
+        False,
+        False,
+    ]

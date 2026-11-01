@@ -15,6 +15,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
+from .bus_devices import ADDRESSES, SOURCE, SUPPLY_WATTS, bus_power
 from .catalog import OPT_WALL_OFF, OPT_WALL_ON, OPT_WALL_SWITCH
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
@@ -66,6 +67,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             for profile, sender in device.senders.items()
         ],
         "wall_switch": wall,
+        "bus_power_table": bus_power(device._model_label),
         **notes.device(device_key(device.subentry)),
         "test_time": test.get("time"),
     }
@@ -206,7 +208,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 "base_id": entry.data.get(CONF_BASE_ID),
                 "note": notes.gateway,
                 "supply": notes.supply,
-                "manual": notes.manual,
+                "manual": [{**m, "bus_power_table": bus_power(m["name"])} for m in notes.manual],
                 "devices": devices,
                 "links": build_links(devices, notes),
                 "pools": [
@@ -231,6 +233,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
             }
         )
     return {
+        "bus_info": {"addresses": ADDRESSES, "supply_watts": SUPPLY_WATTS, "source": SOURCE},
         "version": VERSION,
         "generated": dt_util.utcnow().isoformat(timespec="seconds"),
         "gateways": gateways,

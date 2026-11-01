@@ -135,14 +135,14 @@ export function documentationCsv(doc, t, profile, table = "devices") {
         ...parts.radio.map((r) => [r.id, r.device, r.place, r.description, r.eep, r.sends]),
         []
       );
-      const bus = docBus(gw, t);
+      const bus = docBus(gw, t, doc.bus_info);
       if (bus.rows.length) {
         rows.push(
           [gw.title, d.sections.bus],
-          [T.busAddress, T.type, T.device, T.description, T.feedbackId, `${T.power} (W)`],
-          ...bus.rows.map((r) => [r.address, r.type, r.device, r.name, r.feedback, r.power ?? ""]),
-          [T.sum, "", "", "", "", bus.sum],
-          ...(bus.supply || bus.capacity ? [[T.supply, bus.supply, "", "", "", bus.capacity ?? ""]] : []),
+          [T.busAddress, T.type, T.device, T.description, T.feedbackId, `${T.power} (W)`, T.busSource],
+          ...bus.rows.map((r) => [r.address, r.type, r.device, [r.name, r.group].filter(Boolean).join(", "), r.feedback, r.power ?? "", { user: T.busSourceUser, table: T.busSourceTable, group: T.busGroupLine }[r.from] ?? ""]),
+          [T.sum, "", "", "", "", bus.sum, ""],
+          ...(bus.capacity ? [[T.supply, bus.supply, "", "", "", bus.capacity, bus.ownCapacity ? T.busSourceUser : T.busSourceTable]] : []),
           []
         );
       }
@@ -268,31 +268,65 @@ export function docTables(gw, t, profile) {
   return { senders, buttons: buttonRows, radio };
 }
 
-// The Eltako bus: every device with a bus address, from the typed fields of the devices and the
-// entries by hand, by address, with the power each takes from the bus (from its data sheet), the
-// sum and, when the power supply is written down, how much of it that uses. Home Assistant cannot
-// read the bus yet, so what is not written down is not here.
+// The Eltako bus: every device with a bus address (1 to 126, one per channel), from the typed
+// fields of the devices and the entries by hand, with the power each takes from the bus, the sum
+// and, when the power supply is written down, how much of it that uses. What the user wrote down
+// wins; without it the value of Eltako's planning guide stands in (marked), once per device: the
+// channels of one device share a "part of" name. Home Assistant cannot read the bus yet, so what is
+// not written down is not here.
 const watts = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
-export function docBus(gw, t) {
+export function docBus(gw, t, info = {}) {
   const T = t.doc.tbl;
+  const facts = { addresses: 126, supply_watts: 12, source: "", ...info };
+  const entry = (address, type, device, name, feedback, group, user, table) => ({ address: Number(address), type, device, name, feedback: feedback ?? "", group: group ?? "", user: watts(user), table: typeof table === "number" ? table : null });
   const rows = [
     ...gw.devices
-      .filter((d) => d.bus_address && !d.virtual)
-      .map((d) => ({ address: d.bus_address, type: ["lighting", "covers"].includes(d.category) ? T.busTypes.actuator : T.busTypes.sender, device: d.model ?? "", name: d.name, feedback: d.feedback_id ?? "", power: watts(d.bus_power) })),
+      .filter((d) => /^\d+$/.test(d.bus_address ?? "") && !d.virtual)
+      .map((d) => entry(d.bus_address, ["lighting", "covers"].includes(d.category) ? T.busTypes.actuator : T.busTypes.sender, d.model ?? "", d.name, d.feedback_id, d.group, d.bus_power, d.bus_power_table)),
     ...(gw.manual ?? [])
-      .filter((m) => m.bus_address)
-      .map((m) => ({ address: m.bus_address, type: T.busTypes.other, device: m.name, name: m.function, feedback: m.feedback_id ?? "", power: watts(m.bus_power) })),
-  ].sort((a, b) => (parseInt(a.address, 10) || 0) - (parseInt(b.address, 10) || 0) || a.address.localeCompare(b.address));
+      .filter((m) => /^\d+$/.test(m.bus_address ?? ""))
+      .map((m) => entry(m.bus_address, T.busTypes.other, m.name, m.function, m.feedback_id, "", m.bus_power, m.bus_power_table)),
+  ].sort((a, b) => a.address - b.address);
+  // the power of a row: written down, else the table's once per device, else none
+  const seen = new Set();
+  for (const r of rows) {
+    if (r.user !== null) Object.assign(r, { power: r.user, from: "user" });
+    else if (r.table !== null && r.group && seen.has(r.group)) Object.assign(r, { power: 0, from: "group" });
+    else if (r.table !== null) Object.assign(r, { power: r.table, from: "table" });
+    else Object.assign(r, { power: null, from: "" });
+    if (r.table !== null && r.group) seen.add(r.group);
+  }
   const counted = rows.filter((r) => r.power !== null);
-  const sum = Math.round(counted.reduce((n, r) => n + r.power, 0) * 10) / 10;
-  const capacity = watts(gw.supply?.watts);
+  const sum = Math.round(counted.reduce((n, r) => n + r.power, 0) * 100) / 100;
+  const own = watts(gw.supply?.watts);
+  const capacity = own ?? (rows.length ? facts.supply_watts : null);
+  const taken = new Set();
+  const dups = [...new Set(rows.filter((r, i) => rows.findIndex((x) => x.address === r.address) !== i).map((r) => r.address))];
+  // the same type on consecutive addresses without a name that ties them to one device: probably
+  // channels of one device, which the sum then counts once each
+  const multi = [...new Set(rows.filter((r, i) => r.table !== null && !r.group && r.user === null && rows.some((x, j) => j !== i && !x.group && x.device === r.device && Math.abs(x.address - r.address) === 1)).map((r) => r.device))];
+  const items = [];
+  let next = 1;
+  for (const r of rows) {
+    if (r.address > next && !taken.has(r.address)) items.push({ free: true, from: next, to: r.address - 1 });
+    items.push(r);
+    taken.add(r.address);
+    next = Math.max(next, r.address + 1);
+  }
+  if (rows.length && next <= facts.addresses) items.push({ free: true, from: next, to: facts.addresses });
   return {
     rows,
+    items,
     sum,
     counted: counted.length,
     capacity,
     supply: gw.supply?.name ?? "",
+    ownCapacity: own !== null,
     percent: capacity ? Math.round((sum / capacity) * 100) : null,
+    dups,
+    multi,
+    source: facts.source || T.busSourceTable,
+    fromTable: rows.some((r) => r.from === "table"),
   };
 }
 
@@ -387,14 +421,23 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
   });
 
   const busTable = tbl("bus", T.busIntro, (_parts, gw) => {
-    const bus = docBus(gw, t);
+    const bus = docBus(gw, t, doc.bus_info);
     if (!bus.rows.length) return "";
-    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 1 })} W`;
-    const rows = bus.rows.map((r) => `<tr>${[`<span class="mono">${esc(r.address)}</span>`, esc(r.type), esc(r.device), esc(r.name), `<span class="mono">${esc(r.feedback)}</span>`, r.power === null ? `<span class="sub">${esc(T.noValue)}</span>` : num(r.power)].map(cell).join("")}</tr>`).join("");
+    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
+    const power = (r) => (r.from === "group" ? `<span class="sub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="sub">${esc(T.noValue)}</span>` : `${esc(num(r.power))}${r.from === "table" ? "*" : ""}`);
+    const rows = bus.items.map((r) => (r.free
+      ? `<tr class="sub"><td class="mono">${r.from === r.to ? r.from : `${r.from} – ${r.to}`}</td><td colspan="5" style="text-align:left">${esc(T.free)}</td></tr>`
+      : `<tr>${[`<span class="mono">${r.address}</span>`, esc(r.type), esc(r.device), esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", ")), `<span class="mono">${esc(r.feedback)}</span>`, power(r)].map(cell).join("")}</tr>`)).join("");
     const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td><b>${esc(num(bus.sum))}</b></td></tr>`;
-    const supply = bus.supply || bus.capacity ? `<p>${esc(T.supply)}: ${esc([bus.supply, bus.capacity ? num(bus.capacity) : ""].filter(Boolean).join(", "))}${bus.percent !== null ? ` · ${esc(T.busLoad(num(bus.sum), num(bus.capacity), bus.percent))}` : ""}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</p>` : "";
-    const missing = bus.rows.length - bus.counted ? `<p class="sub">${esc(T.busMissing(bus.rows.length - bus.counted))}</p>` : "";
-    return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum).replace("<table>", '<table class="rnum">') + supply + missing;
+    const name = bus.supply || (bus.ownCapacity ? "" : T.supplyFam14);
+    const supply = bus.capacity ? `<p>${esc(T.supply)}: ${esc([name, num(bus.capacity)].filter(Boolean).join(", "))}${bus.percent !== null ? ` · ${esc(T.busLoad(num(bus.sum), num(bus.capacity), bus.percent))}` : ""}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</p>` : "";
+    const notes = [
+      bus.rows.length - bus.counted ? T.busMissing(bus.rows.length - bus.counted) : "",
+      bus.fromTable ? T.busFromTable(bus.source) : "",
+      bus.dups.length ? T.busDup(bus.dups.join(", ")) : "",
+      bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
+    ].filter(Boolean).map((n) => `<p class="sub">${esc(n)}</p>`).join("");
+    return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum).replace("<table>", '<table class="rnum">') + supply + notes;
   });
 
   const links = section("links", d.sections.links, L.honest, perGateway((gw) => {
