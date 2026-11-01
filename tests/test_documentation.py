@@ -74,9 +74,11 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
     owned = {s["id"]: s for s in pool["senders"]}
     assert owned["FF-B7-44-91"]["device"] == "Licht Flur"
     assert owned["FF-B7-44-91"]["state"] == "assigned"
+    assert owned["FF-B7-44-91"]["ref"] == flur_row["note_key"]
     assert owned["FF-B7-44-95"] == {
         "id": "FF-B7-44-95",
         "device": None,
+        "ref": "gone",
         "profile": "central",
         "state": "blocked",
     }
@@ -404,6 +406,8 @@ async def test_typed_fields_are_validated_stored_and_documented(
         "location": " Schrank 2, Reihe 1, Platz 4 ",
         "circuit": "Klemme 12",
         "fuse": "F3 B16",
+        "bus_address": "01-1",
+        "feedback_id": "00000081",
         "installed": "2026-10-01",
         "revision": "2214",
         "power": "Netz",
@@ -413,6 +417,7 @@ async def test_typed_fields_are_validated_stored_and_documented(
     assert reply["result"] == {"saved": 1, "rejected": []}
     row = collect(hass)["gateways"][0]["devices"][0]
     assert row["location"] == "Schrank 2, Reihe 1, Platz 4" and row["installed"] == "2026-10-01"
+    assert row["bus_address"] == "01-1" and row["feedback_id"] == "00000081"
     assert all(row[f] for f in values)
 
     # one bad value rejects that device's whole edit; an unknown device is rejected as well
@@ -442,7 +447,7 @@ async def test_typed_fields_are_validated_stored_and_documented(
         ],
     }
     await client.send_json({"id": 8, "type": "enocean_eltako/import_documentation", "doc": doc})
-    assert (await client.receive_json())["result"]["gateways"][0]["notes"] == 6
+    assert (await client.receive_json())["result"]["gateways"][0]["notes"] == 8
     assert notes.device("05-00-00-12")["circuit"] == "Klemme 12"
     assert notes.device("05-00-00-12")["installed"] == ""
 

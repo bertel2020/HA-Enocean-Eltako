@@ -92,7 +92,7 @@ export function csv(rows) {
 
 // ---- installation documentation (the structure of the documentation websocket command) ------------
 
-const FIELD_KEYS = ["location", "circuit", "fuse", "installed", "revision", "power", "note"];
+const FIELD_KEYS = ["location", "circuit", "bus_address", "feedback_id", "fuse", "installed", "revision", "power", "note"];
 
 function docSenderText(s, t, profile) {
   const kind = s.ute ? t.teachUte : t.teachTelegram;
@@ -112,6 +112,30 @@ function docLinkFrom(l, t) {
 // that stay blocked after their device was deleted and unknown senders follow at the end of their
 // gateway) or "links" (one row per link).
 export function documentationCsv(doc, t, profile, table = "devices") {
+  const d = t.doc;
+  if (table === "tables") {
+    // the sender tables one below the other: a title row, the header, the rows, an empty row
+    const T = t.doc.tbl;
+    const rows = [];
+    for (const gw of doc.gateways) {
+      const parts = docTables(gw, t, profile);
+      rows.push(
+        [gw.title, d.sections.gwsenders],
+        [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second],
+        ...parts.senders.map((r) => [r.nr, r.id, r.fn ?? "", r.gateway ? T.gateway : r.device ?? "", r.gateway ? "" : [r.name, r.place].filter(Boolean).join(", "), r.bus ?? "", r.feedback ?? "", r.free ? T.free : r.blocked ? T.blocked : r.use ?? "", r.second ?? ""]),
+        [],
+        [gw.title, d.sections.buttons],
+        [T.id, T.device, T.place, T.description, T.left, T.right],
+        ...parts.buttons.map((b) => [b.id, b.device, b.place, b.name, b.left.join("; "), b.right.join("; ")]),
+        [],
+        [gw.title, d.sections.radio],
+        [T.id, T.device, T.place, T.description, T.eep, T.sends],
+        ...parts.radio.map((r) => [r.id, r.device, r.place, r.name, r.eep, r.sends]),
+        []
+      );
+    }
+    return csv(rows);
+  }
   if (table === "links") {
     const L = t.inst.links;
     const rows = [[t.gateway, L.target, t.doc.cols.address, L.from.title, "ID", L.role, L.learn, L.source.title, L.state, L.teachIn("").trim(), L.tested("").trim()]];
@@ -150,14 +174,107 @@ export function documentationCsv(doc, t, profile, table = "devices") {
   return csv(rows);
 }
 
+
+// ---- the sender tables: gateway senders (number 0 to 127), buttons, radio senders ----------------------
+
+const idNumber = (id) => parseInt(String(id).replace(/-/g, ""), 16);
+const place = (d) => d.location || d.area || "";
+
+// The rows of the three tables of one gateway, from what the documentation command holds:
+// - gateway senders: one row per number of the radio pool, the base ID itself is number 0; a
+//   second mode (+64) points to its counterpart
+// - buttons: the devices that are buttons, and every wall switch an actuator names, with the
+//   actuators on its left and right rocker (buttons a0/a1 left, b0/b1 right)
+// - radio senders: every device that only sends (sensors, meters, climate), and the entries by hand
+export function docTables(gw, t, profile) {
+  const T = t.doc.tbl;
+  const base = gw.base_id ? idNumber(gw.base_id) : null;
+  const byRef = new Map(gw.devices.map((d) => [d.note_key, d]));
+  const numbers = new Map(); // note_key -> its first sender number, to refer to it
+  const senders = [];
+  const pool = gw.pools.find((p) => p.kind === "radio");
+  if (base !== null && pool) {
+    const taken = new Map(pool.senders.map((s) => [idNumber(s.id) - base, s]));
+    for (const [n, s] of taken) if (s.ref && !numbers.has(s.ref)) numbers.set(s.ref, n);
+    for (let n = 0; n <= 127; n++) {
+      const s = taken.get(n);
+      const id = (base + n).toString(16).toUpperCase().padStart(8, "0");
+      const row = { nr: n, id, free: false };
+      if (n === 0) Object.assign(row, { gateway: true });
+      else if (!s) row.free = true;
+      else if (!s.device) row.blocked = true;
+      else {
+        const d = byRef.get(s.ref);
+        const partner = taken.get(n + 64)?.ref === s.ref ? n + 64 : taken.get(n - 64)?.ref === s.ref ? n - 64 : null;
+        Object.assign(row, {
+          fn: T.categories[d?.category] ?? "",
+          device: d?.model ?? s.device,
+          name: s.device,
+          place: d ? place(d) : "",
+          bus: d?.bus_address ?? "",
+          feedback: d?.feedback_id ?? "",
+          use: profile(s.profile),
+          second: partner === null ? "" : partner > n ? `${partner} →` : `← ${partner}`,
+        });
+      }
+      senders.push(row);
+    }
+  }
+  const nr = (key) => (numbers.has(key) ? ` (${numbers.get(key)})` : "");
+
+  // buttons: a button device, or just an ID that an actuator names as its wall switch
+  const buttons = new Map();
+  const entry = (id) => {
+    if (!buttons.has(id)) buttons.set(id, { id, device: "", place: "", name: "", left: [], right: [] });
+    return buttons.get(id);
+  };
+  for (const d of gw.devices) if (d.category === "buttons" && !d.virtual) Object.assign(entry(d.id), { device: d.model ?? "", place: place(d), name: d.name });
+  for (const d of gw.devices) {
+    const w = d.wall_switch;
+    if (!w?.id) continue;
+    const e = entry(w.id);
+    const on = (w.on || "").toLowerCase();
+    const off = (w.off || "").toLowerCase();
+    const split = on && off && on[0] !== off[0]; // on and off on different rockers: say which
+    for (const [button, word] of [[on, t.doc.tbl.on], [off, t.doc.tbl.off]]) {
+      const side = button[0] === "a" ? e.left : button[0] === "b" ? e.right : null;
+      const text = `${d.name}${split ? ` ${word}` : ""}${nr(d.note_key)}`;
+      if (side && !side.includes(text)) side.push(text);
+    }
+  }
+  const buttonRows = [...buttons.values()].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+
+  // radio senders: devices that only send, then the entries made by hand
+  const radio = gw.devices
+    .filter((d) => !d.virtual && ["sensors", "meters", "climate"].includes(d.category))
+    .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), name: d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: T.categories[d.category] }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  for (const m of gw.manual ?? []) radio.push({ id: m.address, device: m.name, place: "", name: m.function, eep: "", sends: T.byHand });
+  return { senders, buttons: buttonRows, radio };
+}
+
+// the gateway senders without runs of free numbers: "2 to 28 free" as one row
+export function foldFree(rows) {
+  const out = [];
+  for (const r of rows) {
+    const last = out[out.length - 1];
+    if (r.free && last?.free) {
+      last.to = r.nr;
+      continue;
+    }
+    out.push(r.free ? { ...r, to: r.nr } : r);
+  }
+  return out;
+}
+
 // Sections of the page; each can be switched off above the page (and is then not printed)
-export const DOC_SECTIONS = ["handover", "cabinet", "links", "swap", "ids", "log"];
+export const DOC_SECTIONS = ["handover", "cabinet", "gwsenders", "buttons", "radio", "links", "swap", "ids", "log"];
 
 // One self-contained page, no scripts: check boxes above it show or hide the sections, printing
 // leaves them out. Sections: the handover (every device with its senders and fields), the cabinet
 // (devices by place, with circuit and fuse), the links, a checklist for moving to a gateway with
 // another base ID, the sender IDs (pool, further devices, unknown senders) and the log.
-export function documentationHtml(doc, t, profile, lang, shown = ["handover", "cabinet", "links", "swap", "ids"]) {
+export function documentationHtml(doc, t, profile, lang, shown = ["handover", "cabinet", "gwsenders", "buttons", "radio", "links", "swap", "ids"]) {
   const d = t.doc;
   const L = t.inst.links;
   const when = (iso) => new Date(iso).toLocaleString(lang);
@@ -193,6 +310,29 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
       .sort((a, b) => (a.location || "\uffff").localeCompare(b.location || "\uffff") || a.name.localeCompare(b.name))
       .map((x) => `<tr>${[field(x, "location") || `<span class="sub">${esc(d.none)}</span>`, esc(x.name), `<span class="mono">${esc(x.id)}</span>`, field(x, "circuit"), field(x, "fuse"), field(x, "revision"), field(x, "power")].map(cell).join("")}</tr>`)
       .join(""))));
+
+
+  const T = d.tbl;
+  const tbl = (name, intro, build) =>
+    section(name, d.sections[name], intro, perGateway((gw) => build(docTables(gw, t, profile), gw)));
+  const gwsenders = tbl("gwsenders", T.sendersIntro, ({ senders }) => {
+    if (!senders.length) return "";
+    const rows = foldFree(senders).map((r) => {
+      if (r.free) return `<tr class="sub"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
+      if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
+      if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="7" class="sub">${esc(T.blocked)}</td></tr>`;
+      return `<tr>${[`<span class="mono">${r.nr}</span>`, `<span class="mono">${esc(r.id)}</span>`, esc(r.fn), esc(r.device), esc([r.name, r.place].filter(Boolean).join(", ")), esc(r.bus), `<span class="mono">${esc(r.feedback)}</span>`, esc(r.use), `<span class="mono">${esc(r.second)}</span>`].map(cell).join("")}</tr>`;
+    }).join("");
+    return table([T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second], rows);
+  });
+  const buttonsTable = tbl("buttons", T.buttonsIntro, ({ buttons }) =>
+    buttons.length
+      ? table([T.id, T.device, T.place, T.description, T.left, T.right], buttons.map((b) => `<tr>${[`<span class="mono">${esc(b.id)}</span>`, esc(b.device), esc(b.place), esc(b.name), b.left.map(esc).join("<br>") || `<span class="sub">${esc(T.unassigned)}</span>`, b.right.map(esc).join("<br>") || `<span class="sub">${esc(T.unassigned)}</span>`].map(cell).join("")}</tr>`).join(""))
+      : "");
+  const radioTable = tbl("radio", T.radioIntro, ({ radio }) =>
+    radio.length
+      ? table([T.id, T.device, T.place, T.description, T.eep, T.sends], radio.map((r) => `<tr>${[`<span class="mono">${esc(r.id)}</span>`, esc(r.device), esc(r.place), esc(r.name), `<span class="mono">${esc(r.eep)}</span>`, esc(r.sends)].map(cell).join("")}</tr>`).join(""))
+      : "");
 
   const links = section("links", d.sections.links, L.honest, perGateway((gw) => {
     const byTarget = new Map();
@@ -243,7 +383,7 @@ ${rules}
 </style></head><body>
 <h1>${esc(d.title)}</h1>
 <div class="bar">${toggles}</div>
-${overview}${handover}${cabinet}${links}${swap}${ids}${log}
+${overview}${handover}${cabinet}${gwsenders}${buttonsTable}${radioTable}${links}${swap}${ids}${log}
 <div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
 </body></html>`;
 }

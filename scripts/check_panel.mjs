@@ -74,6 +74,49 @@ for (const lang of ["en", "de"]) {
   const text = TEXT[lang].doc.importDone([{ matched: true, notes: 3, manual: 1 }, { matched: false }]);
   if (!/3/.test(text) || !/1/.test(text) || /undefined|NaN/.test(text)) errors.push(`texts.js: importDone (${lang}) says "${text}"`);
 }
+
+// the sender tables: gateway senders 0 to 127 with the second mode, buttons with their rockers,
+// radio senders and the entries by hand
+const { docTables, foldFree } = await import(new URL("shared.js?v=check", frontend).href);
+const tdev = (over) => ({ name: "", id: "", eep: "", eep_extra: [], area: null, model: null, virtual: false, category: "lighting", wall_switch: null, senders: [], location: "", bus_address: "", feedback_id: "", ...over });
+const tgw = {
+  title: "FAM14",
+  base_id: "FF-B6-40-80",
+  hidden_senders: [], heard: [], links: [], log: [], note: "",
+  manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }],
+  devices: [
+    tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "01-1", feedback_id: "00000081", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
+    tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
+    tdev({ name: "Taster Haustür", id: "FE-8A-31-C2", category: "buttons", model: "F4T55E", location: "Flur" }),
+    tdev({ name: "Raumregler", id: "FE-91-2A-40", category: "climate", model: "FUTH55", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"] }),
+  ],
+  pools: [{ id: "radio:g1", kind: "radio", start: "FF-B6-40-81", end: "FF-B6-40-FF", senders: [
+    { id: "FF-B6-40-9D", device: "Licht Flur", ref: "k1", profile: "central", state: "assigned" },
+    { id: "FF-B6-40-DD", device: "Licht Flur", ref: "k1", profile: "rocker", state: "assigned" },
+    { id: "FF-B6-40-A4", device: "Rollladen Bad", ref: "k2", profile: "central", state: "assigned" },
+    { id: "FF-B6-40-DE", device: null, ref: "gone", profile: "central", state: "blocked" },
+  ] }],
+};
+const tprofile = (p) => p;
+for (const lang of ["en", "de"]) {
+  const t = TEXT[lang];
+  const parts = docTables(tgw, t, tprofile);
+  const at = (n) => parts.senders[n];
+  if (parts.senders.length !== 128 || at(0).id !== "FFB64080" || !at(0).gateway) errors.push(`shared.js: docTables (${lang}) has ${parts.senders.length} gateway sender rows or a wrong base ID`);
+  if (!at(1).free || at(29).id !== "FFB6409D" || at(29).bus !== "01-1" || at(29).feedback !== "00000081" || at(29).second !== "93 →" || at(93).second !== "← 29") errors.push(`shared.js: docTables (${lang}) gets the sender number, the fields or the second mode wrong`);
+  if (!at(94).blocked || at(94).id !== "FFB640DE" || !at(127).free) errors.push(`shared.js: docTables (${lang}) misses the blocked or the free numbers`);
+  const folded = foldFree(parts.senders);
+  if (folded.length >= 128 || folded[1].nr !== 1 || folded[1].to !== 28) errors.push(`shared.js: foldFree (${lang}) does not fold the free numbers`);
+  const haus = parts.buttons.find((b) => b.id === "FE-8A-31-C2");
+  if (!haus || haus.device !== "F4T55E" || haus.left.join() !== "Licht Flur (29)" || haus.right.length !== 0) errors.push(`shared.js: docTables (${lang}) puts the wall switch rockers wrong`);
+  const bad = parts.buttons.find((b) => b.id === "FE-8A-34-07");
+  if (!bad || bad.left[0] !== `Rollladen Bad ${t.doc.tbl.on} (36)` || bad.right[0] !== `Rollladen Bad ${t.doc.tbl.off} (36)`) errors.push(`shared.js: docTables (${lang}) does not split on and off over two rockers`);
+  if (parts.radio.length !== 2 || parts.radio[0].eep !== "A5-10-06:eltako, A5-04-01:std" || parts.radio[1].id !== "00-AA-00-01") errors.push(`shared.js: docTables (${lang}) has the wrong radio senders`);
+  const tcsv = documentationCsv({ gateways: [tgw] }, t, tprofile, "tables").trim().split("\n");
+  if (tcsv.length < 128 + 10 || !tcsv.some((r) => r.includes("FE-8A-31-C2") && r.includes("Licht Flur (29)"))) errors.push(`shared.js: documentationCsv tables (${lang}) has ${tcsv.length} rows`);
+  const tpage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
+  if (!tpage.includes("FFB6409D") || !tpage.includes("F4T55E") || !tpage.includes("FUTH55") || /undefined|NaN/.test(tpage)) errors.push(`shared.js: documentationHtml tables (${lang}) misses data or shows undefined`);
+}
 const profile = (p) => TEXT.en.profiles[p] || p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];
@@ -91,7 +134,7 @@ for (const lang of ["en", "de"]) {
   if (!page.includes("table-header-group") || !page.includes("break-after:avoid")) errors.push(`shared.js: documentationHtml (${lang}) lets a table break without its header`);
   if (page.includes("<Keller>") || !page.includes("&lt;Keller&gt;")) errors.push(`shared.js: documentationHtml (${lang}) does not escape the gateway name`);
   if (/undefined|NaN/.test(page)) errors.push(`shared.js: documentationHtml (${lang}) shows undefined or NaN`);
-  for (const section of ["handover", "cabinet", "links", "swap", "ids", "log"]) {
+  for (const section of ["handover", "cabinet", "gwsenders", "buttons", "radio", "links", "swap", "ids", "log"]) {
     if (!page.includes(`sec-${section}`) || !page.includes(`id="show-${section}"`)) errors.push(`shared.js: documentationHtml (${lang}) has no ${section} section`);
   }
   if (!page.includes("Klemme 12") || !page.includes("F3 B16") || !page.includes("Funktion 45") || !page.includes("Fremder Aktor")) errors.push(`shared.js: documentationHtml (${lang}) misses typed fields or links`);

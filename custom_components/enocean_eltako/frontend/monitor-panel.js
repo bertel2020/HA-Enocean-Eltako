@@ -2137,7 +2137,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const profile = (p) => this._profile(p);
     if (kind === "json") this._download(JSON.stringify(doc, null, 2) + "\n", "application/json", `enocean-documentation-${stamp}.json`);
-    else if (kind === "csv" || kind === "csv-links") this._download(documentationCsv(doc, this._t, profile, kind === "csv" ? "devices" : "links"), "text/csv", `enocean-${kind === "csv" ? "installation" : "links"}-${stamp}.csv`);
+    else if (kind === "csv" || kind === "csv-links" || kind === "csv-tables") {
+      const table = { csv: "devices", "csv-links": "links", "csv-tables": "tables" }[kind];
+      this._download(documentationCsv(doc, this._t, profile, table), "text/csv", `enocean-${table === "devices" ? "installation" : table}-${stamp}.csv`);
+    }
     else {
       const page = documentationHtml(doc, this._t, profile, this._hass.language || "en");
       const win = window.open("", "_blank");

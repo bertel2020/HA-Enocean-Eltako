@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- The printout has three more tables: **Gateway senders** (sender no. 0 to 127 of the radio pool, free numbers folded, a second mode pointing to its counterpart at +64), **Buttons** (each wall switch with the actuators on its left and right rocker) and **Radio senders** (devices that only send, and the entries by hand). New fields **Bus address** and **Feedback ID** per device, and **Sender tables CSV**.
 - A **checklist for a new gateway** in the printout: every assigned sender to teach in again when a radio gateway with another base ID takes over.
 - **Links as CSV**, and the JSON export is now version 2 (typed fields, links, the log); the import still reads version 1.
 - **Links** in the Installation tab: who is taught into which actuator, by actuator or by sender, each link marked as assigned, declared (wall switch option) or entered by you, with the teach-in time, the last sender test and a learn position. The JSON export carries them and the import takes entered links and learn positions back.
@@ -32,6 +33,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Der Ausdruck hat drei weitere Tabellen: **Gateway-Sender** (Sender-Nr. 0 bis 127 des Funk-Pools, freie Nummern zusammengefasst, ein zweiter Modus verweist auf sein Gegenstück bei +64), **Taster** (jeder Wandtaster mit den Aktoren auf linker und rechter Wippe) und **Funk-Sender** (Geräte, die nur senden, und die Einträge von Hand). Neue Felder **Bus-Adresse** und **Rückmelde-ID** je Gerät und **Sender-Tabellen-CSV**.
 - Eine **Checkliste für ein neues Gateway** im Ausdruck: jeder vergebene Sender, der neu einzulernen ist, wenn ein Funkgateway mit anderer Base-ID übernimmt.
 - **Verbindungen als CSV**, und der JSON-Export ist jetzt Version 2 (typisierte Felder, Verbindungen, Protokoll); der Import liest weiter Version 1.
 - **Verbindungen** im Reiter Installation: wer in welchen Aktor eingelernt ist, nach Aktor oder nach Sender, jede als vergeben, angegeben (Wandschalter-Option) oder von dir eingetragen markiert, mit Einlernzeitpunkt, letztem Sendertest und Lernposition. Der JSON-Export enthält sie, der Import übernimmt eingetragene Verbindungen und Lernpositionen.
