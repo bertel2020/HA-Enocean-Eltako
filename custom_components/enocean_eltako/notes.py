@@ -9,14 +9,21 @@ from __future__ import annotations
 
 from typing import Any
 
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 
 STORAGE_VERSION = 1
 MAX_NOTE = 500
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
+
+
+def device_key(subentry: ConfigSubentry) -> str:
+    """The key of a device's note: its address, which a deleted and re-added device keeps."""
+    return subentry.unique_id or subentry.subentry_id
 
 
 class Notes:
@@ -28,14 +35,17 @@ class Notes:
         )
         self.gateway = ""
         self.devices: dict[str, str] = {}
+        # the last sender test of a device: {"time": ..., "results": {profile: result}}
+        self.tests: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
         self.gateway = str(stored.get("gateway", ""))
         self.devices = {str(k): str(v) for k, v in stored.get("devices", {}).items()}
+        self.tests = {str(k): dict(v) for k, v in stored.get("tests", {}).items()}
 
     def _data(self) -> dict[str, Any]:
-        return {"gateway": self.gateway, "devices": self.devices}
+        return {"gateway": self.gateway, "devices": self.devices, "tests": self.tests}
 
     def _save(self) -> None:
         self._store.async_delay_save(self._data, SAVE_DELAY)
@@ -49,6 +59,13 @@ class Notes:
             self.devices[key] = text
         else:
             self.devices.pop(key, None)
+        self._save()
+
+    def set_test(self, key: str, results: dict[str, str]) -> None:
+        self.tests[key] = {
+            "time": dt_util.utcnow().isoformat(timespec="seconds"),
+            "results": results,
+        }
         self._save()
 
     async def async_flush(self) -> None:

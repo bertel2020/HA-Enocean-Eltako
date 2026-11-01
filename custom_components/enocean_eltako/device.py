@@ -38,6 +38,7 @@ from .const import (
     CONF_SENDERS,
     DOMAIN,
 )
+from .notes import device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -142,7 +143,6 @@ class EnOceanDevice:
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
         self._ute_profile: str | None = None  # VLD: profile whose teach-in is armed ...
         self._ute_until = 0.0  # ... until this time.monotonic()
-        self.last_sender_test: dict[str, str] = {}  # profile -> result of the last sender test
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
 
     @property
@@ -420,7 +420,9 @@ class EnOceanDevice:
             results.append(
                 {"profile": profile_id, "id": format_id(sender_id), "result": str(result)}
             )
-            self.last_sender_test[profile_id] = str(result)
+        self.entry.runtime_data.hub.notes[self.entry.entry_id].set_test(
+            device_key(self.subentry), {r["profile"]: r["result"] for r in results}
+        )
         return results
 
     async def _test_telegram(

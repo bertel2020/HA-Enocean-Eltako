@@ -39,8 +39,9 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
     hass_ws_client,
 ) -> None:
     entry, server = gateway
-    flur = next(d for d in entry.runtime_data.devices.values() if d.subentry.title == "Licht Flur")
-    flur.last_sender_test["central"] = "confirmed"
+    _push(server, 0x05, b"\x70", 0x00216343, 0x30)  # an unknown rocker
+    await _settle(hass)
+    entry.runtime_data.hub.notes[entry.entry_id].set_test("05-10-A2-C1", {"central": "confirmed"})
     pool = entry.runtime_data.senders.pool
     pool.assign(0xFFB74491, "device:05-10-A2-C1:central")
     pool.assign(0xFFB74495, "device:gone:central")
@@ -79,6 +80,10 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
         "profile": "central",
         "state": "blocked",
     }
+    assert flur_row["test_time"] is not None and meter_row["test_time"] is None
+    assert shown["heard"] == [
+        {"id": "00-21-63-43", "rorg": "F6", "dbm": None, "last": shown["heard"][0]["last"]}
+    ]
     assert shown["hidden_senders"] == []
 
 
@@ -126,6 +131,7 @@ async def test_notes_are_saved_shown_and_kept(
     assert stored == {
         "gateway": "Keller, rechts",
         "devices": {"05-00-00-12": "Schrank 2, Platz 4"},
+        "tests": {},
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()

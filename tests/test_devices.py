@@ -2479,6 +2479,11 @@ async def test_sender_test(hass: HomeAssistant, gateway, hass_ws_client) -> None
         assert bytes.fromhex(sender) in bytes(server.received)
     assert flur.stats.commands == 0  # the stats of real commands are untouched
     assert device_details(flur)["sender_test"] is True
+    stored = flur.entry.runtime_data.hub.notes[flur.entry.entry_id].tests[SWITCH_ID]
+    assert stored["results"] == {
+        "central": "confirmed",
+        "rocker": "confirmed",
+    }  # kept for the sheet
     assert (await bad.async_test_senders())[0]["result"] == "skipped"  # a toggling rocker
 
     for outcome in (SendResult.UNCONFIRMED, SendResult.FAILED):  # no answer, no connection

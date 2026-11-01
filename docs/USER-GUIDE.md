@@ -296,8 +296,9 @@ count in the command statistics.
 **Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation
 documentation**, **Documentation as CSV** and **Documentation as JSON**. All three cover every
 gateway: devices with address, EEP, area and wall switch, the senders Home Assistant assigned
-(with the teach-in kind and the last sender test since the restart) and the sender ID pool,
-including IDs that stay blocked after a device was deleted. The printout has one gateway per
+(with the teach-in kind and the result of the last sender test, which is kept) and the sender ID pool,
+including IDs that stay blocked after a device was deleted, and the unknown senders the gateway
+heard since the restart but that are not set up. The printout has one gateway per
 page and a note on what Home Assistant cannot know: what an actuator has really learned, and
 buttons taught in directly. Each device's details have a **Notes** field and each gateway's
 details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you
