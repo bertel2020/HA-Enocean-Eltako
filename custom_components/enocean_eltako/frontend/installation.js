@@ -103,7 +103,10 @@ export const INSTALLATION_STYLE = `
   .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
   .installation .gwhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .installation .gwhead h3 { margin: 0; }
-  .installation .bar { display: flex; align-items: center; gap: 10px; }
+  .installation .gbar { display: flex; align-items: center; gap: 10px; }
+  .installation .ibody > p.isub { max-width: 100ch; margin: 0; }
+  .installation .gcard { grid-template-columns: minmax(0, 1fr); }
+  .installation .gcard li { white-space: normal; overflow-wrap: anywhere; }
   .installation .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
   .installation .seg button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
   .installation .seg button + button { border-left: 1px solid var(--line); }
@@ -333,7 +336,7 @@ export const installation = {
     const t = this._t;
     const state = this._in;
     const seg = (group, label) => `<button data-in-group="${group}" aria-pressed="${state.group === group}">${esc(label)}</button>`;
-    const groupBy = `<div class="bar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("area", t.inst.byArea)}${seg("location", t.inst.byPlace)}</div></div>`;
+    const groupBy = `<div class="gbar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("area", t.inst.byArea)}${seg("location", t.inst.byPlace)}</div></div>`;
     const sections = gateways(state.doc).map((gw) => {
       const groups = new Map();
       for (const d of gw.devices) {
@@ -393,7 +396,8 @@ export const installation = {
     const state = this._in;
     const L = t.inst.links;
     const when = (iso) => new Date(iso).toLocaleString(this._hass.language);
-    const toggle = `<div class="isub">${esc(t.inst.groupBy)} <button class="chip" data-in-link-group="actuator" aria-pressed="${state.linkGroup === "actuator"}">${esc(L.byActuator)}</button> <button class="chip" data-in-link-group="sender" aria-pressed="${state.linkGroup === "sender"}">${esc(L.bySender)}</button></div>
+    const seg = (group, text) => `<button data-in-link-group="${group}" aria-pressed="${state.linkGroup === group}">${esc(text)}</button>`;
+    const toggle = `<div class="gbar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("actuator", L.byActuator)}${seg("sender", L.bySender)}</div></div>
       <div class="isub">${esc(L.honest)}</div>`;
     const input = (gw, attr, value, placeholder, extra = "") => `<input class="cell" ${attr} data-in-gw="${esc(gw.entry_id)}" value="${esc(value)}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" autocomplete="off" ${extra}>`;
     const fromLabel = (l) => (l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${L.from[l.from_kind]} · ${l.from_id}`);
