@@ -774,3 +774,23 @@ async def test_takeover_virtual_rocker_is_found_by_its_old_id(
     assert mapping["missing"]["FF-C2-4A-96"] == ["area"]  # found, and still to carry over
     reply = await _ws(hass_ws_client, hass, 3, "carry", entry_id=entry.entry_id, carry=["area"])
     assert reply["result"] == {"carried": 1}
+
+
+async def test_usage_editor_paths_and_unknown_entities(hass: HomeAssistant) -> None:
+    hass.states.async_set("script.licht", "off", {"friendly_name": "Licht"})
+    hass.states.async_set("automation.ohne_id", "on", {"friendly_name": "Ohne ID"})
+    hass.states.async_set("automation.mit_id", "on", {"id": "42", "friendly_name": "Mit ID"})
+    from custom_components.enocean_eltako.usage import _editor, _places
+
+    assert _editor(hass, "script", "script.licht") == "/config/script/edit/licht"
+    assert _editor(hass, "automation", "automation.ohne_id") is None
+    assert _editor(hass, "automation", "automation.fehlt") is None
+    assert _editor(hass, "automation", "automation.mit_id") == "/config/automation/edit/42"
+    assert _places(hass, "automation", ["automation.fehlt"]) == [
+        {"name": "automation.fehlt", "path": None}
+    ]
+
+
+async def test_usage_without_components_or_dashboards_is_empty(hass: HomeAssistant) -> None:
+    usage = await async_usage(hass, ["light.alt"])
+    assert usage["light.alt"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
