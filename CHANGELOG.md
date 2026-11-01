@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Installation documentation** in the Devices view (⋮ menu): print it (one gateway per page), or download it as CSV or versioned JSON. It lists devices with address, EEP, area and wall switch, the assigned senders with teach-in kind and sender test result, and the sender ID pool with blocked IDs, and says what Home Assistant cannot know.
 - **Test senders** in the details of a switching actuator: sends its current state through each sender in turn (nothing changes) and shows which senders it answers.
 - **Heard by** in a device's details: with several gateways, each gateway with its last signal and telegram count and the strongest one tagged; a device that only a repeater carries is tagged **via repeater only**.
 - **Profile check repair**: a device whose last 5 telegrams in a row fit none of its profiles raises a repair (it was most likely set up with the wrong kind); a fitting telegram clears it.
@@ -26,6 +27,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Installationsdokumentation** in der Geräteansicht (⋮-Menü): drucken (ein Gateway pro Seite) oder als CSV bzw. versioniertes JSON laden. Sie nennt Geräte mit Adresse, EEP, Bereich und Wandschalter, die vergebenen Sender mit Art des Einlernens und Ergebnis des Sendertests sowie den Sender-ID-Pool mit blockierten IDs und sagt, was Home Assistant nicht wissen kann.
 - **Sender testen** in den Details eines Schaltaktors: sendet seinen aktuellen Zustand nacheinander über jeden Sender (es ändert sich nichts) und zeigt, welche Sender er beantwortet.
 - **Gehört von** in den Details eines Geräts: bei mehreren Gateways jedes Gateway mit letztem Signal und Telegrammzahl, das stärkste markiert; ein Gerät, das nur über einen Repeater ankommt, trägt den Hinweis **nur über Repeater**.
 - **Reparatur „Profil passt nicht“**: ein Gerät, dessen letzte 5 Telegramme hintereinander zu keinem seiner Profile passen, löst eine Reparatur aus (es wurde sehr wahrscheinlich mit der falschen Art angelegt); ein passendes Telegramm hebt sie auf.

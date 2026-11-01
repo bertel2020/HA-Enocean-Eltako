@@ -34,6 +34,7 @@ export const ICON = {
   last: "M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M16,6H18V18H16V6Z",
   filter: "M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z",
   bug: "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z",
+  print: "M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z",
   tower:
     "M12,10A2,2 0 0,1 14,12C14,12.5 13.82,12.94 13.53,13.29L16.7,22H14.57L12,14.93L9.43,22H7.3L10.47,13.29C10.18,12.94 10,12.5 10,12A2,2 0 0,1 12,10M12,8A4,4 0 0,0 8,12C8,12.5 8.1,13 8.28,13.46L7.4,15.86C6.53,14.81 6,13.47 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12C18,13.47 17.47,14.81 16.6,15.86L15.72,13.46C15.9,13 16,12.5 16,12A4,4 0 0,0 12,8M12,4A8,8 0 0,0 4,12C4,14.36 5,16.5 6.64,17.94L5.92,19.94C3.54,18.11 2,15.23 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12C22,15.23 20.46,18.11 18.08,19.94L17.36,17.94C19,16.5 20,14.36 20,12A8,8 0 0,0 12,4Z",
 };
@@ -86,4 +87,80 @@ export function csv(rows) {
     return `"${text.replace(/"/g, '""')}"`;
   };
   return rows.map((row) => row.map(cell).join(",")).join("\n") + "\n";
+}
+
+// ---- installation documentation (the structure of the documentation websocket command) ------------
+
+function docSenderText(s, t, profile) {
+  const kind = s.ute ? t.teachUte : t.teachTelegram;
+  const test = s.test ? ` · ${t.senderTestResult[s.test] || s.test}` : "";
+  return `${profile(s.profile)} ${s.id} (${kind}${test})`;
+}
+
+function docWallText(w, t) {
+  return w ? t.doc.wall(w.id, w.on, w.off) : "";
+}
+
+// One row per sender (a device without senders has one row); sender IDs that stay blocked after
+// their device was deleted follow at the end of their gateway.
+export function documentationCsv(doc, t, profile) {
+  const head = [t.gateway, "Base ID", t.doc.cols.device, t.doc.cols.address, "EEP", t.doc.cols.area, t.doc.virtual, t.doc.cols.sender, t.doc.cols.senderId, t.doc.cols.teach, t.doc.cols.test, t.doc.cols.wall, t.doc.cols.poolState];
+  const rows = [head];
+  for (const gw of doc.gateways) {
+    const state = new Map(gw.pools.flatMap((p) => p.senders.map((s) => [s.id, s.state])));
+    for (const d of gw.devices) {
+      const base = [gw.title, gw.base_id ?? "", d.name, d.id, [d.eep, ...d.eep_extra].filter(Boolean).join(", "), d.area ?? "", d.virtual ? t.yes : ""];
+      const wall = docWallText(d.wall_switch, t);
+      if (!d.senders.length) rows.push([...base, "", "", "", "", wall, ""]);
+      for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || ""]);
+    }
+    for (const p of gw.pools) {
+      for (const s of p.senders.filter((x) => x.device == null)) {
+        rows.push([gw.title, gw.base_id ?? "", t.doc.deleted, "", "", "", "", profile(s.profile), s.id, "", "", "", t.doc.state[s.state] || s.state]);
+      }
+    }
+  }
+  return csv(rows);
+}
+
+// A self-contained page for printing: one gateway per page, no scripts.
+export function documentationHtml(doc, t, profile, lang) {
+  const d = t.doc;
+  const when = new Date(doc.generated).toLocaleString(lang);
+  const cell = (html) => `<td>${html}</td>`;
+  const gateways = doc.gateways
+    .map((gw) => {
+      const devices = gw.devices
+        .map((x) => {
+          const sub = [x.virtual ? d.virtual : "", x.area ?? "", x.model ?? ""].filter(Boolean).join(" · ");
+          const senders = x.senders.length ? x.senders.map((s) => `<div>${esc(docSenderText(s, t, profile))}</div>`).join("") : `<span class="sub">${esc(x.virtual ? d.sentByHa : d.receiveOnly)}</span>`;
+          return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}</tr>`;
+        })
+        .join("");
+      const pool = gw.pools.flatMap((p) => p.senders);
+      const poolRows = pool.map((s) => `<tr>${cell(`<span class="mono">${esc(s.id)}</span>`)}${cell(esc(s.device ?? d.deleted))}${cell(esc(`${profile(s.profile)}`))}${cell(esc(d.state[s.state] || s.state))}</tr>`).join("");
+      const blocked = pool.filter((s) => s.state === "blocked").length;
+      return `<section class="gw">
+<h2>${esc(gw.title)}</h2>
+<p class="sub">${esc(gw.model ?? "")}${gw.base_id ? ` · Base ID <span class="mono">${esc(gw.base_id)}</span>` : ""} · ${esc(d.counts(gw.devices.length, pool.length, blocked))}</p>
+<h3>${esc(d.devices)}</h3>
+<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th></tr></thead><tbody>${devices}</tbody></table>
+${poolRows ? `<h3>${esc(d.pool)}</h3><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.usedBy)}</th><th>${esc(d.cols.sender)}</th><th>${esc(d.cols.poolState)}</th></tr></thead><tbody>${poolRows}</tbody></table>` : ""}
+${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : ""}
+</section>`;
+    })
+    .join("");
+  return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>
+body{font:13px/1.45 system-ui,sans-serif;color:#1c1c1a;margin:24px}
+h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0}h3{font-size:14px;font-weight:500;margin:18px 0 6px}
+.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;font-size:12px;border-bottom:1px solid #888;padding:5px 8px 5px 0}
+td{border-bottom:1px solid #ddd;padding:6px 8px 6px 0;vertical-align:top}tr{break-inside:avoid}
+section.gw{break-after:page;margin-top:24px}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}
+@page{margin:14mm}
+</style></head><body>
+<h1>${esc(d.title)}</h1><p class="sub">${esc(d.generated(when))}</p>
+${gateways}
+<div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
+</body></html>`;
 }
