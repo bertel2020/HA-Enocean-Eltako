@@ -35,6 +35,7 @@ from .const import (
 )
 from .device import UTE_WINDOW
 from .discovery import async_set_hidden
+from .documentation import VERSION as DOCUMENTATION_VERSION
 from .documentation import collect as collect_documentation
 from .hub import async_get_hub
 from .notes import MANUAL_FIELDS, MAX_MANUAL, MAX_NOTE, device_key
@@ -52,6 +53,7 @@ from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
+MAX_IMPORT_GATEWAYS = 20
 REPEATER_ONLY_MIN = 3  # telegrams heard before 'only via a repeater' is claimed
 # telegram types the panel may send, with the data lengths in bytes
 SEND_LENGTHS = {Rorg.RPS: (1,), Rorg.BS1: (1,), Rorg.BS4: (4,), Rorg.VLD: tuple(range(1, 15))}
@@ -70,6 +72,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_set_manual)
     websocket_api.async_register_command(hass, ws_prune_notes)
+    websocket_api.async_register_command(hass, ws_import_documentation)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
@@ -637,6 +640,44 @@ def ws_set_note(
     else:
         notes.set_device(device_key(device.subentry), msg["text"])
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/import_documentation",
+        vol.Required("doc"): dict,  # a JSON export of the documentation
+        vol.Optional("overwrite", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_import_documentation(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Take over the notes and entries made by hand from an export, e.g. after a gateway swap.
+
+    Gateways are matched by their base ID, devices by their address; without overwrite only
+    what is empty is filled in. The devices themselves are not touched.
+    """
+    doc = msg["doc"]
+    gateways = doc.get("gateways")
+    if doc.get("version") != DOCUMENTATION_VERSION or not isinstance(gateways, list):
+        connection.send_error(msg["id"], "unsupported_version", "not a documentation export")
+        return
+    loaded = {e.data.get(CONF_BASE_ID): e for e in hass.config_entries.async_loaded_entries(DOMAIN)}
+    result = []
+    for gateway in gateways[:MAX_IMPORT_GATEWAYS]:
+        if not isinstance(gateway, dict):
+            continue
+        entry = loaded.get(gateway.get("base_id"))
+        if entry is None:
+            result.append({"title": str(gateway.get("title", "")), "matched": False})
+            continue
+        notes, manual = entry.runtime_data.hub.notes[entry.entry_id].import_from(
+            gateway, overwrite=msg["overwrite"]
+        )
+        result.append({"title": entry.title, "matched": True, "notes": notes, "manual": manual})
+    connection.send_result(msg["id"], {"gateways": result})
 
 
 def _device_keys(entry: Any) -> set[str]:

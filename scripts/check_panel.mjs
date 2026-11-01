@@ -77,6 +77,10 @@ for (const lang of ["en", "de"]) {
   if (sheet.includes("<Keller>") || sheet.includes("<links>") || /undefined|NaN/.test(sheet)) errors.push(`shared.js: documentationSheet (${lang}) does not escape or shows undefined`);
   if (!sheet.includes("landscape")) errors.push(`shared.js: documentationSheet (${lang}) is not landscape`);
 }
+for (const lang of ["en", "de"]) {
+  const text = TEXT[lang].doc.importDone([{ matched: true, notes: 3, manual: 1 }, { matched: false }]);
+  if (!/3/.test(text) || !/1/.test(text) || /undefined|NaN/.test(text)) errors.push(`texts.js: importDone (${lang}) says "${text}"`);
+}
 const profile = (p) => TEXT.en.profiles[p] || p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];

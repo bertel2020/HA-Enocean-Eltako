@@ -966,6 +966,8 @@ class EnOceanEltakoPanel extends HTMLElement {
                 <button role="menuitem" class="dev-only" data-act="doc-sheet">${svg(ICON.print)}${esc(t.doc.sheetItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-json">${svg(ICON.download)}${esc(t.doc.jsonItem)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-import">${svg(ICON.upload)}${esc(t.doc.importItem)}</button>
+                <input type="file" id="docFile" accept="application/json,.json" hidden>
               </span>
             </span>
           </div>
@@ -1318,8 +1320,14 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (!item) return;
       this._toggleMenu(false);
       if (item.dataset.act === "export") this._export();
+      else if (item.dataset.act === "doc-import") $("docFile").click();
       else if (item.dataset.act.startsWith("doc-")) this._documentation(item.dataset.act.slice(4));
       else $("clear").click();
+    });
+    $("docFile").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      e.target.value = "";
+      if (file) this._importDocumentation(file);
     });
     $("moreMenu").addEventListener("keydown", (e) => {
       // arrow keys move through the items, Escape closes and returns to the button
@@ -2224,6 +2232,21 @@ class EnOceanEltakoPanel extends HTMLElement {
     const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}" value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
     const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
     return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
+  }
+
+  async _importDocumentation(file) {
+    // notes and entries made by hand from an earlier JSON export; only what is empty is filled in
+    const t = this._t.doc;
+    let reply;
+    try {
+      reply = await this._hass.callWS({ type: "enocean_eltako/import_documentation", doc: JSON.parse(await file.text()) });
+    } catch (err) {
+      this._notice(err.code === "unsupported_version" || err instanceof SyntaxError ? t.importUnsupported : t.importFailed);
+      return;
+    }
+    await this._refreshStatus();
+    this._render();
+    this._notice(t.importDone(reply.gateways), true);
   }
 
   async _pruneNotes(entryId) {

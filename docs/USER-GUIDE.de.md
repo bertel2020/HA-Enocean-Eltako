@@ -324,7 +324,10 @@ ist also wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten a
 gelöschter Geräte zu vergessen. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
 (Name, ID, Funktion): direkt eingelernte Taster, Geräte anderer Systeme, alles, was Home
 Assistant nicht sieht. Sie dienen nur der Dokumentation und stehen in allen drei Ausgaben. Das
-JSON ist versioniert und auch für den Support gedacht. Das Menü bietet außerdem ein dichteres **Schaltschrank-Blatt** (Querformat, eine Tabelle pro
+JSON ist versioniert und auch für den Support gedacht. **Notizen aus JSON importieren** liest
+eine solche Datei wieder ein, etwa nach einem Gateway-Tausch: Gateways werden über die Base-ID
+zugeordnet, Geräte über die Adresse, und nur was noch leer ist, wird gefüllt. Importiert werden
+Notizen und weitere Geräte, nie die Geräte selbst. Das Menü bietet außerdem ein dichteres **Schaltschrank-Blatt** (Querformat, eine Tabelle pro
 Gateway ohne Pool und gehörte Sender) zum Aufhängen im Verteiler. Es verweist auf die Tabelle der
 Lernfunktionen, statt eine zu nennen, denn die richtige Funktion hängt von Typ und Revision des
 Aktors ab. Blockiert der Browser das Druckfenster, wird die Seite als Datei
