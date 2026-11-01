@@ -29,6 +29,19 @@ function compare(a, b, path) {
 }
 compare(TEXT.en, TEXT.de, "");
 
+// a device report replaces IDs, gateway and times and keeps data, status and signal
+const { anonymisedCapture } = await import(new URL("shared.js?v=check", frontend).href);
+const keys = ["time", "gateway", "dir", "rorg", "data", "sender", "status", "destination", "dbm", "duplicate"];
+const row = (time, sender, destination) => ({ time, gateway: "abc", dir: "rx", rorg: "F6", data: "70", sender, status: "30", destination, dbm: -61, duplicate: false });
+const lines = anonymisedCapture(
+  [row("2026-11-01T10:00:00.000Z", "00-21-63-43", "FF-FF-FF-FF"), row("2026-11-01T10:00:02.500Z", "FF-B7-44-81", "00-21-63-43")],
+  keys,
+).map((l) => JSON.parse(l));
+if (lines[0].sender !== "05-00-00-01" || lines[1].sender !== "FF-80-00-01" || lines[1].destination !== "05-00-00-01") errors.push("shared.js: anonymisedCapture does not replace the IDs");
+if (lines[0].destination !== "FF-FF-FF-FF" || lines[0].gateway !== "gw1") errors.push("shared.js: anonymisedCapture changes broadcast or misses the gateway");
+if (lines[0].time !== "2000-01-01T00:00:00.000Z" || lines[1].time !== "2000-01-01T00:00:02.500Z") errors.push("shared.js: anonymisedCapture does not replace the times");
+if (lines[0].data !== "70" || lines[0].status !== "30" || lines[0].dbm !== -61) errors.push("shared.js: anonymisedCapture changes the telegram data");
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

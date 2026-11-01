@@ -254,6 +254,11 @@ Telegrammtyp, die entschlüsselten Werte mit Namen und Einheit wie bei den Entit
   wenige Profile passt, steht in der Zeile „Könnte sein …“.
 - **Als Capture-Zeile kopieren** legt das Telegramm im Format der Capture-Aktion in die
   Zwischenablage; der Export nutzt dasselbe Format, beide taugen als Testdaten.
+- **Gerät melden** (unbekannte Sender) kopiert die letzten Telegramme des Senders (bis zu 60) als
+  Capture-Zeilen und öffnet die Geräteanfrage auf GitHub, in die du sie einfügst. Sender-IDs,
+  Gateway-Name und Zeiten werden ersetzt, bevor etwas kopiert wird; Telegrammdaten, Status und
+  Signalstärke bleiben, weil die Decoder sie brauchen. Home Assistant sendet nichts, und im Link
+  stehen keine Daten.
 
 ### Suchen, Filter, Anhalten
 

@@ -242,6 +242,11 @@ several gateways, the gateway.
   the row says "Could be …".
 - **Copy as capture line** puts the telegram on the clipboard in the format of the capture
   action; the export uses the same format, so both can be used as test fixtures.
+- **Report device** (unknown senders) copies the sender's last telegrams (up to 60) as capture
+  lines and opens the device request on GitHub, where you paste them. Sender IDs, the gateway
+  name and the times are replaced before anything is copied; the telegram data, status and
+  signal strength stay, as the decoders need them. Nothing is sent from Home Assistant, and no
+  data goes into the link.
 
 ### Search, filters, pause
 
