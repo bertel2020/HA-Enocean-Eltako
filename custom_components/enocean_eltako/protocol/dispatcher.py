@@ -66,6 +66,7 @@ class Dispatcher:
         self._clock = clock
         self._listeners: dict[int | None, list[Listener]] = {}
         self._monitors: list[Listener] = []
+        self._heard: dict[int, list[Listener]] = {}
         self._unknown: list[Listener] = []
         self._aliases: dict[int, int] = {}
         # per sender: the last telegram's key, clock() and wall time of reception
@@ -89,6 +90,20 @@ class Dispatcher:
         """Every telegram including duplicates (telegram monitor)."""
         self._monitors.append(listener)
         return lambda: self._monitors.remove(listener)
+
+    def add_heard_listener(self, sender: int, listener: Listener) -> Callable[[], None]:
+        """Every telegram of one sender, duplicates from other gateways included (not replayed
+        ones): which gateways hear a device, and how well."""
+        self._heard.setdefault(sender, []).append(listener)
+
+        def remove() -> None:
+            listeners = self._heard.get(sender, [])
+            if listener in listeners:
+                listeners.remove(listener)
+            if not listeners:
+                self._heard.pop(sender, None)
+
+        return remove
 
     def add_unknown_listener(self, listener: Listener) -> Callable[[], None]:
         """Telegrams no device listens to (discovery)."""
@@ -137,6 +152,8 @@ class Dispatcher:
         self.stats.received += 1
         self.stats.per_gateway[gateway] = self.stats.per_gateway.get(gateway, 0) + 1
         self._call(self._monitors, received)
+        if (heard := self._heard.get(sender)) and timestamp is None:
+            self._call(heard, received)
         if duplicate:
             self.stats.duplicates += 1
             return received

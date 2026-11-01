@@ -2354,3 +2354,36 @@ async def test_profile_mismatch_repair(hass: HomeAssistant, gateway) -> None:
     await _settle(hass)
     entry.runtime_data.health_check()
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_heard_by_lists_the_gateways_and_flags_a_repeater_only_device(
+    hass: HomeAssistant, gateway
+) -> None:
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+    from custom_components.enocean_eltako.websocket import heard_by
+
+    entry, _server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    dispatcher = entry.runtime_data.hub.dispatcher
+    assert heard_by(device) == {"gateways": [], "best": None, "repeater_only": False}
+
+    def hear(gateway_id: str, data: bytes, status: int, dbm: int | None) -> None:
+        telegram = RadioTelegram(Rorg.BS4, data, 0x05000012, status, dbm=dbm)
+        dispatcher.dispatch(gateway_id, telegram)
+
+    for i in range(3):  # three repeated telegrams, none direct
+        hear(entry.entry_id, bytes([0, 3, i, 0x0C]), 0x01, -80)
+    result = heard_by(device)
+    assert result["repeater_only"] is True and result["best"] is None
+    assert result["gateways"][0]["name"] == entry.title
+
+    hear("other", bytes([0, 3, 9, 0x0C]), 0x00, -60)  # a second gateway hears it directly
+    result = heard_by(device)
+    assert [g["entry_id"] for g in result["gateways"]] == ["other", entry.entry_id]
+    assert result["gateways"][0]["name"] == "other"  # not a config entry: the ID stands in
+    assert result["best"] == "other" and result["repeater_only"] is False

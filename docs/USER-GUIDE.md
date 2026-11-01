@@ -284,6 +284,9 @@ reception (below -85 dBm), which a repeater or a better gateway position helps. 
 without a telegram in the monitor's buffer are listed too (**not heard**, with **silent** for a
 device whose usual interval has passed three times). For an unknown sender the list adds the
 telegram type and what its telegrams tell: a teach-in profile or the profiles that could fit.
+With several gateways, a device's details list **Heard by**: each gateway with its last signal
+and telegram count, the strongest one tagged **best**; a device that no gateway hears directly
+(3 or more telegrams, all repeated) is tagged **via repeater only**.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.
 
