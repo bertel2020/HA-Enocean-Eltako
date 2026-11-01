@@ -9,7 +9,7 @@
 // a failed import is remembered by the browser, so a top-level await here would leave the panel
 // blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
+let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
 const LOAD_TRIES = 4;
 
 async function loadParts() {
@@ -23,7 +23,7 @@ async function loadParts() {
         import(`./texts.js${v}`),
         import(`./takeover.js${v}`),
       ]);
-      ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg } = shared);
+      ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg } = shared);
       ({ TEXT } = texts);
       ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
       return;
@@ -963,6 +963,7 @@ class EnOceanEltakoPanel extends HTMLElement {
                 <button role="menuitem" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
                 <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-print">${svg(ICON.print)}${esc(t.doc.print)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-sheet">${svg(ICON.print)}${esc(t.doc.sheetItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-json">${svg(ICON.download)}${esc(t.doc.jsonItem)}</button>
               </span>
@@ -2072,7 +2073,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (kind === "json") this._download(JSON.stringify(doc, null, 2) + "\n", "application/json", `enocean-documentation-${stamp}.json`);
     else if (kind === "csv") this._download(documentationCsv(doc, this._t, profile), "text/csv", `enocean-documentation-${stamp}.csv`);
     else {
-      const page = documentationHtml(doc, this._t, profile, this._hass.language || "en");
+      const build = kind === "sheet" ? documentationSheet : documentationHtml;
+      const page = build(doc, this._t, profile, this._hass.language || "en");
       const win = window.open("", "_blank");
       if (!win) {
         this._download(page, "text/html", `enocean-documentation-${stamp}.html`); // pop-ups blocked: open the file and print it

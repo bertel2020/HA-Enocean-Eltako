@@ -307,7 +307,10 @@ three outputs. A device's note belongs to its address, so it comes back if you a
 again. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
 function): buttons taught in directly, devices of other systems, anything Home Assistant
 cannot see. They are for the documentation only and appear in all three outputs. The JSON is
-versioned and also meant for support. If the browser
+versioned and also meant for support. The menu also offers a denser **cabinet sheet** (landscape, one table per gateway without the
+pool and the heard senders) to hang in the distribution board. It points to the learn function
+table instead of naming one, as the right function depends on the actuator's type and revision.
+If the browser
 blocks the print window, the page is saved as a file to open and print.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.
