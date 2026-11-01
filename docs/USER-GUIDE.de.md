@@ -350,6 +350,12 @@ Sie listet sie auf, jeden mit seiner Lernposition, falls du eine notiert hast, u
 Tabelle der Lernfunktionen (`docs/teach_in.de.md`), denn die richtige Funktion hängt von Typ und
 Revision des Aktors ab. Direkt eingelernte Taster und Wandschalter sind nicht betroffen.
 
+**Signal und unbekannte Sender über Neustarts hinweg:** wie jedes Gateway ein Gerät hört
+(Telegrammzahl, letztes Signal, ob je ein Telegramm ohne Repeater kam) und die unbekannten Sender,
+die ein Gateway gehört hat (die neuesten 100), liegen im selben Speicher und werden höchstens
+einmal pro Minute geschrieben. **Gehört von**, „nur über Repeater“ und die Liste der gehörten
+Sender beginnen nach einem Neustart also nicht leer.
+
 **Notizen und weitere Geräte:** In den Details jedes Geräts gibt es ein Feld **Notizen**, in den
 Details jedes Gateways ein eigenes Notizfeld und einen Editor für **Weitere Geräte** (Name, ID,
 Funktion: direkt eingelernte Taster, Geräte anderer Systeme). Gespeichert beim Tippen, in einem

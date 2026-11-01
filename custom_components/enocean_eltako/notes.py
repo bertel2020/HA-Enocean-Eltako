@@ -13,7 +13,8 @@ import uuid
 from typing import Any
 
 from homeassistant.config_entries import ConfigSubentry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -38,6 +39,8 @@ MAX_LOG = 500  # events per gateway
 MAX_LINKS = 500  # links entered by hand per gateway
 # the fields of a link entered by hand and their longest text
 LINK_FIELDS = {"from_id": 40, "from_name": 80, "to_key": 64, "to_name": 80, "role": 60, "learn": 80}
+MAX_HEARD = 100  # unknown senders kept per gateway
+SIGNAL_SAVE_DELAY = 60  # seconds: telegrams come all the time, the signal data is written rarely
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
 
 
@@ -64,6 +67,8 @@ class Notes:
     """The notes of one gateway."""
 
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        self._hass = hass
+        self._signal_timer: CALLBACK_TYPE | None = None
         self._store = _NotesStore(hass, STORAGE_VERSION, f"{DOMAIN}.notes.{entry_id}")
         self.gateway = ""
         self.devices: dict[str, dict[str, str]] = {}  # key -> typed fields (only those set)
@@ -77,6 +82,11 @@ class Notes:
         self.links: list[dict[str, str]] = []
         # what the user adds to a link that is derived (assigned, declared): its learn position
         self.link_info: dict[str, dict[str, str]] = {}
+        # how each gateway hears each device, kept across restarts: key -> gateway entry ID ->
+        # {count, direct, rssi, last (epoch seconds)}
+        self.signal: dict[str, dict[str, dict[str, Any]]] = {}
+        # unknown senders heard, kept across restarts: ID -> {rorg, dbm, last (epoch seconds)}
+        self.heard: dict[str, dict[str, Any]] = {}
         # the devices as they were at the last load, to tell what was added or removed since
         self.known: dict[str, dict[str, Any]] = {}
 
@@ -94,6 +104,11 @@ class Notes:
         self.known = {str(k): dict(v) for k, v in stored.get("known", {}).items()}
         self.links = [{k: str(v) for k, v in e.items()} for e in stored.get("links", [])]
         self.link_info = {str(k): dict(v) for k, v in stored.get("link_info", {}).items()}
+        self.signal = {
+            str(k): {str(g): dict(v) for g, v in gws.items()}
+            for k, gws in stored.get("signal", {}).items()
+        }
+        self.heard = {str(k): dict(v) for k, v in stored.get("heard", {}).items()}
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -105,6 +120,8 @@ class Notes:
             "known": self.known,
             "links": self.links,
             "link_info": self.link_info,
+            "signal": self.signal,
+            "heard": self.heard,
         }
 
     def _save(self) -> None:
@@ -266,7 +283,7 @@ class Notes:
 
     def orphans(self, keys: set[str]) -> set[str]:
         """Keys of notes and test results whose device is gone (they return with the address)."""
-        return (set(self.devices) | set(self.tests)) - keys
+        return (set(self.devices) | set(self.tests) | set(self.signal)) - keys
 
     def prune(self, keys: set[str]) -> int:
         """Drop the notes and test results of devices that are gone; how many notes went."""
@@ -275,6 +292,7 @@ class Notes:
         for key in gone:
             self.devices.pop(key, None)
             self.tests.pop(key, None)
+            self.signal.pop(key, None)
         if gone:
             self._save()
         return removed
@@ -324,8 +342,36 @@ class Notes:
         }
         self._save()
 
+    @callback
+    def _signal_dirty(self) -> None:
+        """Write the signal data soon, but not after every telegram."""
+        if self._signal_timer is None:
+            self._signal_timer = async_call_later(self._hass, SIGNAL_SAVE_DELAY, self._signal_save)
+
+    @callback
+    def _signal_save(self, _now: Any = None) -> None:
+        self._signal_timer = None
+        self._save()
+
+    @callback
+    def touch_signal(self, key: str, gateway: str, heard: dict[str, Any]) -> None:
+        """How one gateway hears a device: the latest of count, direct, rssi and last."""
+        self.signal.setdefault(key, {})[gateway] = heard
+        self._signal_dirty()
+
+    @callback
+    def remember_heard(self, sender: str, rorg: str, dbm: int | None, last: float) -> None:
+        """An unknown sender that was heard; the newest MAX_HEARD stay."""
+        self.heard[sender] = {"rorg": rorg, "dbm": dbm, "last": last}
+        if len(self.heard) > MAX_HEARD:
+            del self.heard[min(self.heard, key=lambda s: self.heard[s]["last"])]
+        self._signal_dirty()
+
     async def async_flush(self) -> None:
         """Write what is waiting (on unload)."""
+        if self._signal_timer is not None:
+            self._signal_timer()
+            self._signal_timer = None
         await self._store.async_save(self._data())
 
     async def async_remove(self) -> None:

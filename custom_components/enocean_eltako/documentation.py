@@ -20,7 +20,7 @@ from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
 from .discovery import pending
 from .notes import Notes, device_key
-from .protocol.ids import format_id
+from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 
 VERSION = 2  # 2: typed device fields, links, the event log; the import still takes 1
@@ -69,6 +69,37 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
         **notes.device(device_key(device.subentry)),
         "test_time": test.get("time"),
     }
+
+
+def _heard(entry: Any, notes: Notes) -> list[dict[str, Any]]:
+    """Unknown senders heard (also before the last restart) that are not set up or hidden."""
+    rows: dict[str, dict[str, Any]] = {}
+    for t in pending(entry):
+        rows[format_id(t.sender)] = {
+            "id": format_id(t.sender),
+            "rorg": f"{t.telegram.rorg:02X}",
+            "dbm": t.telegram.dbm,
+            "last": t.timestamp,
+        }
+    hub = entry.runtime_data.hub
+    configured = {s.unique_id.split("_")[0] for s in entry.subentries.values() if s.unique_id}
+    hidden = {format_id(s) for s in hub.hidden.get(entry.entry_id, ())}
+    for sender, values in notes.heard.items():
+        if sender in rows or sender in configured or sender in hidden:
+            continue
+        if hub.senders.in_pool(parse_id(sender)):
+            continue
+        rows[sender] = {
+            "id": sender,
+            "rorg": values["rorg"],
+            "dbm": values["dbm"],
+            "last": values["last"],
+        }
+    newest = sorted(rows.values(), key=lambda r: r["last"], reverse=True)
+    return [
+        {**r, "last": dt_util.utc_from_timestamp(r["last"]).isoformat(timespec="seconds")}
+        for r in newest
+    ]
 
 
 def _status(test: str | None) -> str:
@@ -191,18 +222,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                     for pool_id, (kind, owner, store) in pools.items()
                     if owner.entry_id == entry.entry_id
                 ],
-                # unknown senders heard since the restart that are not set up (and not hidden)
-                "heard": [
-                    {
-                        "id": format_id(t.sender),
-                        "rorg": f"{t.telegram.rorg:02X}",
-                        "dbm": t.telegram.dbm,
-                        "last": dt_util.utc_from_timestamp(t.timestamp).isoformat(
-                            timespec="seconds"
-                        ),
-                    }
-                    for t in pending(entry)
-                ],
+                "heard": _heard(entry, notes),
                 "log": notes.log,
                 "hidden_senders": sorted(
                     format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())

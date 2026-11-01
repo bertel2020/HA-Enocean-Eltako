@@ -177,6 +177,13 @@ def async_setup_discovery(
             return
         new = sender not in hub.discovered
         hub.discovered[sender] = received
+        if (notes := hub.notes.get(entry.entry_id)) is not None:
+            notes.remember_heard(
+                format_id(sender),
+                f"{received.telegram.rorg:02X}",
+                received.telegram.dbm,
+                received.timestamp,
+            )
         if len(hub.discovered) > MAX_DISCOVERED:  # the oldest one goes
             hub.discovered.pop(min(hub.discovered, key=lambda s: hub.discovered[s].timestamp))
         if new:

@@ -137,6 +137,8 @@ async def test_notes_are_saved_shown_and_kept(
         "known": {"05-00-00-12": {"name": "Waschmaschine", "senders": []}},
         "links": [],
         "link_info": {},
+        "signal": {},
+        "heard": {},
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -585,3 +587,64 @@ async def test_links_are_assigned_declared_or_entered_each_with_its_evidence(
     await client.send_json({"id": 9, "type": "enocean_eltako/import_documentation", "doc": export})
     again = (await client.receive_json())["result"]["gateways"][0]
     assert again["links"] == 0 and len(notes.links) == 1  # nothing twice
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_signal_data_and_unknown_senders_survive_a_restart(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    from homeassistant.helpers.storage import Store
+
+    from custom_components.enocean_eltako.notes import MAX_HEARD
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+    from custom_components.enocean_eltako.websocket import heard_by
+
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    dispatcher = entry.runtime_data.hub.dispatcher
+
+    def hear(gateway_id: str, data: bytes, status: int, dbm: int | None) -> None:
+        dispatcher.dispatch(gateway_id, RadioTelegram(Rorg.BS4, data, 0x05000012, status, dbm=dbm))
+
+    for i in range(3):
+        hear("other", bytes([0, 3, i, 0x0C]), 0x00, -70)
+    hear(entry.entry_id, bytes([0, 3, 9, 0x0C]), 0x01, -85)
+    # an unknown sender
+    dispatcher.dispatch(entry.entry_id, RadioTelegram(Rorg.RPS, b"\x70", 0x00216343, 0x30, dbm=-71))
+    await hass.async_block_till_done()
+
+    # many telegrams, one waiting write; the flush on unload takes it
+    assert notes._signal_timer is not None
+    assert notes.signal["05-00-00-12"]["other"]["count"] == 3
+    assert notes.heard["00-21-63-43"]["rorg"] == "F6"
+    await hass.config_entries.async_unload(entry.entry_id)
+    assert notes._signal_timer is None
+    stored = await Store(hass, 2, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
+    assert stored["heard"]["00-21-63-43"]["dbm"] == -71
+
+    # after the restart the gateways' view of the device and the unknown sender are still there
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    device = next(iter(entry.runtime_data.devices.values()))
+    heard = {g["entry_id"]: g for g in heard_by(device)["gateways"]}
+    assert heard["other"]["count"] == 3 and heard["other"]["rssi"] == -70
+    assert heard[entry.entry_id]["direct"] == 0  # a repeated telegram
+    assert heard_by(device)["best"] == "other"
+    (gateway_doc,) = collect(hass)["gateways"]
+    assert [h["id"] for h in gateway_doc["heard"]] == ["00-21-63-43"]  # not in memory, but kept
+
+    # once hidden an unknown sender is no longer listed; forgetting a device drops its signal
+    entry.runtime_data.hub.hidden[entry.entry_id] = {0x00216343}
+    assert collect(hass)["gateways"][0]["heard"] == []
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.signal["gone"] = {"x": {"count": 1, "direct": 0, "rssi": None, "last": 1.0}}
+    assert notes.prune({"05-00-00-12"}) == 0 and "gone" not in notes.signal
+    for i in range(MAX_HEARD + 1):
+        notes.remember_heard(f"01-00-00-{i:02X}", "F6", None, float(i))
+    assert len(notes.heard) == MAX_HEARD  # the oldest went
