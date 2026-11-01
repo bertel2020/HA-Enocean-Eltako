@@ -25,10 +25,27 @@ from custom_components.enocean_eltako.catalog import (  # noqa: E402
 from custom_components.enocean_eltako.protocol.eep.std.profiles import PROFILES  # noqa: E402
 
 COMPONENT = ROOT / "custom_components/enocean_eltako"
+CAPTURES = ROOT / "tests/fixtures/captures"  # <model id>.jsonl: a real capture of that model
 DOCS = ROOT / "docs"
 HEADERS = {
-    "en": ("Category", "Device", "Manufacturer", "Receives", "Sends (sender profiles)", "Entities"),
-    "de": ("Kategorie", "Gerät", "Hersteller", "Empfängt", "Sendet (Sender-Profile)", "Entitäten"),
+    "en": (
+        "Category",
+        "Device",
+        "Manufacturer",
+        "Receives",
+        "Sends (sender profiles)",
+        "Entities",
+        "Hardware",
+    ),
+    "de": (
+        "Kategorie",
+        "Gerät",
+        "Hersteller",
+        "Empfängt",
+        "Sendet (Sender-Profile)",
+        "Entitäten",
+        "Hardware",
+    ),
 }
 
 
@@ -50,6 +67,7 @@ def table(lang: str) -> str:
         CATALOG.values(),
         key=lambda m: ((*GROUPS, GROUP_VIRTUAL).index(m.group), CATEGORIES.index(m.category)),
     )
+    verified = {p.stem for p in CAPTURES.glob("*.jsonl")}
     lines = [
         "| " + " | ".join(HEADERS[lang]) + " |",
         "| " + " | ".join("---" for _ in HEADERS[lang]) + " |",
@@ -66,6 +84,7 @@ def table(lang: str) -> str:
             "<br>".join(f"`{r}`" for r in receive) or "-",
             "<br>".join(f"`{s}`" for s in senders) or "-",
             platforms,
+            "✓" if model.id in verified else "-",
         )
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
@@ -100,7 +119,10 @@ TEXT = {
         "devices": "Devices of the catalog",
         "devices_text": (
             "Receives: telegrams the device sends to Home Assistant. Sends: sender profiles\n"
-            "Home Assistant uses to control it, each with its own sender ID from the gateway's pool."
+            "Home Assistant uses to control it, each with its own sender ID from the gateway's pool.\n"
+            "Hardware: ✓ when the repository holds a real capture of this model that the tests replay;\n"
+            "a model without it follows the manufacturer's documentation. Captures are welcome, see\n"
+            "[CONTRIBUTING](../CONTRIBUTING.md)."
         ),
         "more": "Beyond the catalog",
         "more_text": (
@@ -145,7 +167,10 @@ TEXT = {
         "devices": "Geräte des Katalogs",
         "devices_text": (
             "Empfängt: Telegramme, die das Gerät an Home Assistant sendet. Sendet: Sender-Profile,\n"
-            "mit denen Home Assistant es steuert, je mit eigener Sender-ID aus dem Pool des Gateways."
+            "mit denen Home Assistant es steuert, je mit eigener Sender-ID aus dem Pool des Gateways.\n"
+            "Hardware: ✓, wenn das Repository einen echten Mitschnitt dieses Modells enthält, den die Tests\n"
+            "abspielen; ein Modell ohne ✓ folgt der Dokumentation des Herstellers. Mitschnitte sind willkommen,\n"
+            "siehe [CONTRIBUTING](../CONTRIBUTING.md)."
         ),
         "more": "Über den Katalog hinaus",
         "more_text": (
