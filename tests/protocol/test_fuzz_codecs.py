@@ -48,9 +48,10 @@ def test_any_data_decodes_to_values_or_nothing(eep: str, data: bytes, status: in
 def test_every_registered_decoder_accepts_any_telegram(
     ref: EEPRef, data: bytes, sender: int, status: int
 ) -> None:
-    rorg = int(ref.eep[:2], 16)
-    result = decode_telegram(ref, RadioTelegram(rorg, data, sender, status))
-    assert result is None or isinstance(result, dict)
+    # Eltako names such as M5-38-08 or G5-3F-7F are no hex RORG: try every one of them
+    for rorg in (0xF6, 0xD5, 0xA5, 0xD2):
+        result = decode_telegram(ref, RadioTelegram(rorg, data, sender, status))
+        assert result is None or isinstance(result, dict)
 
 
 @pytest.mark.parametrize("eep", PROFILE_IDS)
