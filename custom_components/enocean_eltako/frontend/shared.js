@@ -33,9 +33,38 @@ export const ICON = {
   next: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
   last: "M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M16,6H18V18H16V6Z",
   filter: "M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3H19C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z",
+  bug: "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z",
   tower:
     "M12,10A2,2 0 0,1 14,12C14,12.5 13.82,12.94 13.53,13.29L16.7,22H14.57L12,14.93L9.43,22H7.3L10.47,13.29C10.18,12.94 10,12.5 10,12A2,2 0 0,1 12,10M12,8A4,4 0 0,0 8,12C8,12.5 8.1,13 8.28,13.46L7.4,15.86C6.53,14.81 6,13.47 6,12A6,6 0 0,1 12,6A6,6 0 0,1 18,12C18,13.47 17.47,14.81 16.6,15.86L15.72,13.46C15.9,13 16,12.5 16,12A4,4 0 0,0 12,8M12,4A8,8 0 0,0 4,12C4,14.36 5,16.5 6.64,17.94L5.92,19.94C3.54,18.11 2,15.23 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12C22,15.23 20.46,18.11 18.08,19.94L17.36,17.94C19,16.5 20,14.36 20,12A8,8 0 0,0 12,4Z",
 };
+
+// A device report: the telegrams of one sender as capture lines (oldest first) with the IDs, the
+// gateway and the times replaced, like scripts/capture_to_fixture.py. IDs in the base ID range
+// (FF-...) stay in it, broadcast and 00-00-00-00 stay as they are.
+export function anonymisedCapture(rows, keys) {
+  const ids = new Map();
+  const gateways = new Map();
+  const keep = new Set(["00-00-00-00", "FF-FF-FF-FF"]);
+  const alias = (id) => {
+    if (keep.has(id)) return id;
+    if (!ids.has(id)) {
+      const base = id.startsWith("FF-");
+      const number = [...ids.values()].filter((v) => v.startsWith("FF-") === base).length + 1;
+      ids.set(id, `${base ? "FF-80-00" : "05-00-00"}-${number.toString(16).toUpperCase().padStart(2, "0")}`);
+    }
+    return ids.get(id);
+  };
+  const first = Math.min(...rows.map((r) => new Date(r.time).getTime()));
+  return rows.map((r) => {
+    const line = Object.fromEntries(keys.map((k) => [k, r[k]]));
+    line.time = new Date(Date.UTC(2000, 0, 1) + new Date(r.time).getTime() - first).toISOString();
+    if (!gateways.has(r.gateway)) gateways.set(r.gateway, `gw${gateways.size + 1}`);
+    line.gateway = gateways.get(r.gateway);
+    line.sender = alias(r.sender);
+    line.destination = alias(r.destination);
+    return JSON.stringify(line);
+  });
+}
 
 export function esc(value) {
   return String(value ?? "").replace(

@@ -9,7 +9,7 @@
 // a failed import is remembered by the browser, so a top-level await here would leave the panel
 // blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-let ICON, MAX_ROWS, csv, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
+let ICON, MAX_ROWS, anonymisedCapture, csv, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
 const LOAD_TRIES = 4;
 
 async function loadParts() {
@@ -23,7 +23,7 @@ async function loadParts() {
         import(`./texts.js${v}`),
         import(`./takeover.js${v}`),
       ]);
-      ({ ICON, MAX_ROWS, csv, esc, svg } = shared);
+      ({ ICON, MAX_ROWS, anonymisedCapture, csv, esc, svg } = shared);
       ({ TEXT } = texts);
       ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
       return;
@@ -40,6 +40,8 @@ const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
 // the keys of a capture line (service enocean_eltako.capture): exports can be used as test fixtures
+const REPORT_TELEGRAMS = 60; // telegrams of an unknown sender that a device report carries
+const DEVICE_REQUEST_URL = "https://github.com/bertel2020/HA-Enocean-Eltako/issues/new?template=device_request.yml";
 const CAPTURE_KEYS = ["time", "gateway", "dir", "rorg", "data", "sender", "status", "destination", "dbm", "duplicate"];
 const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
@@ -1645,6 +1647,12 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._hideSender(hide.dataset.gateway, hide.dataset.hide);
       return;
     }
+    const report = e.target.closest("[data-report]");
+    if (report) {
+      e.stopPropagation();
+      this._reportDevice(report.dataset.report);
+      return;
+    }
     const add = e.target.closest(".add");
     if (add) {
       e.stopPropagation();
@@ -1699,6 +1707,21 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._renderCards();
     this._renderFilters();
     this._render();
+  }
+
+  async _reportDevice(sender) {
+    // the sender's recent telegrams, anonymised, on the clipboard; the issue form opens empty (no
+    // data in the URL)
+    const rows = this._rows.filter((r) => r.sender === sender && r.dir === "rx" && !r.duplicate).slice(0, REPORT_TELEGRAMS).reverse();
+    if (!rows.length) return;
+    try {
+      await navigator.clipboard.writeText(anonymisedCapture(rows, CAPTURE_KEYS).join("\n") + "\n");
+    } catch (err) {
+      this._notice(this._t.copyFailed);
+      return;
+    }
+    this._notice(this._t.reportCopied(rows.length), true);
+    window.open(DEVICE_REQUEST_URL, "_blank", "noopener");
   }
 
   async _hideSender(gateway, sender) {
@@ -2310,6 +2333,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             ${r.device_key && this._inPanel(r.device_key) ? `<button class="icon-btn" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}" aria-label="${esc(t.inPanel)}">${svg(ICON.list)}</button>` : ""}
             ${r.ha_device ? `<button class="icon-btn" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDevice)}">${svg(ICON.open)}</button>` : ""}
             ${this._canResend(r) ? `<button class="icon-btn" data-resend="${esc(key)}" title="${esc(t.resendHint)}" aria-label="${esc(t.resend)}">${svg(ICON.send)}</button>` : ""}
+            ${unknown ? `<button class="icon-btn" data-report="${esc(r.sender)}" title="${esc(t.reportHint)}" aria-label="${esc(t.report)}">${svg(ICON.bug)}</button>` : ""}
             ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
           </div>
           <dl class="meta">
