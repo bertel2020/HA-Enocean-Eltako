@@ -4,7 +4,7 @@
 //
 // Options (query string of the preview page): lang=en|de, dark, primary (own primary colour),
 // two (a second gateway), hide (an unknown sender hidden from discovery), skew=<s> (server clock
-// ahead of the browser), empty (no gateways and no telegrams), open=<view>[:<device key>|gateway]
+// ahead of the browser), empty (no gateways and no telegrams), open=<view>[:<device key>|gateway|menu]
 // (a view, with a device's details or the gateway's details opened; for screenshots).
 
 // the takeover view: two devices to take over, one already set up and still in use

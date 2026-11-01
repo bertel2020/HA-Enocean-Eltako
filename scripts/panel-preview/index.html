@@ -28,7 +28,8 @@
   if (view) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     panel._setView(view);
-    if (what === "gateway") panel._gatewayDetails.add("gw1");
+    if (what === "menu") panel._toggleMenu(true);
+    else if (what === "gateway") panel._gatewayDetails.add("gw1");
     else if (what) {
       panel._devOpen.add(what);
       await panel._loadDevDetail(what, "gw1");

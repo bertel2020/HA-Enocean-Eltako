@@ -4,6 +4,20 @@ All notable changes to this project are documented here, in English and German: 
 has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
+### [Unreleased]
+
+**English**
+
+#### Fixed
+
+- The **⋮ menu** of the Devices view, which holds the installation documentation (print, cabinet sheet, CSV, JSON, import), was only shown on narrow screens. It now also shows on desktop.
+
+**Deutsch**
+
+#### Behoben
+
+- Das **⋮-Menü** der Geräteansicht mit der Installationsdokumentation (Drucken, Schaltschrank-Blatt, CSV, JSON, Import) wurde nur auf schmalen Bildschirmen angezeigt. Es erscheint jetzt auch am Desktop.
+
 ### [1.4.0] - 2026-11-01
 
 **English**

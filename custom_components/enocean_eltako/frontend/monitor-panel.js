@@ -362,6 +362,7 @@ const STYLE = `
   .details .wide { grid-column: 1 / -1; }
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .m-only { display: none; }
+  .panel[data-view="devices"] .more.m-only { display: inline; } /* the documentation entries live in this menu */
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .sendform { padding: 12px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 8%, transparent); }
   .sendform[hidden] { display: none; }
