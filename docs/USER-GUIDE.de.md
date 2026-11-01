@@ -425,7 +425,7 @@ Haken fügt das Label allen hinzu, ohne Haken wird es entfernt, ein Strich läss
 legst du im Formular an), die Geräte **deaktivieren** oder wieder **aktivieren** und sie
 **entfernen**. Bereich, Labels und Deaktivieren sind die von Home Assistant, sie gelten also auch
 auf der Geräteseite und in Automationen. **Entfernen** fragt vorher nach und löscht die Geräte
-mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Anlage → Sender → Gateway-Sender → ID-Verwaltung** bestätigst, dass
+mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Anlage → Sender → Gateway-Sender → Sender-ID-Pool** bestätigst, dass
 die Aktoren sie vergessen haben. Die Labels eines Geräts stehen unter seinem Namen, und die Suche
 findet sie.
 
@@ -443,7 +443,7 @@ als gesendet. In den Details eines gesendeten Telegramms schickt **Nochmal sende
 
 ## Sender-IDs
 
-Die **ID-Verwaltung** (Anlage → Sender → Gateway-Sender, neben der Tabelle) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
+Der **Sender-ID-Pool** (Anlage → Sender → Gateway-Sender, über der Tabelle, einklappbar) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
 Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
 gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127. Die Pool-Karte zeigt jede ID als
 kleines Feld (frei, zugewiesen, gesperrt, anderweitig belegt; die Legende darunter nennt die

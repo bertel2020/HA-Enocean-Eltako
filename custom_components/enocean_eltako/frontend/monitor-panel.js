@@ -405,7 +405,7 @@ const STYLE = `
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only,
   .panel[data-view="installation"] .tg-only, .panel[data-view="installation"] .list-only { display: none !important; }
-  .panel:not([data-view="devices"]) .devices, .panel:not([data-isub="manage"]) .senders,
+  .panel:not([data-view="devices"]) .devices, .panel:not([data-isub="manage"]) .poolbox,
   .panel:not([data-view="takeover"]) .takeover, .panel:not([data-view="installation"]) .installation { display: none; }
   /* the pool at a glance: four tiles, one bar, a note when something waits, then the map */
   .senders .ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 16px 16px 0; }
@@ -1030,7 +1030,8 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
-          <div class="installation" id="installation"></div>
+          <div class="installation" id="installation"><div id="instHead"></div>
+          <details class="poolbox" id="poolBox" open><summary id="poolSummary"></summary>
           <div class="senders" id="senders">
             <div id="sidTop"></div>
             <div class="filters" id="sidTools" hidden>
@@ -1048,6 +1049,8 @@ class EnOceanEltakoPanel extends HTMLElement {
             </div>
             <div id="sidList"></div>
           </div>
+          </details>
+          <div id="instBody"></div></div>
           <div class="takeover" id="takeover"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager list-only" id="pager">
@@ -1148,6 +1151,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._sid.state = button.dataset.sidState;
       sidChanged();
     });
+    $("poolBox").addEventListener("toggle", (e) => this._poolToggled(e.target.open));
     $("sidFreeAll").addEventListener("click", () => {
       this._freeing = { all: true, ids: this._sidShownBlocked };
       this._renderSenderIds();
@@ -1602,9 +1606,8 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _setView(view) {
     if (view === "senders") {
-      // the sender ID pools live in the Installation view, Senders > Gateway senders > ID management
+      // the sender ID pools live in the Installation view, Senders > Gateway senders, above the table
       this._in.tab = "gwsenders";
-      this._in.manage = true;
       view = "installation";
     }
     this._view = view;
