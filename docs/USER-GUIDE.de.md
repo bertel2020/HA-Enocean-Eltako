@@ -306,11 +306,11 @@ Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könn
 Bei mehreren Gateways zeigen die Details eines Geräts **Gehört von**: jedes Gateway mit letztem
 Signal und Telegrammzahl, das stärkste mit dem Hinweis **am besten**; ein Gerät, das kein Gateway
 direkt hört (ab 3 Telegrammen, alle wiederholt), trägt den Hinweis **nur über Repeater**.
-Bei einem Schaltaktor mit bekanntem Zustand sendet **Sender testen** in den Details diesen
+Bei einem Schaltaktor oder Dimmer mit bekanntem Zustand sendet **Sender testen** in den Details diesen
 Zustand nacheinander über jeden seiner Sender (es ändert sich also nichts, mit Hintergrund-
 Priorität) und markiert jeden Sender mit **Antwort** oder **keine Antwort**. Keine Antwort
 beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm bleiben; ein
-umschaltender Wipptaster wird nicht getestet. Der Test zählt nicht in der Befehlsstatistik.
+umschaltender Wipptaster wird nicht getestet. Ein Dimmer bekommt seine aktuelle Helligkeit als Dimmbefehl über den Zentralbefehl; sein Wipptaster wird nicht getestet, denn ein Druck könnte die Helligkeit ändern. Rollläden werden gar nicht getestet: jeder Befehl bewegt sie oder unterbricht eine Fahrt. Der Test zählt nicht in der Befehlsstatistik.
 
 **Installationsdokumentation:** In der Geräteansicht bietet das ⋮-Menü **Installationsdokumentation
 drucken**, **Dokumentation als CSV** und **Dokumentation als JSON**. Alle drei umfassen jedes

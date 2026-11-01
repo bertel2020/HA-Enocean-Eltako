@@ -289,10 +289,10 @@ telegram type and what its telegrams tell: a teach-in profile or the profiles th
 With several gateways, a device's details list **Heard by**: each gateway with its last signal
 and telegram count, the strongest one tagged **best**; a device that no gateway hears directly
 (3 or more telegrams, all repeated) is tagged **via repeater only**.
-For a switching actuator whose state is known, **Test senders** in the details sends that state
+For a switching actuator or dimmer whose state is known, **Test senders** in the details sends that state
 through each of its senders in turn (so nothing changes, at background priority) and tags each
 sender **answered** or **no answer**. No answer does not prove that the sender is unknown to the
-actuator, as an actuator may stay silent; a rocker that toggles is not tested. The test does not
+actuator, as an actuator may stay silent; a rocker that toggles is not tested. A dimmer gets its current brightness as a dim command through its central command; its rocker is not tested, as a press could change the brightness. Covers are not tested at all: every command moves them or interrupts a run. The test does not
 count in the command statistics.
 
 **Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation

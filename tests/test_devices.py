@@ -2524,3 +2524,56 @@ async def test_values_outside_the_profile_range_raise_a_repair(
     await _settle(hass)
     entry.runtime_data.health_check()
     assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "dimmer",
+                "05-00-00-31",
+                "Licht Wohnzimmer",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-82"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-83"},
+                ],
+                rocker_on_button="a0",
+                rocker_off_button="a1",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_sender_test_of_a_dimmer_repeats_its_brightness(hass: HomeAssistant, gateway) -> None:
+    import asyncio
+
+    entry, server = gateway
+    dimmer = next(iter(entry.runtime_data.devices.values()))
+    assert dimmer.sender_test_error() == "state_unknown"
+    _push(server, 0x07, bytes.fromhex("02320009"), 0x05000031)  # 50 %, on
+    await _settle(hass)
+    assert dimmer.sender_test_error() is None
+
+    async def answers() -> None:
+        for i in range(40):
+            _push(server, 0x07, bytes([2, 0x32, 0, 8 + 1 - (i & 1)]), 0x05000031)
+            await asyncio.sleep(0.05)
+
+    answering = hass.async_create_task(answers())
+    result = await dimmer.async_test_senders()
+    answering.cancel()
+    by_profile = {r["profile"]: r["result"] for r in result}
+    # the central command sets exactly the brightness it has now; a rocker press would not
+    assert by_profile == {"central": "confirmed", "rocker": "skipped"}
+    same = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("02320009"), 0xFFB74482))
+    assert same in bytes(server.received)
+    other_than_dim = [bytes.fromhex("01000009")]  # a plain switch-on could change the brightness
+    assert all(
+        esp2.encode_radio(RadioTelegram(Rorg.BS4, b, 0xFFB74482)) not in bytes(server.received)
+        for b in other_than_dim
+    )
+
+    _push(server, 0x07, bytes.fromhex("02000008"), 0x05000031)  # off
+    await _settle(hass)
+    assert dimmer.sender_test_error() is None  # off needs no brightness
