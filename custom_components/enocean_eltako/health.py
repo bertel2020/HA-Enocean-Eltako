@@ -20,9 +20,11 @@ from .protocol.models import MODELS
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
+    from .device import EnOceanDevice
 
 CHECK_INTERVAL = timedelta(minutes=1)
 GATEWAY_REPAIR_AFTER = 5 * 60  # seconds
+PROFILE_MISMATCH_AFTER = 5  # telegrams in a row that fit none of a device's profiles
 SLOW_CONFIRMATION = 3.0  # E11: median seconds from command to the bus actor's answer
 SLOW_MIN_SAMPLES = 5
 UNSTABLE_WINDOW = 10 * 60  # seconds: this many connection losses within it ...
@@ -34,6 +36,10 @@ OLD_DOMAIN = "eltako"  # the old integration: its serial port is in YAML, not in
 
 def device_issue_id(unique_prefix: str) -> str:
     return f"device_silent_{unique_prefix}"
+
+
+def profile_issue_id(unique_prefix: str) -> str:
+    return f"device_profile_mismatch_{unique_prefix}"
 
 
 def gateway_issue_id(entry_id: str) -> str:
@@ -99,6 +105,7 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
                 )
             else:
                 ir.async_delete_issue(hass, DOMAIN, issue_id)
+            _check_profile(hass, device)
         issue_id = gateway_issue_id(entry.entry_id)
         since = runtime.disconnected_since
         if not runtime.on_demand and since is not None and now - since > GATEWAY_REPAIR_AFTER:
@@ -130,12 +137,40 @@ def async_setup_health(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> 
         ir.async_delete_issue(hass, DOMAIN, silent_issue_id(entry.entry_id))
         for device in entry.runtime_data.devices.values():
             ir.async_delete_issue(hass, DOMAIN, device_issue_id(device.unique_prefix))
+            ir.async_delete_issue(hass, DOMAIN, profile_issue_id(device.unique_prefix))
 
     entry.async_on_unload(clear)
     return check
 
 
 @callback
+def _check_profile(hass: HomeAssistant, device: EnOceanDevice) -> None:
+    """A device whose telegrams keep not fitting its profile was most likely set up wrongly."""
+    issue_id = profile_issue_id(device.unique_prefix)
+    telegram = device.last_telegram
+    if (
+        device.stats.mismatches < PROFILE_MISMATCH_AFTER
+        or telegram is None
+        or not device.model.receive
+    ):
+        ir.async_delete_issue(hass, DOMAIN, issue_id)
+        return
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id,
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="device_profile_mismatch",
+        translation_placeholders={
+            "name": device.subentry.title,
+            "profile": str(device.model.receive),
+            "rorg": f"{telegram.rorg:02X}",
+            "count": str(device.stats.mismatches),
+        },
+    )
+
+
 def _check_silent(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """A connected gateway that does not answer: many network gateways (MGW-ETH) serve only
     one client and accept further connections without ever answering them. Asks for the

@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Profile check repair**: a device whose last 5 telegrams in a row fit none of its profiles raises a repair (it was most likely set up with the wrong kind); a fitting telegram clears it.
 - **Report device** for unknown senders in the telegram details: copies the sender's last telegrams (up to 60) with IDs, gateway and times replaced and opens the new device request form on GitHub. Nothing goes into the link.
 - **Hardware column** in the supported devices list: a ✓ where the repository holds a real capture of that model (`tests/fixtures/captures/<model id>.jsonl`).
 - **`scripts/capture_to_fixture.py`** turns a capture into an anonymous test fixture (IDs, gateway names and times replaced, telegram data kept), so a bug report can become a regression test.
@@ -23,6 +24,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Reparatur „Profil passt nicht“**: ein Gerät, dessen letzte 5 Telegramme hintereinander zu keinem seiner Profile passen, löst eine Reparatur aus (es wurde sehr wahrscheinlich mit der falschen Art angelegt); ein passendes Telegramm hebt sie auf.
 - **Gerät melden** bei unbekannten Sendern in den Telegramm-Details: kopiert die letzten Telegramme des Senders (bis zu 60) mit ersetzten IDs, Gateway und Zeiten und öffnet das neue Formular für Geräteanfragen auf GitHub. Im Link stehen keine Daten.
 - **Spalte „Hardware“** in der Liste der unterstützten Geräte: ein ✓, wo das Repository einen echten Mitschnitt dieses Modells enthält (`tests/fixtures/captures/<Modell-ID>.jsonl`).
 - **`scripts/capture_to_fixture.py`** macht aus einem Mitschnitt eine anonyme Testdatei (IDs, Gateway-Namen und Zeiten ersetzt, Telegrammdaten bleiben), damit aus einem Fehlerbericht ein Regressionstest werden kann.

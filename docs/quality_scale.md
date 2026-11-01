@@ -69,7 +69,7 @@ Status: **Bronze, Silver, Gold and Platinum complete** (self-assessment).
 | exception-translations | done | `exceptions` in the translations |
 | icon-translations | done | `icons.json` for every translated entity, states and actions |
 | reconfiguration-flow | done | gateway and device reconfigure |
-| repair-issues | done | disconnected gateway, silent device, base ID, slow bus |
+| repair-issues | done | disconnected gateway, silent device, base ID, slow bus, telegrams that do not fit the profile |
 | stale-devices | done | removing a subentry removes its device and releases its senders |
 
 ## Platinum

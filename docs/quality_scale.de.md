@@ -69,7 +69,7 @@ Stand: **Bronze, Silber, Gold und Platin vollständig** (Selbsteinschätzung).
 | exception-translations | erledigt | `exceptions` in den Übersetzungen |
 | icon-translations | erledigt | `icons.json` für jede übersetzte Entität, Zustände und Aktionen |
 | reconfiguration-flow | erledigt | Gateway und Gerät neu konfigurieren |
-| repair-issues | erledigt | getrenntes Gateway, stilles Gerät, Base-ID, langsamer Bus |
+| repair-issues | erledigt | getrenntes Gateway, stilles Gerät, Base-ID, langsamer Bus, Telegramme, die nicht zum Profil passen |
 | stale-devices | erledigt | Entfernen eines Untereintrags entfernt sein Gerät und gibt seine Sender frei |
 
 ## Platin

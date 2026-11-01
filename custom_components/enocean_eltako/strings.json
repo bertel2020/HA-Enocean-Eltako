@@ -1249,6 +1249,10 @@
       "title": "{name} not heard for {hours} h",
       "description": "{name} usually reports regularly but has not been heard for {hours} hours. Last received by: {gateway}. Check its battery or power supply and the radio range."
     },
+    "device_profile_mismatch": {
+      "title": "{name} sends telegrams that do not fit its profile",
+      "description": "The last {count} telegrams of {name} did not fit its profile {profile}; the last one was of type {rorg}. The device may have been set up with the wrong kind or profile. Open the device in the EnOcean panel, compare its telegrams with the data sheet and, under Configure, pick the kind that fits."
+    },
     "gateway_disconnected": {
       "title": "{name} is disconnected",
       "description": "The connection to {name} ({connection}) has been down for more than 5 minutes; Home Assistant keeps retrying. Check the USB cable or the ser2net service and the network."

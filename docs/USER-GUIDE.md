@@ -363,6 +363,9 @@ Repairs point out what needs a hand:
   replaced): the actuators know the old sender IDs, so commands would not arrive
 - bus actuators that confirm commands after more than 3 s on average: the FAM14 passes
   confirmations on right away only in operating mode 5 with a device list made by PCT14
+- a device whose last 5 telegrams in a row fit none of its profiles (a rocker telegram from a
+  meter, for example): it was most likely set up with the wrong kind. Teach-in telegrams do not
+  count, and one fitting telegram clears the repair
 
 ## Taking over the old eltako integration
 
