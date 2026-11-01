@@ -9,12 +9,12 @@ const { ICON, esc, svg } = await import(`./shared.js${VERSION}`);
 
 // the typed fields of a device, in table order; installed is a date
 export const INSTALLATION_FIELDS = ["location", "circuit", "fuse", "installed", "revision", "power", "note"];
-const TABS = ["areas", "devices", "log"];
+const TABS = ["areas", "devices", "links", "log"];
 const SAVE_DELAY = 600; // ms after the last key
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", group: "area", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "areas", group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -105,7 +105,7 @@ export const installation = {
       <button class="chip" data-in-act="csv">${svg(ICON.download)}CSV</button>
       <button class="chip" data-in-act="json">${svg(ICON.download)}JSON</button>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
-    const body = { areas: this._instAreas(), devices: this._instDevices(), log: this._instLog() }[state.tab];
+    const body = { areas: this._instAreas(), devices: this._instDevices(), links: this._instLinks(), log: this._instLog() }[state.tab];
     this._replace(el, `<div class="itop"><div class="tabs" role="group">${tabs}</div><div class="itools">${tools}</div></div><div class="ibody">${body}</div>`);
   },
 
@@ -160,6 +160,59 @@ export const installation = {
     return `${search}${bulk}${sections.join("")}${paste}`;
   },
 
+  _instLinks() {
+    // who is taught into which actuator; every link says where it comes from and what proves it
+    const t = this._t;
+    const state = this._in;
+    const L = t.inst.links;
+    const when = (iso) => new Date(iso).toLocaleString(this._hass.language);
+    const toggle = `<div class="isub">${esc(t.inst.groupBy)} <button class="chip" data-in-link-group="actuator" aria-pressed="${state.linkGroup === "actuator"}">${esc(L.byActuator)}</button> <button class="chip" data-in-link-group="sender" aria-pressed="${state.linkGroup === "sender"}">${esc(L.bySender)}</button></div>
+      <div class="isub">${esc(L.honest)}</div>`;
+    const input = (gw, attr, value, placeholder, extra = "") => `<input class="cell" ${attr} data-in-gw="${esc(gw.entry_id)}" value="${esc(value)}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" autocomplete="off" ${extra}>`;
+    const fromLabel = (l) => (l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${L.from[l.from_kind]} · ${l.from_id}`);
+    const role = (l) => (l.source === "assigned" ? this._profile(l.role) : l.role);
+    const evidence = (l) => [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean).join(" · ");
+    const status = (l) => `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>`;
+    const row = (gw, l, target) => {
+      const learn = l.source === "entered"
+        ? input(gw, `data-in-efield="learn" data-in-eid="${esc(l.id)}"`, l.learn, L.learn)
+        : input(gw, `data-in-learn="${esc(l.key)}"`, l.learn, L.learn);
+      const cells = l.source === "entered"
+        ? `<td>${input(gw, `data-in-efield="from_name" data-in-eid="${esc(l.id)}"`, l.from_name, L.fromName)}${input(gw, `data-in-efield="from_id" data-in-eid="${esc(l.id)}"`, l.from_id, L.fromId)}</td><td>${input(gw, `data-in-efield="role" data-in-eid="${esc(l.id)}"`, l.role, L.role)}</td>`
+        : `<td>${esc(target ? l.to_name : fromLabel(l))}<div class="isub">${esc(target ? l.to_id : "")}</div></td><td>${esc(role(l))}</td>`;
+      const first = l.source === "entered" ? "" : "";
+      return `<tr>${cells}<td>${learn}</td><td>${status(l)}<div class="isub">${esc(evidence(l))}</div></td><td>${l.source === "entered" ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>` : `<span class="isub">${esc(L.source[l.source])}</span>`}${first}</td></tr>`;
+    };
+    const head = `<thead><tr><th>${esc(L.from.title)}</th><th>${esc(L.role)}</th><th>${esc(L.learn)}</th><th>${esc(L.state)}</th><th></th></tr></thead>`;
+    const sections = gateways(state.doc).map((gw) => {
+      let body;
+      if (state.linkGroup === "actuator") {
+        const groups = new Map();
+        for (const l of gw.links) {
+          const key = l.to_key || `name|${l.to_name}`;
+          groups.set(key, [...(groups.get(key) ?? []), l]);
+        }
+        body = [...groups.values()]
+          .sort((a, b) => a[0].to_name.localeCompare(b[0].to_name))
+          .map((links) => `<div class="gcard" style="margin-bottom:10px"><b>${esc(links[0].to_name)} <span class="isub">${esc(links[0].to_id)}</span></b><div class="tablewrap"><table class="itable">${head}<tbody>${links.map((l) => row(gw, l, false)).join("")}</tbody></table></div><div class="isub">${esc(L.otherSenders)}</div></div>`)
+          .join("");
+      } else {
+        const groups = new Map();
+        for (const l of gw.links) {
+          const key = l.from_id || l.from_name;
+          groups.set(key, [...(groups.get(key) ?? []), l]);
+        }
+        body = [...groups.values()]
+          .map((links) => `<div class="gcard" style="margin-bottom:10px"><b>${esc(fromLabel(links[0]))}</b><div class="tablewrap"><table class="itable"><thead><tr><th>${esc(L.controls)}</th><th>${esc(L.role)}</th><th>${esc(L.learn)}</th><th>${esc(L.state)}</th><th></th></tr></thead><tbody>${links.map((l) => row(gw, l, true)).join("")}</tbody></table></div></div>`)
+          .join("");
+      }
+      const options = [...gw.devices.filter((d) => !d.virtual).map((d) => `<option value="${esc(d.note_key)}">${esc(d.name)} · ${esc(d.id)}</option>`), `<option value="">${esc(L.otherTarget)}</option>`].join("");
+      const add = `<div class="bulk" data-in-link-form="${esc(gw.entry_id)}"><b>${esc(L.addTitle)}</b><input data-in-new="from_name" placeholder="${esc(L.fromName)}" aria-label="${esc(L.fromName)}"><input data-in-new="from_id" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}"><span>→</span><select data-in-new="to_key" aria-label="${esc(L.target)}">${options}</select><input data-in-new="to_name" placeholder="${esc(L.otherName)}" aria-label="${esc(L.otherName)}"><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="add-link" data-in-gw="${esc(gw.entry_id)}">${esc(L.add)}</button></div>`;
+      return `<section><h3>${esc(gw.title)}</h3>${body || `<div class="none">${esc(L.none)}</div>`}${add}</section>`;
+    });
+    return toggle + sections.join("");
+  },
+
   _instLog() {
     const t = this._t;
     const multi = gateways(this._in.doc).length > 1;
@@ -180,6 +233,17 @@ export const installation = {
       this._renderInstallation();
       return;
     }
+    const linkGroup = e.target.closest("[data-in-link-group]");
+    if (linkGroup) {
+      state.linkGroup = linkGroup.dataset.inLinkGroup;
+      this._renderInstallation();
+      return;
+    }
+    const del = e.target.closest("[data-in-del]");
+    if (del) {
+      this._instRemoveLink(del.dataset.inGw, del.dataset.inDel);
+      return;
+    }
     const group = e.target.closest("[data-in-group]");
     if (group) {
       state.group = group.dataset.inGroup;
@@ -198,6 +262,7 @@ export const installation = {
     } else if (act === "bulk") this._instBulk();
     else if (act === "paste") this._instPaste();
     else if (act === "copy-table") this._instCopyTable();
+    else if (act === "add-link") this._instAddLink(e.target.closest("[data-in-act]").dataset.inGw);
   },
 
   _installationChange(e) {
@@ -222,6 +287,12 @@ export const installation = {
         this._renderInstallation();
         this.shadowRoot.querySelector("[data-in-search]")?.focus();
       }, 250);
+      return;
+    }
+    const learn = e.target.closest("[data-in-learn], [data-in-efield]");
+    if (learn) {
+      clearTimeout(learn._saving);
+      learn._saving = setTimeout(() => this._instSaveLink(learn), SAVE_DELAY);
       return;
     }
     const cell = e.target.closest("[data-in-field]");
@@ -251,6 +322,61 @@ export const installation = {
       this._notice(this._t.doc.noteFailed);
       return null;
     }
+  },
+
+  _instEntered(gw) {
+    // the links entered by hand, in the shape the server stores them
+    return gw.links
+      .filter((l) => l.source === "entered")
+      .map((l) => ({ id: l.id, from_id: l.from_id, from_name: l.from_name, to_key: l.to_key, to_name: l.to_key ? "" : l.to_name, role: l.role, learn: l.learn }));
+  },
+
+  async _instSetLinks(gw, entered) {
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_links", entry_id: gw.entry_id, links: entered });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+      return false;
+    }
+    return true;
+  },
+
+  async _instSaveLink(field) {
+    // a learn position of a derived link, or a field of a link entered by hand
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === field.dataset.inGw);
+    if (!gw) return;
+    if (field.dataset.inLearn) {
+      const link = gw.links.find((l) => l.key === field.dataset.inLearn);
+      try {
+        await this._hass.callWS({ type: "enocean_eltako/set_link_learn", entry_id: gw.entry_id, link_key: field.dataset.inLearn, learn: field.value });
+        if (link) link.learn = field.value;
+      } catch (err) {
+        field.classList.add("bad");
+      }
+      return;
+    }
+    const link = gw.links.find((l) => l.id === field.dataset.inEid);
+    if (!link) return;
+    link[field.dataset.inEfield] = field.value;
+    if (!(await this._instSetLinks(gw, this._instEntered(gw)))) field.classList.add("bad");
+  },
+
+  async _instAddLink(entryId) {
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+    const form = this.shadowRoot.querySelector(`[data-in-link-form="${CSS.escape(entryId)}"]`);
+    if (!gw || !form) return;
+    const get = (name) => form.querySelector(`[data-in-new="${name}"]`).value.trim();
+    const link = { id: Math.random().toString(36).slice(2, 10), from_id: get("from_id"), from_name: get("from_name"), to_key: get("to_key"), to_name: get("to_name"), role: get("role"), learn: get("learn") };
+    if (!(link.from_id || link.from_name) || !(link.to_key || link.to_name)) {
+      this._notice(this._t.inst.links.incomplete);
+      return;
+    }
+    if (await this._instSetLinks(gw, [...this._instEntered(gw), link])) await this._loadInstallation();
+  },
+
+  async _instRemoveLink(entryId, id) {
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+    if (gw && (await this._instSetLinks(gw, this._instEntered(gw).filter((l) => l.id !== id)))) await this._loadInstallation();
   },
 
   async _instBulk() {

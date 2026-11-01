@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Links** in the Installation tab: who is taught into which actuator, by actuator or by sender, each link marked as assigned, declared (wall switch option) or entered by you, with the teach-in time, the last sender test and a learn position. The JSON export carries them and the import takes entered links and learn positions back.
 - The new **Installation** tab of the panel: devices by area or place, a table with typed fields (place, circuit, fuse, installed, revision, power, note) edited in place, for a selection or pasted from a spreadsheet, and the event log.
 - The installation keeps an **event log** per gateway: devices added or removed, senders assigned or removed, teach-ins, sender tests and imports.
 - Importing notes into a **swapped gateway** (another base ID): the panel offers to map the one unmatched gateway of the file to the one set up here.
@@ -26,6 +27,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Verbindungen** im Reiter Installation: wer in welchen Aktor eingelernt ist, nach Aktor oder nach Sender, jede als vergeben, angegeben (Wandschalter-Option) oder von dir eingetragen markiert, mit Einlernzeitpunkt, letztem Sendertest und Lernposition. Der JSON-Export enthält sie, der Import übernimmt eingetragene Verbindungen und Lernpositionen.
 - Der neue Reiter **Installation** im Panel: Geräte nach Bereich oder Ort, eine Tabelle mit typisierten Feldern (Ort, Stromkreis, Sicherung, Eingebaut, Revision, Versorgung, Notiz), direkt bearbeitbar, für eine Auswahl oder aus einer Tabellenkalkulation eingefügt, und das Ereignisprotokoll.
 - Die Installation führt ein **Ereignisprotokoll** pro Gateway: Geräte hinzugefügt oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe.
 - Beim Import von Notizen in ein **getauschtes Gateway** (andere Base-ID) bietet das Panel an, das eine Gateway der Datei ohne Treffer dem hier eingerichteten zuzuordnen.

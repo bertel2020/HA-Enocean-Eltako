@@ -496,7 +496,7 @@ class EnOceanDevice:
     @callback
     def teach_in(self, profile: str) -> None:
         self.entry.runtime_data.hub.notes[self.entry.entry_id].add_log(
-            "teach_in", device_key(self.subentry), f"{self.subentry.title}: {profile}"
+            "teach_in", device_key(self.subentry), f"{self.subentry.title}: {profile}", profile
         )
         sender = self.model.sender_profile(profile)
         if not sender.teach_in:  # UTE: answer the actuator's query within the window

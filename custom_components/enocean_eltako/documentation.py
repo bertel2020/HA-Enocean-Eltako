@@ -70,6 +70,86 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
     }
 
 
+def _status(test: str | None) -> str:
+    """What a sender test says of a link: answered, no answer, or never tested."""
+    if test == "confirmed":
+        return "confirmed"
+    return "no_answer" if test in ("unconfirmed", "failed") else "unverified"
+
+
+def build_links(devices: list[dict[str, Any]], notes: Notes) -> list[dict[str, Any]]:
+    """Who is taught into which actuator, each link with where it comes from.
+
+    assigned: a sender Home Assistant holds for the actuator (with the last teach-in sent and the
+    last sender test as evidence); declared: the wall switch set in the device's options;
+    entered: written down by the user. What an actuator has really learned is not readable.
+    """
+    by_key = {d["note_key"]: d for d in devices}  # the address: it survives adding a device again
+    links: list[dict[str, Any]] = []
+    for d in devices:
+        key = d["note_key"]
+        info = notes.link_info
+        for s in d["senders"]:
+            link_key = f"assigned|{key}|{s['profile']}"
+            links.append(
+                {
+                    "key": link_key,
+                    "source": "assigned",
+                    "from_kind": "ha",
+                    "from_id": s["id"],
+                    "from_name": "",
+                    "to_key": key,
+                    "to_id": d["id"],
+                    "to_name": d["name"],
+                    "role": s["profile"],
+                    "learn": info.get(link_key, {}).get("learn", ""),
+                    "status": _status(s["test"]),
+                    "teach_in": notes.last_teach_in(key, s["profile"]),
+                    "tested": d["test_time"] if s["test"] else None,
+                }
+            )
+        if wall := d["wall_switch"]:
+            link_key = f"declared|{key}|{wall['id']}"
+            links.append(
+                {
+                    "key": link_key,
+                    "source": "declared",
+                    "from_kind": "wall",
+                    "from_id": wall["id"],
+                    "from_name": "",
+                    "to_key": key,
+                    "to_id": d["id"],
+                    "to_name": d["name"],
+                    "role": f"{wall.get('on') or '?'} / {wall.get('off') or '?'}",
+                    "learn": info.get(link_key, {}).get("learn", ""),
+                    "status": "declared",
+                    "teach_in": None,
+                    "tested": None,
+                }
+            )
+    for e in notes.links:
+        target = by_key.get(e["to_key"])
+        links.append(
+            {
+                "key": f"entered|{e['id']}",
+                "id": e["id"],
+                "source": "entered",
+                "from_kind": "entered",
+                "from_id": e["from_id"],
+                "from_name": e["from_name"],
+                "to_key": e["to_key"],
+                "to_id": target["id"] if target else "",
+                "to_name": target["name"] if target else e["to_name"],
+                "role": e["role"],
+                "learn": e["learn"],
+                "status": "entered",
+                "teach_in": None,
+                "tested": None,
+            }
+        )
+    return links
+
+
 def collect(hass: HomeAssistant) -> dict[str, Any]:
     """Every loaded gateway with its devices, sender ID pools and hidden senders."""
     from .websocket import _pool_rows, _pools  # noqa: PLC0415 - websocket imports this module
@@ -79,6 +159,10 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
     for entry in hass.config_entries.async_loaded_entries(DOMAIN):
         runtime = entry.runtime_data
         notes = runtime.hub.notes[entry.entry_id]
+        devices = sorted(
+            (_device(hass, d, notes) for d in runtime.devices.values()),
+            key=lambda d: (d["virtual"], str(d["name"]).casefold()),
+        )
         gateways.append(
             {
                 "entry_id": entry.entry_id,
@@ -90,10 +174,8 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 "base_id": entry.data.get(CONF_BASE_ID),
                 "note": notes.gateway,
                 "manual": notes.manual,
-                "devices": sorted(
-                    (_device(hass, d, notes) for d in runtime.devices.values()),
-                    key=lambda d: (d["virtual"], str(d["name"]).casefold()),
-                ),
+                "devices": devices,
+                "links": build_links(devices, notes),
                 "pools": [
                     {
                         "id": pool_id,

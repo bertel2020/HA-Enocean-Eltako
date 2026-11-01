@@ -38,7 +38,15 @@ from .discovery import async_set_hidden
 from .documentation import VERSION as DOCUMENTATION_VERSION
 from .documentation import collect as collect_documentation
 from .hub import async_get_hub
-from .notes import FIELDS, MANUAL_FIELDS, MAX_MANUAL, MAX_NOTE, device_key
+from .notes import (
+    FIELDS,
+    LINK_FIELDS,
+    MANUAL_FIELDS,
+    MAX_LINKS,
+    MAX_MANUAL,
+    MAX_NOTE,
+    device_key,
+)
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -73,6 +81,8 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_set_manual)
     websocket_api.async_register_command(hass, ws_set_fields)
+    websocket_api.async_register_command(hass, ws_set_links)
+    websocket_api.async_register_command(hass, ws_set_link_learn)
     websocket_api.async_register_command(hass, ws_prune_notes)
     websocket_api.async_register_command(hass, ws_import_documentation)
     websocket_api.async_register_command(hass, ws_set_model)
@@ -686,12 +696,20 @@ def ws_import_documentation(
                 }
             )
             continue
-        notes, manual = entry.runtime_data.hub.notes[entry.entry_id].import_from(
+        notes, manual, links = entry.runtime_data.hub.notes[entry.entry_id].import_from(
             gateway, overwrite=msg["overwrite"]
         )
-        result.append({"title": entry.title, "matched": True, "notes": notes, "manual": manual})
+        result.append(
+            {
+                "title": entry.title,
+                "matched": True,
+                "notes": notes,
+                "manual": manual,
+                "links": links,
+            }
+        )
         entry.runtime_data.hub.notes[entry.entry_id].add_log(
-            "import", "", f"{notes} notes, {manual} entries"
+            "import", "", f"{notes} notes, {manual} entries, {links} links"
         )
     connection.send_result(msg["id"], {"gateways": result})
 
@@ -730,6 +748,60 @@ def ws_set_fields(
         else:
             saved += 1
     connection.send_result(msg["id"], {"saved": saved, "rejected": rejected})
+
+
+LINK_ENTRY: dict[Any, Any] = {
+    vol.Required("id"): vol.All(str, vol.Length(min=1, max=32)),
+    **{vol.Optional(k): vol.All(str, vol.Length(max=n)) for k, n in LINK_FIELDS.items()},
+}
+
+
+def _loaded_entry(hass: HomeAssistant, entry_id: str) -> ConfigEntry | None:
+    entry = hass.config_entries.async_get_entry(entry_id)
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        return None
+    return entry
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_links",
+        vol.Required("entry_id"): str,
+        vol.Required("links"): vol.All([LINK_ENTRY], vol.Length(max=MAX_LINKS)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_links(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The links the user writes down: a button or sender taught into an actuator."""
+    if (entry := _loaded_entry(hass, msg["entry_id"])) is None:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    entry.runtime_data.hub.notes[entry.entry_id].set_links(msg["links"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_link_learn",
+        vol.Required("entry_id"): str,
+        vol.Required("link_key"): vol.All(str, vol.Length(min=1, max=200)),
+        vol.Required("learn"): vol.All(str, vol.Length(max=LINK_FIELDS["learn"])),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_link_learn(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The learn position written down for a link Home Assistant derives."""
+    if (entry := _loaded_entry(hass, msg["entry_id"])) is None:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    entry.runtime_data.hub.notes[entry.entry_id].set_link_learn(msg["link_key"], msg["learn"])
+    connection.send_result(msg["id"])
 
 
 def _device_keys(entry: Any) -> set[str]:

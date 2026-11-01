@@ -115,6 +115,18 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
     expect("bulk bar after a pick", !!root.querySelector("#installation .bulk"), true);
+    root.querySelector('#installation [data-in-tab="links"]').click();
+    await settle();
+    expect("link rows by actuator", root.querySelectorAll("#installation .itable tbody tr").length, 4);
+    expect("a link says where it comes from", [...root.querySelectorAll("#installation .itable .tag")].map((e) => e.textContent).length, 4);
+    const learn = root.querySelector("#installation [data-in-learn]");
+    learn.value = "Funktion 45";
+    learn.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect("a learn position is saved", fake.sent.filter((m) => m.type === "enocean_eltako/set_link_learn").map((m) => `${m.link_key}=${m.learn}`).join(), "assigned|05-10-A2-B3|central=Funktion 45");
+    root.querySelector('#installation [data-in-link-group="sender"]').click();
+    await settle();
+    expect("link groups by sender", root.querySelectorAll("#installation .gcard").length, 4);
     root.querySelector('#installation [data-in-tab="log"]').click();
     await settle();
     expect("log rows", root.querySelectorAll("#installation .log tbody tr").length, 3);
