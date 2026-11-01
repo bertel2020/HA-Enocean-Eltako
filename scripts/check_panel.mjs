@@ -102,6 +102,10 @@ const tgw = {
 const tprofile = (p) => p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];
+  // the buttons and fields the panel reads must have a text, or they show up empty
+  for (const [where, text] of [["inst.links.tablesCsv", t.inst.links.tablesCsv], ["doc.manualFunctionHead", t.doc.manualFunctionHead], ["doc.manualBusAddress", t.doc.manualBusAddress], ["doc.manualFeedback", t.doc.manualFeedback], ["doc.manualWatts", t.doc.manualWatts], ["doc.supplyTitle", t.doc.supplyTitle], ["doc.supplyName", t.doc.supplyName], ["doc.supplyWatts", t.doc.supplyWatts], ...["group", "bus_address", "feedback_id", "bus_power"].map((f) => [`inst.fields.${f}`, t.inst.fields[f]])]) {
+    if (!text) errors.push(`texts.js: ${where} (${lang}) is empty`);
+  }
   const parts = docTables(tgw, t, tprofile);
   const at = (n) => parts.senders[n];
   if (parts.senders.length !== 128 || at(0).id !== "FFB64080" || !at(0).gateway) errors.push(`shared.js: docTables (${lang}) has ${parts.senders.length} gateway sender rows or a wrong base ID`);

@@ -211,6 +211,8 @@ async def test_manual_entries_are_validated_stored_and_documented(
     assert (await call(7, [bus]))["success"]
     (manual,) = collect(hass)["gateways"][0]["manual"]
     assert manual["bus_address"] == "12-1" and manual["bus_power"] == "0,5"
+    assert (await call(8, [{**bus, "bus_power": "viel"}]))["success"]
+    assert collect(hass)["gateways"][0]["manual"][0]["bus_power"] == ""  # not watts: dropped
 
 
 async def test_the_bus_power_supply_is_validated_stored_and_documented(

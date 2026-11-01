@@ -101,10 +101,10 @@ for (const lang of ["en", "de"]) {
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     // the Installation view: devices by area, a table with fields edited in place, the event log
     await view("installation");
-    expect("installation cards (one per area)", root.querySelectorAll("#installation .gcard").length, 2);
+    expect("installation cards (one per area)", root.querySelectorAll("#installation .gcard").length, 4);
     root.querySelector('#installation [data-in-tab="devices"]').click();
     await settle();
-    expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 3);
+    expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 7);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
     cell.value = "F4 B10";
     cell.dispatchEvent(new Event("input", { bubbles: true }));

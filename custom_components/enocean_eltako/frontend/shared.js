@@ -93,6 +93,8 @@ export function csv(rows) {
 // ---- installation documentation (the structure of the documentation websocket command) ------------
 
 const FIELD_KEYS = ["location", "circuit", "group", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
+// the handover page leaves out what has a table of its own (group, bus address, feedback ID, bus power)
+const HANDOVER_KEYS = FIELD_KEYS.filter((f) => !["group", "bus_address", "feedback_id", "bus_power"].includes(f));
 
 function docSenderText(s, t, profile) {
   const kind = s.ute ? t.teachUte : t.teachTelegram;
@@ -339,10 +341,10 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
     : "";
 
   const handover = section("handover", d.sections.handover, d.generated(when(doc.generated)), perGateway((gw) =>
-    table([d.cols.device, d.cols.address, d.cols.senders, d.cols.wall, ...FIELD_KEYS.map((f) => t.inst.fields[f])], gw.devices.map((x) => {
+    table([d.cols.device, d.cols.address, d.cols.senders, d.cols.wall, ...HANDOVER_KEYS.map((f) => t.inst.fields[f])], gw.devices.map((x) => {
       const sub = [x.virtual ? d.virtual : "", x.area ?? "", x.model ?? ""].filter(Boolean).join(" · ");
       const senders = x.senders.length ? x.senders.map((s) => `<div>${esc(docSenderText(s, t, profile))}</div>`).join("") : `<span class="sub">${esc(x.virtual ? d.sentByHa : d.receiveOnly)}</span>`;
-      return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}${FIELD_KEYS.map((f) => cell(field(x, f))).join("")}</tr>`;
+      return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}${HANDOVER_KEYS.map((f) => cell(field(x, f))).join("")}</tr>`;
     }).join(""))));
 
   const cabinet = section("cabinet", d.sections.cabinet, "", perGateway((gw) =>
@@ -392,7 +394,7 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
     const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td><b>${esc(num(bus.sum))}</b></td></tr>`;
     const supply = bus.supply || bus.capacity ? `<p>${esc(T.supply)}: ${esc([bus.supply, bus.capacity ? num(bus.capacity) : ""].filter(Boolean).join(", "))}${bus.percent !== null ? ` · ${esc(T.busLoad(num(bus.sum), num(bus.capacity), bus.percent))}` : ""}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</p>` : "";
     const missing = bus.rows.length - bus.counted ? `<p class="sub">${esc(T.busMissing(bus.rows.length - bus.counted))}</p>` : "";
-    return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum) + supply + missing;
+    return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum).replace("<table>", '<table class="rnum">') + supply + missing;
   });
 
   const links = section("links", d.sections.links, L.honest, perGateway((gw) => {
@@ -432,7 +434,7 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
   return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>
 body{font:13px/1.45 system-ui,sans-serif;color:#1c1c1a;margin:24px}
 h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0 0 4px}h3{font-size:14px;font-weight:500;margin:14px 0 4px}h4{font-size:13px;font-weight:500;margin:12px 0 4px}
-.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}.gwnote{margin:0 0 4px;font-style:italic}
+.sub{color:#5f5e5a;font-size:12px}table.rnum th:last-child,table.rnum td:last-child{text-align:right;white-space:nowrap}.mono{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}.gwnote{margin:0 0 4px;font-style:italic}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;font-size:12px;border-bottom:1px solid #888;padding:5px 8px 5px 0}
 td{border-bottom:1px solid #ddd;padding:5px 8px 5px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}h2,h3,h4{break-after:avoid}
 section.sec{margin-top:24px}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}

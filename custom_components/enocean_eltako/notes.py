@@ -347,6 +347,9 @@ class Notes:
             for e in entries[:MAX_MANUAL]
             if any(e.get(k, "").strip() for k in MANUAL_FIELDS)
         ]
+        for entry in self.manual:
+            if not _WATTS.fullmatch(entry["bus_power"]):
+                entry["bus_power"] = ""  # not a number of watts
         self._save()
 
     def set_links(self, entries: list[dict[str, str]]) -> None:
