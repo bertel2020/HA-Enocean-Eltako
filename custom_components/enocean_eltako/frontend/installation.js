@@ -18,10 +18,26 @@ const GROUPS = [
   { id: "log", tabs: ["log"] },
 ];
 const SAVE_DELAY = 600; // ms after the last key
+// the columns of the device table in groups that are shown or hidden
+const COLUMN_GROUPS = {
+  place: ["location", "circuit", "fuse"],
+  bus: ["group", "bus_address", "feedback_id", "bus_power"],
+  upkeep: ["installed", "revision", "power", "note"],
+};
+const COLUMNS_KEY = "enocean_eltako_installation_columns"; // the groups shown, per browser
+const loadColumns = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COLUMNS_KEY));
+    if (Array.isArray(saved)) return new Set(saved.filter((g) => g in COLUMN_GROUPS));
+  } catch (err) {
+    // no storage: the default
+  }
+  return new Set(["place", "bus"]);
+};
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", last: {}, manage: false, group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "areas", last: {}, manage: false, columns: loadColumns(), group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -29,7 +45,7 @@ export const INSTALLATION_STYLE = `
   .installation .itop { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .installation .itop .tabs { display: flex; gap: 6px; flex: 1 1 340px; flex-wrap: wrap; }
   .installation .itools { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; }
-  .installation .ibody { padding: 12px 16px; display: grid; gap: 16px; }
+  .installation .ibody { padding: 12px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .installation h3 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
   .installation .isub { color: var(--muted); font-size: 12px; }
   .installation .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
@@ -71,6 +87,10 @@ export const INSTALLATION_STYLE = `
   .installation .itable tr.free td { color: var(--muted); background: var(--soft); font-size: 12px; padding: 3px 8px 3px 0; }
   .installation .itable td.mono, .installation .mono { font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
   .installation .itable tr.outside td { font-weight: 500; color: var(--muted); border-top: 1px solid var(--line); }
+  .installation .progress { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .installation .progress .barbg { flex: 1; max-width: 260px; height: 6px; border-radius: 3px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
+  .installation .progress .barbg i { display: block; height: 100%; background: var(--ok); }
+  .installation .cerr { font-size: 11px; color: var(--warn); padding: 2px 8px; }
   .installation .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; background: var(--soft); color: var(--muted); white-space: nowrap; }
   .installation .tag.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: inherit; }
   .installation .tag.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: inherit; }
@@ -278,7 +298,7 @@ export const installation = {
   _instDevices() {
     const t = this._t;
     const state = this._in;
-    const columns = INSTALLATION_FIELDS;
+    const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(t.inst.search)}" aria-label="${esc(t.inst.search)}">`;
     const sections = gateways(state.doc).map((gw) => {
@@ -300,7 +320,13 @@ export const installation = {
       ? `<div class="bulk"><b>${esc(t.inst.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(t.inst.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(t.inst.value)}" aria-label="${esc(t.inst.value)}"><button class="chip" data-in-act="bulk">${esc(t.inst.apply)}</button><button class="chip" data-in-act="unpick">${esc(t.inst.clearSelection)}</button></div>`
       : "";
     const paste = `<details><summary>${esc(t.inst.pasteTitle)}</summary><div style="display:grid;gap:8px;margin-top:8px"><span class="isub">${esc(t.inst.pasteHint)}</span><textarea class="paste" data-in-paste placeholder="${esc(t.inst.pastePlaceholder)}" aria-label="${esc(t.inst.pasteTitle)}">${esc(state.paste)}</textarea><div><button class="chip" data-in-act="paste">${esc(t.inst.apply)}</button> <button class="chip" data-in-act="copy-table">${esc(t.inst.copyTable)}</button> <span class="isub">${esc(state.pasteResult)}</span></div></div></details>`;
-    return `${search}${bulk}${sections.join("")}${paste}`;
+    const groupChips = Object.keys(COLUMN_GROUPS).map((g) => `<button class="chip" data-in-columns="${g}" aria-pressed="${state.columns.has(g)}">${esc(t.inst.columnGroups[g])}</button>`).join("");
+    const all = gateways(state.doc).flatMap((gw) => gw.devices).filter((d) => !d.virtual);
+    const placed = all.filter((d) => d.location).length;
+    const progress = all.length
+      ? `<div class="progress"><span>${esc(t.inst.progress(placed, all.length))}</span><div class="barbg"><i style="width:${Math.round((placed / all.length) * 100)}%"></i></div><span>${Math.round((placed / all.length) * 100)} %</span></div>`
+      : "";
+    return `${progress}<div class="itools" style="align-items:center"><span class="isub">${esc(t.inst.columns)}</span>${groupChips}<span style="flex:1"></span>${search}</div>${bulk}${sections.join("")}${paste}`;
   },
 
   _instLinks() {
@@ -388,6 +414,19 @@ export const installation = {
       this._instRemoveLink(del.dataset.inGw, del.dataset.inDel);
       return;
     }
+    const columns = e.target.closest("[data-in-columns]");
+    if (columns) {
+      const name = columns.dataset.inColumns;
+      if (state.columns.has(name)) state.columns.delete(name);
+      else state.columns.add(name);
+      try {
+        localStorage.setItem(COLUMNS_KEY, JSON.stringify([...state.columns]));
+      } catch (err) {
+        // not saved: shown for this visit
+      }
+      this._renderInstallation();
+      return;
+    }
     const group = e.target.closest("[data-in-group]");
     if (group) {
       state.group = group.dataset.inGroup;
@@ -451,12 +490,32 @@ export const installation = {
     const cell = e.target.closest("[data-in-field]");
     if (!cell) return;
     cell.classList.remove("bad");
+    cell.nextElementSibling?.matches(".cerr") && cell.nextElementSibling.remove();
     clearTimeout(cell._saving);
+    const problem = this._instProblem(cell.dataset.inField, cell.value);
+    if (problem) {
+      this._instMark(cell, this._t.inst.errors[problem]);
+      return; // nothing goes to the server while the value is wrong
+    }
     cell._saving = setTimeout(() => this._instSaveCell(cell), SAVE_DELAY);
   },
 
   _instDevice(entryId, key) {
     return gateways(this._in.doc).find((g) => g.entry_id === entryId)?.devices.find((d) => d.key === key);
+  },
+
+  _instProblem(field, value) {
+    // a value the server would refuse, caught while typing; "" is always fine (it clears the field)
+    const text = value.trim();
+    if (!text) return "";
+    if (field === "bus_address" && !(/^\d{1,3}$/.test(text) && Number(text) >= 1 && Number(text) <= 126)) return "bus_address";
+    if (field === "bus_power" && !/^\d{1,4}([.,]\d{1,3})?$/.test(text)) return "bus_power";
+    return "";
+  },
+
+  _instMark(cell, message) {
+    cell.classList.add("bad");
+    if (!cell.nextElementSibling?.matches(".cerr")) cell.insertAdjacentHTML("afterend", `<div class="cerr" role="alert">${esc(message)}</div>`);
   },
 
   async _instSaveCell(cell) {
@@ -470,7 +529,7 @@ export const installation = {
       this.shadowRoot.querySelectorAll(`#installation [data-in-gw="${CSS.escape(entryId)}"][data-in-key="${CSS.escape(key)}"][data-in-field="${field}"]`).forEach((other) => {
         if (other !== cell && other.value !== cell.value) other.value = cell.value;
       });
-    } else cell.classList.add("bad"); // refused: a date that is none, or the device is gone
+    } else this._instMark(cell, this._t.inst.errors.refused); // refused: a date that is none, or the device is gone
   },
 
   async _instSend(entryId, items) {
