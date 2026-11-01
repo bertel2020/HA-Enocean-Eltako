@@ -35,6 +35,9 @@ _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 MAX_MANUAL = 200  # entries per gateway
 MANUAL_FIELDS = {"name": 80, "address": 40, "function": 200}
 MAX_LOG = 500  # events per gateway
+MAX_LINKS = 500  # links entered by hand per gateway
+# the fields of a link entered by hand and their longest text
+LINK_FIELDS = {"from_id": 40, "from_name": 80, "to_key": 64, "to_name": 80, "role": 60, "learn": 80}
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
 
 
@@ -70,6 +73,10 @@ class Notes:
         self.manual: list[dict[str, str]] = []
         # what happened to the installation, oldest first: {"time", "kind", "device", "detail"}
         self.log: list[dict[str, str]] = []
+        # links entered by hand, {id, from_id, from_name, to_key, to_name, role, learn}
+        self.links: list[dict[str, str]] = []
+        # what the user adds to a link that is derived (assigned, declared): its learn position
+        self.link_info: dict[str, dict[str, str]] = {}
         # the devices as they were at the last load, to tell what was added or removed since
         self.known: dict[str, dict[str, Any]] = {}
 
@@ -85,6 +92,8 @@ class Notes:
         self.manual = [{k: str(v) for k, v in e.items()} for e in stored.get("manual", [])]
         self.log = [{k: str(v) for k, v in e.items()} for e in stored.get("log", [])]
         self.known = {str(k): dict(v) for k, v in stored.get("known", {}).items()}
+        self.links = [{k: str(v) for k, v in e.items()} for e in stored.get("links", [])]
+        self.link_info = {str(k): dict(v) for k, v in stored.get("link_info", {}).items()}
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -94,12 +103,14 @@ class Notes:
             "manual": self.manual,
             "log": self.log,
             "known": self.known,
+            "links": self.links,
+            "link_info": self.link_info,
         }
 
     def _save(self) -> None:
         self._store.async_delay_save(self._data, SAVE_DELAY)
 
-    def add_log(self, kind: str, device: str = "", detail: str = "") -> None:
+    def add_log(self, kind: str, device: str = "", detail: str = "", profile: str = "") -> None:
         """Note an event of the installation (not every edit): the newest MAX_LOG are kept."""
         self.log.append(
             {
@@ -107,6 +118,7 @@ class Notes:
                 "kind": kind,
                 "device": device,
                 "detail": detail,
+                "profile": profile,
             }
         )
         del self.log[:-MAX_LOG]
@@ -170,11 +182,11 @@ class Notes:
         """A device's note."""
         self.set_fields(key, {"note": text[:MAX_NOTE]})
 
-    def import_from(self, gateway: dict[str, Any], *, overwrite: bool) -> tuple[int, int]:
+    def import_from(self, gateway: dict[str, Any], *, overwrite: bool) -> tuple[int, int, int]:
         """Take over the notes and manual entries of a documentation export of this gateway.
 
         Without overwrite only what is empty here is filled in. Returns how many notes
-        (gateway and devices) and manual entries were taken.
+        (gateway and devices), manual entries and links (entered ones, learn positions) were taken.
         """
         notes = 0
         if (text := str(gateway.get("note") or "").strip()) and (overwrite or not self.gateway):
@@ -216,7 +228,41 @@ class Notes:
                 }
             )
         self.set_manual([*self.manual, *taken])
-        return notes, len(taken)
+        links = self._import_links(gateway.get("links", []), overwrite=overwrite)
+        return notes, len(taken), links
+
+    def _import_links(self, links: list[Any], *, overwrite: bool) -> int:
+        """Entered links not here yet, and learn positions of derived links that have none."""
+        if overwrite:
+            self.links = []
+        seen = {
+            (e["from_id"], e["from_name"], e["to_key"], e["to_name"], e["role"]) for e in self.links
+        }
+        added, taken = [], 0
+        for link in (e for e in links if isinstance(e, dict)):
+            if link.get("source") == "entered":
+                fields = {k: str(link.get(k) or "") for k in LINK_FIELDS}
+                signature = (
+                    fields["from_id"],
+                    fields["from_name"],
+                    fields["to_key"],
+                    fields["to_name"],
+                    fields["role"],
+                )
+                if signature not in seen:
+                    seen.add(signature)
+                    added.append({"id": uuid.uuid4().hex[:8], **fields})
+            elif (learn := str(link.get("learn") or "").strip()) and (
+                overwrite or not self.link_info.get(str(link.get("key")), {}).get("learn")
+            ):
+                if (key := str(link.get("key") or "")) and self.link_info.get(key, {}).get(
+                    "learn"
+                ) != learn:
+                    self.set_link_learn(key, learn)
+                    taken += 1
+        if added or overwrite:
+            self.set_links([*self.links, *added])
+        return taken + len(added)
 
     def orphans(self, keys: set[str]) -> set[str]:
         """Keys of notes and test results whose device is gone (they return with the address)."""
@@ -241,6 +287,35 @@ class Notes:
             if any(e.get(k, "").strip() for k in MANUAL_FIELDS)
         ]
         self._save()
+
+    def set_links(self, entries: list[dict[str, str]]) -> None:
+        """Replace the links entered by hand; one needs a source and a target to stay."""
+        links = []
+        for e in entries[:MAX_LINKS]:
+            link = {"id": e["id"], **{k: e.get(k, "").strip()[:n] for k, n in LINK_FIELDS.items()}}
+            if (link["from_id"] or link["from_name"]) and (link["to_key"] or link["to_name"]):
+                links.append(link)
+        self.links = links
+        self._save()
+
+    def set_link_learn(self, key: str, learn: str) -> None:
+        """The learn position written down for a derived link (an empty text clears it)."""
+        if learn := learn.strip()[: LINK_FIELDS["learn"]]:
+            self.link_info[key] = {"learn": learn}
+        else:
+            self.link_info.pop(key, None)
+        self._save()
+
+    def last_teach_in(self, device: str, profile: str) -> str | None:
+        """When a teach-in of this sender profile was last sent from here."""
+        for event in reversed(self.log):
+            if (
+                event["kind"] == "teach_in"
+                and event["device"] == device
+                and event.get("profile") == profile
+            ):
+                return event["time"]
+        return None
 
     def set_test(self, key: str, results: dict[str, str]) -> None:
         self.tests[key] = {

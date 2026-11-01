@@ -135,6 +135,8 @@ async def test_notes_are_saved_shown_and_kept(
         "manual": [],
         "log": [],
         "known": {"05-00-00-12": {"name": "Waschmaschine", "senders": []}},
+        "links": [],
+        "link_info": {},
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -261,7 +263,7 @@ async def test_notes_come_back_from_an_export(
 
     reply = await call(1, export)
     assert reply["result"]["gateways"] == [
-        {"title": entry.title, "matched": True, "notes": 2, "manual": 1}
+        {"title": entry.title, "matched": True, "notes": 2, "manual": 1, "links": 0}
     ]
     assert notes.gateway == "Keller" and notes.devices == {"05-00-00-12": {"note": "Schrank 2"}}
     assert [(e["name"], e["address"]) for e in notes.manual] == [("Taster", "00-12-34-56")]
@@ -274,6 +276,7 @@ async def test_notes_come_back_from_an_export(
         "matched": True,
         "notes": 0,
         "manual": 0,
+        "links": 0,
     }
     assert notes.devices["05-00-00-12"] == {"note": "Schrank 3"} and len(notes.manual) == 1
     assert (await call(3, export, overwrite=True))["success"]
@@ -467,3 +470,118 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     # a stored version 2 is read as it is
     await notes.async_flush()
     assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 2
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-C1",
+                "Licht Flur",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-91"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-92"},
+                ],
+                rocker_on_button="a0",
+                rocker_off_button="a1",
+                wall_switch="05-10-AA-01",
+                wall_on_button="a0",
+                wall_off_button="a1",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_links_are_assigned_declared_or_entered_each_with_its_evidence(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.set_test("05-10-A2-C1", {"central": "confirmed", "rocker": "unconfirmed"})
+    notes.add_log("teach_in", "05-10-A2-C1", "Licht Flur: central", "central")
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, type_: str, **fields):
+        await client.send_json(
+            {"id": msg_id, "type": f"enocean_eltako/{type_}", "entry_id": entry.entry_id, **fields}
+        )
+        return await client.receive_json()
+
+    def links():
+        return {link["key"]: link for link in collect(hass)["gateways"][0]["links"]}
+
+    shown = links()
+    central = shown["assigned|05-10-A2-C1|central"]
+    assert (central["from_id"], central["to_id"], central["status"]) == (
+        "FF-B7-44-91",
+        "05-10-A2-C1",
+        "confirmed",
+    )
+    assert central["teach_in"] is not None and central["tested"] is not None
+    rocker = shown["assigned|05-10-A2-C1|rocker"]
+    assert rocker["status"] == "no_answer" and rocker["teach_in"] is None
+    wall = shown["declared|05-10-A2-C1|05-10-AA-01"]
+    assert (wall["status"], wall["role"], wall["from_kind"]) == ("declared", "a0 / a1", "wall")
+
+    # an entered link: a button taught in directly, written down; one without a target is dropped
+    entered = [
+        {
+            "id": "k1",
+            "from_id": "00-12-34-56",
+            "from_name": "Taster Flur links",
+            "to_key": "05-10-A2-C1",
+            "role": "rocker",
+            "learn": "Funktion 0",
+        },
+        {"id": "k2", "from_id": "00-99-99-99"},  # nowhere to
+    ]
+    reply = await call(1, "set_links", links=entered)
+    assert reply["success"]
+    manual = links()["entered|k1"]
+    assert (manual["source"], manual["status"]) == ("entered", "entered")
+    assert (manual["to_id"], manual["to_name"]) == ("05-10-A2-C1", "Licht Flur")  # found by address
+    assert "entered|k2" not in links()
+    entered[0]["to_key"] = ""
+    entered[0]["to_name"] = "Fremder Aktor"
+    assert (await call(2, "set_links", links=entered))["success"]
+    assert links()["entered|k1"]["to_name"] == "Fremder Aktor"
+
+    # the learn position of a derived link
+    key = "assigned|05-10-A2-C1|central"
+    assert (await call(3, "set_link_learn", link_key=key, learn=" Funktion 45 "))["success"]
+    assert links()[key]["learn"] == "Funktion 45"
+    assert (await call(4, "set_link_learn", link_key=key, learn=""))["success"]
+    assert links()[key]["learn"] == ""
+    assert (await call(5, "set_links", links=[{"id": "x", "learn": "y" * 81}]))["success"] is False
+    await client.send_json(
+        {"id": 6, "type": "enocean_eltako/set_links", "entry_id": "unknown", "links": []}
+    )
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+    await client.send_json(
+        {
+            "id": 7,
+            "type": "enocean_eltako/set_link_learn",
+            "entry_id": "unknown",
+            "link_key": "a",
+            "learn": "",
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+
+    # an export brings the entered link and the learn positions back, without duplicates
+    notes.set_link_learn(key, "Funktion 45")
+    export = collect(hass)
+    notes.set_links([])
+    notes.set_link_learn(key, "")
+    await client.send_json({"id": 8, "type": "enocean_eltako/import_documentation", "doc": export})
+    imported = (await client.receive_json())["result"]["gateways"][0]
+    assert imported["links"] == 2  # the entered link and the learn position
+    assert [e["to_name"] for e in notes.links] == ["Fremder Aktor"]
+    assert notes.link_info[key] == {"learn": "Funktion 45"}
+    await client.send_json({"id": 9, "type": "enocean_eltako/import_documentation", "doc": export})
+    again = (await client.receive_json())["result"]["gateways"][0]
+    assert again["links"] == 0 and len(notes.links) == 1  # nothing twice

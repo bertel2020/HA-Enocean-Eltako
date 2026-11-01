@@ -303,7 +303,13 @@ the learn function), power (mains, battery type) and a note. Select rows to set 
 them, or **paste from a spreadsheet**: a header row, an Address column and columns named like the
 fields; empty cells change nothing, and **Copy the table** gives the same layout to edit and paste
 back. **Log** lists what happened: devices added or removed, senders assigned or removed, teach-ins,
-sender tests and imports. Print, CSV, JSON and import are buttons of the tab.
+sender tests and imports. **Links** shows who is taught into which actuator, by actuator or by sender. Every link says where
+it comes from: **assigned** (a sender Home Assistant holds for the actuator, with when its teach-in
+was sent and what the last sender test said), **declared** (the wall switch set in the device's
+options) or **entered** (written down by you: a button taught in directly, an actuator of another
+system). Each link has a field for its learn position. What an actuator has really learned is
+stored in the actuator and cannot be read, so the tab says so; a link that was never tested says
+"not tested". Print, CSV, JSON and import are buttons of the tab.
 
 **Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation
 documentation**, **Documentation as CSV** and **Documentation as JSON**. All three cover every

@@ -321,7 +321,13 @@ Batterietyp) und eine Notiz. Mit markierten Zeilen setzt du ein Feld für alle a
 **fügst aus einer Tabellenkalkulation ein**: eine Kopfzeile, eine Spalte Adresse und Spalten, die
 wie die Felder heißen; leere Zellen ändern nichts, und **Tabelle kopieren** liefert dasselbe Layout
 zum Bearbeiten und Zurückfügen. **Protokoll** listet, was passiert ist: Geräte hinzugefügt oder
-entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. Drucken, CSV, JSON und
+entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. **Verbindungen** zeigt, wer in welchen Aktor eingelernt ist, nach Aktor oder nach Sender. Jede
+Verbindung sagt, woher sie kommt: **vergeben** (ein Sender, den Home Assistant für den Aktor hält,
+mit dem Zeitpunkt seines Einlernens und dem Ergebnis des letzten Sendertests), **angegeben** (der
+Wandschalter aus den Optionen des Geräts) oder **eingetragen** (von dir notiert: ein direkt
+eingelernter Taster, ein Aktor eines anderen Systems). Jede Verbindung hat ein Feld für ihre
+Lernposition. Was ein Aktor wirklich gelernt hat, steckt im Aktor und lässt sich nicht lesen, das
+sagt der Reiter auch; eine nie getestete Verbindung heißt „nicht getestet“. Drucken, CSV, JSON und
 Import sind Knöpfe des Reiters.
 
 **Installationsdokumentation:** In der Geräteansicht bietet das ⋮-Menü **Installationsdokumentation

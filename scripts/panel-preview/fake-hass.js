@@ -153,6 +153,12 @@ export function fakeHass(params = new URLSearchParams()) {
                 device({ name: "Fensterkontakt Küche", key: "sub3", id: "05-22-22-22", eep: "D5-00-01:std", area: "Küche", power: "CR2032", note: english ? "battery changed 03/2026" : "Batterie gewechselt 03/2026" }),
               ],
               pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central", state: "assigned" }, { id: "FF-B7-44-86", device: null, profile: "central", state: "blocked" }] }],
+              links: [
+                { key: "assigned|05-10-A2-B3|central", source: "assigned", from_kind: "ha", from_id: "FF-B7-44-81", from_name: "", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "central", learn: "", status: "confirmed", teach_in: "2026-10-26T09:14:00+00:00", tested: "2026-10-26T09:15:00+00:00" },
+                { key: "assigned|05-10-A2-B3|rocker", source: "assigned", from_kind: "ha", from_id: "FF-B7-44-83", from_name: "", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "rocker", learn: "", status: "no_answer", teach_in: null, tested: "2026-10-26T09:15:00+00:00" },
+                { key: "declared|05-10-A2-B3|05-10-AA-01", source: "declared", from_kind: "wall", from_id: "05-10-AA-01", from_name: "", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "a0 / a1", learn: "", status: "declared", teach_in: null, tested: null },
+                { key: "entered|k1", id: "k1", source: "entered", from_kind: "entered", from_id: "00-12-34-56", from_name: english ? "Hallway button left" : "Taster Flur links", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "rocker", learn: english ? "function 0" : "Funktion 0", status: "entered", teach_in: null, tested: null },
+              ],
               log: [
                 { time: "2026-10-26T09:12:00+00:00", kind: "device_added", device: "05-10-A2-B3", detail: "Licht Diele" },
                 { time: "2026-10-26T09:14:00+00:00", kind: "teach_in", device: "05-10-A2-B3", detail: "Licht Diele: central" },
@@ -160,6 +166,9 @@ export function fakeHass(params = new URLSearchParams()) {
               ],
             }],
           };
+        case "enocean_eltako/set_links":
+        case "enocean_eltako/set_link_learn":
+          return {};
         case "enocean_eltako/set_fields":
           return { saved: msg.items.length, rejected: [] };
         case "enocean_eltako/sender_pools":
