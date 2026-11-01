@@ -601,6 +601,7 @@ const STYLE = `
   .empty .ico { display: grid; place-items: center; width: 64px; height: 64px; margin-bottom: 6px; border-radius: 50%;
     color: var(--accent); background: var(--accent-soft); }
   .empty .ico svg { width: 30px; height: 30px; }
+  .senders .empty { padding: 24px 16px; }
   .empty b { color: var(--text); font-weight: 500; font-size: 16px; }
   .empty span { max-width: 420px; }
   .empty .chip { margin-top: 8px; }
@@ -2709,7 +2710,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const $ = (id) => this.shadowRoot.getElementById(id);
     const pool = this._pools.find((p) => p.id === this._pool);
-    $("sidTools").hidden = $("sidState").hidden = !pool;
+    // nothing to filter in a pool without senders
+    $("sidTools").hidden = $("sidState").hidden = !pool || !pool.rows.length;
     if (!pool) {
       this._replace($("sidTop"), this._noGateway());
       this._replace($("sidList"), "");

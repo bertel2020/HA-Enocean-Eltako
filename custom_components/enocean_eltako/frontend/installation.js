@@ -108,8 +108,8 @@ export const INSTALLATION_STYLE = `
   .installation .seg button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
   .installation .seg button + button { border-left: 1px solid var(--line); }
   .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-  .installation .empty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: 13px; }
-  .installation .empty p { margin: 0; max-width: 60ch; }
+  .installation .gwempty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: 13px; }
+  .installation .gwempty p { margin: 0; max-width: 60ch; }
   .installation details.poolbox { border-bottom: 1px solid var(--line); }
   .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .installation details.poolbox > summary .isub { font-weight: 400; }
@@ -247,7 +247,7 @@ export const installation = {
   _instEmpty(gw) {
     // a gateway without devices says what to do next
     const t = this._t.inst;
-    return `<div class="empty"><p>${esc(t.emptyGateway)}</p><button class="chip" data-open-integration="${esc(gw.entry_id)}">${esc(t.addDevice)}</button></div>`;
+    return `<div class="gwempty"><p>${esc(t.emptyGateway)}</p><button class="chip" data-open-integration="${esc(gw.entry_id)}">${esc(t.addDevice)}</button></div>`;
   },
 
   _instPerGateway(build) {
