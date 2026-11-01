@@ -184,6 +184,7 @@ export const TEXT = {
     dIdentity: "Identity", dRadio: "Radio", dSenders: "Sender IDs", dCommands: "Commands", dSettings: "Settings",
     dEntities: (n) => `Entities (${n})`,
     doc: {
+      notes: "Notes", notePlaceholder: "Where it sits, terminal, fuse, battery date …", gatewayNotePlaceholder: "Note on this gateway: place, repeater, wiring …", noteFailed: "The note could not be saved.",
       print: "Print installation documentation", csvItem: "Documentation as CSV", jsonItem: "Documentation as JSON",
       title: "Installation documentation", generated: (when) => `State of ${when}. What Home Assistant knows, not what the actuators have learned.`,
       devices: "Devices", pool: "Sender ID pool", hidden: "Hidden senders", virtual: "Virtual sensor", deleted: "Deleted device",
@@ -479,6 +480,7 @@ export const TEXT = {
     dIdentity: "Identität", dRadio: "Funk", dSenders: "Sender-IDs", dCommands: "Befehle", dSettings: "Einstellungen",
     dEntities: (n) => `Entitäten (${n})`,
     doc: {
+      notes: "Notizen", notePlaceholder: "Einbauort, Klemme, Sicherung, Batteriedatum …", gatewayNotePlaceholder: "Notiz zu diesem Gateway: Standort, Repeater, Verdrahtung …", noteFailed: "Die Notiz konnte nicht gespeichert werden.",
       print: "Installationsdokumentation drucken", csvItem: "Dokumentation als CSV", jsonItem: "Dokumentation als JSON",
       title: "Installationsdokumentation", generated: (when) => `Stand ${when}. Was Home Assistant weiß, nicht was die Aktoren gelernt haben.`,
       devices: "Geräte", pool: "Sender-ID-Pool", hidden: "Ausgeblendete Sender", virtual: "Virtueller Sensor", deleted: "Gelöschtes Gerät",

@@ -299,7 +299,11 @@ gateway: devices with address, EEP, area and wall switch, the senders Home Assis
 (with the teach-in kind and the last sender test since the restart) and the sender ID pool,
 including IDs that stay blocked after a device was deleted. The printout has one gateway per
 page and a note on what Home Assistant cannot know: what an actuator has really learned, and
-buttons taught in directly. The JSON is versioned and also meant for support. If the browser
+buttons taught in directly. Each device's details have a **Notes** field and each gateway's
+details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you
+type, kept in a store of its own per gateway and part of Home Assistant's backup, shown in all
+three outputs. A device's note belongs to its address, so it comes back if you add the device
+again. The JSON is versioned and also meant for support. If the browser
 blocks the print window, the page is saved as a file to open and print.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.

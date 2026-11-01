@@ -80,3 +80,59 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
         "state": "blocked",
     }
     assert shown["hidden_senders"] == []
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_notes_are_saved_shown_and_kept(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+    hass_storage,
+) -> None:
+    from homeassistant.helpers.storage import Store
+
+    entry, _server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, **fields):
+        await client.send_json({"id": msg_id, "entry_id": entry.entry_id, **fields})
+        return await client.receive_json()
+
+    kind = "enocean_eltako/set_note"
+    assert (await call(1, type=kind, text="Keller, rechts"))["success"]
+    key = device.subentry.subentry_id
+    assert (await call(2, type=kind, device=key, text="  Schrank 2, Platz 4  "))["success"]
+    assert (await call(3, type=kind, device="nope", text="x"))["error"]["code"] == "unknown_device"
+    assert (await call(4, type=kind, text="x", **{"entry_id": "unknown"}))["error"][
+        "code"
+    ] == "not_found"
+    too_long = await call(5, type=kind, text="x" * 501)
+    assert too_long["success"] is False
+
+    (gateway_doc,) = collect(hass)["gateways"]
+    assert gateway_doc["note"] == "Keller, rechts"
+    assert gateway_doc["devices"][0]["note"] == "Schrank 2, Platz 4"
+    details = await call(6, type="enocean_eltako/device_details", device=key)
+    assert details["result"]["note"] == "Schrank 2, Platz 4"
+
+    # unloading writes what waits for its delayed save; a reload reads it back
+    await hass.config_entries.async_unload(entry.entry_id)
+    stored = await Store(hass, 1, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    assert stored == {
+        "gateway": "Keller, rechts",
+        "devices": {"05-00-00-12": "Schrank 2, Platz 4"},
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    (again,) = collect(hass)["gateways"]
+    assert again["note"] == "Keller, rechts"
+
+    # an empty text removes a device's note
+    device = next(iter(entry.runtime_data.devices.values()))
+    entry.runtime_data.hub.notes[entry.entry_id].set_device("05-00-00-12", "")
+    assert collect(hass)["gateways"][0]["devices"][0]["note"] == ""

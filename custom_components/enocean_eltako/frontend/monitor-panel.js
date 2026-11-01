@@ -526,6 +526,7 @@ const STYLE = `
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .dev-detail .acts-row { margin-top: 8px; }
+  input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
   .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0; }
@@ -1361,6 +1362,15 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._send();
     });
     $("closeNotice").addEventListener("click", () => this._notice(""));
+    const saveNote = (e) => {
+      // a note is saved a moment after the last key; the list is not redrawn under the field
+      const field = e.target.closest?.("[data-note-device], [data-note-gateway-only]");
+      if (!field) return;
+      clearTimeout(field._saving);
+      field._saving = setTimeout(() => this._saveNote(field), 600);
+    };
+    $("devices").addEventListener("input", saveNote);
+    $("cards").addEventListener("input", saveNote);
     $("cards").addEventListener("click", (e) => {
       const button = e.target.closest("[data-gateway-action]");
       if (!button) return;
@@ -2021,6 +2031,26 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._download(csv([head, ...lines]), "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
   }
 
+  async _saveNote(field) {
+    const msg = { type: "enocean_eltako/set_note", text: field.value };
+    if (field.dataset.noteDevice) Object.assign(msg, { entry_id: field.dataset.noteGateway, device: field.dataset.noteDevice });
+    else msg.entry_id = field.dataset.noteGatewayOnly;
+    try {
+      await this._hass.callWS(msg);
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+      return;
+    }
+    // what the panel shows next time it asks
+    if (field.dataset.noteDevice) {
+      const known = this._devDetails.get(field.dataset.noteDevice);
+      if (known) known.note = field.value;
+    } else {
+      const gateway = this._gateways.find((g) => g.entry_id === field.dataset.noteGatewayOnly);
+      if (gateway) gateway.note = field.value;
+    }
+  }
+
   async _documentation(kind) {
     // the installation documentation of every gateway: a page to print, a CSV or the JSON
     this._notice("");
@@ -2206,7 +2236,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
-          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off"><div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
         </article>`;
       })
       .join(""));
@@ -3214,7 +3244,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const actions = `<div class="dact">${d.page ? `<button class="chip" data-device-page="${esc(d.page)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${
       d.quiet && d.time == null ? "" : `<button class="chip" data-only="${esc(only)}">${svg(ICON.filter)}${esc(t.showTelegrams)}</button>`
     }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}</div>`;
-    return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders)}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntities(x.entities.length), entities)}${actions}</div>`;
+    return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders)}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntities(x.entities.length), entities)}${group(t.doc.notes, `<input class="note" data-note-device="${esc(d.devKey)}" data-note-gateway="${esc(x.entry_id)}" value="${esc(x.note)}" maxlength="500" placeholder="${esc(t.doc.notePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">`)}${actions}</div>`;
   }
 
   _modelPicker(key, x) {
@@ -3323,7 +3353,8 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _hold(name, container, background) {
     // a new telegram or status update does not wipe text the user is selecting (to copy an ID)
-    this._stale[name] = background && this._selecting(container);
+    const typing = this.shadowRoot.activeElement?.matches?.("input.note") && container.contains(this.shadowRoot.activeElement);
+    this._stale[name] = background && (typing || this._selecting(container)); // or typing a note
     return this._stale[name];
   }
 

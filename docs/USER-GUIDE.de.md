@@ -315,8 +315,12 @@ Gateway: Geräte mit Adresse, EEP, Bereich und Wandschalter, die von Home Assist
 Sender (mit Art des Einlernens und dem letzten Sendertest seit dem Neustart) und den
 Sender-ID-Pool, auch IDs, die nach dem Löschen eines Geräts blockiert bleiben. Der Ausdruck hat
 pro Gateway eine Seite und einen Hinweis darauf, was Home Assistant nicht wissen kann: was ein
-Aktor wirklich gelernt hat und direkt eingelernte Taster. Das JSON ist versioniert und auch für
-den Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
+Aktor wirklich gelernt hat und direkt eingelernte Taster. In den Details jedes Geräts gibt es ein Feld **Notizen** und in den
+Details jedes Gateways ein eigenes Notizfeld (Ort, Klemme, Sicherung, Batteriedatum, Repeater):
+gespeichert beim Tippen, in einem eigenen Speicher pro Gateway und Teil des Home-Assistant-
+Backups, in allen drei Ausgaben enthalten. Die Notiz eines Geräts gehört zu seiner Adresse, sie
+ist also wieder da, wenn du das Gerät neu anlegst. Das JSON ist versioniert und auch für den
+Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
 gespeichert, die du öffnest und druckst.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
