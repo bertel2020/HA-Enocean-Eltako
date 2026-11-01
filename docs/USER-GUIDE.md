@@ -311,30 +311,36 @@ system). Each link has a field for its learn position. What an actuator has real
 stored in the actuator and cannot be read, so the tab says so; a link that was never tested says
 "not tested". Print, CSV, JSON and import are buttons of the tab.
 
-**Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation
-documentation**, **Documentation as CSV** and **Documentation as JSON**. All three cover every
-gateway: devices with address, EEP, area and wall switch, the senders Home Assistant assigned
-(with the teach-in kind and the result of the last sender test, which is kept) and the sender ID pool,
-including IDs that stay blocked after a device was deleted, and the unknown senders the gateway
-heard since the restart but that are not set up. With several gateways the printout opens with an overview page, one line per gateway. It has one gateway per
-page and a note on what Home Assistant cannot know: what an actuator has really learned, and
-buttons taught in directly. Each device's details have a **Notes** field and each gateway's
-details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you
-type, kept in a store of its own per gateway and part of Home Assistant's backup, shown in all
-three outputs. A device's note belongs to its address, so it comes back if you add the device
-again; a gateway's details offer to forget the notes of deleted devices. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
-function): buttons taught in directly, devices of other systems, anything Home Assistant
-cannot see. They are for the documentation only and appear in all three outputs. The JSON is
-versioned and also meant for support. **Import notes from JSON** reads such a file back, for
-example after a gateway swap: gateways are matched by base ID, devices by address, and only what
-is still empty is filled in. It imports notes and further devices, never the devices themselves. If a swapped gateway has another
-base ID, the panel offers to import the one gateway of the file that found no match into the one
-gateway set up here that got nothing. The installation keeps a short event log per gateway (devices
-added or removed, senders assigned or removed, teach-ins, sender tests, imports). The menu also offers a denser **cabinet sheet** (landscape, one table per gateway without the
-pool and the heard senders) to hang in the distribution board. It points to the learn function
-table instead of naming one, as the right function depends on the actuator's type and revision.
-If the browser
-blocks the print window, the page is saved as a file to open and print.
+**Outputs:** the buttons of the Installation tab (and the ⋮ menu of the Devices view) give:
+
+- **Print**: one self-contained page with sections you switch on or off above it (they are not
+  printed): **Handover** (every device with address, EEP, senders and the typed fields),
+  **Cabinet** (devices by place, with circuit, fuse, revision and power), **Links**, a
+  **checklist for a new gateway**, **Sender IDs** (pool with blocked IDs, further devices, unknown
+  senders heard since the restart) and the **Log**. With several gateways it opens with an
+  overview. It ends with a note on what Home Assistant cannot know. If the browser blocks the print
+  window, the page is saved as a file to open and print.
+- **CSV** of the devices (one row per sender) and **Links as CSV**.
+- **JSON** (version 2: typed fields, links and the log; the import still reads version 1).
+
+The checklist is for moving to a radio gateway with another base ID: its sender IDs are new and
+the actuators know only the old ones, so each assigned sender has to be taught in again. It lists
+them, each with its learn position if you wrote one down, and points to the learn function table
+(`docs/teach_in.md`), as the right function depends on the actuator's type and revision. Buttons
+taught in directly and wall switches are not affected.
+
+**Notes and further devices:** each device's details have a **Notes** field, each gateway's
+details a note field of its own and an editor for **Further devices** (name, ID, function:
+buttons taught in directly, devices of other systems). Saved as you type, kept in a store of its
+own per gateway, part of Home Assistant's backup. A device's fields belong to its address, so they
+come back if you add the device again; a gateway's details offer to forget those of deleted
+devices.
+
+**Import notes from JSON** (Installation tab) reads an export back, for example for a new
+gateway: gateways are matched by base ID, devices by address, and only what is still empty is
+filled in. Fields, further devices, entered links and learn positions come along, never the
+devices themselves. If a gateway has another base ID, the panel offers to import the one gateway of
+the file that found no match into the one set up here that got nothing.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.
 

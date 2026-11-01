@@ -10,6 +10,8 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- A **checklist for a new gateway** in the printout: every assigned sender to teach in again when a radio gateway with another base ID takes over.
+- **Links as CSV**, and the JSON export is now version 2 (typed fields, links, the log); the import still reads version 1.
 - **Links** in the Installation tab: who is taught into which actuator, by actuator or by sender, each link marked as assigned, declared (wall switch option) or entered by you, with the teach-in time, the last sender test and a learn position. The JSON export carries them and the import takes entered links and learn positions back.
 - The new **Installation** tab of the panel: devices by area or place, a table with typed fields (place, circuit, fuse, installed, revision, power, note) edited in place, for a selection or pasted from a spreadsheet, and the event log.
 - The installation keeps an **event log** per gateway: devices added or removed, senders assigned or removed, teach-ins, sender tests and imports.
@@ -17,6 +19,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- The printout is **one page with sections** you switch on or off above it (handover, cabinet, links, checklist, sender IDs, log); it replaces the separate cabinet sheet.
 - A device's notes are now typed fields (store version 2, migrated from version 1 on first load); exports and the import carry all of them.
 
 #### Fixed
@@ -27,6 +30,8 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Eine **Checkliste für ein neues Gateway** im Ausdruck: jeder vergebene Sender, der neu einzulernen ist, wenn ein Funkgateway mit anderer Base-ID übernimmt.
+- **Verbindungen als CSV**, und der JSON-Export ist jetzt Version 2 (typisierte Felder, Verbindungen, Protokoll); der Import liest weiter Version 1.
 - **Verbindungen** im Reiter Installation: wer in welchen Aktor eingelernt ist, nach Aktor oder nach Sender, jede als vergeben, angegeben (Wandschalter-Option) oder von dir eingetragen markiert, mit Einlernzeitpunkt, letztem Sendertest und Lernposition. Der JSON-Export enthält sie, der Import übernimmt eingetragene Verbindungen und Lernpositionen.
 - Der neue Reiter **Installation** im Panel: Geräte nach Bereich oder Ort, eine Tabelle mit typisierten Feldern (Ort, Stromkreis, Sicherung, Eingebaut, Revision, Versorgung, Notiz), direkt bearbeitbar, für eine Auswahl oder aus einer Tabellenkalkulation eingefügt, und das Ereignisprotokoll.
 - Die Installation führt ein **Ereignisprotokoll** pro Gateway: Geräte hinzugefügt oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe.
@@ -34,6 +39,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- Der Ausdruck ist **eine Seite mit Abschnitten**, die du oben ein- oder ausschaltest (Übergabe, Schaltschrank, Verbindungen, Checkliste, Sender-IDs, Protokoll); sie ersetzt das eigene Schaltschrank-Blatt.
 - Die Notizen eines Geräts sind jetzt typisierte Felder (Speicherversion 2, beim ersten Laden aus Version 1 überführt); Exporte und der Import enthalten alle.
 
 #### Behoben

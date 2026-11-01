@@ -92,6 +92,8 @@ export function csv(rows) {
 
 // ---- installation documentation (the structure of the documentation websocket command) ------------
 
+const FIELD_KEYS = ["location", "circuit", "fuse", "installed", "revision", "power", "note"];
+
 function docSenderText(s, t, profile) {
   const kind = s.ute ? t.teachUte : t.teachTelegram;
   const test = s.test ? ` · ${t.senderTestResult[s.test] || s.test}` : "";
@@ -102,121 +104,146 @@ function docWallText(w, t) {
   return w ? t.doc.wall(w.id, w.on, w.off) : "";
 }
 
-// One row per sender (a device without senders has one row); sender IDs that stay blocked after
-// their device was deleted follow at the end of their gateway.
-export function documentationCsv(doc, t, profile) {
-  const head = [t.gateway, "Base ID", t.doc.cols.device, t.doc.cols.address, "EEP", t.doc.cols.area, t.doc.virtual, t.doc.cols.sender, t.doc.cols.senderId, t.doc.cols.teach, t.doc.cols.test, t.doc.cols.wall, t.doc.cols.poolState, t.doc.notes];
+function docLinkFrom(l, t) {
+  return l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${t.inst.links.from[l.from_kind]} · ${l.from_id}`;
+}
+
+// One table as CSV: "devices" (one row per sender, a device without senders has one row; sender IDs
+// that stay blocked after their device was deleted and unknown senders follow at the end of their
+// gateway) or "links" (one row per link).
+export function documentationCsv(doc, t, profile, table = "devices") {
+  if (table === "links") {
+    const L = t.inst.links;
+    const rows = [[t.gateway, L.target, t.doc.cols.address, L.from.title, "ID", L.role, L.learn, L.source.title, L.state, L.teachIn("").trim(), L.tested("").trim()]];
+    for (const gw of doc.gateways) {
+      for (const l of gw.links ?? []) {
+        rows.push([gw.title, l.to_name, l.to_id, l.from_kind === "entered" ? l.from_name : L.from[l.from_kind], l.from_id, l.source === "assigned" ? profile(l.role) : l.role, l.learn, L.source[l.source], L.status[l.status], l.teach_in ?? "", l.tested ?? ""]);
+      }
+    }
+    return csv(rows);
+  }
+  const labels = FIELD_KEYS.map((f) => t.inst.fields[f]);
+  const head = [t.gateway, "Base ID", t.doc.cols.device, t.doc.cols.address, "EEP", t.doc.cols.area, t.doc.virtual, ...labels, t.doc.cols.sender, t.doc.cols.senderId, t.doc.cols.teach, t.doc.cols.test, t.doc.cols.wall, t.doc.cols.poolState];
   const rows = [head];
+  const blank = (n) => Array(n).fill("");
   for (const gw of doc.gateways) {
     const state = new Map(gw.pools.flatMap((p) => p.senders.map((s) => [s.id, s.state])));
     for (const d of gw.devices) {
-      const base = [gw.title, gw.base_id ?? "", d.name, d.id, [d.eep, ...d.eep_extra].filter(Boolean).join(", "), d.area ?? "", d.virtual ? t.yes : ""];
+      const base = [gw.title, gw.base_id ?? "", d.name, d.id, [d.eep, ...d.eep_extra].filter(Boolean).join(", "), d.area ?? "", d.virtual ? t.yes : "", ...FIELD_KEYS.map((f) => d[f] ?? "")];
       const wall = docWallText(d.wall_switch, t);
-      if (!d.senders.length) rows.push([...base, "", "", "", "", wall, "", d.note ?? ""]);
-      for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || "", d.note ?? ""]);
+      if (!d.senders.length) rows.push([...base, "", "", "", "", wall, ""]);
+      for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || ""]);
     }
-    for (const m of gw.manual ?? []) {
-      rows.push([gw.title, gw.base_id ?? "", m.name, m.address, "", "", "", "", "", "", "", "", "", m.function]);
-    }
-    for (const h of gw.heard ?? []) {
-      rows.push([gw.title, gw.base_id ?? "", t.doc.notSetUp, h.id, "", "", "", "", "", "", "", "", "", `${h.rorg}${h.dbm != null ? `, ${h.dbm} dBm` : ""}`]);
-    }
+    const extra = (name, address, note) => {
+      const row = blank(head.length);
+      Object.assign(row, { 0: gw.title, 1: gw.base_id ?? "", 2: name, 3: address, [7 + FIELD_KEYS.indexOf("note")]: note });
+      rows.push(row);
+    };
+    for (const m of gw.manual ?? []) extra(m.name, m.address, m.function);
+    for (const h of gw.heard ?? []) extra(t.doc.notSetUp, h.id, `${h.rorg}${h.dbm != null ? `, ${h.dbm} dBm` : ""}`);
     for (const p of gw.pools) {
       for (const s of p.senders.filter((x) => x.device == null)) {
-        rows.push([gw.title, gw.base_id ?? "", t.doc.deleted, "", "", "", "", profile(s.profile), s.id, "", "", "", t.doc.state[s.state] || s.state, ""]);
+        rows.push([gw.title, gw.base_id ?? "", t.doc.deleted, "", "", "", "", ...blank(FIELD_KEYS.length), profile(s.profile), s.id, "", "", "", t.doc.state[s.state] || s.state]);
       }
     }
   }
   return csv(rows);
 }
 
-// A self-contained page for printing: one gateway per page, no scripts.
-export function documentationHtml(doc, t, profile, lang) {
+// Sections of the page; each can be switched off above the page (and is then not printed)
+export const DOC_SECTIONS = ["handover", "cabinet", "links", "swap", "ids", "log"];
+
+// One self-contained page, no scripts: check boxes above it show or hide the sections, printing
+// leaves them out. Sections: the handover (every device with its senders and fields), the cabinet
+// (devices by place, with circuit and fuse), the links, a checklist for moving to a gateway with
+// another base ID, the sender IDs (pool, further devices, unknown senders) and the log.
+export function documentationHtml(doc, t, profile, lang, shown = ["handover", "cabinet", "links", "swap", "ids"]) {
   const d = t.doc;
-  const when = new Date(doc.generated).toLocaleString(lang);
+  const L = t.inst.links;
+  const when = (iso) => new Date(iso).toLocaleString(lang);
   const cell = (html) => `<td>${html}</td>`;
-  const gateways = doc.gateways
-    .map((gw) => {
-      const devices = gw.devices
-        .map((x) => {
-          const sub = [x.virtual ? d.virtual : "", x.area ?? "", x.model ?? ""].filter(Boolean).join(" · ");
-          const senders = x.senders.length ? x.senders.map((s) => `<div>${esc(docSenderText(s, t, profile))}</div>`).join("") : `<span class="sub">${esc(x.virtual ? d.sentByHa : d.receiveOnly)}</span>`;
-          return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}${cell(esc(x.note ?? ""))}</tr>`;
-        })
-        .join("");
-      const pool = gw.pools.flatMap((p) => p.senders);
-      const poolRows = pool.map((s) => `<tr>${cell(`<span class="mono">${esc(s.id)}</span>`)}${cell(esc(s.device ?? d.deleted))}${cell(esc(`${profile(s.profile)}`))}${cell(esc(d.state[s.state] || s.state))}</tr>`).join("");
-      const heardRows = (gw.heard ?? []).map((h) => `<tr>${cell(`<span class="mono">${esc(h.id)}</span>`)}${cell(esc(h.rorg))}${cell(esc(h.dbm != null ? `${h.dbm} dBm` : ""))}${cell(esc(new Date(h.last).toLocaleString(lang)))}</tr>`).join("");
-      const manualRows = (gw.manual ?? []).map((m) => `<tr>${cell(esc(m.name))}${cell(`<span class="mono">${esc(m.address)}</span>`)}${cell(esc(m.function))}</tr>`).join("");
-      const blocked = pool.filter((s) => s.state === "blocked").length;
-      return `<section class="gw">
-<h2>${esc(gw.title)}</h2>
-${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}
-<p class="sub">${esc(gw.model_name ?? gw.model ?? "")}${gw.base_id ? ` · Base ID <span class="mono">${esc(gw.base_id)}</span>` : ""} · ${esc(d.counts(gw.devices.length, pool.length, blocked))}</p>
-<h3>${esc(d.devices)}</h3>
-<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${devices}</tbody></table>
-${poolRows ? `<h3>${esc(d.pool)}</h3><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.usedBy)}</th><th>${esc(d.cols.sender)}</th><th>${esc(d.cols.poolState)}</th></tr></thead><tbody>${poolRows}</tbody></table>` : ""}
-${manualRows ? `<h3>${esc(d.manualTitle)}</h3><table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.senderId)}</th><th>${esc(d.manualFunction)}</th></tr></thead><tbody>${manualRows}</tbody></table>` : ""}
-${heardRows ? `<h3>${esc(d.heard)}</h3><p class="sub">${esc(d.heardNote)}</p><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.type)}</th><th>${esc(d.cols.signal)}</th><th>${esc(d.cols.lastHeard)}</th></tr></thead><tbody>${heardRows}</tbody></table>` : ""}
-${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : ""}
-</section>`;
-    })
-    .join("");
-  // several gateways: a first page with one line each
-  const count = (gw) => {
-    const pool = gw.pools.flatMap((p) => p.senders);
-    return [gw.devices.length, pool.length, pool.filter((s) => s.state === "blocked").length, (gw.heard ?? []).length];
-  };
+  const field = (x, f) => esc(x[f] ?? "");
+  const table = (head, rows) => (rows ? `<table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>` : "");
+  const perGateway = (build) =>
+    doc.gateways
+      .map((gw) => {
+        const inner = build(gw);
+        return inner ? `<div class="gw"><h3>${esc(gw.title)}${gw.base_id ? ` <span class="mono sub">${esc(gw.base_id)}</span>` : ""}</h3>${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}${inner}</div>` : "";
+      })
+      .join("");
+  const section = (name, title, intro, body) => (body ? `<section class="sec sec-${name}"><h2>${esc(title)}</h2>${intro ? `<p class="sub">${esc(intro)}</p>` : ""}${body}</section>` : "");
+
   const overview = doc.gateways.length > 1
-    ? `<section class="gw"><h2>${esc(d.overview)}</h2><table><thead><tr><th>${esc(d.cols.gateway)}</th><th>Base ID</th><th>${esc(d.devices)}</th><th>${esc(d.cols.senderIds)}</th><th>${esc(d.cols.blocked)}</th><th>${esc(d.cols.heard)}</th></tr></thead><tbody>${doc.gateways
-        .map((gw) => `<tr>${cell(`${esc(gw.title)}${gw.note ? `<div class="sub">${esc(gw.note)}</div>` : ""}`)}${cell(`<span class="mono">${esc(gw.base_id ?? "")}</span>`)}${count(gw).map((n) => cell(esc(n))).join("")}</tr>`)
-        .join("")}</tbody></table></section>`
+    ? `<section class="sec"><h2>${esc(d.overview)}</h2>${table([d.cols.gateway, "Base ID", d.devices, d.cols.senderIds, d.cols.blocked, d.cols.heard], doc.gateways.map((gw) => {
+        const pool = gw.pools.flatMap((p) => p.senders);
+        return `<tr>${cell(`${esc(gw.title)}${gw.note ? `<div class="sub">${esc(gw.note)}</div>` : ""}`)}${cell(`<span class="mono">${esc(gw.base_id ?? "")}</span>`)}${[gw.devices.length, pool.length, pool.filter((s) => s.state === "blocked").length, (gw.heard ?? []).length].map((n) => cell(esc(n))).join("")}</tr>`;
+      }).join(""))}</section>`
     : "";
+
+  const handover = section("handover", d.sections.handover, d.generated(when(doc.generated)), perGateway((gw) =>
+    table([d.cols.device, d.cols.address, d.cols.senders, d.cols.wall, ...FIELD_KEYS.map((f) => t.inst.fields[f])], gw.devices.map((x) => {
+      const sub = [x.virtual ? d.virtual : "", x.area ?? "", x.model ?? ""].filter(Boolean).join(" · ");
+      const senders = x.senders.length ? x.senders.map((s) => `<div>${esc(docSenderText(s, t, profile))}</div>`).join("") : `<span class="sub">${esc(x.virtual ? d.sentByHa : d.receiveOnly)}</span>`;
+      return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}${FIELD_KEYS.map((f) => cell(field(x, f))).join("")}</tr>`;
+    }).join(""))));
+
+  const cabinet = section("cabinet", d.sections.cabinet, "", perGateway((gw) =>
+    table([t.inst.fields.location, d.cols.device, d.cols.address, t.inst.fields.circuit, t.inst.fields.fuse, t.inst.fields.revision, t.inst.fields.power], gw.devices
+      .filter((x) => !x.virtual)
+      .sort((a, b) => (a.location || "\uffff").localeCompare(b.location || "\uffff") || a.name.localeCompare(b.name))
+      .map((x) => `<tr>${[field(x, "location") || `<span class="sub">${esc(d.none)}</span>`, esc(x.name), `<span class="mono">${esc(x.id)}</span>`, field(x, "circuit"), field(x, "fuse"), field(x, "revision"), field(x, "power")].map(cell).join("")}</tr>`)
+      .join(""))));
+
+  const links = section("links", d.sections.links, L.honest, perGateway((gw) => {
+    const byTarget = new Map();
+    for (const l of gw.links ?? []) byTarget.set(l.to_key || l.to_name, [...(byTarget.get(l.to_key || l.to_name) ?? []), l]);
+    return [...byTarget.values()]
+      .sort((a, b) => a[0].to_name.localeCompare(b[0].to_name))
+      .map((list) => `<h4>${esc(list[0].to_name)} <span class="mono sub">${esc(list[0].to_id)}</span></h4>${table([L.from.title, L.role, L.learn, L.state], list.map((l) => `<tr>${cell(esc(docLinkFrom(l, t)))}${cell(esc(l.source === "assigned" ? profile(l.role) : l.role))}${cell(esc(l.learn))}${cell(`${esc(L.status[l.status])}<div class="sub">${esc([l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean).join(" · "))}</div>`)}</tr>`).join(""))}`)
+      .join("") + `<p class="sub">${esc(L.otherSenders)}</p>`;
+  }));
+
+  const swap = section("swap", d.sections.swap, d.swapIntro, perGateway((gw) => {
+    const todo = (gw.links ?? []).filter((l) => l.source === "assigned");
+    return todo.length
+      ? `<ul class="check">${todo.map((l) => `<li><span class="box"></span>${esc(l.to_name)} <span class="mono sub">${esc(l.to_id)}</span>: ${esc(d.swapStep(profile(l.role)))}${l.learn ? ` <span class="sub">(${esc(L.learn)}: ${esc(l.learn)})</span>` : ""}</li>`).join("")}</ul>`
+      : "";
+  }));
+
+  const ids = section("ids", d.sections.ids, "", perGateway((gw) => {
+    const pool = gw.pools.flatMap((p) => p.senders);
+    const poolRows = pool.map((s) => `<tr>${cell(`<span class="mono">${esc(s.id)}</span>`)}${cell(esc(s.device ?? d.deleted))}${cell(esc(profile(s.profile)))}${cell(esc(d.state[s.state] || s.state))}</tr>`).join("");
+    const manualRows = (gw.manual ?? []).map((m) => `<tr>${cell(esc(m.name))}${cell(`<span class="mono">${esc(m.address)}</span>`)}${cell(esc(m.function))}</tr>`).join("");
+    const heardRows = (gw.heard ?? []).map((h) => `<tr>${cell(`<span class="mono">${esc(h.id)}</span>`)}${cell(esc(h.rorg))}${cell(esc(h.dbm != null ? `${h.dbm} dBm` : ""))}${cell(esc(when(h.last)))}</tr>`).join("");
+    return [
+      poolRows ? `<h4>${esc(d.pool)}</h4>${table([d.cols.senderId, d.cols.usedBy, d.cols.sender, d.cols.poolState], poolRows)}` : "",
+      manualRows ? `<h4>${esc(d.manualTitle)}</h4>${table([d.cols.device, d.cols.senderId, d.manualFunction], manualRows)}` : "",
+      heardRows ? `<h4>${esc(d.heard)}</h4><p class="sub">${esc(d.heardNote)}</p>${table([d.cols.senderId, d.cols.type, d.cols.signal, d.cols.lastHeard], heardRows)}` : "",
+      gw.hidden_senders.length ? `<h4>${esc(d.hidden)}</h4><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : "",
+    ].join("");
+  }));
+
+  const log = section("log", d.sections.log, "", perGateway((gw) =>
+    table([t.time, t.inst.event, t.inst.detail], [...(gw.log ?? [])].reverse().map((e) => `<tr>${cell(`<span class="mono">${esc(when(e.time))}</span>`)}${cell(esc(t.inst.events[e.kind] || e.kind))}${cell(esc(e.detail || e.device))}</tr>`).join(""))));
+
+  const toggles = DOC_SECTIONS.map((name) => `<label><input type="checkbox" id="show-${name}"${shown.includes(name) ? " checked" : ""}> ${esc(d.sections[name])}</label>`).join("");
+  const rules = DOC_SECTIONS.map((name) => `body:has(#show-${name}:not(:checked)) .sec-${name}{display:none}`).join("\n");
   return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>
 body{font:13px/1.45 system-ui,sans-serif;color:#1c1c1a;margin:24px}
-h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0}h3{font-size:14px;font-weight:500;margin:18px 0 6px}
-.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}
+h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0 0 4px}h3{font-size:14px;font-weight:500;margin:14px 0 4px}h4{font-size:13px;font-weight:500;margin:12px 0 4px}
+.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}.gwnote{margin:0 0 4px;font-style:italic}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;font-size:12px;border-bottom:1px solid #888;padding:5px 8px 5px 0}
-td{border-bottom:1px solid #ddd;padding:6px 8px 6px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}h2,h3{break-after:avoid}
-section.gw{break-after:page;margin-top:24px}.gwnote{margin:2px 0 4px;font-style:italic}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}
+td{border-bottom:1px solid #ddd;padding:5px 8px 5px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}h2,h3,h4{break-after:avoid}
+section.sec{margin-top:24px}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}
+.bar{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0;padding:8px 12px;background:#eef3f8;border-radius:6px}
+ul.check{list-style:none;padding:0;margin:6px 0}ul.check li{padding:4px 0;border-bottom:1px solid #ddd}.box{display:inline-block;width:11px;height:11px;border:1.5px solid #444;margin-right:8px;vertical-align:-1px}
+${rules}
+@media print{.bar{display:none}}
 @page{margin:14mm}
 </style></head><body>
-<h1>${esc(d.title)}</h1><p class="sub">${esc(d.generated(when))}</p>
-${overview}${gateways}
+<h1>${esc(d.title)}</h1>
+<div class="bar">${toggles}</div>
+${overview}${handover}${cabinet}${links}${swap}${ids}${log}
 <div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
-</body></html>`;
-}
-
-// The cabinet sheet: one dense table per gateway (landscape), to hang in the distribution board.
-// The learn function to set on an actuator depends on its revision, so it points to the table.
-export function documentationSheet(doc, t, profile, lang) {
-  const d = t.doc;
-  const when = new Date(doc.generated).toLocaleString(lang);
-  const sections = doc.gateways
-    .map((gw) => {
-      const rows = gw.devices
-        .filter((x) => !x.virtual)
-        .map((x) => {
-          const senders = x.senders.map((s) => `<span class="mono">${esc(s.id)}</span> ${esc(profile(s.profile))}`).join("<br>");
-          const wall = x.wall_switch ? `<span class="mono">${esc(x.wall_switch.id)}</span>` : "";
-          return `<tr><td>${esc(x.name)}</td><td class="mono">${esc(x.id)}</td><td>${esc(x.area ?? "")}</td><td>${senders}</td><td>${wall}</td><td>${esc(x.note ?? "")}</td></tr>`;
-        })
-        .join("");
-      const manual = (gw.manual ?? []).map((m) => `<tr><td>${esc(m.name)}</td><td class="mono">${esc(m.address)}</td><td></td><td colspan="3">${esc(m.function)}</td></tr>`).join("");
-      return `<section><h2>${esc(gw.title)}${gw.base_id ? ` <small class="mono">${esc(gw.base_id)}</small>` : ""}</h2>${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.area)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${rows}${manual}</tbody></table></section>`;
-    })
-    .join("");
-  return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.sheetTitle)}</title><style>
-body{font:11px/1.35 system-ui,sans-serif;color:#1c1c1a;margin:0}
-h1{font-size:16px;font-weight:500;margin:0}h2{font-size:14px;font-weight:500;margin:14px 0 4px}small{font-weight:400;font-size:11px}
-.sub{color:#5f5e5a}.mono{font-family:ui-monospace,monospace}.gwnote{margin:0 0 4px;font-style:italic}
-table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;border-bottom:1px solid #888;padding:3px 6px 3px 0}
-td{border-bottom:1px solid #ddd;padding:3px 6px 3px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}
-section{break-inside:auto}.foot{margin-top:14px;color:#5f5e5a}
-@page{size:A4 landscape;margin:10mm}
-</style></head><body>
-<h1>${esc(d.sheetTitle)}</h1><p class="sub">${esc(d.generated(when))}</p>
-${sections}
-<p class="foot">${esc(d.sheetFoot)}</p>
 </body></html>`;
 }

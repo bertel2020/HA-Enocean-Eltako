@@ -103,6 +103,7 @@ export const installation = {
     const tabs = TABS.map((name) => tab.replace("%s", name).replace("%p", String(state.tab === name)).replace("%l", esc(t.inst.tabs[name]))).join("");
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
       <button class="chip" data-in-act="csv">${svg(ICON.download)}CSV</button>
+      <button class="chip" data-in-act="csv-links">${svg(ICON.download)}${esc(t.inst.links.csvShort)}</button>
       <button class="chip" data-in-act="json">${svg(ICON.download)}JSON</button>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
     const body = { areas: this._instAreas(), devices: this._instDevices(), links: this._instLinks(), log: this._instLog() }[state.tab];
@@ -254,6 +255,7 @@ export const installation = {
     if (!act) return;
     if (act === "print") this._documentation("print");
     else if (act === "csv") this._documentation("csv");
+    else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "json") this._documentation("json");
     else if (act === "import") this.shadowRoot.getElementById("docFile").click();
     else if (act === "unpick") {

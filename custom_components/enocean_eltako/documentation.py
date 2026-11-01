@@ -23,7 +23,8 @@ from .notes import Notes, device_key
 from .protocol.ids import format_id
 from .protocol.models import MODELS
 
-VERSION = 1
+VERSION = 2  # 2: typed device fields, links, the event log; the import still takes 1
+IMPORTABLE_VERSIONS = (1, VERSION)
 
 
 def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[str, Any]:
