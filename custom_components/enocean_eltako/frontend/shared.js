@@ -195,7 +195,7 @@ const place = (d) => d.location || d.area || "";
 
 // The rows of the three tables of one gateway, from what the documentation command holds:
 // - gateway senders: one row per number of the radio pool, the base ID itself is number 0; a
-//   second mode (+64) points to its counterpart
+//   other senders of the same device (a direction rocker and a GFVS sender, say) point to each other
 // - buttons: the devices that are buttons, and every wall switch an actuator names, with the
 //   actuators on its left and right rocker (buttons a0/a1 left, b0/b1 right)
 // - radio senders: every device that only sends (sensors, meters, climate), and the entries by hand
@@ -218,7 +218,7 @@ export function docTables(gw, t, profile) {
       else if (!s.device) row.blocked = true;
       else {
         const d = byRef.get(s.ref);
-        const partner = taken.get(n + 64)?.ref === s.ref ? n + 64 : taken.get(n - 64)?.ref === s.ref ? n - 64 : null;
+        const others = [...taken].filter(([m, x]) => m !== n && x.ref && x.ref === s.ref).map(([m]) => m).sort((a, b) => a - b);
         Object.assign(row, {
           fn: T.categories[d?.category] ?? "",
           device: d?.model ?? s.device,
@@ -227,7 +227,7 @@ export function docTables(gw, t, profile) {
           bus: d?.bus_address ?? "",
           feedback: d?.feedback_id ?? "",
           use: profile(s.profile),
-          second: partner === null ? "" : partner > n ? `${partner} →` : `← ${partner}`,
+          second: others.map((m) => (m > n ? `${m} →` : `← ${m}`)).join(", "),
         });
       }
       senders.push(row);
