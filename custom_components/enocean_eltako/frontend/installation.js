@@ -20,8 +20,8 @@ export const installationState = () => ({
 export const INSTALLATION_STYLE = `
   .installation { padding-bottom: 8px; }
   .installation .itop { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .installation .itop .tabs { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
-  .installation .itools { display: flex; gap: 6px; flex-wrap: wrap; }
+  .installation .itop .tabs { display: flex; gap: 6px; flex: 1 1 340px; flex-wrap: wrap; }
+  .installation .itools { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; }
   .installation .ibody { padding: 12px 16px; display: grid; gap: 16px; }
   .installation h3 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
   .installation .isub { color: var(--muted); font-size: 12px; }
@@ -37,6 +37,8 @@ export const INSTALLATION_STYLE = `
   .installation .itable td.name { min-width: 160px; }
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
   .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
+  .installation .itable input.cell[data-in-field="group"] { min-width: 170px; }
+  .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"], .installation .itable input.cell[data-in-field="bus_power"] { min-width: 120px; }
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
@@ -104,7 +106,7 @@ export const installation = {
     const tabs = TABS.map((name) => tab.replace("%s", name).replace("%p", String(state.tab === name)).replace("%l", esc(t.inst.tabs[name]))).join("");
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
       <button class="chip" data-in-act="csv">${svg(ICON.download)}CSV</button>
-      <button class="chip" data-in-act="csv-tables">${svg(ICON.download)}${esc(t.inst.tablesCsv)}</button>
+      <button class="chip" data-in-act="csv-tables">${svg(ICON.download)}${esc(t.inst.links.tablesCsv)}</button>
       <button class="chip" data-in-act="csv-links">${svg(ICON.download)}${esc(t.inst.links.csvShort)}</button>
       <button class="chip" data-in-act="json">${svg(ICON.download)}JSON</button>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;

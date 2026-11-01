@@ -35,7 +35,7 @@ const makeRuns = () => [
   { id: "run0", entry_id: "gw1", gateway: "FAM-USB Keller", at: null, manual: true, carry: [], devices: 3, entities: 5, restored: 5 },
 ];
 
-const device = (o) => ({ eep_extra: [], virtual: false, wall_switch: null, senders: [], model: null, area: null, location: "", circuit: "", fuse: "", installed: "", revision: "", power: "", note: "", note_key: o.id, ...o });
+const device = (o) => ({ category: "lighting", group: "", bus_address: "", feedback_id: "", bus_power: "", eep_extra: [], virtual: false, wall_switch: null, senders: [], model: null, area: null, location: "", circuit: "", fuse: "", installed: "", revision: "", power: "", note: "", note_key: o.id, ...o });
 
 export function fakeHass(params = new URLSearchParams()) {
   const takeoverRuns = makeRuns();
@@ -47,10 +47,10 @@ export function fakeHass(params = new URLSearchParams()) {
     on_demand: false, connection: "tcp 127.0.0.1:9100", per_minute: 4, last_telegram: now - 3, queue: 0, unconfirmed: 0,
     devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
-    note: english ? "Basement, right of the meter" : "Keller, rechts neben dem Zähler", orphan_notes: 0,
+    note: english ? "Basement, right of the meter" : "Keller, rechts neben dem Zähler", orphan_notes: 0, supply: { name: "FSNT14-12V", watts: "30" },
     manual: english
-      ? [{ id: "m1", name: "Hallway button left", address: "00-12-34-56", function: "taught in directly to Licht Diele" }, { id: "m2", name: "Motion sensor basement", address: "00-8A-12-3F", function: "FBH65, belongs to another system" }]
-      : [{ id: "m1", name: "Taster Flur links", address: "00-12-34-56", function: "direkt auf Licht Diele eingelernt" }, { id: "m2", name: "Bewegungsmelder Keller", address: "00-8A-12-3F", function: "FBH65, von einem anderen System" }],
+      ? [{ id: "m1", name: "Hallway button left", address: "00-12-34-56", function: "taught in directly to Licht Diele" }, { id: "m2", name: "Motion sensor basement", address: "00-8A-12-3F", function: "FBH65, belongs to another system" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12-1", feedback_id: "00008C0C", bus_power: "" }]
+      : [{ id: "m1", name: "Taster Flur links", address: "00-12-34-56", function: "direkt auf Licht Diele eingelernt" }, { id: "m2", name: "Bewegungsmelder Keller", address: "00-8A-12-3F", function: "FBH65, von einem anderen System" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12-1", feedback_id: "00008C0C", bus_power: "" }],
     radio_devices: [
       { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
@@ -145,14 +145,18 @@ export function fakeHass(params = new URLSearchParams()) {
           return {
             version: 1, generated: new Date().toISOString(), gateways: empty ? [] : [{
               entry_id: "gw1", title: "FAM-USB Keller", model: "fam_usb", model_name: "Eltako FAM-USB", base_id: "FF-B7-44-80", hidden_senders: [],
-              note: gateway.note, manual: gateway.manual, heard: [], orphan_notes: 0,
+              note: gateway.note, manual: gateway.manual, supply: gateway.supply, heard: [], orphan_notes: 0,
               devices: [
                 device({ name: "Licht Diele", key: "sub1", id: "05-10-A2-B3", eep: "M5-38-08:eltako", area: "Flur", model: "FSR14-4x", location: english ? "Cabinet 2, row 1, slot 4" : "Schrank 2, Reihe 1, Platz 4", fuse: "F3 B16", installed: "2026-10-01", power: english ? "mains" : "Netz",
                   wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-81", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-83", ute: false, test: "unconfirmed" }] }),
                 device({ name: "Dimmer Flur", key: "sub2", id: "05-10-A2-B4", eep: "A5-38-08:eltako", area: "Flur", model: "FUD14", location: english ? "Cabinet 2, row 1, slot 5" : "Schrank 2, Reihe 1, Platz 5", senders: [] }),
-                device({ name: "Fensterkontakt Küche", key: "sub3", id: "05-22-22-22", eep: "D5-00-01:std", area: "Küche", power: "CR2032", note: english ? "battery changed 03/2026" : "Batterie gewechselt 03/2026" }),
+                device({ name: "Fensterkontakt Küche", key: "sub3", id: "05-22-22-22", eep: "D5-00-01:std", area: "Küche", category: "sensors", power: "CR2032", note: english ? "battery changed 03/2026" : "Batterie gewechselt 03/2026" }),
+                device({ name: "Rollladen Bad", key: "sub4", id: "05-10-A2-C2", eep: "M5-3F-7F:eltako", area: "Bad", category: "covers", model: "FSB14", bus_address: "09-1", feedback_id: "00000181", bus_power: "0,4", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" }, senders: [{ profile: "central", id: "FF-B7-44-A4", ute: false, test: null }] }),
+                device({ name: "Taster Haustür", key: "sub5", id: "FE-8A-31-C2", eep: "F6-02-01:std", area: "Flur", category: "buttons", model: "F4T55E", location: english ? "Hallway" : "Flur EG" }),
+                device({ name: "Raumregler Temperatur", key: "sub6", id: "FE-91-2A-40", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"], category: "climate", model: "FUTH55D", group: english ? "Room controller living room" : "Raumregler Wohnzimmer", location: english ? "Living room" : "Wohnzimmer" }),
+                device({ name: "Raumregler Taste", key: "sub7", id: "FE-91-2A-41", eep: "F6-02-01:std", category: "sensors", model: "FUTH55D", group: english ? "Room controller living room" : "Raumregler Wohnzimmer" }),
               ],
-              pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central", state: "assigned" }, { id: "FF-B7-44-86", device: null, profile: "central", state: "blocked" }] }],
+              pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-81", device: "Licht Diele", ref: "05-10-A2-B3", profile: "central", state: "assigned" }, { id: "FF-B7-44-C1", device: "Licht Diele", ref: "05-10-A2-B3", profile: "rocker", state: "assigned" }, { id: "FF-B7-44-A4", device: "Rollladen Bad", ref: "05-10-A2-C2", profile: "central", state: "assigned" }, { id: "FF-B7-44-86", device: null, ref: "gone", profile: "central", state: "blocked" }] }],
               links: [
                 { key: "assigned|05-10-A2-B3|central", source: "assigned", from_kind: "ha", from_id: "FF-B7-44-81", from_name: "", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "central", learn: "", status: "confirmed", teach_in: "2026-10-26T09:14:00+00:00", tested: "2026-10-26T09:15:00+00:00" },
                 { key: "assigned|05-10-A2-B3|rocker", source: "assigned", from_kind: "ha", from_id: "FF-B7-44-83", from_name: "", to_key: "05-10-A2-B3", to_id: "05-10-A2-B3", to_name: "Licht Diele", role: "rocker", learn: "", status: "no_answer", teach_in: null, tested: "2026-10-26T09:15:00+00:00" },
@@ -168,6 +172,9 @@ export function fakeHass(params = new URLSearchParams()) {
           };
         case "enocean_eltako/set_links":
         case "enocean_eltako/set_link_learn":
+          return {};
+        case "enocean_eltako/set_supply":
+          gateway.supply = { name: msg.name, watts: msg.watts };
           return {};
         case "enocean_eltako/set_fields":
           return { saved: msg.items.length, rejected: [] };
