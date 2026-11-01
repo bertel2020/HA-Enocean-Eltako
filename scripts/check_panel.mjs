@@ -77,16 +77,17 @@ for (const lang of ["en", "de"]) {
 
 // the sender tables: gateway senders 0 to 127 with the second mode, buttons with their rockers,
 // radio senders and the entries by hand
-const { docTables, foldFree } = await import(new URL("shared.js?v=check", frontend).href);
+const { docTables, docBus, foldFree } = await import(new URL("shared.js?v=check", frontend).href);
 const tdev = (over) => ({ name: "", id: "", eep: "", eep_extra: [], area: null, model: null, virtual: false, category: "lighting", wall_switch: null, senders: [], location: "", bus_address: "", feedback_id: "", ...over });
 const tgw = {
   title: "FAM14",
   base_id: "FF-B6-40-80",
   hidden_senders: [], heard: [], links: [], log: [], note: "",
-  manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }],
+  supply: { name: "FSNT14-12V", watts: "1" },
+  manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }, { id: "m2", name: "Zähler F3Z14D", address: "", function: "Haus", bus_address: "12-1", feedback_id: "00008C0C", bus_power: "" }],
   devices: [
-    tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "01-1", feedback_id: "00000081", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
-    tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
+    tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "01-1", feedback_id: "00000081", bus_power: "0,4", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
+    tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", bus_address: "09-1", bus_power: "0.4", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
     tdev({ name: "Taster Haustür", id: "FE-8A-31-C2", category: "buttons", model: "F4T55E", location: "Flur" }),
     tdev({ name: "Raumregler", id: "FE-91-2A-40", category: "climate", model: "FUTH55", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"] }),
   ],
@@ -112,6 +113,10 @@ for (const lang of ["en", "de"]) {
   const bad = parts.buttons.find((b) => b.id === "FE-8A-34-07");
   if (!bad || bad.left[0] !== `Rollladen Bad ${t.doc.tbl.on} (36)` || bad.right[0] !== `Rollladen Bad ${t.doc.tbl.off} (36)`) errors.push(`shared.js: docTables (${lang}) does not split on and off over two rockers`);
   if (parts.radio.length !== 2 || parts.radio[0].eep !== "A5-10-06:eltako, A5-04-01:std" || parts.radio[1].id !== "00-AA-00-01") errors.push(`shared.js: docTables (${lang}) has the wrong radio senders`);
+  const bus = docBus(tgw, t);
+  if (bus.rows.map((r) => r.address).join() !== "01-1,09-1,12-1" || bus.sum !== 0.8 || bus.counted !== 2 || bus.percent !== 80 || bus.rows[2].power !== null) errors.push(`shared.js: docBus (${lang}) sorts, sums or compares wrongly: ${JSON.stringify(bus)}`);
+  const busPage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
+  if (!busPage.includes(t.doc.tbl.busWarn) || !busPage.includes(t.doc.tbl.busMissing(1)) || !busPage.includes("FSNT14-12V")) errors.push(`shared.js: documentationHtml bus (${lang}) misses the sum, the supply or the warning`);
   const tcsv = documentationCsv({ gateways: [tgw] }, t, tprofile, "tables").trim().split("\n");
   if (tcsv.length < 128 + 10 || !tcsv.some((r) => r.includes("FE-8A-31-C2") && r.includes("Licht Flur (29)"))) errors.push(`shared.js: documentationCsv tables (${lang}) has ${tcsv.length} rows`);
   const tpage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);

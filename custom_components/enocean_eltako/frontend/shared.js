@@ -92,7 +92,7 @@ export function csv(rows) {
 
 // ---- installation documentation (the structure of the documentation websocket command) ------------
 
-const FIELD_KEYS = ["location", "circuit", "bus_address", "feedback_id", "fuse", "installed", "revision", "power", "note"];
+const FIELD_KEYS = ["location", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
 
 function docSenderText(s, t, profile) {
   const kind = s.ute ? t.teachUte : t.teachTelegram;
@@ -133,6 +133,17 @@ export function documentationCsv(doc, t, profile, table = "devices") {
         ...parts.radio.map((r) => [r.id, r.device, r.place, r.name, r.eep, r.sends]),
         []
       );
+      const bus = docBus(gw, t);
+      if (bus.rows.length) {
+        rows.push(
+          [gw.title, d.sections.bus],
+          [T.busAddress, T.type, T.device, T.description, T.feedbackId, `${T.power} (W)`],
+          ...bus.rows.map((r) => [r.address, r.type, r.device, r.name, r.feedback, r.power ?? ""]),
+          [T.sum, "", "", "", "", bus.sum],
+          ...(bus.supply || bus.capacity ? [[T.supply, bus.supply, "", "", "", bus.capacity ?? ""]] : []),
+          []
+        );
+      }
     }
     return csv(rows);
   }
@@ -249,8 +260,36 @@ export function docTables(gw, t, profile) {
     .filter((d) => !d.virtual && ["sensors", "meters", "climate"].includes(d.category))
     .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), name: d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: T.categories[d.category] }))
     .sort((a, b) => a.name.localeCompare(b.name));
-  for (const m of gw.manual ?? []) radio.push({ id: m.address, device: m.name, place: "", name: m.function, eep: "", sends: T.byHand });
+  for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", name: m.function, eep: "", sends: T.byHand });
   return { senders, buttons: buttonRows, radio };
+}
+
+// The Eltako bus: every device with a bus address, from the typed fields of the devices and the
+// entries by hand, by address, with the power each takes from the bus (from its data sheet), the
+// sum and, when the power supply is written down, how much of it that uses. Home Assistant cannot
+// read the bus yet, so what is not written down is not here.
+const watts = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
+export function docBus(gw, t) {
+  const T = t.doc.tbl;
+  const rows = [
+    ...gw.devices
+      .filter((d) => d.bus_address && !d.virtual)
+      .map((d) => ({ address: d.bus_address, type: ["lighting", "covers"].includes(d.category) ? T.busTypes.actuator : T.busTypes.sender, device: d.model ?? "", name: d.name, feedback: d.feedback_id ?? "", power: watts(d.bus_power) })),
+    ...(gw.manual ?? [])
+      .filter((m) => m.bus_address)
+      .map((m) => ({ address: m.bus_address, type: T.busTypes.other, device: m.name, name: m.function, feedback: m.feedback_id ?? "", power: watts(m.bus_power) })),
+  ].sort((a, b) => (parseInt(a.address, 10) || 0) - (parseInt(b.address, 10) || 0) || a.address.localeCompare(b.address));
+  const counted = rows.filter((r) => r.power !== null);
+  const sum = Math.round(counted.reduce((n, r) => n + r.power, 0) * 10) / 10;
+  const capacity = watts(gw.supply?.watts);
+  return {
+    rows,
+    sum,
+    counted: counted.length,
+    capacity,
+    supply: gw.supply?.name ?? "",
+    percent: capacity ? Math.round((sum / capacity) * 100) : null,
+  };
 }
 
 // the gateway senders without runs of free numbers: "2 to 28 free" as one row
@@ -268,13 +307,13 @@ export function foldFree(rows) {
 }
 
 // Sections of the page; each can be switched off above the page (and is then not printed)
-export const DOC_SECTIONS = ["handover", "cabinet", "gwsenders", "buttons", "radio", "links", "swap", "ids", "log"];
+export const DOC_SECTIONS = ["handover", "cabinet", "gwsenders", "buttons", "radio", "bus", "links", "swap", "ids", "log"];
 
 // One self-contained page, no scripts: check boxes above it show or hide the sections, printing
 // leaves them out. Sections: the handover (every device with its senders and fields), the cabinet
 // (devices by place, with circuit and fuse), the links, a checklist for moving to a gateway with
 // another base ID, the sender IDs (pool, further devices, unknown senders) and the log.
-export function documentationHtml(doc, t, profile, lang, shown = ["handover", "cabinet", "gwsenders", "buttons", "radio", "links", "swap", "ids"]) {
+export function documentationHtml(doc, t, profile, lang, shown = ["handover", "cabinet", "gwsenders", "buttons", "radio", "bus", "links", "swap", "ids"]) {
   const d = t.doc;
   const L = t.inst.links;
   const when = (iso) => new Date(iso).toLocaleString(lang);
@@ -334,6 +373,17 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
       ? table([T.id, T.device, T.place, T.description, T.eep, T.sends], radio.map((r) => `<tr>${[`<span class="mono">${esc(r.id)}</span>`, esc(r.device), esc(r.place), esc(r.name), `<span class="mono">${esc(r.eep)}</span>`, esc(r.sends)].map(cell).join("")}</tr>`).join(""))
       : "");
 
+  const busTable = tbl("bus", T.busIntro, (_parts, gw) => {
+    const bus = docBus(gw, t);
+    if (!bus.rows.length) return "";
+    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 1 })} W`;
+    const rows = bus.rows.map((r) => `<tr>${[`<span class="mono">${esc(r.address)}</span>`, esc(r.type), esc(r.device), esc(r.name), `<span class="mono">${esc(r.feedback)}</span>`, r.power === null ? `<span class="sub">${esc(T.noValue)}</span>` : num(r.power)].map(cell).join("")}</tr>`).join("");
+    const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td><b>${esc(num(bus.sum))}</b></td></tr>`;
+    const supply = bus.supply || bus.capacity ? `<p>${esc(T.supply)}: ${esc([bus.supply, bus.capacity ? num(bus.capacity) : ""].filter(Boolean).join(", "))}${bus.percent !== null ? ` · ${esc(T.busLoad(num(bus.sum), num(bus.capacity), bus.percent))}` : ""}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</p>` : "";
+    const missing = bus.rows.length - bus.counted ? `<p class="sub">${esc(T.busMissing(bus.rows.length - bus.counted))}</p>` : "";
+    return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum) + supply + missing;
+  });
+
   const links = section("links", d.sections.links, L.honest, perGateway((gw) => {
     const byTarget = new Map();
     for (const l of gw.links ?? []) byTarget.set(l.to_key || l.to_name, [...(byTarget.get(l.to_key || l.to_name) ?? []), l]);
@@ -383,7 +433,7 @@ ${rules}
 </style></head><body>
 <h1>${esc(d.title)}</h1>
 <div class="bar">${toggles}</div>
-${overview}${handover}${cabinet}${gwsenders}${buttonsTable}${radioTable}${links}${swap}${ids}${log}
+${overview}${handover}${cabinet}${gwsenders}${buttonsTable}${radioTable}${busTable}${links}${swap}${ids}${log}
 <div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
 </body></html>`;
 }

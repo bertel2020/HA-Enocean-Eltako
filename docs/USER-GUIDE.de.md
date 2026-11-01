@@ -340,7 +340,19 @@ Import sind Knöpfe des Reiters.
   **Protokoll**. Bei mehreren Gateways beginnt sie mit einer Übersicht. Am Ende steht ein Hinweis,
   was Home Assistant nicht wissen kann. Blockiert der Browser das Druckfenster, wird die Seite als
   Datei gespeichert, die du öffnest und druckst.
-- **CSV** der Geräte (eine Zeile pro Sender) und **Verbindungen als CSV**.
+- **CSV** der Geräte (eine Zeile pro Sender), **Verbindungen als CSV** und **Sender-Tabellen-CSV**
+  (die folgenden Tabellen untereinander).
+- Vier weitere Druckabschnitte, in der Reihenfolge einer Installationsliste: **Gateway-Sender**
+  (Sender-Nr. 0 bis 127 des Funk-Pools, also Basis-ID plus Nummer; freie Nummern sind zusammengefasst;
+  ein zweiter Modus, der die Nummer plus 64 belegt, verweist auf sein Gegenstück und zurück;
+  Bus-Adresse und Rückmelde-ID schreibst du je Gerät auf), **Taster** (jeder Wandtaster mit den
+  Aktoren auf linker und rechter Wippe, aus der Wandschalter-Option der Aktoren), **Funk-Sender**
+  (Geräte, die nur senden, und Einträge von Hand) und **Eltako-Bus** (jedes Gerät mit Bus-Adresse,
+  nach Adresse, mit der Leistung, die es vom Bus nimmt, und der Summe). Die Leistung je Gerät ist
+  die Aufnahme am Bus laut Datenblatt, nicht die geschaltete Last; du trägst sie von Hand ein, wie
+  auch Typ und Watt des Bus-Netzteils (in den Details des Gateways). Die Summe sagt, wie viele
+  Geräte noch keinen Wert haben. Home Assistant kann den Bus noch nicht lesen, deshalb füllt sich
+  dort nichts von selbst.
 - **JSON** (Version 2: typisierte Felder, Verbindungen und das Protokoll; der Import liest weiter
   Version 1).
 
