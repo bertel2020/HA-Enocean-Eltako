@@ -24,6 +24,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- The **Installation** tab is now the place for documentation and administration, in groups: Site (by area, devices), Senders (gateway senders, buttons, radio senders), Bus (Eltako bus, power supplies), Links, Log. The sender and bus tables show the same rows as the printout; the power supplies and the entries by hand moved there from the gateway details, and the output buttons are one **Output** menu.
 - The **Takeover** view shows the switch between takeover and reports at once, with an animated placeholder while it loads, so the reports are reachable without waiting for the takeover.
 - **Heard by** and the heard but unknown senders **survive a restart**: how each gateway hears a device and the newest 100 unknown senders are kept (written at most once a minute).
 - The printout is **one page with sections** you switch on or off above it (handover, cabinet, links, checklist, sender IDs, log); it replaces the separate cabinet sheet.
@@ -51,6 +52,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- Der Reiter **Installation** heißt jetzt **Anlage** und ist der Ort für Dokumentation und Verwaltung, in Gruppen: Anlage (nach Bereich, Geräte), Sender (Gateway-Sender, Taster, Funk-Sender), Bus (Eltako-Bus, Netzteile), Verbindungen, Protokoll. Die Tabellen der Gruppen Sender und Bus zeigen dieselben Zeilen wie der Ausdruck; Netzteile und Einträge von Hand sind aus den Gateway-Details dorthin umgezogen, und die Ausgabe-Knöpfe sind ein Menü **Ausgabe**.
 - Die Ansicht **Übernahme** zeigt den Wechsel zwischen Übernahme und Berichten sofort und beim Laden einen animierten Platzhalter; die Berichte sind erreichbar, ohne auf die Übernahme zu warten.
 - **Gehört von** und die gehörten unbekannten Sender **überstehen einen Neustart**: wie jedes Gateway ein Gerät hört und die neuesten 100 unbekannten Sender bleiben erhalten (höchstens einmal pro Minute geschrieben).
 - Der Ausdruck ist **eine Seite mit Abschnitten**, die du oben ein- oder ausschaltest (Übergabe, Schaltschrank, Verbindungen, Checkliste, Sender-IDs, Protokoll); sie ersetzt das eigene Schaltschrank-Blatt.

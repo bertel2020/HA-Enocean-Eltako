@@ -70,7 +70,9 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     viewInstallation: "Installation",
     inst: {
-      tabs: { areas: "By area", devices: "Devices", links: "Links", log: "Log" },
+      tabs: { areas: "By area", devices: "Devices", gwsenders: "Gateway senders", buttons: "Buttons", radio: "Radio senders", bus: "Eltako bus", supplies: "Power supplies", links: "Links", log: "Log" },
+      groups: { site: "Site", senders: "Senders", bus: "Bus", links: "Links", log: "Log" },
+      output: "Output", csvDevices: "Devices as CSV", manageIds: "Manage sender IDs", of: "of",
       links: {
         csvShort: "Links CSV", tablesCsv: "Sender tables CSV", byActuator: "By actuator", bySender: "By sender", controls: "Controls",
         honest: "What an actuator has really learned is stored in the actuator and cannot be read here. Every link says where it comes from: assigned (a sender Home Assistant holds), declared (the wall switch set for the device) or entered by you.",
@@ -236,7 +238,7 @@ export const TEXT = {
         busSum: (n, m) => `Sum, ${n} of ${m} devices with a value`,
         busLoad: (sum, cap, pct) => `${sum} of ${cap}, ${pct} % used`,
         busWarn: "Little reserve left",
-        external: "Outside the pool (written down by hand)", busGroupLine: "counted with the device above", supplyNoName: "Power supply", supplyTotal: "Total", supplyRange: (a, b) => `addresses ${a} to ${b}`,
+        external: "Outside the pool (written down by hand)", busEmpty: "No device with a bus address yet: write the address down under Devices.", busSourceTableShort: "table", busGroupLine: "counted with the device above", supplyNoName: "Power supply", supplyTotal: "Total", supplyRange: (a, b) => `addresses ${a} to ${b}`,
         busUnfed: (list) => `Addresses outside every supply's range: ${list}.`, supplyFam14: "FAM14 (supply inside the device)",
         busSource: "Source", busSourceUser: "written down", busSourceTable: "Eltako planning guide",
         busFromTable: (source) => `* Value from: ${source}. A type the table does not list has no value.`,
@@ -435,9 +437,11 @@ export const TEXT = {
     pair: "Befehl und Antwort",
     repeated: "Wiederholungen", repeater: "Repeater-Stufen",
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
-    viewInstallation: "Installation",
+    viewInstallation: "Anlage",
     inst: {
-      tabs: { areas: "Nach Bereich", devices: "Geräte", links: "Verbindungen", log: "Protokoll" },
+      tabs: { areas: "Nach Bereich", devices: "Geräte", gwsenders: "Gateway-Sender", buttons: "Taster", radio: "Funk-Sender", bus: "Eltako-Bus", supplies: "Netzteile", links: "Verbindungen", log: "Protokoll" },
+      groups: { site: "Anlage", senders: "Sender", bus: "Bus", links: "Verbindungen", log: "Protokoll" },
+      output: "Ausgabe", csvDevices: "Geräte als CSV", manageIds: "Sender-IDs verwalten", of: "von",
       links: {
         csvShort: "Verbindungen-CSV", tablesCsv: "Sender-Tabellen-CSV", byActuator: "Nach Aktor", bySender: "Nach Sender", controls: "Steuert",
         honest: "Was ein Aktor wirklich gelernt hat, steckt im Aktor und ist hier nicht lesbar. Jede Verbindung sagt, woher sie kommt: vergeben (ein Sender, den Home Assistant hält), angegeben (der Wandschalter der Geräteoptionen) oder von dir eingetragen.",
@@ -603,7 +607,7 @@ export const TEXT = {
         busSum: (n, m) => `Summe, ${n} von ${m} Geräten mit Wert`,
         busLoad: (sum, cap, pct) => `${sum} von ${cap}, ${pct} % ausgelastet`,
         busWarn: "Wenig Reserve",
-        external: "Außerhalb des Pools (von Hand eingetragen)", busGroupLine: "mit dem Gerät oben gezählt", supplyNoName: "Netzteil", supplyTotal: "Gesamt", supplyRange: (a, b) => `Adressen ${a} bis ${b}`,
+        external: "Außerhalb des Pools (von Hand eingetragen)", busEmpty: "Noch kein Gerät mit Bus-Adresse: trage die Adresse unter Geräte ein.", busSourceTableShort: "Tabelle", busGroupLine: "mit dem Gerät oben gezählt", supplyNoName: "Netzteil", supplyTotal: "Gesamt", supplyRange: (a, b) => `Adressen ${a} bis ${b}`,
         busUnfed: (list) => `Adressen außerhalb des Bereichs jedes Netzteils: ${list}.`, supplyFam14: "FAM14 (Netzteil im Gerät)",
         busSource: "Quelle", busSourceUser: "eingetragen", busSourceTable: "Eltako-Planungshilfe",
         busFromTable: (source) => `* Wert aus: ${source}. Ein Typ, den die Tabelle nicht kennt, hat keinen Wert.`,
