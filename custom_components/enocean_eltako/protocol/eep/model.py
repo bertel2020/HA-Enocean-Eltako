@@ -136,6 +136,20 @@ def unit_of(profile: Profile, data: bytes, shortcut: str, status: int = 0) -> st
     return f.unit
 
 
+def out_of_range(profile: Profile, data: bytes, status: int = 0) -> list[str]:
+    """Shortcuts of scaled fields whose raw value lies outside the field's raw range."""
+    case = find_case(profile, data, status)
+    if case is None:
+        return []
+    bad = []
+    for f in case.fields:
+        if f.raw is None or f.scale is None or f.offset + f.size > len(data) * 8:
+            continue
+        if not min(f.raw) <= get_bits(data, f.offset, f.size) <= max(f.raw):
+            bad.append(f.shortcut)
+    return bad
+
+
 def encode(profile: Profile, values: dict[str, Any], case_index: int = 0) -> bytes:
     """Build data bytes from field values (scaled values are converted back to raw)."""
     case = profile.cases[case_index]

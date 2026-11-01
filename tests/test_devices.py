@@ -2349,6 +2349,7 @@ async def test_profile_mismatch_repair(hass: HomeAssistant, gateway) -> None:
     assert issue is not None and issue.translation_key == "device_profile_mismatch"
     assert issue.translation_placeholders["rorg"] == "F6"
     assert issue.translation_placeholders["count"] == "5"
+    assert issue.translation_placeholders["suggestions"] != "-"  # what such telegrams point to
 
     _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)  # a telegram that fits: cleared
     await _settle(hass)
@@ -2492,3 +2493,34 @@ async def test_sender_test(hass: HomeAssistant, gateway, hass_ws_client) -> None
         flur.entry.runtime_data.queue.submit = lambda *a, _f=future, **k: _f
         result = await flur.async_test_senders()
         assert {r["result"] for r in result} == {str(outcome)}
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("temp_humidity", "00-8A-12-3F", "Fühler Büro")]],
+    indirect=True,
+)
+async def test_values_outside_the_profile_range_raise_a_repair(
+    hass: HomeAssistant, gateway
+) -> None:
+    from homeassistant.helpers import issue_registry as ir
+
+    entry, server = gateway
+    issue_id = f"device_profile_mismatch_{BASE}_00-8A-12-3F"
+    registry = ir.async_get(hass)
+
+    def push(humidity: int, temperature: int, i: int) -> None:
+        # A5-04-02: humidity and temperature are 0...250 raw; 255 is outside the range
+        _push(server, 0x07, bytes([0, humidity, temperature, 0x08 + (i & 1) * 2]), 0x008A123F)
+
+    for i in range(5):
+        push(255, 255 - i, i)
+    await _settle(hass)
+    entry.runtime_data.health_check()
+    issue = registry.async_get_issue(DOMAIN, issue_id)
+    assert issue is not None and issue.translation_key == "device_profile_range"
+
+    push(120, 100, 9)  # a value inside the range clears it
+    await _settle(hass)
+    entry.runtime_data.health_check()
+    assert registry.async_get_issue(DOMAIN, issue_id) is None

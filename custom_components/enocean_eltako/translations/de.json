@@ -1251,7 +1251,11 @@
     },
     "device_profile_mismatch": {
       "title": "{name} sendet Telegramme, die nicht zum Profil passen",
-      "description": "Die letzten {count} Telegramme von {name} passten nicht zu seinem Profil {profile}; das letzte hatte den Typ {rorg}. Vielleicht wurde das Gerät mit der falschen Art oder dem falschen Profil angelegt. Öffne das Gerät im EnOcean-Panel, vergleiche seine Telegramme mit dem Datenblatt und wähle unter Konfigurieren die passende Art."
+      "description": "Die letzten {count} Telegramme von {name} passten nicht zu seinem Profil {profile}; das letzte hatte den Typ {rorg}. Vielleicht wurde das Gerät mit der falschen Art oder dem falschen Profil angelegt. Telegramme dieses Typs sind typisch für: {suggestions}. Öffne das Gerät im EnOcean-Panel, vergleiche seine Telegramme mit dem Datenblatt und wähle unter Konfigurieren die passende Art."
+    },
+    "device_profile_range": {
+      "title": "{name} sendet Werte außerhalb des Bereichs seines Profils",
+      "description": "Die letzten {count} Telegramme von {name} hatten Werte außerhalb der Bereiche seines Profils {profile}. Vielleicht wurde das Gerät mit dem falschen Profil oder der falschen Variante angelegt. Öffne das Gerät im EnOcean-Panel, vergleiche seine Telegramme mit dem Datenblatt und wähle unter Konfigurieren die passende Art."
     },
     "gateway_disconnected": {
       "title": "{name} ist getrennt",

@@ -1251,7 +1251,11 @@
     },
     "device_profile_mismatch": {
       "title": "{name} sends telegrams that do not fit its profile",
-      "description": "The last {count} telegrams of {name} did not fit its profile {profile}; the last one was of type {rorg}. The device may have been set up with the wrong kind or profile. Open the device in the EnOcean panel, compare its telegrams with the data sheet and, under Configure, pick the kind that fits."
+      "description": "The last {count} telegrams of {name} did not fit its profile {profile}; the last one was of type {rorg}. The device may have been set up with the wrong kind or profile. Telegrams of this type are typical for: {suggestions}. Open the device in the EnOcean panel, compare its telegrams with the data sheet and, under Configure, pick the kind that fits."
+    },
+    "device_profile_range": {
+      "title": "{name} sends values outside its profile's range",
+      "description": "The last {count} telegrams of {name} had values outside the ranges of its profile {profile}. The device may have been set up with the wrong profile or variant. Open the device in the EnOcean panel, compare its telegrams with the data sheet and, under Configure, pick the kind that fits."
     },
     "gateway_disconnected": {
       "title": "{name} is disconnected",
