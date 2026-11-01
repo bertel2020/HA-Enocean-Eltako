@@ -789,3 +789,40 @@ async def test_websocket_hide_sender(hass: HomeAssistant, hass_ws_client) -> Non
     assert status["hidden"] == ["00-00-05-20", "01-90-8C-14"]
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_commands_reject_a_gateway_that_is_not_loaded(
+    hass: HomeAssistant, setup, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    for i, (type_, fields) in enumerate(
+        [
+            ("send", {"sender": "FF-B7-44-81", "rorg": "F6", "data": "70"}),
+            ("teach_in", {"device": "x", "profile": "central"}),
+            ("device_details", {"device": "x"}),
+            ("set_model", {"device": "x", "model_name": "m"}),
+            ("remove_devices", {"devices": ["x"]}),
+            ("hide_sender", {"sender": "FF-B7-44-81"}),
+        ],
+        start=1,
+    ):
+        await client.send_json(
+            {"id": i, "type": f"enocean_eltako/{type_}", "entry_id": "unknown", **fields}
+        )
+        reply = await client.receive_json()
+        assert reply["success"] is False, type_
+        assert reply["error"]["code"] == "not_found", type_
+
+
+async def test_sender_pool_commands_reject_an_unknown_pool(
+    hass: HomeAssistant, setup, hass_ws_client
+) -> None:
+    client = await hass_ws_client(hass)
+    for i, (type_, fields) in enumerate(
+        [("free", {"sender": "FF-B7-44-81"}), ("free_all", {})], start=1
+    ):
+        await client.send_json(
+            {"id": i, "type": f"enocean_eltako/sender_pools/{type_}", "pool": "nope", **fields}
+        )
+        reply = await client.receive_json()
+        assert reply["error"]["code"] == "not_found", type_

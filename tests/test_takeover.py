@@ -794,3 +794,44 @@ async def test_usage_editor_paths_and_unknown_entities(hass: HomeAssistant) -> N
 async def test_usage_without_components_or_dashboards_is_empty(hass: HomeAssistant) -> None:
     usage = await async_usage(hass, ["light.alt"])
     assert usage["light.alt"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
+
+
+async def test_takeover_commands_need_a_loaded_gateway(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    old_yaml,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    for i, (type_, fields) in enumerate(
+        [
+            ("run", {"devices": []}),
+            ("mapping", {}),
+            ("carry", {"carry": []}),
+            ("restore", {}),
+        ],
+        start=1,
+    ):
+        reply = await _ws(hass_ws_client, hass, i, type_, entry_id="unknown", **fields)
+        assert reply["error"]["code"] == "gateway_not_loaded", type_
+
+
+async def test_takeover_run_without_matching_gateway(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    old_yaml,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _ = gateway
+    old_yaml["config"] = {"eltako": {"gateway": [{**OLD_GATEWAY, "base_id": "FF-80-00-00"}]}}
+    reply = await _ws(hass_ws_client, hass, 1, "run", entry_id=entry.entry_id, devices=[])
+    assert reply["error"]["code"] == "no_gateway"
+
+
+async def test_takeover_unknown_reports_are_not_found(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    for i, type_ in enumerate(("report", "report_delete"), start=1):
+        reply = await _ws(hass_ws_client, hass, i, type_, run_id="nope")
+        assert reply["error"]["code"] == "not_found", type_
