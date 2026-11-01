@@ -125,6 +125,7 @@ export function documentationCsv(doc, t, profile, table = "devices") {
         [gw.title, d.sections.gwsenders],
         [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second],
         ...parts.senders.map((r) => [r.nr, r.id, r.fn ?? "", r.gateway ? T.gateway : r.device ?? "", r.gateway ? "" : [r.name, r.place].filter(Boolean).join(", "), r.bus ?? "", r.feedback ?? "", r.free ? T.free : r.blocked ? T.blocked : r.use ?? "", r.second ?? ""]),
+        ...parts.externals.map((r) => ["", r.id, "", r.device, r.name, "", "", `${T.external}: ${r.use}`.replace(/: $/, ""), r.second]),
         [],
         [gw.title, d.sections.buttons],
         [T.id, T.device, T.place, T.description, T.left, T.right],
@@ -204,11 +205,16 @@ export function docTables(gw, t, profile) {
   const base = gw.base_id ? idNumber(gw.base_id) : null;
   const byRef = new Map(gw.devices.map((d) => [d.note_key, d]));
   const numbers = new Map(); // note_key -> its first sender number, to refer to it
+  const refNumbers = new Map(); // note_key -> all its sender numbers
   const senders = [];
   const pool = gw.pools.find((p) => p.kind === "radio");
   if (base !== null && pool) {
     const taken = new Map(pool.senders.map((s) => [idNumber(s.id) - base, s]));
-    for (const [n, s] of taken) if (s.ref && !numbers.has(s.ref)) numbers.set(s.ref, n);
+    for (const [n, s] of taken) {
+      if (!s.ref) continue;
+      if (!numbers.has(s.ref)) numbers.set(s.ref, n);
+      refNumbers.set(s.ref, [...(refNumbers.get(s.ref) ?? []), n].sort((a, b) => a - b));
+    }
     for (let n = 0; n <= 127; n++) {
       const s = taken.get(n);
       const id = (base + n).toString(16).toUpperCase().padStart(8, "0");
@@ -233,6 +239,12 @@ export function docTables(gw, t, profile) {
       senders.push(row);
     }
   }
+  // senders from outside the pool that were written down as taught into a device (the GFVS
+  // software, say): their IDs are free, Home Assistant knows them only from the user
+  const externals = (gw.links ?? [])
+    .filter((l) => l.source === "entered" && l.from_id)
+    .map((l) => ({ id: l.from_id, device: byRef.get(l.to_key)?.model ?? "", name: [l.from_name, l.to_name].filter(Boolean).join(" → "), use: l.role ?? "", second: (refNumbers.get(l.to_key) ?? []).length ? `→ ${refNumbers.get(l.to_key).join(", ")}` : "" }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   const nr = (key) => (numbers.has(key) ? ` (${numbers.get(key)})` : "");
 
   // buttons: a button device, or just an ID that an actuator names as its wall switch
@@ -265,7 +277,7 @@ export function docTables(gw, t, profile) {
     .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
     .sort((a, b) => (a.group || a.description).localeCompare(b.group || b.description) || a.id.localeCompare(b.id));
   for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", description: m.function, eep: "", sends: T.byHand, group: "" });
-  return { senders, buttons: buttonRows, radio };
+  return { senders, externals, buttons: buttonRows, radio };
 }
 
 // The Eltako bus: every device with a bus address (1 to 126, one per channel), from the typed
@@ -404,15 +416,18 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
   const T = d.tbl;
   const tbl = (name, intro, build) =>
     section(name, d.sections[name], intro, perGateway((gw) => build(docTables(gw, t, profile), gw)));
-  const gwsenders = tbl("gwsenders", T.sendersIntro, ({ senders }) => {
-    if (!senders.length) return "";
+  const gwsenders = tbl("gwsenders", T.sendersIntro, ({ senders, externals }) => {
+    if (!senders.length && !externals.length) return "";
     const rows = foldFree(senders).map((r) => {
       if (r.free) return `<tr class="sub"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
       if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
       if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="7" class="sub">${esc(T.blocked)}</td></tr>`;
       return `<tr>${[`<span class="mono">${r.nr}</span>`, `<span class="mono">${esc(r.id)}</span>`, esc(r.fn), esc(r.device), esc([r.name, r.place].filter(Boolean).join(", ")), esc(r.bus), `<span class="mono">${esc(r.feedback)}</span>`, esc(r.use), `<span class="mono">${esc(r.second)}</span>`].map(cell).join("")}</tr>`;
     }).join("");
-    return table([T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second], rows);
+    const outside = externals.length
+      ? `<tr class="sub"><td colspan="9"><b>${esc(T.external)}</b></td></tr>${externals.map((r) => `<tr>${[`<span class="mono">–</span>`, `<span class="mono">${esc(r.id)}</span>`, "", esc(r.device), esc(r.name), "", "", esc(r.use), `<span class="mono">${esc(r.second)}</span>`].map(cell).join("")}</tr>`).join("")}`
+      : "";
+    return table([T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second], rows + outside);
   });
   const buttonsTable = tbl("buttons", T.buttonsIntro, ({ buttons }) =>
     buttons.length
