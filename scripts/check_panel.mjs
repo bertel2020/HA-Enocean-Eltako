@@ -89,7 +89,8 @@ const tgw = {
     tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "01-1", feedback_id: "00000081", bus_power: "0,4", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
     tdev({ name: "Rollladen Bad", id: "05-10-A2-C2", note_key: "k2", category: "covers", bus_address: "09-1", bus_power: "0.4", wall_switch: { id: "FE-8A-34-07", on: "a0", off: "b0" } }),
     tdev({ name: "Taster Haustür", id: "FE-8A-31-C2", category: "buttons", model: "F4T55E", location: "Flur" }),
-    tdev({ name: "Raumregler", id: "FE-91-2A-40", category: "climate", model: "FUTH55", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"] }),
+    tdev({ name: "Raumregler Temperatur", id: "FE-91-2A-40", category: "climate", model: "FUTH55", group: "Raumregler Wohnzimmer", eep: "A5-10-06:eltako", eep_extra: ["A5-04-01:std"] }),
+    tdev({ name: "Raumregler Taste", id: "FE-91-2A-41", category: "sensors", model: "FUTH55", group: "Raumregler Wohnzimmer", eep: "F6-02-01:std" }),
   ],
   pools: [{ id: "radio:g1", kind: "radio", start: "FF-B6-40-81", end: "FF-B6-40-FF", senders: [
     { id: "FF-B6-40-9D", device: "Licht Flur", ref: "k1", profile: "central", state: "assigned" },
@@ -112,7 +113,9 @@ for (const lang of ["en", "de"]) {
   if (!haus || haus.device !== "F4T55E" || haus.left.join() !== "Licht Flur (29)" || haus.right.length !== 0) errors.push(`shared.js: docTables (${lang}) puts the wall switch rockers wrong`);
   const bad = parts.buttons.find((b) => b.id === "FE-8A-34-07");
   if (!bad || bad.left[0] !== `Rollladen Bad ${t.doc.tbl.on} (36)` || bad.right[0] !== `Rollladen Bad ${t.doc.tbl.off} (36)`) errors.push(`shared.js: docTables (${lang}) does not split on and off over two rockers`);
-  if (parts.radio.length !== 2 || parts.radio[0].eep !== "A5-10-06:eltako, A5-04-01:std" || parts.radio[1].id !== "00-AA-00-01") errors.push(`shared.js: docTables (${lang}) has the wrong radio senders`);
+  if (parts.radio.length !== 3 || parts.radio[0].eep !== "A5-10-06:eltako, A5-04-01:std" || parts.radio[0].description !== "Raumregler Wohnzimmer" || parts.radio[1].sends !== "Raumregler Taste" || parts.radio[2].id !== "00-AA-00-01") errors.push(`shared.js: docTables (${lang}) has the wrong radio senders`);
+  const grouped = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
+  if (!grouped.split('<section class="sec sec-radio">')[1]?.split("</section>")[0].includes('rowspan="2">FUTH55')) errors.push(`shared.js: documentationHtml (${lang}) does not put the IDs of one device in one block`);
   const bus = docBus(tgw, t);
   if (bus.rows.map((r) => r.address).join() !== "01-1,09-1,12-1" || bus.sum !== 0.8 || bus.counted !== 2 || bus.percent !== 80 || bus.rows[2].power !== null) errors.push(`shared.js: docBus (${lang}) sorts, sums or compares wrongly: ${JSON.stringify(bus)}`);
   const busPage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);

@@ -92,7 +92,7 @@ export function csv(rows) {
 
 // ---- installation documentation (the structure of the documentation websocket command) ------------
 
-const FIELD_KEYS = ["location", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
+const FIELD_KEYS = ["location", "circuit", "group", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
 
 function docSenderText(s, t, profile) {
   const kind = s.ute ? t.teachUte : t.teachTelegram;
@@ -130,7 +130,7 @@ export function documentationCsv(doc, t, profile, table = "devices") {
         [],
         [gw.title, d.sections.radio],
         [T.id, T.device, T.place, T.description, T.eep, T.sends],
-        ...parts.radio.map((r) => [r.id, r.device, r.place, r.name, r.eep, r.sends]),
+        ...parts.radio.map((r) => [r.id, r.device, r.place, r.description, r.eep, r.sends]),
         []
       );
       const bus = docBus(gw, t);
@@ -256,11 +256,13 @@ export function docTables(gw, t, profile) {
   const buttonRows = [...buttons.values()].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 
   // radio senders: devices that only send, then the entries made by hand
+  // devices of one physical device (a room controller sends under several IDs) share a group name:
+  // their rows follow each other, the group is the description and each ID says what it sends
   const radio = gw.devices
     .filter((d) => !d.virtual && ["sensors", "meters", "climate"].includes(d.category))
-    .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), name: d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: T.categories[d.category] }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", name: m.function, eep: "", sends: T.byHand });
+    .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
+    .sort((a, b) => (a.group || a.description).localeCompare(b.group || b.description) || a.id.localeCompare(b.id));
+  for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", description: m.function, eep: "", sends: T.byHand, group: "" });
   return { senders, buttons: buttonRows, radio };
 }
 
@@ -368,10 +370,19 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
     buttons.length
       ? table([T.id, T.device, T.place, T.description, T.left, T.right], buttons.map((b) => `<tr>${[`<span class="mono">${esc(b.id)}</span>`, esc(b.device), esc(b.place), esc(b.name), b.left.map(esc).join("<br>") || `<span class="sub">${esc(T.unassigned)}</span>`, b.right.map(esc).join("<br>") || `<span class="sub">${esc(T.unassigned)}</span>`].map(cell).join("")}</tr>`).join(""))
       : "");
-  const radioTable = tbl("radio", T.radioIntro, ({ radio }) =>
-    radio.length
-      ? table([T.id, T.device, T.place, T.description, T.eep, T.sends], radio.map((r) => `<tr>${[`<span class="mono">${esc(r.id)}</span>`, esc(r.device), esc(r.place), esc(r.name), `<span class="mono">${esc(r.eep)}</span>`, esc(r.sends)].map(cell).join("")}</tr>`).join(""))
-      : "");
+  const radioTable = tbl("radio", T.radioIntro, ({ radio }) => {
+    if (!radio.length) return "";
+    // the rows of a group: device, place and description once, spanning the IDs of the group
+    const rows = radio.map((r, i) => {
+      const same = (x) => r.group && x?.group === r.group;
+      const end = radio.findIndex((x, j) => j > i && !same(x));
+      const span = !r.group ? 1 : same(radio[i - 1]) ? 0 : (end === -1 ? radio.length : end) - i;
+      const spanned = (html) => (span === 0 ? "" : span > 1 ? `<td rowspan="${span}">${html}</td>` : cell(html));
+      const cells = [cell(`<span class="mono">${esc(r.id)}</span>`), spanned(esc(r.device)), spanned(esc(r.place)), spanned(esc(r.description)), cell(`<span class="mono">${esc(r.eep)}</span>`), cell(esc(r.sends))];
+      return `<tr>${cells.join("")}</tr>`;
+    }).join("");
+    return table([T.id, T.device, T.place, T.description, T.eep, T.sends], rows);
+  });
 
   const busTable = tbl("bus", T.busIntro, (_parts, gw) => {
     const bus = docBus(gw, t);
