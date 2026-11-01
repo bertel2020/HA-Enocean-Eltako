@@ -10,8 +10,13 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- The new **Installation** tab of the panel: devices by area or place, a table with typed fields (place, circuit, fuse, installed, revision, power, note) edited in place, for a selection or pasted from a spreadsheet, and the event log.
 - The installation keeps an **event log** per gateway: devices added or removed, senders assigned or removed, teach-ins, sender tests and imports.
 - Importing notes into a **swapped gateway** (another base ID): the panel offers to map the one unmatched gateway of the file to the one set up here.
+
+#### Changed
+
+- A device's notes are now typed fields (store version 2, migrated from version 1 on first load); exports and the import carry all of them.
 
 #### Fixed
 
@@ -21,8 +26,13 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Der neue Reiter **Installation** im Panel: Geräte nach Bereich oder Ort, eine Tabelle mit typisierten Feldern (Ort, Stromkreis, Sicherung, Eingebaut, Revision, Versorgung, Notiz), direkt bearbeitbar, für eine Auswahl oder aus einer Tabellenkalkulation eingefügt, und das Ereignisprotokoll.
 - Die Installation führt ein **Ereignisprotokoll** pro Gateway: Geräte hinzugefügt oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe.
 - Beim Import von Notizen in ein **getauschtes Gateway** (andere Base-ID) bietet das Panel an, das eine Gateway der Datei ohne Treffer dem hier eingerichteten zuzuordnen.
+
+#### Geändert
+
+- Die Notizen eines Geräts sind jetzt typisierte Felder (Speicherversion 2, beim ersten Laden aus Version 1 überführt); Exporte und der Import enthalten alle.
 
 #### Behoben
 

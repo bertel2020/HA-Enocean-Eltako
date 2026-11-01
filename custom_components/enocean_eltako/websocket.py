@@ -38,7 +38,7 @@ from .discovery import async_set_hidden
 from .documentation import VERSION as DOCUMENTATION_VERSION
 from .documentation import collect as collect_documentation
 from .hub import async_get_hub
-from .notes import MANUAL_FIELDS, MAX_MANUAL, MAX_NOTE, device_key
+from .notes import FIELDS, MANUAL_FIELDS, MAX_MANUAL, MAX_NOTE, device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -53,6 +53,7 @@ from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
+MAX_BULK = 500  # devices in one table edit
 MAX_IMPORT_GATEWAYS = 20
 REPEATER_ONLY_MIN = 3  # telegrams heard before 'only via a repeater' is claimed
 # telegram types the panel may send, with the data lengths in bytes
@@ -71,6 +72,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_documentation)
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_set_manual)
+    websocket_api.async_register_command(hass, ws_set_fields)
     websocket_api.async_register_command(hass, ws_prune_notes)
     websocket_api.async_register_command(hass, ws_import_documentation)
     websocket_api.async_register_command(hass, ws_set_model)
@@ -535,9 +537,9 @@ def device_details(device: Any) -> dict[str, Any]:
         "signal": {"rssi": stats.rssi, "min": stats.rssi_min, "max": stats.rssi_max},
         "repeat": stats.repeat_count,
         "heard_by": heard_by(device),
-        "note": device.entry.runtime_data.hub.notes[device.entry.entry_id].devices.get(
-            device_key(device.subentry), ""
-        ),
+        "note": device.entry.runtime_data.hub.notes[device.entry.entry_id].device(
+            device_key(device.subentry)
+        )["note"],
         "sender_test": device.sender_test_error() is None,
         "telegrams": stats.telegrams,
         "interval": model.interval,
@@ -692,6 +694,42 @@ def ws_import_documentation(
             "import", "", f"{notes} notes, {manual} entries"
         )
     connection.send_result(msg["id"], {"gateways": result})
+
+
+FIELD_VALUES: dict[Any, Any] = {
+    vol.Optional(f): vol.All(str, vol.Length(max=n)) for f, n in FIELDS.items()
+}
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_fields",
+        vol.Required("entry_id"): str,
+        vol.Required("items"): vol.All(
+            [{vol.Required("device"): str, vol.Required("values"): FIELD_VALUES}],
+            vol.Length(max=MAX_BULK),
+        ),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_fields(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Typed fields of devices (location, circuit, fuse ...): one device, a selection or a table."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    saved, rejected = 0, []
+    for item in msg["items"]:
+        device = entry.runtime_data.devices.get(item["device"])
+        if device is None or not notes.set_fields(device_key(device.subentry), item["values"]):
+            rejected.append(item["device"])
+        else:
+            saved += 1
+    connection.send_result(msg["id"], {"saved": saved, "rejected": rejected})
 
 
 def _device_keys(entry: Any) -> set[str]:

@@ -9,7 +9,7 @@
 // a failed import is remembered by the browser, so a top-level await here would leave the panel
 // blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState;
+let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState, INSTALLATION_STYLE, installation, installationState;
 const LOAD_TRIES = 4;
 
 async function loadParts() {
@@ -18,14 +18,16 @@ async function loadParts() {
     // a retry asks for a new URL: the failed one stays failed in the module map
     const v = i ? `${VERSION}${VERSION ? "&" : "?"}r=${i}` : VERSION;
     try {
-      const [shared, texts, tk] = await Promise.all([
+      const [shared, texts, tk, inst] = await Promise.all([
         import(`./shared.js${v}`),
         import(`./texts.js${v}`),
         import(`./takeover.js${v}`),
+        import(`./installation.js${v}`),
       ]);
       ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg } = shared);
       ({ TEXT } = texts);
       ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
+      ({ INSTALLATION_STYLE, installation, installationState } = inst);
       return;
     } catch (err) {
       error = err;
@@ -401,9 +403,10 @@ const STYLE = `
   .devices .dev.picked { background: var(--accent-soft); }
   .devices .dev .labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
-  .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only { display: none !important; }
+  .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only,
+  .panel[data-view="installation"] .tg-only, .panel[data-view="installation"] .list-only { display: none !important; }
   .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
-  .panel:not([data-view="takeover"]) .takeover { display: none; }
+  .panel:not([data-view="takeover"]) .takeover, .panel:not([data-view="installation"]) .installation { display: none; }
   /* the pool at a glance: four tiles, one bar, a note when something waits, then the map */
   .senders .ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 16px 16px 0; }
   .senders .ptile { background: var(--soft); border-radius: 12px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -713,7 +716,7 @@ const DEV_STATUS = ["", "known", "unknown", "silent", "weak"];
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
 
-const VIEWS = ["telegrams", "devices", "senders", "takeover"];
+const VIEWS = ["telegrams", "devices", "senders", "installation", "takeover"];
 
 function loadView() {
   const fallback = { view: "telegrams", pageSize: 50, sort: { key: "time", desc: true }, devSort: { key: "name", desc: false }, filter: { ...NO_FILTER } };
@@ -855,7 +858,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     Object.assign(EnOceanEltakoPanel.prototype, takeover); // the Takeover view (takeover.js) adds its methods
+    Object.assign(EnOceanEltakoPanel.prototype, installation); // the Installation view (installation.js)
     this._tk = takeoverState();
+    this._in = installationState();
     this._ready = true;
     this._loading = null;
     this.hass = this._waiting;
@@ -932,7 +937,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _build() {
     const t = this._t;
     this.shadowRoot.innerHTML = `
-      <style>${STYLE}${TAKEOVER_STYLE}</style>
+      <style>${STYLE}${TAKEOVER_STYLE}${INSTALLATION_STYLE}</style>
       <header class="header">
         <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title)}</b></div></div>
         <div class="header-end">
@@ -940,6 +945,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
           <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
           <button role="tab" data-view="senders" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewSenders)}</button>
+          <button role="tab" data-view="installation" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewInstallation)}</button>
           <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${esc(t.viewTakeover)}</button>
         </nav>
         <button class="chip integration-link" data-open-integration>${svg(ICON.open)}${esc(t.integration)}</button>
@@ -1038,6 +1044,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div id="sidList"></div>
           </div>
           <div class="takeover" id="takeover"></div>
+          <div class="installation" id="installation"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager list-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
@@ -1100,6 +1107,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
     });
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
+    $("installation").addEventListener("click", (e) => this._installationClick(e));
+    $("installation").addEventListener("change", (e) => this._installationChange(e));
+    $("installation").addEventListener("input", (e) => this._installationInput(e));
     // the empty state without a gateway and the gateway details: to the integration
     this.shadowRoot.addEventListener("click", (e) => {
       const link = e.target.closest("[data-open-integration]");
@@ -1593,7 +1603,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
     // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
-    $("gatewaySection").hidden = view === "senders" || view === "takeover";
+    $("gatewaySection").hidden = view === "senders" || view === "takeover" || view === "installation";
     this._renderMini();
     // export saves what the view shows: telegrams, or the sender list
     const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
@@ -1604,11 +1614,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("export").setAttribute("aria-label", exportLabel);
     if (view !== "telegrams") this._toggleSend(false);
     // the heading names the view; the section's label follows it
-    const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover }[view];
+    const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover, installation: this._t.viewInstallation }[view];
     $("viewTitle").textContent = title;
     $("panel").setAttribute("aria-label", title);
     if (view === "senders") this._loadPools();
     if (view === "takeover") this._loadTakeover();
+    if (view === "installation") this._loadInstallation();
     if (view === "devices") this._loadRegistries().then(() => this._view === "devices" && this._render(true));
     for (const button of $("view").querySelectorAll("button")) {
       // tabs: only the chosen one is in the tab order, the arrow keys move between them
@@ -2583,7 +2594,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderDevices(background);
       return;
     }
-    if (this._view === "senders" || this._view === "takeover") return;
+    if (this._view === "senders" || this._view === "takeover" || this._view === "installation") return;
     const rows = this._visible().sort((a, b) => this._compare(a, b));
     const total = rows.length;
     this._total = total;

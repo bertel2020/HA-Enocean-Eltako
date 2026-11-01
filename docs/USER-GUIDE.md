@@ -295,6 +295,16 @@ sender **answered** or **no answer**. No answer does not prove that the sender i
 actuator, as an actuator may stay silent; a rocker that toggles is not tested. A dimmer gets its current brightness as a dim command through its central command; its rocker is not tested, as a press could change the brightness. Covers are not tested at all: every command moves them or interrupts a run. The test does not
 count in the command statistics.
 
+**Installation view:** the **Installation** tab gathers the documentation in one place. **By area**
+shows the devices of each gateway grouped by Home Assistant area or by the place you wrote down,
+with how many still have no place. **Devices** is a table with typed fields you edit in place:
+place (cabinet, row, slot), circuit, fuse, installation date, revision (the date code, as it decides
+the learn function), power (mains, battery type) and a note. Select rows to set one field for all of
+them, or **paste from a spreadsheet**: a header row, an Address column and columns named like the
+fields; empty cells change nothing, and **Copy the table** gives the same layout to edit and paste
+back. **Log** lists what happened: devices added or removed, senders assigned or removed, teach-ins,
+sender tests and imports. Print, CSV, JSON and import are buttons of the tab.
+
 **Installation documentation:** in the Devices view, the ⋮ menu offers **Print installation
 documentation**, **Documentation as CSV** and **Documentation as JSON**. All three cover every
 gateway: devices with address, EEP, area and wall switch, the senders Home Assistant assigned

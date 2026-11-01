@@ -28,6 +28,7 @@
   if (view) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     panel._setView(view);
+    if (view === "installation" && what && what.startsWith("tab")) { panel._in.tab = what.slice(3); }
     if (what === "menu") panel._toggleMenu(true);
     else if (what === "gateway") panel._gatewayDetails.add("gw1");
     else if (what) {

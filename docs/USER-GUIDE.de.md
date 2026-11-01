@@ -312,6 +312,18 @@ Priorität) und markiert jeden Sender mit **Antwort** oder **keine Antwort**. Ke
 beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm bleiben; ein
 umschaltender Wipptaster wird nicht getestet. Ein Dimmer bekommt seine aktuelle Helligkeit als Dimmbefehl über den Zentralbefehl; sein Wipptaster wird nicht getestet, denn ein Druck könnte die Helligkeit ändern. Rollläden werden gar nicht getestet: jeder Befehl bewegt sie oder unterbricht eine Fahrt. Der Test zählt nicht in der Befehlsstatistik.
 
+**Ansicht Installation:** Der Reiter **Installation** bündelt die Dokumentation an einer Stelle.
+**Nach Bereich** zeigt die Geräte jedes Gateways nach Home-Assistant-Bereich oder nach dem
+von dir notierten Ort gruppiert, mit der Zahl der Geräte ohne Ort. **Geräte** ist eine Tabelle mit
+typisierten Feldern, die du direkt bearbeitest: Ort (Schrank, Reihe, Platz), Stromkreis, Sicherung,
+Einbaudatum, Revision (der Datumscode, denn er bestimmt die Lernfunktion), Versorgung (Netz,
+Batterietyp) und eine Notiz. Mit markierten Zeilen setzt du ein Feld für alle auf einmal, oder du
+**fügst aus einer Tabellenkalkulation ein**: eine Kopfzeile, eine Spalte Adresse und Spalten, die
+wie die Felder heißen; leere Zellen ändern nichts, und **Tabelle kopieren** liefert dasselbe Layout
+zum Bearbeiten und Zurückfügen. **Protokoll** listet, was passiert ist: Geräte hinzugefügt oder
+entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. Drucken, CSV, JSON und
+Import sind Knöpfe des Reiters.
+
 **Installationsdokumentation:** In der Geräteansicht bietet das ⋮-Menü **Installationsdokumentation
 drucken**, **Dokumentation als CSV** und **Dokumentation als JSON**. Alle drei umfassen jedes
 Gateway: Geräte mit Adresse, EEP, Bereich und Wandschalter, die von Home Assistant vergebenen
