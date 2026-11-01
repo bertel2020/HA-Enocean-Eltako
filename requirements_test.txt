@@ -1,8 +1,8 @@
 # pytest and Home Assistant itself are pinned by this package
-pytest-homeassistant-custom-component==0.13.373
+pytest-homeassistant-custom-component==0.13.375
 # the requirements of Home Assistant's usb integration (same versions as its manifest)
 aiousbwatcher==1.1.2
-serialx==1.14.0
-ruff==0.17.1
-mypy==2.4.0
+serialx==1.15.1
+ruff==0.17.3
+mypy==2.4.1
 hypothesis==6.170.14
