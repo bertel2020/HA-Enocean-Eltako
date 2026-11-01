@@ -4,6 +4,30 @@ All notable changes to this project are documented here, in English and German: 
 has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
+### [Unreleased]
+
+**English**
+
+#### Added
+
+- The installation keeps an **event log** per gateway: devices added or removed, senders assigned or removed, teach-ins, sender tests and imports.
+- Importing notes into a **swapped gateway** (another base ID): the panel offers to map the one unmatched gateway of the file to the one set up here.
+
+#### Fixed
+
+- Importing notes of a **two-channel actuator** put the second channel's note under the first channel's key; exports now carry the key of each device.
+
+**Deutsch**
+
+#### Hinzugefügt
+
+- Die Installation führt ein **Ereignisprotokoll** pro Gateway: Geräte hinzugefügt oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe.
+- Beim Import von Notizen in ein **getauschtes Gateway** (andere Base-ID) bietet das Panel an, das eine Gateway der Datei ohne Treffer dem hier eingerichteten zuzuordnen.
+
+#### Behoben
+
+- Der Import von Notizen eines **Zweikanal-Aktors** legte die Notiz des zweiten Kanals unter dem Schlüssel des ersten ab; Exporte tragen jetzt den Schlüssel jedes Geräts.
+
 ### [1.4.1] - 2026-11-01
 
 **English**

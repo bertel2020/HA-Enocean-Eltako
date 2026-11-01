@@ -647,6 +647,8 @@ def ws_set_note(
         vol.Required("type"): "enocean_eltako/import_documentation",
         vol.Required("doc"): dict,  # a JSON export of the documentation
         vol.Optional("overwrite", default=False): bool,
+        # old base ID -> entry ID of the gateway that takes its place (a swapped gateway)
+        vol.Optional("gateway_map", default={}): {str: str},
     }
 )
 @websocket_api.require_admin
@@ -669,14 +671,26 @@ def ws_import_documentation(
     for gateway in gateways[:MAX_IMPORT_GATEWAYS]:
         if not isinstance(gateway, dict):
             continue
-        entry = loaded.get(gateway.get("base_id"))
+        base_id = gateway.get("base_id")
+        entry = loaded.get(base_id)
+        if entry is None and (mapped := msg["gateway_map"].get(str(base_id))):
+            entry = next((e for e in loaded.values() if e.entry_id == mapped), None)
         if entry is None:
-            result.append({"title": str(gateway.get("title", "")), "matched": False})
+            result.append(
+                {
+                    "title": str(gateway.get("title", "")),
+                    "base_id": base_id,
+                    "matched": False,
+                }
+            )
             continue
         notes, manual = entry.runtime_data.hub.notes[entry.entry_id].import_from(
             gateway, overwrite=msg["overwrite"]
         )
         result.append({"title": entry.title, "matched": True, "notes": notes, "manual": manual})
+        entry.runtime_data.hub.notes[entry.entry_id].add_log(
+            "import", "", f"{notes} notes, {manual} entries"
+        )
     connection.send_result(msg["id"], {"gateways": result})
 
 

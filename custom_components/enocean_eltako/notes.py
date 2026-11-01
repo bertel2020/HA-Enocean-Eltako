@@ -21,6 +21,7 @@ STORAGE_VERSION = 1
 MAX_NOTE = 500
 MAX_MANUAL = 200  # entries per gateway
 MANUAL_FIELDS = {"name": 80, "address": 40, "function": 200}
+MAX_LOG = 500  # events per gateway
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
 
 
@@ -42,6 +43,10 @@ class Notes:
         self.tests: dict[str, dict[str, Any]] = {}
         # devices Home Assistant cannot see (buttons taught in directly ...), written by hand
         self.manual: list[dict[str, str]] = []
+        # what happened to the installation, oldest first: {"time", "kind", "device", "detail"}
+        self.log: list[dict[str, str]] = []
+        # the devices as they were at the last load, to tell what was added or removed since
+        self.known: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
@@ -49,6 +54,8 @@ class Notes:
         self.devices = {str(k): str(v) for k, v in stored.get("devices", {}).items()}
         self.tests = {str(k): dict(v) for k, v in stored.get("tests", {}).items()}
         self.manual = [{k: str(v) for k, v in e.items()} for e in stored.get("manual", [])]
+        self.log = [{k: str(v) for k, v in e.items()} for e in stored.get("log", [])]
+        self.known = {str(k): dict(v) for k, v in stored.get("known", {}).items()}
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -56,10 +63,50 @@ class Notes:
             "devices": self.devices,
             "tests": self.tests,
             "manual": self.manual,
+            "log": self.log,
+            "known": self.known,
         }
 
     def _save(self) -> None:
         self._store.async_delay_save(self._data, SAVE_DELAY)
+
+    def add_log(self, kind: str, device: str = "", detail: str = "") -> None:
+        """Note an event of the installation (not every edit): the newest MAX_LOG are kept."""
+        self.log.append(
+            {
+                "time": dt_util.utcnow().isoformat(timespec="seconds"),
+                "kind": kind,
+                "device": device,
+                "detail": detail,
+            }
+        )
+        del self.log[:-MAX_LOG]
+        self._save()
+
+    def sync_known(self, devices: dict[str, tuple[str, list[str]]]) -> None:
+        """Compare the devices now with those at the last load and log the differences.
+
+        devices: key -> (name, sender IDs). The first load only takes the baseline.
+        """
+        if self.known:
+            for key, (name, senders) in devices.items():
+                before = self.known.get(key)
+                if before is None:
+                    self.add_log("device_added", key, name)
+                    continue
+                for sender in sorted(set(senders) - set(before.get("senders", []))):
+                    self.add_log("sender_assigned", key, f"{name}: {sender}")
+                for sender in sorted(set(before.get("senders", [])) - set(senders)):
+                    self.add_log("sender_removed", key, f"{name}: {sender}")
+            for key, before in self.known.items():
+                if key not in devices:
+                    self.add_log("device_removed", key, str(before.get("name", "")))
+        known = {
+            k: {"name": name, "senders": list(senders)} for k, (name, senders) in devices.items()
+        }
+        if known != self.known:
+            self.known = known
+            self._save()
 
     def set_gateway(self, text: str) -> None:
         self.gateway = text.strip()[:MAX_NOTE]
@@ -84,7 +131,10 @@ class Notes:
                 notes += 1
             self.gateway = text[:MAX_NOTE]
         for device in gateway.get("devices", []):
-            key, text = str(device.get("id") or ""), str(device.get("note") or "").strip()
+            # a two-channel actuator's second channel has its own key; exports of 1.4.1 and
+            # before carry only the address
+            key = str(device.get("note_key") or device.get("id") or "")
+            text = str(device.get("note") or "").strip()
             if key and text and (overwrite or key not in self.devices):
                 if text[:MAX_NOTE] != self.devices.get(key):
                     notes += 1

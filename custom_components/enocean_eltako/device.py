@@ -453,8 +453,13 @@ class EnOceanDevice:
             results.append(
                 {"profile": profile_id, "id": format_id(sender_id), "result": str(result)}
             )
-        self.entry.runtime_data.hub.notes[self.entry.entry_id].set_test(
-            device_key(self.subentry), {r["profile"]: r["result"] for r in results}
+        notes = self.entry.runtime_data.hub.notes[self.entry.entry_id]
+        summary = {r["profile"]: r["result"] for r in results}
+        notes.set_test(device_key(self.subentry), summary)
+        notes.add_log(
+            "sender_test",
+            device_key(self.subentry),
+            f"{self.subentry.title}: {', '.join(f'{p}={r}' for p, r in summary.items())}",
         )
         return results
 
@@ -490,6 +495,9 @@ class EnOceanDevice:
 
     @callback
     def teach_in(self, profile: str) -> None:
+        self.entry.runtime_data.hub.notes[self.entry.entry_id].add_log(
+            "teach_in", device_key(self.subentry), f"{self.subentry.title}: {profile}"
+        )
         sender = self.model.sender_profile(profile)
         if not sender.teach_in:  # UTE: answer the actuator's query within the window
             self._ute_profile = profile
