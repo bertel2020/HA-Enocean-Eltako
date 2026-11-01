@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util.hass_dict import HassKey
 
 from .const import DOMAIN
+from .notes import Notes
 from .protocol.bus_group import BusGroup, BusMember
 from .protocol.dispatcher import Dispatcher, ReceivedTelegram
 from .protocol.monitor import TelegramMonitor
@@ -34,6 +35,7 @@ class Hub:
     # unknown senders heard (last telegram each), offered under "Add device"
     discovered: dict[int, ReceivedTelegram] = field(default_factory=dict)
     hidden: dict[str, set[int]] = field(default_factory=dict)  # per gateway entry, stored
+    notes: dict[str, Notes] = field(default_factory=dict)  # per gateway entry, stored
     card_timer: dict[str, Callable[[], None]] = field(
         default_factory=dict
     )  # pending card refreshes

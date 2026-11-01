@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Notes** for the installation documentation: a field in each device's details and in each gateway's details (place, terminal, fuse, battery date). They are stored per gateway, belong to the device address and appear in the printout, CSV and JSON.
 - **Installation documentation** in the Devices view (⋮ menu): print it (one gateway per page), or download it as CSV or versioned JSON. It lists devices with address, EEP, area and wall switch, the assigned senders with teach-in kind and sender test result, and the sender ID pool with blocked IDs, and says what Home Assistant cannot know.
 - **Test senders** in the details of a switching actuator: sends its current state through each sender in turn (nothing changes) and shows which senders it answers.
 - **Heard by** in a device's details: with several gateways, each gateway with its last signal and telegram count and the strongest one tagged; a device that only a repeater carries is tagged **via repeater only**.
@@ -27,6 +28,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Notizen** für die Installationsdokumentation: ein Feld in den Details jedes Geräts und jedes Gateways (Ort, Klemme, Sicherung, Batteriedatum). Sie werden pro Gateway gespeichert, gehören zur Geräteadresse und stehen in Ausdruck, CSV und JSON.
 - **Installationsdokumentation** in der Geräteansicht (⋮-Menü): drucken (ein Gateway pro Seite) oder als CSV bzw. versioniertes JSON laden. Sie nennt Geräte mit Adresse, EEP, Bereich und Wandschalter, die vergebenen Sender mit Art des Einlernens und Ergebnis des Sendertests sowie den Sender-ID-Pool mit blockierten IDs und sagt, was Home Assistant nicht wissen kann.
 - **Sender testen** in den Details eines Schaltaktors: sendet seinen aktuellen Zustand nacheinander über jeden Sender (es ändert sich nichts) und zeigt, welche Sender er beantwortet.
 - **Gehört von** in den Details eines Geräts: bei mehreren Gateways jedes Gateway mit letztem Signal und Telegrammzahl, das stärkste markiert; ein Gerät, das nur über einen Repeater ankommt, trägt den Hinweis **nur über Repeater**.

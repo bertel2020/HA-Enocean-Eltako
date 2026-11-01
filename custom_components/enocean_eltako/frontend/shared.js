@@ -104,19 +104,19 @@ function docWallText(w, t) {
 // One row per sender (a device without senders has one row); sender IDs that stay blocked after
 // their device was deleted follow at the end of their gateway.
 export function documentationCsv(doc, t, profile) {
-  const head = [t.gateway, "Base ID", t.doc.cols.device, t.doc.cols.address, "EEP", t.doc.cols.area, t.doc.virtual, t.doc.cols.sender, t.doc.cols.senderId, t.doc.cols.teach, t.doc.cols.test, t.doc.cols.wall, t.doc.cols.poolState];
+  const head = [t.gateway, "Base ID", t.doc.cols.device, t.doc.cols.address, "EEP", t.doc.cols.area, t.doc.virtual, t.doc.cols.sender, t.doc.cols.senderId, t.doc.cols.teach, t.doc.cols.test, t.doc.cols.wall, t.doc.cols.poolState, t.doc.notes];
   const rows = [head];
   for (const gw of doc.gateways) {
     const state = new Map(gw.pools.flatMap((p) => p.senders.map((s) => [s.id, s.state])));
     for (const d of gw.devices) {
       const base = [gw.title, gw.base_id ?? "", d.name, d.id, [d.eep, ...d.eep_extra].filter(Boolean).join(", "), d.area ?? "", d.virtual ? t.yes : ""];
       const wall = docWallText(d.wall_switch, t);
-      if (!d.senders.length) rows.push([...base, "", "", "", "", wall, ""]);
-      for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || ""]);
+      if (!d.senders.length) rows.push([...base, "", "", "", "", wall, "", d.note ?? ""]);
+      for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || "", d.note ?? ""]);
     }
     for (const p of gw.pools) {
       for (const s of p.senders.filter((x) => x.device == null)) {
-        rows.push([gw.title, gw.base_id ?? "", t.doc.deleted, "", "", "", "", profile(s.profile), s.id, "", "", "", t.doc.state[s.state] || s.state]);
+        rows.push([gw.title, gw.base_id ?? "", t.doc.deleted, "", "", "", "", profile(s.profile), s.id, "", "", "", t.doc.state[s.state] || s.state, ""]);
       }
     }
   }
@@ -134,7 +134,7 @@ export function documentationHtml(doc, t, profile, lang) {
         .map((x) => {
           const sub = [x.virtual ? d.virtual : "", x.area ?? "", x.model ?? ""].filter(Boolean).join(" · ");
           const senders = x.senders.length ? x.senders.map((s) => `<div>${esc(docSenderText(s, t, profile))}</div>`).join("") : `<span class="sub">${esc(x.virtual ? d.sentByHa : d.receiveOnly)}</span>`;
-          return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}</tr>`;
+          return `<tr>${cell(`${esc(x.name)}${sub ? `<div class="sub">${esc(sub)}</div>` : ""}`)}${cell(`<span class="mono">${esc(x.id)}</span><div class="sub mono">${esc([x.eep, ...x.eep_extra].filter(Boolean).join(", "))}</div>`)}${cell(senders)}${cell(x.wall_switch ? esc(docWallText(x.wall_switch, t)) : `<span class="sub">${esc(d.none)}</span>`)}${cell(esc(x.note ?? ""))}</tr>`;
         })
         .join("");
       const pool = gw.pools.flatMap((p) => p.senders);
@@ -142,9 +142,10 @@ export function documentationHtml(doc, t, profile, lang) {
       const blocked = pool.filter((s) => s.state === "blocked").length;
       return `<section class="gw">
 <h2>${esc(gw.title)}</h2>
+${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}
 <p class="sub">${esc(gw.model ?? "")}${gw.base_id ? ` · Base ID <span class="mono">${esc(gw.base_id)}</span>` : ""} · ${esc(d.counts(gw.devices.length, pool.length, blocked))}</p>
 <h3>${esc(d.devices)}</h3>
-<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th></tr></thead><tbody>${devices}</tbody></table>
+<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${devices}</tbody></table>
 ${poolRows ? `<h3>${esc(d.pool)}</h3><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.usedBy)}</th><th>${esc(d.cols.sender)}</th><th>${esc(d.cols.poolState)}</th></tr></thead><tbody>${poolRows}</tbody></table>` : ""}
 ${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : ""}
 </section>`;
@@ -156,7 +157,7 @@ h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;mar
 .sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;font-size:12px;border-bottom:1px solid #888;padding:5px 8px 5px 0}
 td{border-bottom:1px solid #ddd;padding:6px 8px 6px 0;vertical-align:top}tr{break-inside:avoid}
-section.gw{break-after:page;margin-top:24px}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}
+section.gw{break-after:page;margin-top:24px}.gwnote{margin:2px 0 4px;font-style:italic}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}
 @page{margin:14mm}
 </style></head><body>
 <h1>${esc(d.title)}</h1><p class="sub">${esc(d.generated(when))}</p>

@@ -18,12 +18,18 @@ from homeassistant.util import dt as dt_util
 from .catalog import OPT_WALL_OFF, OPT_WALL_ON, OPT_WALL_SWITCH
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
+from .notes import Notes
 from .protocol.ids import format_id
 
 VERSION = 1
 
 
-def _device(hass: HomeAssistant, device: EnOceanDevice) -> dict[str, Any]:
+def note_key(device: EnOceanDevice) -> str:
+    """The key of a device's note: its address, which a deleted and re-added device keeps."""
+    return device.subentry.unique_id or device.subentry.subentry_id
+
+
+def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[str, Any]:
     entry = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, device.unique_prefix), device.entry.entry_id
     )
@@ -60,6 +66,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice) -> dict[str, Any]:
             for profile, sender in device.senders.items()
         ],
         "wall_switch": wall,
+        "note": notes.devices.get(note_key(device), ""),
     }
 
 
@@ -71,14 +78,16 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
     gateways = []
     for entry in hass.config_entries.async_loaded_entries(DOMAIN):
         runtime = entry.runtime_data
+        notes = runtime.hub.notes[entry.entry_id]
         gateways.append(
             {
                 "entry_id": entry.entry_id,
                 "title": entry.title,
                 "model": entry.data.get(CONF_MODEL),
                 "base_id": entry.data.get(CONF_BASE_ID),
+                "note": notes.gateway,
                 "devices": sorted(
-                    (_device(hass, d) for d in runtime.devices.values()),
+                    (_device(hass, d, notes) for d in runtime.devices.values()),
                     key=lambda d: (d["virtual"], str(d["name"]).casefold()),
                 ),
                 "pools": [

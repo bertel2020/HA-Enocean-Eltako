@@ -36,7 +36,9 @@ from .const import (
 from .device import UTE_WINDOW
 from .discovery import async_set_hidden
 from .documentation import collect as collect_documentation
+from .documentation import note_key
 from .hub import async_get_hub
+from .notes import MAX_NOTE
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -66,6 +68,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_device_details)
     websocket_api.async_register_command(hass, ws_sender_test)
     websocket_api.async_register_command(hass, ws_documentation)
+    websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
@@ -351,6 +354,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "radio_devices": radio_devices(runtime),
             # senders hidden from discovery: the panel does not offer them as new devices
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
+            "note": runtime.hub.notes[entry.entry_id].gateway,
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),
@@ -525,6 +529,9 @@ def device_details(device: Any) -> dict[str, Any]:
         "signal": {"rssi": stats.rssi, "min": stats.rssi_min, "max": stats.rssi_max},
         "repeat": stats.repeat_count,
         "heard_by": heard_by(device),
+        "note": device.entry.runtime_data.hub.notes[device.entry.entry_id].devices.get(
+            note_key(device), ""
+        ),
         "sender_test": device.sender_test_error() is None,
         "telegrams": stats.telegrams,
         "interval": model.interval,
@@ -598,6 +605,35 @@ def ws_device_details(
         connection.send_error(msg["id"], "unknown_device", "no such device")
         return
     connection.send_result(msg["id"], device_details(device))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_note",
+        vol.Required("entry_id"): str,
+        vol.Optional("device"): str,  # a device of the gateway; without it the gateway's own note
+        vol.Required("text"): vol.All(str, vol.Length(max=MAX_NOTE)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_note(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """A note for the installation documentation: of the gateway, or of one of its devices."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    if "device" not in msg:
+        notes.set_gateway(msg["text"])
+    elif (device := entry.runtime_data.devices.get(msg["device"])) is None:
+        connection.send_error(msg["id"], "unknown_device", "no such device")
+        return
+    else:
+        notes.set_device(note_key(device), msg["text"])
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/documentation"})
