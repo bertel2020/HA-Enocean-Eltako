@@ -54,6 +54,14 @@ The screenshots show sample data from the **EnOcean** sidebar panel.
 | --- |
 | ![Takeover](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/takeover-desktop-light.png) |
 
+| Device details | Installation documentation |
+| --- | --- |
+| ![Device details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/device-details-desktop-light.png) | ![Installation documentation](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/documentation-print.png) |
+
+| Gateway notes and further devices |
+| --- |
+| ![Gateway details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/gateway-details-desktop-light.png) |
+
 ## Installation
 
 ### Via HACS (recommended)
