@@ -323,7 +323,10 @@ Backups, in allen drei Ausgaben enthalten. Die Notiz eines Geräts gehört zu se
 ist also wieder da, wenn du das Gerät neu anlegst. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
 (Name, ID, Funktion): direkt eingelernte Taster, Geräte anderer Systeme, alles, was Home
 Assistant nicht sieht. Sie dienen nur der Dokumentation und stehen in allen drei Ausgaben. Das
-JSON ist versioniert und auch für den Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
+JSON ist versioniert und auch für den Support gedacht. Das Menü bietet außerdem ein dichteres **Schaltschrank-Blatt** (Querformat, eine Tabelle pro
+Gateway ohne Pool und gehörte Sender) zum Aufhängen im Verteiler. Es verweist auf die Tabelle der
+Lernfunktionen, statt eine zu nennen, denn die richtige Funktion hängt von Typ und Revision des
+Aktors ab. Blockiert der Browser das Druckfenster, wird die Seite als Datei
 gespeichert, die du öffnest und druckst.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.

@@ -185,3 +185,37 @@ ${overview}${gateways}
 <div class="note"><b>${esc(d.notKnownTitle)}</b><br>${esc(d.notKnown)}</div>
 </body></html>`;
 }
+
+// The cabinet sheet: one dense table per gateway (landscape), to hang in the distribution board.
+// The learn function to set on an actuator depends on its revision, so it points to the table.
+export function documentationSheet(doc, t, profile, lang) {
+  const d = t.doc;
+  const when = new Date(doc.generated).toLocaleString(lang);
+  const sections = doc.gateways
+    .map((gw) => {
+      const rows = gw.devices
+        .filter((x) => !x.virtual)
+        .map((x) => {
+          const senders = x.senders.map((s) => `<span class="mono">${esc(s.id)}</span> ${esc(profile(s.profile))}`).join("<br>");
+          const wall = x.wall_switch ? `<span class="mono">${esc(x.wall_switch.id)}</span>` : "";
+          return `<tr><td>${esc(x.name)}</td><td class="mono">${esc(x.id)}</td><td>${esc(x.area ?? "")}</td><td>${senders}</td><td>${wall}</td><td>${esc(x.note ?? "")}</td></tr>`;
+        })
+        .join("");
+      const manual = (gw.manual ?? []).map((m) => `<tr><td>${esc(m.name)}</td><td class="mono">${esc(m.address)}</td><td></td><td colspan="3">${esc(m.function)}</td></tr>`).join("");
+      return `<section><h2>${esc(gw.title)}${gw.base_id ? ` <small class="mono">${esc(gw.base_id)}</small>` : ""}</h2>${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}<table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.area)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${rows}${manual}</tbody></table></section>`;
+    })
+    .join("");
+  return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.sheetTitle)}</title><style>
+body{font:11px/1.35 system-ui,sans-serif;color:#1c1c1a;margin:0}
+h1{font-size:16px;font-weight:500;margin:0}h2{font-size:14px;font-weight:500;margin:14px 0 4px}small{font-weight:400;font-size:11px}
+.sub{color:#5f5e5a}.mono{font-family:ui-monospace,monospace}.gwnote{margin:0 0 4px;font-style:italic}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;border-bottom:1px solid #888;padding:3px 6px 3px 0}
+td{border-bottom:1px solid #ddd;padding:3px 6px 3px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}
+section{break-inside:auto}.foot{margin-top:14px;color:#5f5e5a}
+@page{size:A4 landscape;margin:10mm}
+</style></head><body>
+<h1>${esc(d.sheetTitle)}</h1><p class="sub">${esc(d.generated(when))}</p>
+${sections}
+<p class="foot">${esc(d.sheetFoot)}</p>
+</body></html>`;
+}

@@ -70,6 +70,13 @@ for (const lang of ["en", "de"]) {
   if (!many.includes(`<h2>${t.doc.overview}</h2>`) || !many.includes("MGW-ETH Dach")) errors.push(`shared.js: documentationHtml (${lang}) has no overview for two gateways`);
   if (documentationHtml(doc, t, (p) => p, lang).includes(`<h2>${t.doc.overview}</h2>`)) errors.push(`shared.js: documentationHtml (${lang}) shows an overview for one gateway`);
 }
+const { documentationSheet } = await import(new URL("shared.js?v=check", frontend).href);
+for (const lang of ["en", "de"]) {
+  const sheet = documentationSheet(doc, TEXT[lang], (p) => p, lang);
+  if (!sheet.includes("FF-B7-44-91") || !sheet.includes("Schrank 2, Platz 4") || !sheet.includes("00-12-34-56")) errors.push(`shared.js: documentationSheet (${lang}) misses data`);
+  if (sheet.includes("<Keller>") || sheet.includes("<links>") || /undefined|NaN/.test(sheet)) errors.push(`shared.js: documentationSheet (${lang}) does not escape or shows undefined`);
+  if (!sheet.includes("landscape")) errors.push(`shared.js: documentationSheet (${lang}) is not landscape`);
+}
 const profile = (p) => TEXT.en.profiles[p] || p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];
