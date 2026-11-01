@@ -90,14 +90,26 @@ export const INSTALLATION_STYLE = `
   .installation .log td.kind { white-space: nowrap; }
   .installation .none { color: var(--muted); padding: 8px 0; }
   .installation .itop { padding-bottom: 0; align-items: flex-end; }
+  .installation .itop .itab { font-size: 15px; padding: 10px 14px 12px; }
   .installation .itop .itools { padding-bottom: 8px; }
   .installation .itop .groups { display: flex; gap: 4px; flex: 1 1 340px; flex-wrap: wrap; }
   .installation .itab { font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
   .installation .itab:hover { color: var(--text); }
   .installation .itab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
   .installation .itab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
-  .installation .isubtabs { display: flex; gap: 2px; flex-wrap: wrap; padding: 0 16px; border-bottom: 1px solid var(--line); }
-  .installation .isubtabs .itab { font-size: 13px; padding: 8px 10px 9px; }
+  .installation .isubtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 16px 0; }
+  .installation .isubtabs .itab { font-size: 13px; font-weight: 400; padding: 5px 12px; margin: 0; border: 0; border-radius: 14px; }
+  .installation .isubtabs .itab[aria-selected="true"] { background: var(--accent-soft); font-weight: 500; }
+  .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+  .installation .gwhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .installation .gwhead h3 { margin: 0; }
+  .installation .bar { display: flex; align-items: center; gap: 10px; }
+  .installation .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .installation .seg button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
+  .installation .seg button + button { border-left: 1px solid var(--line); }
+  .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .installation .empty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: 13px; }
+  .installation .empty p { margin: 0; max-width: 60ch; }
   .installation details.poolbox { border-bottom: 1px solid var(--line); }
   .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .installation details.poolbox > summary .isub { font-weight: 400; }
@@ -226,11 +238,23 @@ export const installation = {
     return `<div class="tablewrap"><table class="itable${cls}"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
   },
 
+  _instGwHead(gw, count = null) {
+    // the name of a gateway with its base ID, and optionally how many devices it has
+    const t = this._t.inst;
+    return `<header class="gwhead"><h3>${esc(gw.title)}</h3><span class="isub mono">${esc(gw.base_id ?? "")}</span>${count === null ? "" : `<span class="isub">${esc(t.deviceCount(count))}</span>`}</header>`;
+  },
+
+  _instEmpty(gw) {
+    // a gateway without devices says what to do next
+    const t = this._t.inst;
+    return `<div class="empty"><p>${esc(t.emptyGateway)}</p><button class="chip" data-open-integration="${esc(gw.entry_id)}">${esc(t.addDevice)}</button></div>`;
+  },
+
   _instPerGateway(build) {
     const t = this._t;
     const parts = gateways(this._in.doc).map((gw) => {
       const inner = build(gw, docTables(gw, t, (p) => this._profile(p)));
-      return inner ? `<section><h3>${esc(gw.title)} <span class="isub mono">${esc(gw.base_id ?? "")}</span></h3>${inner}</section>` : "";
+      return inner ? `<section class="gw">${this._instGwHead(gw)}${inner}</section>` : "";
     });
     return parts.join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`;
   },
@@ -302,13 +326,14 @@ export const installation = {
   _instSupplies() {
     const t = this._t;
     const gw = this._gateways.filter((g) => g.loaded);
-    return `<p class="isub">${esc(t.doc.supplyHint)}</p>` + (gw.map((g) => `<section><h3>${esc(g.title)}</h3>${this._manualEditor(g, "supply")}</section>`).join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
+    return `<p class="isub">${esc(t.doc.supplyHint)}</p>` + (gw.map((g) => `<section class="gw">${this._instGwHead(g)}${this._manualEditor(g, "supply")}</section>`).join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
   },
 
   _instAreas() {
     const t = this._t;
     const state = this._in;
-    const groupBy = `<div class="isub">${esc(t.inst.groupBy)} <button class="chip" data-in-group="area" aria-pressed="${state.group === "area"}">${esc(t.inst.byArea)}</button> <button class="chip" data-in-group="location" aria-pressed="${state.group === "location"}">${esc(t.inst.byPlace)}</button></div>`;
+    const seg = (group, label) => `<button data-in-group="${group}" aria-pressed="${state.group === group}">${esc(label)}</button>`;
+    const groupBy = `<div class="bar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("area", t.inst.byArea)}${seg("location", t.inst.byPlace)}</div></div>`;
     const sections = gateways(state.doc).map((gw) => {
       const groups = new Map();
       for (const d of gw.devices) {
@@ -323,7 +348,7 @@ export const installation = {
           return `<div class="gcard"><b>${esc(name)}</b><ul>${items}</ul>${todo ? `<span class="open">${esc(t.inst.openItems(todo))}</span>` : ""}</div>`;
         })
         .join("");
-      return `<section><h3>${esc(gw.title)}</h3><div class="cards">${cards || `<div class="none">${esc(t.inst.noDevices)}</div>`}</div></section>`;
+      return `<section class="gw">${this._instGwHead(gw, gw.devices.length)}${cards ? `<div class="cards">${cards}</div>` : this._instEmpty(gw)}</section>`;
     });
     return groupBy + sections.join("");
   },
@@ -346,7 +371,7 @@ export const installation = {
         })
         .join("");
       const head = columns.map((f) => `<th>${esc(label(t, f))}</th>`).join("");
-      return `<section><h3>${esc(gw.title)}</h3><div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(t.inst.device)}</th>${head}</tr></thead><tbody>${rows || `<tr><td colspan="${columns.length + 2}" class="none">${esc(t.inst.noDevices)}</td></tr>`}</tbody></table></div></section>`;
+      return `<section class="gw">${this._instGwHead(gw, devices.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(t.inst.device)}</th>${head}</tr></thead><tbody>${rows || `<tr><td colspan="${columns.length + 2}" class="none">${esc(t.inst.noDevices)}</td></tr>`}</tbody></table></div></section>`;
     });
     const picked = state.selected.size;
     const bulk = picked
@@ -410,7 +435,7 @@ export const installation = {
       }
       const options = [...gw.devices.filter((d) => !d.virtual).map((d) => `<option value="${esc(d.note_key)}">${esc(d.name)} · ${esc(d.id)}</option>`), `<option value="">${esc(L.otherTarget)}</option>`].join("");
       const add = `<div class="bulk" data-in-link-form="${esc(gw.entry_id)}"><b>${esc(L.addTitle)}</b><input data-in-new="from_name" placeholder="${esc(L.fromName)}" aria-label="${esc(L.fromName)}"><input data-in-new="from_id" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}"><span>→</span><select data-in-new="to_key" aria-label="${esc(L.target)}">${options}</select><input data-in-new="to_name" placeholder="${esc(L.otherName)}" aria-label="${esc(L.otherName)}"><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="add-link" data-in-gw="${esc(gw.entry_id)}">${esc(L.add)}</button></div>`;
-      return `<section><h3>${esc(gw.title)}</h3>${body || `<div class="none">${esc(L.none)}</div>`}${add}</section>`;
+      return `<section class="gw">${this._instGwHead(gw)}${body || `<div class="none">${esc(L.none)}</div>`}${add}</section>`;
     });
     return toggle + sections.join("");
   },

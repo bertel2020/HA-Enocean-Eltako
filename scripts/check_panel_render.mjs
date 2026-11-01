@@ -112,6 +112,8 @@ for (const lang of ["en", "de"]) {
     // the Installation view: devices by area, a table with fields edited in place, the event log
     await view("installation");
     expect("installation cards (one per area)", root.querySelectorAll("#installation .gcard").length, 4);
+    expect("the group switch is a segmented control", root.querySelectorAll("#installation .seg button").length, 2);
+    expect("a gateway card names its device count", !!root.querySelector("#installation section.gw .gwhead .isub:last-child"), true);
     root.querySelector('#installation [data-in-tab="devices"]').click();
     await settle();
     expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 8);

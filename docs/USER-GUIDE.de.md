@@ -313,12 +313,12 @@ beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm 
 umschaltender Wipptaster wird nicht getestet. Ein Dimmer bekommt seine aktuelle Helligkeit als Dimmbefehl über den Zentralbefehl; sein Wipptaster wird nicht getestet, denn ein Druck könnte die Helligkeit ändern. Rollläden werden gar nicht getestet: jeder Befehl bewegt sie oder unterbricht eine Fahrt. Der Test zählt nicht in der Befehlsstatistik.
 
 **Ansicht Anlage:** Der Reiter **Anlage** bündelt Dokumentation und Verwaltung an einer Stelle,
-in Gruppen: **Anlage** (nach Bereich, Geräte), **Sender** (Gateway-Sender, Taster, Funk-Sender),
+in Gruppen: **Geräte** (Übersicht, Tabelle), **Sender** (Gateway-Sender, Taster, Funk-Sender),
 **Bus** (Eltako-Bus, Netzteile), **Verbindungen** und **Protokoll**. Die Tabellen der Gruppen
 Sender und Bus sind dieselben Zeilen wie im Ausdruck.
-**Nach Bereich** zeigt die Geräte jedes Gateways nach Home-Assistant-Bereich oder nach dem
-von dir notierten Ort gruppiert, mit der Zahl der Geräte ohne Ort. **Geräte** ist eine Tabelle mit
-typisierten Feldern, die du direkt bearbeitest: Ort (Schrank, Reihe, Platz), Stromkreis, Sicherung,
+**Übersicht** zeigt die Geräte jedes Gateways nach Home-Assistant-Bereich oder nach dem
+von dir notierten Ort gruppiert, mit der Zahl der Geräte ohne Ort. Die **Tabelle** hat
+typisierte Felder, die du direkt bearbeitest: Ort (Schrank, Reihe, Platz), Stromkreis, Sicherung,
 Einbaudatum, Revision (der Datumscode, denn er bestimmt die Lernfunktion), Versorgung (Netz,
 Batterietyp) und eine Notiz. Mit markierten Zeilen setzt du ein Feld für alle auf einmal, oder du
 **fügst aus einer Tabellenkalkulation ein**: eine Kopfzeile, eine Spalte Adresse und Spalten, die
