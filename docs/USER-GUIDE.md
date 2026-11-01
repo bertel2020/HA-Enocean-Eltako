@@ -323,8 +323,8 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
 - **CSV** of the devices (one row per sender), **Links as CSV** and **Sender tables CSV** (the
   tables below, one under the other).
 - Four more print sections, in the order of an installation list: **Gateway senders** (sender no. 0
-  to 127 of the radio pool, which is the base ID plus the number; free numbers are folded; a second
-  mode, which takes the number plus 64, points to its counterpart and back; bus address and feedback
+  to 127 of the radio pool, which is the base ID plus the number; free numbers are folded; several
+  senders of one device (a direction rocker and a GFVS sender, say) point to each other; bus address and feedback
   ID are fields you write down per device), **Buttons** (each wall switch with the actuators on its
   left and right rocker, taken from the actuators' wall switch option), **Radio senders** (devices
   that only send, and entries made by hand) and **Eltako bus** (every device with a bus address, by

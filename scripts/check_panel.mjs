@@ -75,7 +75,7 @@ for (const lang of ["en", "de"]) {
   if (!/3/.test(text) || !/1/.test(text) || /undefined|NaN/.test(text)) errors.push(`texts.js: importDone (${lang}) says "${text}"`);
 }
 
-// the sender tables: gateway senders 0 to 127 with the second mode, buttons with their rockers,
+// the sender tables: gateway senders 0 to 127 with the other senders of a device, buttons with their rockers,
 // radio senders and the entries by hand
 const { docTables, docBus, foldFree } = await import(new URL("shared.js?v=check", frontend).href);
 const tdev = (over) => ({ name: "", id: "", eep: "", eep_extra: [], area: null, model: null, virtual: false, category: "lighting", wall_switch: null, senders: [], location: "", bus_address: "", feedback_id: "", ...over });
@@ -110,6 +110,11 @@ for (const lang of ["en", "de"]) {
   const at = (n) => parts.senders[n];
   if (parts.senders.length !== 128 || at(0).id !== "FFB64080" || !at(0).gateway) errors.push(`shared.js: docTables (${lang}) has ${parts.senders.length} gateway sender rows or a wrong base ID`);
   if (!at(1).free || at(29).id !== "FFB6409D" || at(29).bus !== "1" || at(29).feedback !== "00000081" || at(29).second !== "93 →" || at(93).second !== "← 29") errors.push(`shared.js: docTables (${lang}) gets the sender number, the fields or the second mode wrong`);
+  // the pairing is the device's, not a distance: 29 and 93 are one device, a third sender of it points to both, a device with one sender points nowhere
+  const threeSenders = { ...tgw, pools: [{ ...tgw.pools[0], senders: [...tgw.pools[0].senders, { id: "FF-B6-40-C0", device: "Licht Flur", ref: "k1", profile: "central", state: "assigned" }] }] };
+  const three = docTables(threeSenders, t, tprofile).senders;
+  if (three[29].second !== "64 →, 93 →") errors.push(`shared.js: docTables (${lang}) pairs a device's senders wrongly: ${three[29].second}`);
+  if (three[64].second !== "← 29, 93 →" || at(36).second !== "") errors.push(`shared.js: docTables (${lang}) pairs wrongly or pairs a lone sender: ${three[64].second}/${at(36).second}`);
   if (!at(94).blocked || at(94).id !== "FFB640DE" || !at(127).free) errors.push(`shared.js: docTables (${lang}) misses the blocked or the free numbers`);
   const folded = foldFree(parts.senders);
   if (folded.length >= 128 || folded[1].nr !== 1 || folded[1].to !== 28) errors.push(`shared.js: foldFree (${lang}) does not fold the free numbers`);
