@@ -47,7 +47,7 @@ export function fakeHass(params = new URLSearchParams()) {
     on_demand: false, connection: "tcp 127.0.0.1:9100", per_minute: 4, last_telegram: now - 3, queue: 0, unconfirmed: 0,
     devices: 3, free_senders: 120, senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central" }], hidden: params.has("hide") ? ["01-99-88-77"] : [],
     server_time: now + Number(params.get("skew") || 0), disconnected_since: null, proxy: null, via_proxy: false,
-    note: english ? "Basement, right of the meter" : "Keller, rechts neben dem Zähler", orphan_notes: 0, supply: { name: "", watts: "" },
+    note: english ? "Basement, right of the meter" : "Keller, rechts neben dem Zähler", orphan_notes: 0, supplies: [{ id: "s1", name: "FSNT14-12V", watts: "12", first: "1", last: "8" }, { id: "s2", name: "FSNT14-12V", watts: "12", first: "9", last: "126" }],
     manual: english
       ? [{ id: "m1", name: "Hallway button left", address: "00-12-34-56", function: "taught in directly to Licht Diele" }, { id: "m2", name: "Motion sensor basement", address: "00-8A-12-3F", function: "FBH65, belongs to another system" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "", bus_power_table: null }]
       : [{ id: "m1", name: "Taster Flur links", address: "00-12-34-56", function: "direkt auf Licht Diele eingelernt" }, { id: "m2", name: "Bewegungsmelder Keller", address: "00-8A-12-3F", function: "FBH65, von einem anderen System" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "", bus_power_table: null }],
@@ -145,7 +145,7 @@ export function fakeHass(params = new URLSearchParams()) {
           return {
             version: 1, generated: new Date().toISOString(), gateways: empty ? [] : [{
               entry_id: "gw1", title: "FAM-USB Keller", model: "fam_usb", model_name: "Eltako FAM-USB", base_id: "FF-B7-44-80", hidden_senders: [],
-              note: gateway.note, manual: gateway.manual, supply: gateway.supply, heard: [], orphan_notes: 0,
+              note: gateway.note, manual: gateway.manual, supplies: gateway.supplies, heard: [], orphan_notes: 0,
               devices: [
                 device({ name: "Licht Diele", key: "sub1", id: "05-10-A2-B3", eep: "M5-38-08:eltako", area: "Flur", model: "FSR14-4x", bus_address: "1", feedback_id: "00000081", group: english ? "Light hallway" : "Licht Flur", bus_power_table: 0.7, location: english ? "Cabinet 2, row 1, slot 4" : "Schrank 2, Reihe 1, Platz 4", fuse: "F3 B16", installed: "2026-10-01", power: english ? "mains" : "Netz",
                   wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-81", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-83", ute: false, test: "unconfirmed" }] }),
@@ -174,8 +174,8 @@ export function fakeHass(params = new URLSearchParams()) {
         case "enocean_eltako/set_links":
         case "enocean_eltako/set_link_learn":
           return {};
-        case "enocean_eltako/set_supply":
-          gateway.supply = { name: msg.name, watts: msg.watts };
+        case "enocean_eltako/set_supplies":
+          gateway.supplies = msg.supplies;
           return {};
         case "enocean_eltako/set_fields":
           return { saved: msg.items.length, rejected: [] };

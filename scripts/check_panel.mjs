@@ -83,7 +83,7 @@ const tgw = {
   title: "FAM14",
   base_id: "FF-B6-40-80",
   hidden_senders: [], heard: [], links: [], log: [], note: "",
-  supply: { name: "FSNT14-12V", watts: "1" },
+  supplies: [{ name: "FSNT14-12V", watts: "1" }],
   manual: [{ id: "m1", name: "Taster Garage", address: "00-AA-00-01", function: "direkt eingelernt" }, { id: "m2", name: "Zähler F3Z14D", address: "", function: "Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "" }],
   devices: [
     tdev({ name: "Licht Flur", id: "05-10-A2-C1", note_key: "k1", model: "FSR14-4x", bus_address: "1", feedback_id: "00000081", bus_power: "0,4", location: "Flur", wall_switch: { id: "FE-8A-31-C2", on: "a0", off: "a1" } }),
@@ -122,14 +122,21 @@ for (const lang of ["en", "de"]) {
   if (!grouped.split('<section class="sec sec-radio">')[1]?.split("</section>")[0].includes('rowspan="2">FUTH55')) errors.push(`shared.js: documentationHtml (${lang}) does not put the IDs of one device in one block`);
   const bus = docBus(tgw, t);
   if (bus.rows.map((r) => r.address).join() !== "1,9,12" || bus.sum !== 0.82 || bus.counted !== 2 || bus.rows[2].power !== null || bus.rows[0].from !== "user" || bus.rows[1].from !== "table") errors.push(`shared.js: docBus (${lang}) sorts, sums or takes the table wrongly: ${JSON.stringify(bus)}`);
-  if (bus.percent !== 82 || bus.capacity !== 1 || !bus.ownCapacity || bus.items.filter((x) => x.free).map((x) => `${x.from}-${x.to}`).join() !== "2-8,10-11,13-126") errors.push(`shared.js: docBus (${lang}) has the wrong load or free runs: ${JSON.stringify(bus.items.filter((x) => x.free))}`);
-  const four = { devices: [1, 2, 3, 4].map((n) => tdev({ name: `Kanal ${n}`, id: `05-10-00-0${n}`, note_key: `c${n}`, model: "FSR14-4x", bus_address: String(n), bus_power_table: 0.7, group: n < 4 ? "Flur" : "" })), manual: [], supply: {} };
+  if (bus.percent !== 82 || bus.capacity !== 1 || bus.supplies.length !== 1 || bus.supplies[0].standard || bus.supplies[0].load !== 0.82 || bus.items.filter((x) => x.free).map((x) => `${x.from}-${x.to}`).join() !== "2-8,10-11,13-126") errors.push(`shared.js: docBus (${lang}) has the wrong load or free runs: ${JSON.stringify(bus.items.filter((x) => x.free))}`);
+  const four = { devices: [1, 2, 3, 4].map((n) => tdev({ name: `Kanal ${n}`, id: `05-10-00-0${n}`, note_key: `c${n}`, model: "FSR14-4x", bus_address: String(n), bus_power_table: 0.7, group: n < 4 ? "Flur" : "" })), manual: [], supplies: [] };
   const grouped4 = docBus(four, t, { supply_watts: 12 });
-  if (grouped4.sum !== 1.4 || grouped4.rows[1].from !== "group" || grouped4.capacity !== 12 || grouped4.ownCapacity || grouped4.multi.length !== 0) errors.push(`shared.js: docBus (${lang}) counts the channels of one device wrongly: ${JSON.stringify([grouped4.sum, grouped4.multi])}`);
-  const ungrouped = docBus({ ...four, devices: four.devices.map((d) => ({ ...d, group: "" })), supply: { watts: "" } }, t);
+  if (grouped4.sum !== 1.4 || grouped4.rows[1].from !== "group" || grouped4.capacity !== 12 || !grouped4.supplies[0].standard || grouped4.multi.length !== 0) errors.push(`shared.js: docBus (${lang}) counts the channels of one device wrongly: ${JSON.stringify([grouped4.sum, grouped4.multi])}`);
+  const ungrouped = docBus({ ...four, devices: four.devices.map((d) => ({ ...d, group: "" })), supplies: [] }, t);
   if (ungrouped.multi.join() !== "FSR14-4x" || ungrouped.sum !== 2.8) errors.push(`shared.js: docBus (${lang}) does not warn about ungrouped channels`);
-  const dup = docBus({ devices: [tdev({ name: "A", id: "1", bus_address: "5", bus_power: "1" }), tdev({ name: "B", id: "2", bus_address: "5", bus_power: "1" })], manual: [], supply: {} }, t);
+  const dup = docBus({ devices: [tdev({ name: "A", id: "1", bus_address: "5", bus_power: "1" }), tdev({ name: "B", id: "2", bus_address: "5", bus_power: "1" })], manual: [], supplies: [] }, t);
   if (dup.dups.join() !== "5") errors.push(`shared.js: docBus (${lang}) misses an address given twice`);
+  // several supplies: each loaded by the addresses it feeds, and addresses no supply feeds are named
+  const split = docBus({ devices: [1, 9, 20].map((n) => tdev({ name: `G${n}`, id: String(n), bus_address: String(n), bus_power: "2" })), manual: [], supplies: [{ name: "A", watts: "12", first: "1", last: "8" }, { name: "B", watts: "6", first: "9", last: "12" }] }, t);
+  if (split.supplies.map((x) => `${x.load}/${x.percent}`).join() !== "2/17,2/33" || split.capacity !== 18 || split.percent !== 33 || split.unfed.join() !== "20") errors.push(`shared.js: docBus (${lang}) loads several supplies wrongly: ${JSON.stringify([split.supplies, split.unfed])}`);
+  const noRange = docBus({ devices: [1, 9].map((n) => tdev({ name: `G${n}`, id: String(n), bus_address: String(n), bus_power: "2" })), manual: [], supplies: [{ name: "A", watts: "12" }, { name: "B", watts: "6" }] }, t);
+  if (noRange.supplies.some((x) => x.load !== null) || noRange.capacity !== 18 || noRange.percent !== 22) errors.push(`shared.js: docBus (${lang}) invents a load per supply without ranges`);
+  const splitPage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [{ ...tgw, supplies: split.supplies.map((x) => ({ name: x.name, watts: String(x.capacity), first: String(x.first), last: String(x.last) })) }] }, t, tprofile, lang);
+  if (!splitPage.includes(t.doc.tbl.supplyRange(1, 8)) || /undefined|NaN/.test(splitPage)) errors.push(`shared.js: documentationHtml (${lang}) misses the range of a supply`);
   const busPage = documentationHtml({ version: 2, generated: "2026-11-01T14:20:00+00:00", gateways: [tgw] }, t, tprofile, lang);
   if (!busPage.includes(t.doc.tbl.busWarn) || !busPage.includes(t.doc.tbl.busMissing(1)) || !busPage.includes("FSNT14-12V") || !/0[.,]42 W\*/.test(busPage)) errors.push(`shared.js: documentationHtml bus (${lang}) misses the sum, the supply, the warning or the table mark`);
   const tcsv = documentationCsv({ gateways: [tgw] }, t, tprofile, "tables").trim().split("\n");

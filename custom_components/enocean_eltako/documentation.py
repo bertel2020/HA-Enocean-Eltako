@@ -207,7 +207,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 else None,
                 "base_id": entry.data.get(CONF_BASE_ID),
                 "note": notes.gateway,
-                "supply": notes.supply,
+                "supplies": notes.supplies,
                 "manual": [{**m, "bus_power_table": bus_power(m["name"])} for m in notes.manual],
                 "devices": devices,
                 "links": build_links(devices, notes),

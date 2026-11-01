@@ -334,8 +334,10 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
   has no value, and the sum says how many devices have none. The channels of one device count
   once if they share a **Part of** name; without it the sum counts each channel and says so. The
-  supply defaults to the 12 W of the FAM14; type and watts of another supply are written in the
-  gateway's details. Home Assistant cannot read the bus yet, so bus address, feedback ID and the
+  supply defaults to the 12 W of the FAM14. In the gateway's details you write down one or more
+  power supplies (type, watts); with the bus addresses a supply feeds, the printout shows the load
+  of each one and names addresses no supply feeds, without them only the total. Which addresses a
+  supply feeds depends on how the rail is plugged together, so only you know it. Home Assistant cannot read the bus yet, so bus address, feedback ID and the
   entries by hand are written down by you.
 - **JSON** (version 2: typed fields, links and the log; the import still reads version 1).
 

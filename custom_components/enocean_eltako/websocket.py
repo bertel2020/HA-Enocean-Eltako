@@ -45,6 +45,7 @@ from .notes import (
     MAX_LINKS,
     MAX_MANUAL,
     MAX_NOTE,
+    MAX_SUPPLIES,
     SUPPLY_FIELDS,
     device_key,
 )
@@ -81,7 +82,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_documentation)
     websocket_api.async_register_command(hass, ws_set_note)
     websocket_api.async_register_command(hass, ws_set_manual)
-    websocket_api.async_register_command(hass, ws_set_supply)
+    websocket_api.async_register_command(hass, ws_set_supplies)
     websocket_api.async_register_command(hass, ws_set_fields)
     websocket_api.async_register_command(hass, ws_set_links)
     websocket_api.async_register_command(hass, ws_set_link_learn)
@@ -374,7 +375,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
             "note": runtime.hub.notes[entry.entry_id].gateway,
             "manual": runtime.hub.notes[entry.entry_id].manual,
-            "supply": runtime.hub.notes[entry.entry_id].supply,
+            "supplies": runtime.hub.notes[entry.entry_id].supplies,
             "orphan_notes": len(runtime.hub.notes[entry.entry_id].orphans(_device_keys(entry))),
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
@@ -855,26 +856,31 @@ def ws_set_manual(
     connection.send_result(msg["id"])
 
 
+SUPPLY_ENTRY: dict[Any, Any] = {
+    vol.Optional("id"): vol.All(str, vol.Length(max=32)),
+    **{vol.Optional(k): vol.All(str, vol.Length(max=n)) for k, n in SUPPLY_FIELDS.items()},
+}
+
+
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "enocean_eltako/set_supply",
+        vol.Required("type"): "enocean_eltako/set_supplies",
         vol.Required("entry_id"): str,
-        **{vol.Required(k): vol.All(str, vol.Length(max=n)) for k, n in SUPPLY_FIELDS.items()},
+        vol.Required("supplies"): vol.All([SUPPLY_ENTRY], vol.Length(max=MAX_SUPPLIES)),
     }
 )
 @websocket_api.require_admin
 @callback
-def ws_set_supply(
+def ws_set_supplies(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """The power supply of the FAM14 bus, for the sum of the bus power in the documentation."""
+    """The power supplies of the FAM14 bus, for the load of the bus in the documentation."""
     entry = hass.config_entries.async_get_entry(msg["entry_id"])
     if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
         connection.send_error(msg["id"], "not_found", "gateway not loaded")
         return
-    notes = entry.runtime_data.hub.notes[entry.entry_id]
-    if not notes.set_supply(msg["name"], msg["watts"]):
-        connection.send_error(msg["id"], "invalid_format", "watts must be a number")
+    if not entry.runtime_data.hub.notes[entry.entry_id].set_supplies(msg["supplies"]):
+        connection.send_error(msg["id"], "invalid_format", "watts, first or last are not valid")
         return
     connection.send_result(msg["id"])
 
