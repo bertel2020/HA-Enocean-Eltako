@@ -5,3 +5,4 @@ aiousbwatcher==1.1.2
 serialx==1.14.0
 ruff==0.17.1
 mypy==2.4.0
+hypothesis==6.170.14
