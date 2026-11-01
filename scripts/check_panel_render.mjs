@@ -40,8 +40,20 @@ async function check(query, run) {
   await settle();
   const root = panel.shadowRoot;
   const view = async (name) => {
-    root.querySelector(`#view [data-view="${name}"]`).click();
-    await settle();
+    if (name === "senders") {
+      // the sender ID pools: Installation > Senders > Gateway senders > ID management
+      root.querySelector('#view [data-view="installation"]').click();
+      await settle();
+      root.querySelectorAll("#installation .groups .chip")[1].click();
+      await settle();
+      root.querySelector('#installation [data-in-tab="gwsenders"]').click();
+      await settle();
+      root.querySelector('#installation [data-in-act="manage"]').click();
+      await settle();
+    } else {
+      root.querySelector(`#view [data-view="${name}"]`).click();
+      await settle();
+    }
     const text = shown(root);
     for (const bad of ["undefined", "NaN", "[object", "null"]) {
       if (text.includes(bad)) fail(`${query} ${name}: shows "${bad}"`);

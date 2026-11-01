@@ -72,7 +72,7 @@ export const TEXT = {
     inst: {
       tabs: { areas: "By area", devices: "Devices", gwsenders: "Gateway senders", buttons: "Buttons", radio: "Radio senders", bus: "Eltako bus", supplies: "Power supplies", links: "Links", log: "Log" },
       groups: { site: "Site", senders: "Senders", bus: "Bus", links: "Links", log: "Log" },
-      output: "Output", csvDevices: "Devices as CSV", manageIds: "Manage sender IDs", of: "of",
+      output: "Output", csvDevices: "Devices as CSV", asTable: "Table", manageIds: "ID management", manageHint: "Who uses which sender ID, free numbers, and release of the IDs of deleted devices.", of: "of",
       links: {
         csvShort: "Links CSV", tablesCsv: "Sender tables CSV", byActuator: "By actuator", bySender: "By sender", controls: "Controls",
         honest: "What an actuator has really learned is stored in the actuator and cannot be read here. Every link says where it comes from: assigned (a sender Home Assistant holds), declared (the wall switch set for the device) or entered by you.",
@@ -441,7 +441,7 @@ export const TEXT = {
     inst: {
       tabs: { areas: "Nach Bereich", devices: "Geräte", gwsenders: "Gateway-Sender", buttons: "Taster", radio: "Funk-Sender", bus: "Eltako-Bus", supplies: "Netzteile", links: "Verbindungen", log: "Protokoll" },
       groups: { site: "Anlage", senders: "Sender", bus: "Bus", links: "Verbindungen", log: "Protokoll" },
-      output: "Ausgabe", csvDevices: "Geräte als CSV", manageIds: "Sender-IDs verwalten", of: "von",
+      output: "Ausgabe", csvDevices: "Geräte als CSV", asTable: "Tabelle", manageIds: "ID-Verwaltung", manageHint: "Wer welche Sender-ID nutzt, freie Nummern und die Freigabe der IDs gelöschter Geräte.", of: "von",
       links: {
         csvShort: "Verbindungen-CSV", tablesCsv: "Sender-Tabellen-CSV", byActuator: "Nach Aktor", bySender: "Nach Sender", controls: "Steuert",
         honest: "Was ein Aktor wirklich gelernt hat, steckt im Aktor und ist hier nicht lesbar. Jede Verbindung sagt, woher sie kommt: vergeben (ein Sender, den Home Assistant hält), angegeben (der Wandschalter der Geräteoptionen) oder von dir eingetragen.",

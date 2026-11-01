@@ -21,7 +21,7 @@ const SAVE_DELAY = 600; // ms after the last key
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", last: {}, group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "areas", last: {}, manage: false, group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -107,6 +107,17 @@ export function parseTable(text, t) {
 }
 
 export const installation = {
+  _managing() {
+    // the sender ID pools (Senders > Gateway senders > ID management) are open
+    return this._view === "installation" && this._in.tab === "gwsenders" && this._in.manage;
+  },
+
+  _setManage() {
+    // the pool block below the tab shows only while it is open
+    const panel = this.shadowRoot.getElementById("panel");
+    if (panel) panel.dataset.isub = this._managing() ? "manage" : "";
+  },
+
   async _loadInstallation() {
     const state = this._in;
     try {
@@ -141,6 +152,7 @@ export const installation = {
       <details class="imenu"><summary class="chip">${svg(ICON.download)}${esc(t.inst.output)}</summary><div class="items">${item("csv", "", t.inst.csvDevices)}${item("csv-tables", "", t.inst.links.tablesCsv)}${item("csv-links", "", t.inst.links.csvShort)}<hr>${item("json", "", "JSON")}</div></details>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
     const body = { areas: () => this._instAreas(), devices: () => this._instDevices(), gwsenders: () => this._instSenders(), buttons: () => this._instButtons(), radio: () => this._instRadio(), bus: () => this._instBus(), supplies: () => this._instSupplies(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
+    this._setManage();
     this._replace(el, `<div class="itop"><div class="groups" role="group">${groups}</div><div class="itools">${tools}</div></div>${subtabs}<div class="ibody">${body}</div>`);
   },
 
@@ -175,7 +187,9 @@ export const installation = {
       return body + outside;
     };
     const head = [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second];
-    return `<p class="isub">${esc(T.sendersIntro)}</p><div><button class="chip" data-in-act="open-senders">${esc(t.inst.manageIds)}</button></div>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(parts.senders, parts.externals)) : ""));
+    const mode = `<div class="imode" style="display:flex;gap:6px;flex-wrap:wrap" role="group"><button class="chip" data-in-act="table" aria-pressed="${!this._in.manage}">${esc(t.inst.asTable)}</button><button class="chip" data-in-act="manage" aria-pressed="${this._in.manage}">${esc(t.inst.manageIds)}</button></div>`;
+    if (this._in.manage) return mode + `<p class="isub">${esc(t.inst.manageHint)}</p>`;
+    return mode + `<p class="isub">${esc(T.sendersIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(parts.senders, parts.externals)) : ""));
   },
 
   _instButtons() {
@@ -384,7 +398,11 @@ export const installation = {
     else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "csv-tables") this._documentation("csv-tables");
-    else if (act === "open-senders") this._setView("senders");
+    else if (act === "table" || act === "manage") {
+      this._in.manage = act === "manage";
+      this._renderInstallation();
+      if (act === "manage") this._loadPools();
+    }
     else if (act === "json") this._documentation("json");
     else if (act === "import") this.shadowRoot.getElementById("docFile").click();
     else if (act === "unpick") {

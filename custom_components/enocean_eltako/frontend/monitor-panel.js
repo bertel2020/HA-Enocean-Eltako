@@ -405,7 +405,7 @@ const STYLE = `
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only,
   .panel[data-view="installation"] .tg-only, .panel[data-view="installation"] .list-only { display: none !important; }
-  .panel:not([data-view="devices"]) .devices, .panel:not([data-view="senders"]) .senders,
+  .panel:not([data-view="devices"]) .devices, .panel:not([data-isub="manage"]) .senders,
   .panel:not([data-view="takeover"]) .takeover, .panel:not([data-view="installation"]) .installation { display: none; }
   /* the pool at a glance: four tiles, one bar, a note when something waits, then the map */
   .senders .ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 16px 16px 0; }
@@ -949,7 +949,6 @@ class EnOceanEltakoPanel extends HTMLElement {
         <nav role="tablist" id="view" aria-label="${esc(t.title)}">
           <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
           <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
-          <button role="tab" data-view="senders" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewSenders)}</button>
           <button role="tab" data-view="installation" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewInstallation)}</button>
           <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${esc(t.viewTakeover)}</button>
         </nav>
@@ -1031,6 +1030,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
+          <div class="installation" id="installation"></div>
           <div class="senders" id="senders">
             <div id="sidTop"></div>
             <div class="filters" id="sidTools" hidden>
@@ -1049,7 +1049,6 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div id="sidList"></div>
           </div>
           <div class="takeover" id="takeover"></div>
-          <div class="installation" id="installation"></div>
           <table class="telegrams tg-only" id="table"><colgroup id="cols"></colgroup><thead id="thead"></thead><tbody id="list"></tbody></table>
           <div class="pager list-only" id="pager">
             <button class="chip newer" id="newer" hidden></button>
@@ -1508,7 +1507,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
       this._render(true); // "heard x ago" moves on
     }
-    if (this._view === "senders" && !this._freeing) this._loadPools();
+    if (this._managing() && !this._freeing) this._loadPools();
     const multi = gateways.length > 1;
     if (multi !== this._multi) {
       this._multi = multi;
@@ -1602,13 +1601,20 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _setView(view) {
+    if (view === "senders") {
+      // the sender ID pools live in the Installation view, Senders > Gateway senders > ID management
+      this._in.tab = "gwsenders";
+      this._in.manage = true;
+      view = "installation";
+    }
     this._view = view;
     this._offset = 0;
     this._release(); // an open telegram holds only the telegram list
     const $ = (id) => this.shadowRoot.getElementById(id);
     $("panel").dataset.view = view;
+    this._setManage();
     // the gateway cards filter the telegrams; Sender IDs and Takeover pick their gateway themselves
-    $("gatewaySection").hidden = view === "senders" || view === "takeover" || view === "installation";
+    $("gatewaySection").hidden = view === "takeover" || view === "installation";
     this._renderMini();
     // export saves what the view shows: telegrams, or the sender list
     const exportLabel = view === "devices" ? this._t.exportDevices : this._t.export;
@@ -1622,9 +1628,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const title = { telegrams: this._t.telegrams, devices: this._t.viewDevices, senders: this._t.viewSenders, takeover: this._t.viewTakeover, installation: this._t.viewInstallation }[view];
     $("viewTitle").textContent = title;
     $("panel").setAttribute("aria-label", title);
-    if (view === "senders") this._loadPools();
     if (view === "takeover") this._loadTakeover();
     if (view === "installation") this._loadInstallation();
+    if (this._managing()) this._loadPools();
     if (view === "devices") this._loadRegistries().then(() => this._view === "devices" && this._render(true));
     for (const button of $("view").querySelectorAll("button")) {
       // tabs: only the chosen one is in the tab order, the arrow keys move between them
@@ -2659,7 +2665,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._renderDevices(background);
       return;
     }
-    if (this._view === "senders" || this._view === "takeover" || this._view === "installation") return;
+    if (this._view === "takeover" || this._view === "installation") return;
     const rows = this._visible().sort((a, b) => this._compare(a, b));
     const total = rows.length;
     this._total = total;
