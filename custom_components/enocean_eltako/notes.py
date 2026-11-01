@@ -7,6 +7,7 @@ no schema step), keyed by the device address, which survives deleting and adding
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from homeassistant.config_entries import ConfigSubentry
@@ -70,6 +71,44 @@ class Notes:
         else:
             self.devices.pop(key, None)
         self._save()
+
+    def import_from(self, gateway: dict[str, Any], *, overwrite: bool) -> tuple[int, int]:
+        """Take over the notes and manual entries of a documentation export of this gateway.
+
+        Without overwrite only what is empty here is filled in. Returns how many notes
+        (gateway and devices) and manual entries were taken.
+        """
+        notes = 0
+        if (text := str(gateway.get("note") or "").strip()) and (overwrite or not self.gateway):
+            if text[:MAX_NOTE] != self.gateway:
+                notes += 1
+            self.gateway = text[:MAX_NOTE]
+        for device in gateway.get("devices", []):
+            key, text = str(device.get("id") or ""), str(device.get("note") or "").strip()
+            if key and text and (overwrite or key not in self.devices):
+                if text[:MAX_NOTE] != self.devices.get(key):
+                    notes += 1
+                self.devices[key] = text[:MAX_NOTE]
+        entries = [e for e in gateway.get("manual", []) if isinstance(e, dict)]
+        if overwrite:
+            self.manual = []
+        known = {(e["name"], e["address"]) for e in self.manual}
+        taken = []
+        for entry in entries:
+            name, address = str(entry.get("name") or ""), str(entry.get("address") or "")
+            if (name, address) in known:
+                continue
+            known.add((name, address))
+            taken.append(
+                {
+                    "id": uuid.uuid4().hex[:8],
+                    "name": name,
+                    "address": address,
+                    "function": str(entry.get("function") or ""),
+                }
+            )
+        self.set_manual([*self.manual, *taken])
+        return notes, len(taken)
 
     def orphans(self, keys: set[str]) -> set[str]:
         """Keys of notes and test results whose device is gone (they return with the address)."""

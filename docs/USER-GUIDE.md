@@ -307,7 +307,9 @@ three outputs. A device's note belongs to its address, so it comes back if you a
 again; a gateway's details offer to forget the notes of deleted devices. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
 function): buttons taught in directly, devices of other systems, anything Home Assistant
 cannot see. They are for the documentation only and appear in all three outputs. The JSON is
-versioned and also meant for support. The menu also offers a denser **cabinet sheet** (landscape, one table per gateway without the
+versioned and also meant for support. **Import notes from JSON** reads such a file back, for
+example after a gateway swap: gateways are matched by base ID, devices by address, and only what
+is still empty is filled in. It imports notes and further devices, never the devices themselves. The menu also offers a denser **cabinet sheet** (landscape, one table per gateway without the
 pool and the heard senders) to hang in the distribution board. It points to the learn function
 table instead of naming one, as the right function depends on the actuator's type and revision.
 If the browser

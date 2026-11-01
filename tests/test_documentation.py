@@ -226,3 +226,66 @@ async def test_notes_of_deleted_devices_can_be_forgotten(
     assert (await call(3))["result"] == {"removed": 1}
     assert notes.devices == {"05-00-00-12": "bleibt"} and notes.tests == {}
     assert (await call(4))["result"] == {"removed": 0}  # nothing left to forget
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_notes_come_back_from_an_export(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.set_gateway("Keller")
+    notes.set_device("05-00-00-12", "Schrank 2")
+    notes.set_manual([{"id": "a", "name": "Taster", "address": "00-12-34-56", "function": "Flur"}])
+    export = collect(hass)
+
+    # a new setup: nothing written yet
+    notes.set_gateway("")
+    notes.set_device("05-00-00-12", "")
+    notes.set_manual([])
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, doc, **fields):
+        await client.send_json(
+            {"id": msg_id, "type": "enocean_eltako/import_documentation", "doc": doc, **fields}
+        )
+        return await client.receive_json()
+
+    reply = await call(1, export)
+    assert reply["result"]["gateways"] == [
+        {"title": entry.title, "matched": True, "notes": 2, "manual": 1}
+    ]
+    assert notes.gateway == "Keller" and notes.devices == {"05-00-00-12": "Schrank 2"}
+    assert [(e["name"], e["address"]) for e in notes.manual] == [("Taster", "00-12-34-56")]
+
+    # the same file again changes nothing (no duplicates), and does not overwrite newer notes
+    notes.set_device("05-00-00-12", "Schrank 3")
+    again = await call(2, export)
+    assert again["result"]["gateways"][0] | {"title": ""} == {
+        "title": "",
+        "matched": True,
+        "notes": 0,
+        "manual": 0,
+    }
+    assert notes.devices["05-00-00-12"] == "Schrank 3" and len(notes.manual) == 1
+    assert (await call(3, export, overwrite=True))["success"]
+    assert notes.devices["05-00-00-12"] == "Schrank 2"
+
+    # a gateway of the file that is not set up here, and files that are not exports
+    other = {**export, "gateways": [{**export["gateways"][0], "base_id": "FF-80-00-00"}]}
+    assert (await call(4, other))["result"]["gateways"] == [
+        {"title": entry.title, "matched": False}
+    ]
+    assert (await call(5, {"version": 99, "gateways": []}))["error"][
+        "code"
+    ] == "unsupported_version"
+    assert (await call(6, {"version": 1, "gateways": "x"}))["error"][
+        "code"
+    ] == "unsupported_version"
+    assert (await call(7, {"version": 1, "gateways": ["x"]}))["result"]["gateways"] == []

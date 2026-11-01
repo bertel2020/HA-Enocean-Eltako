@@ -184,6 +184,13 @@ export const TEXT = {
     dIdentity: "Identity", dRadio: "Radio", dSenders: "Sender IDs", dCommands: "Commands", dSettings: "Settings",
     dEntities: (n) => `Entities (${n})`,
     doc: {
+      importItem: "Import notes from JSON", importUnsupported: "That is not a documentation export of this integration.", importFailed: "The notes could not be imported.",
+      importDone: (gateways) => {
+        const taken = gateways.filter((g) => g.matched);
+        const missing = gateways.length - taken.length;
+        const text = `Imported ${taken.reduce((n, g) => n + g.notes, 0)} notes and ${taken.reduce((n, g) => n + g.manual, 0)} entries from ${taken.length} gateways.`;
+        return missing ? `${text} ${missing} gateways of the file are not set up here.` : text;
+      },
       prune: (n) => `Remove ${n} notes of deleted devices`, pruneHint: "Notes stay when a device is deleted and come back if you add it again; this forgets them",
       sheetItem: "Print cabinet sheet", sheetTitle: "Cabinet sheet", sheetFoot: "The learn function to set on an actuator depends on its type and revision: see the learn function table in the documentation of the integration (docs/teach_in.md) and the manual of the device.",
       notes: "Notes", notePlaceholder: "Where it sits, terminal, fuse, battery date …", gatewayNotePlaceholder: "Note on this gateway: place, repeater, wiring …", noteFailed: "The note could not be saved.",
@@ -485,6 +492,13 @@ export const TEXT = {
     dIdentity: "Identität", dRadio: "Funk", dSenders: "Sender-IDs", dCommands: "Befehle", dSettings: "Einstellungen",
     dEntities: (n) => `Entitäten (${n})`,
     doc: {
+      importItem: "Notizen aus JSON importieren", importUnsupported: "Das ist kein Dokumentations-Export dieser Integration.", importFailed: "Die Notizen konnten nicht importiert werden.",
+      importDone: (gateways) => {
+        const taken = gateways.filter((g) => g.matched);
+        const missing = gateways.length - taken.length;
+        const text = `${taken.reduce((n, g) => n + g.notes, 0)} Notizen und ${taken.reduce((n, g) => n + g.manual, 0)} Einträge aus ${taken.length} Gateways importiert.`;
+        return missing ? `${text} ${missing} Gateways der Datei sind hier nicht eingerichtet.` : text;
+      },
       prune: (n) => `${n} Notizen gelöschter Geräte entfernen`, pruneHint: "Notizen bleiben beim Löschen eines Geräts erhalten und kommen wieder, wenn du es neu anlegst; das vergisst sie",
       sheetItem: "Schaltschrank-Blatt drucken", sheetTitle: "Schaltschrank-Blatt", sheetFoot: "Welche Lernfunktion am Aktor einzustellen ist, hängt von Typ und Revision ab: siehe die Tabelle der Einlernfunktionen in der Dokumentation der Integration (docs/teach_in.de.md) und das Handbuch des Geräts.",
       notes: "Notizen", notePlaceholder: "Einbauort, Klemme, Sicherung, Batteriedatum …", gatewayNotePlaceholder: "Notiz zu diesem Gateway: Standort, Repeater, Verdrahtung …", noteFailed: "Die Notiz konnte nicht gespeichert werden.",
