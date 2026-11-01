@@ -127,10 +127,10 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 1, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 2, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
-        "devices": {"05-00-00-12": "Schrank 2, Platz 4"},
+        "devices": {"05-00-00-12": {"note": "Schrank 2, Platz 4"}},
         "tests": {},
         "manual": [],
         "log": [],
@@ -226,7 +226,7 @@ async def test_notes_of_deleted_devices_can_be_forgotten(
 
     assert (await call(2, "unknown"))["error"]["code"] == "not_found"
     assert (await call(3))["result"] == {"removed": 1}
-    assert notes.devices == {"05-00-00-12": "bleibt"} and notes.tests == {}
+    assert notes.devices == {"05-00-00-12": {"note": "bleibt"}} and notes.tests == {}
     assert (await call(4))["result"] == {"removed": 0}  # nothing left to forget
 
 
@@ -263,7 +263,7 @@ async def test_notes_come_back_from_an_export(
     assert reply["result"]["gateways"] == [
         {"title": entry.title, "matched": True, "notes": 2, "manual": 1}
     ]
-    assert notes.gateway == "Keller" and notes.devices == {"05-00-00-12": "Schrank 2"}
+    assert notes.gateway == "Keller" and notes.devices == {"05-00-00-12": {"note": "Schrank 2"}}
     assert [(e["name"], e["address"]) for e in notes.manual] == [("Taster", "00-12-34-56")]
 
     # the same file again changes nothing (no duplicates), and does not overwrite newer notes
@@ -275,9 +275,9 @@ async def test_notes_come_back_from_an_export(
         "notes": 0,
         "manual": 0,
     }
-    assert notes.devices["05-00-00-12"] == "Schrank 3" and len(notes.manual) == 1
+    assert notes.devices["05-00-00-12"] == {"note": "Schrank 3"} and len(notes.manual) == 1
     assert (await call(3, export, overwrite=True))["success"]
-    assert notes.devices["05-00-00-12"] == "Schrank 2"
+    assert notes.devices["05-00-00-12"] == {"note": "Schrank 2"}
 
     # a gateway of the file that is not set up here, and files that are not exports
     other = {**export, "gateways": [{**export["gateways"][0], "base_id": "FF-80-00-00"}]}
@@ -336,9 +336,9 @@ async def test_import_maps_a_swapped_gateway_and_keeps_the_second_channel(
     assert mapped["result"]["gateways"][0]["matched"] is True
     assert notes.gateway == "Keller"
     assert notes.devices == {
-        "05-00-00-12_2": "Kanal 2, Schrank 3",
-        "05-00-00-12": "Kanal 1",
-        "05-00-00-13": "aus einem Export von 1.4.1",
+        "05-00-00-12_2": {"note": "Kanal 2, Schrank 3"},
+        "05-00-00-12": {"note": "Kanal 1"},
+        "05-00-00-13": {"note": "aus einem Export von 1.4.1"},
     }
     # a map to a gateway that is not loaded changes nothing
     again = await call(3, gateway_map={"FF-80-00-80": "unknown"})
@@ -366,3 +366,104 @@ def test_the_event_log_notes_what_changed_between_loads() -> None:
     for i in range(MAX_LOG + 20):
         notes.add_log("teach_in", "a", str(i))
     assert len(notes.log) == MAX_LOG and notes.log[-1]["detail"] == str(MAX_LOG + 19)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_typed_fields_are_validated_stored_and_documented(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    device = next(iter(entry.runtime_data.devices.values()))
+    key = device.subentry.subentry_id
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, items, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/set_fields",
+                "entry_id": entry_id or entry.entry_id,
+                "items": items,
+            }
+        )
+        return await client.receive_json()
+
+    values = {
+        "location": " Schrank 2, Reihe 1, Platz 4 ",
+        "circuit": "Klemme 12",
+        "fuse": "F3 B16",
+        "installed": "2026-10-01",
+        "revision": "2214",
+        "power": "Netz",
+        "note": "Waschküche",
+    }
+    reply = await call(1, [{"device": key, "values": values}])
+    assert reply["result"] == {"saved": 1, "rejected": []}
+    row = collect(hass)["gateways"][0]["devices"][0]
+    assert row["location"] == "Schrank 2, Reihe 1, Platz 4" and row["installed"] == "2026-10-01"
+    assert all(row[f] for f in values)
+
+    # one bad value rejects that device's whole edit; an unknown device is rejected as well
+    bad = await call(2, [{"device": key, "values": {"fuse": "F4", "installed": "gestern"}}])
+    assert bad["result"] == {"saved": 0, "rejected": [key]}
+    assert notes.device("05-00-00-12")["fuse"] == "F3 B16"
+    missing = await call(3, [{"device": "nope", "values": {"fuse": "F4"}}])
+    assert missing["result"] == {"saved": 0, "rejected": ["nope"]}
+    assert (await call(4, [], "unknown"))["error"]["code"] == "not_found"
+    unknown_field = await call(5, [{"device": key, "values": {"colour": "red"}}])
+    assert unknown_field["success"] is False
+    too_long = await call(6, [{"device": key, "values": {"fuse": "x" * 41}}])
+    assert too_long["success"] is False
+
+    # clearing every field removes the device's entry
+    await call(7, [{"device": key, "values": dict.fromkeys(values, "")}])
+    assert notes.devices == {}
+
+    # the import takes over all typed fields and drops a bad date
+    doc = {
+        "version": 1,
+        "gateways": [
+            {
+                "base_id": entry.data["base_id"],
+                "devices": [{"note_key": "05-00-00-12", **values, "installed": "gestern"}],
+            }
+        ],
+    }
+    await client.send_json({"id": 8, "type": "enocean_eltako/import_documentation", "doc": doc})
+    assert (await client.receive_json())["result"]["gateways"][0]["notes"] == 6
+    assert notes.device("05-00-00-12")["circuit"] == "Klemme 12"
+    assert notes.device("05-00-00-12")["installed"] == ""
+
+
+async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, gateway) -> None:  # noqa: F811
+    from custom_components.enocean_eltako.notes import Notes
+
+    hass_storage["enocean_eltako.notes.legacy"] = {
+        "version": 1,
+        "minor_version": 1,
+        "key": "enocean_eltako.notes.legacy",
+        "data": {
+            "gateway": "Keller",
+            "devices": {"05-00-00-12": "Schrank 2", "05-00-00-13": "Schrank 3"},
+            "tests": {},
+            "manual": [],
+        },
+    }
+    notes = Notes(hass, "legacy")
+    await notes.async_load()
+    assert notes.gateway == "Keller"
+    assert notes.devices == {
+        "05-00-00-12": {"note": "Schrank 2"},
+        "05-00-00-13": {"note": "Schrank 3"},
+    }
+    assert notes.device("05-00-00-12")["location"] == ""
+    # a stored version 2 is read as it is
+    await notes.async_flush()
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 2

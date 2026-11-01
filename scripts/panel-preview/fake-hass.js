@@ -35,6 +35,8 @@ const makeRuns = () => [
   { id: "run0", entry_id: "gw1", gateway: "FAM-USB Keller", at: null, manual: true, carry: [], devices: 3, entities: 5, restored: 5 },
 ];
 
+const device = (o) => ({ eep_extra: [], virtual: false, wall_switch: null, senders: [], model: null, area: null, location: "", circuit: "", fuse: "", installed: "", revision: "", power: "", note: "", note_key: o.id, ...o });
+
 export function fakeHass(params = new URLSearchParams()) {
   const takeoverRuns = makeRuns();
   const now = Date.now() / 1000;
@@ -141,12 +143,25 @@ export function fakeHass(params = new URLSearchParams()) {
           return { available: !empty && !params.has("closed"), reports: empty ? 0 : takeoverRuns.length };
         case "enocean_eltako/documentation":
           return {
-            version: 1, generated: new Date().toISOString(), gateways: [{
-              entry_id: "gw1", title: "FAM-USB Keller", model: "fam_usb", base_id: "FF-B7-44-80", hidden_senders: [],
-              devices: [{ name: "Licht Flur", key: "sub1", id: "05-10-A2-C1", eep: "M5-38-08:eltako", eep_extra: [], area: "Flur", model: "FSR14-4x", kind: "switch", category: "lighting", virtual: false, entities: 2, wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-91", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-92", ute: false, test: "unconfirmed" }] }],
-              pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-91", device: "Licht Flur", profile: "central", state: "assigned" }, { id: "FF-B7-44-95", device: null, profile: "central", state: "blocked" }] }],
+            version: 1, generated: new Date().toISOString(), gateways: empty ? [] : [{
+              entry_id: "gw1", title: "FAM-USB Keller", model: "fam_usb", model_name: "Eltako FAM-USB", base_id: "FF-B7-44-80", hidden_senders: [],
+              note: gateway.note, manual: gateway.manual, heard: [], orphan_notes: 0,
+              devices: [
+                device({ name: "Licht Diele", key: "sub1", id: "05-10-A2-B3", eep: "M5-38-08:eltako", area: "Flur", model: "FSR14-4x", location: english ? "Cabinet 2, row 1, slot 4" : "Schrank 2, Reihe 1, Platz 4", fuse: "F3 B16", installed: "2026-10-01", power: english ? "mains" : "Netz",
+                  wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-81", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-83", ute: false, test: "unconfirmed" }] }),
+                device({ name: "Dimmer Flur", key: "sub2", id: "05-10-A2-B4", eep: "A5-38-08:eltako", area: "Flur", model: "FUD14", location: english ? "Cabinet 2, row 1, slot 5" : "Schrank 2, Reihe 1, Platz 5", senders: [] }),
+                device({ name: "Fensterkontakt Küche", key: "sub3", id: "05-22-22-22", eep: "D5-00-01:std", area: "Küche", power: "CR2032", note: english ? "battery changed 03/2026" : "Batterie gewechselt 03/2026" }),
+              ],
+              pools: [{ id: "radio:gw1", kind: "radio", start: "FF-B7-44-81", end: "FF-B7-44-FF", senders: [{ id: "FF-B7-44-81", device: "Licht Diele", profile: "central", state: "assigned" }, { id: "FF-B7-44-86", device: null, profile: "central", state: "blocked" }] }],
+              log: [
+                { time: "2026-10-26T09:12:00+00:00", kind: "device_added", device: "05-10-A2-B3", detail: "Licht Diele" },
+                { time: "2026-10-26T09:14:00+00:00", kind: "teach_in", device: "05-10-A2-B3", detail: "Licht Diele: central" },
+                { time: "2026-10-26T09:15:00+00:00", kind: "sender_test", device: "05-10-A2-B3", detail: "Licht Diele: central=confirmed, rocker=unconfirmed" },
+              ],
             }],
           };
+        case "enocean_eltako/set_fields":
+          return { saved: msg.items.length, rejected: [] };
         case "enocean_eltako/sender_pools":
           return empty ? [] : [pool];
         case "enocean_eltako/sender_pools/free_all":

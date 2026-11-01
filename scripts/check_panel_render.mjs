@@ -99,6 +99,25 @@ for (const lang of ["en", "de"]) {
     expect("sent again", resent.join(", "), "FF-B7-44-81 F6 70 30, FF-B7-44-81 F6 00 20");
     root.getElementById("filterBtn").click();
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
+    // the Installation view: devices by area, a table with fields edited in place, the event log
+    await view("installation");
+    expect("installation cards (one per area)", root.querySelectorAll("#installation .gcard").length, 2);
+    root.querySelector('#installation [data-in-tab="devices"]').click();
+    await settle();
+    expect("installation table rows", root.querySelectorAll("#installation .itable tbody tr").length, 3);
+    const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
+    cell.value = "F4 B10";
+    cell.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const edits = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields");
+    expect("a cell is saved after typing", JSON.stringify(edits.map((m) => m.items)), '[[{"device":"sub2","values":{"fuse":"F4 B10"}}]]');
+    root.querySelector('#installation [data-in-pick="gw1|sub1"]').click();
+    root.querySelector('#installation [data-in-pick="gw1|sub1"]').dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    expect("bulk bar after a pick", !!root.querySelector("#installation .bulk"), true);
+    root.querySelector('#installation [data-in-tab="log"]').click();
+    await settle();
+    expect("log rows", root.querySelectorAll("#installation .log tbody tr").length, 3);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 5);
     // a set-up device opens in place, with what the server knows of it, and closes again

@@ -65,7 +65,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             for profile, sender in device.senders.items()
         ],
         "wall_switch": wall,
-        "note": notes.devices.get(device_key(device.subentry), ""),
+        **notes.device(device_key(device.subentry)),
         "test_time": test.get("time"),
     }
 
