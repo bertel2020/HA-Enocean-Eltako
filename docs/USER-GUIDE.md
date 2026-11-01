@@ -332,7 +332,9 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   reported). The power is what a device takes from the bus, not the switched load: what you wrote
   down, otherwise the value of Eltako's planning guide (edition 07/2014, the table of the maximum
   power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
-  has no value, and the sum says how many devices have none. In the tables of the Senders and Bus
+  has no value, and the sum says how many devices have none. The **Devices** table has a progress line (devices with a place), shows its columns in groups you
+  switch on and off (place and fuse, bus and radio, upkeep) and names a wrong bus address or
+  watts value under the field instead of sending it. In the tables of the Senders and Bus
   groups the fields of a device are changed right where they stand (bus address, feedback ID,
   place, **Part of**, power; saved as you type). The channels of one device count
   once if they share a **Part of** name; without it the sum counts each channel and says so. The

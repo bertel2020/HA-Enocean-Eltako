@@ -123,6 +123,21 @@ for (const lang of ["en", "de"]) {
     await new Promise((resolve) => setTimeout(resolve, 700));
     const edits = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields");
     expect("a cell is saved after typing", JSON.stringify(edits.map((m) => m.items)), '[[{"device":"sub2","values":{"fuse":"F4 B10"}}]]');
+    // a wrong value is named under the field and not sent; columns are shown in groups; the progress counts places
+    const sentBefore = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length;
+    const addrCell = root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"]');
+    addrCell.value = "999";
+    addrCell.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect("a wrong bus address is named under the field", !!root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"] + .cerr'), true);
+    expect("a wrong bus address is not sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length, sentBefore);
+    expect("the upkeep columns are hidden at first", root.querySelector('#installation [data-in-field="installed"]'), null);
+    root.querySelector('#installation [data-in-columns="upkeep"]').click();
+    await settle();
+    expect("the upkeep columns can be shown", !!root.querySelector('#installation [data-in-field="installed"]'), true);
+    expect("the progress counts the devices with a place", !!root.querySelector("#installation .progress"), true);
+    root.querySelector('#installation [data-in-columns="upkeep"]').click();
+    await settle();
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').click();
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
