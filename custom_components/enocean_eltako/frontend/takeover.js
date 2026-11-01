@@ -37,7 +37,7 @@ function saveCarry(carry) {
 
 // the view's state when the panel starts
 export const takeoverState = () => ({
-  entry: "", tab: "", section: "", available: false, reports: 0, preview: null, previewError: "", mapping: null,
+  entry: "", tab: "", section: "", loading: false, available: false, reports: 0, preview: null, previewError: "", mapping: null,
   selected: new Set(), carry: loadCarry(), open: new Set(), busy: false, q: "", folded: new Set(), showNot: false,
   runs: null, run: "", runData: null, openRun: new Set(), confirm: "",
 });
@@ -98,6 +98,13 @@ export const TAKEOVER_STYLE = `
   .takeover .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: 20px; overflow: hidden; }
   .takeover .seg button { height: 32px; padding: 0 14px; font: inherit; font-size: 13px; color: var(--muted); background: var(--surface); border: 0; cursor: pointer; }
   .takeover .seg button[aria-pressed="true"] { color: var(--accent-hover); background: var(--accent-soft); font-weight: 500; }
+  .takeover .skel { padding: 16px; display: grid; gap: 12px; }
+  .takeover .skel i { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--soft) 25%, color-mix(in srgb, var(--line) 70%, var(--soft)) 50%, var(--soft) 75%);
+    background-size: 200% 100%; animation: tkshimmer 1.4s ease-in-out infinite; }
+  .takeover .skel i:nth-child(3n+1) { width: 70%; }
+  .takeover .skel i:nth-child(3n+2) { width: 92%; }
+  .takeover .skel i:nth-child(3n) { width: 55%; }
+  @keyframes tkshimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
   .takeover .devblock { border-top: 1px solid var(--line); }
   .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; font-size: 13px; }
   .takeover .devhead[data-tk-open], .takeover .devhead[data-tk-open-run] { cursor: pointer; }
@@ -222,10 +229,15 @@ export const takeover = {
 
   async _loadTakeover() {
     const tk = this._tk;
+    // the first time: the switch and a placeholder at once, so the reports are reachable while the takeover loads
+    tk.loading = !tk.preview && !tk.previewError;
+    if (tk.loading) this._renderTakeover();
     await this._tkLoadRuns();
+    if (tk.loading) this._renderTakeover();
     const gateways = this._tkGateways();
     if (!gateways.some((g) => g.entry_id === tk.entry)) tk.entry = gateways[0]?.entry_id || "";
     if (!tk.entry) {
+      tk.loading = false;
       this._renderTakeover();
       return;
     }
@@ -237,6 +249,7 @@ export const takeover = {
     tk.preview = preview.status === "fulfilled" ? preview.value : null;
     tk.previewError = preview.status === "rejected" ? preview.reason?.code || "unknown" : "";
     tk.mapping = mapping.status === "fulfilled" ? mapping.value : null;
+    tk.loading = false;
     const ready = this._tkDevices().filter((d) => d.ready);
     tk.selected = new Set(ready.map((d) => d.id));
     // opened: the first step with something left to do
@@ -292,10 +305,16 @@ export const takeover = {
 
   _renderTakeover() {
     const container = this.shadowRoot.getElementById("takeover");
+    const tk = this._tk;
     const section = this._tkSection();
     const bar = this._tkTopbar(section);
-    this._replace(container, bar + (section === "reports" ? this._renderReports() : this._renderWizard()));
+    const body = tk.loading && (section === "wizard" || !tk.runs) ? this._tkSkeleton() : section === "reports" ? this._renderReports() : this._renderWizard();
+    this._replace(container, bar + body);
     container.querySelectorAll("[data-partial]").forEach((box) => { box.indeterminate = true; });
+  },
+
+  _tkSkeleton() {
+    return `<div class="skel" role="status" aria-busy="true" aria-label="${esc(this._t.loading)}">${"<i></i>".repeat(6)}</div>`;
   },
 
   _tkTopbar(section) {
