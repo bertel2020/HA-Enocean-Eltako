@@ -40,6 +40,7 @@ const PAGE_SIZES = [25, 50, 100, 200];
 const STORAGE_KEY = "enocean_eltako_monitor"; // page size, sort order and filters, per browser
 const HISTORY = 200;
 // the keys of a capture line (service enocean_eltako.capture): exports can be used as test fixtures
+const RECORD_SECONDS = 60; // how long a device report listens to one sender
 const REPORT_TELEGRAMS = 60; // telegrams of an unknown sender that a device report carries
 const DEVICE_REQUEST_URL = "https://github.com/bertel2020/HA-Enocean-Eltako/issues/new?template=device_request.yml";
 const CAPTURE_KEYS = ["time", "gateway", "dir", "rorg", "data", "sender", "status", "destination", "dbm", "duplicate"];
@@ -783,6 +784,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._areas = [];
     this._labels = [];
     this._devDetails = new Map(); // device key -> what the server knows of it
+    this._recordings = new Map(); // sender -> {start} while recording, {start, rows} when done
     this._senderTests = new Map(); // device key -> {running} | {results: {profile: result}} | {error}
     this._devOrder = null; // order kept while a row is open, so it does not move away
     this._keys = new Set(); // rows shown or pending, so a repeated history is not added twice
@@ -1694,6 +1696,18 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._reportDevice(report.dataset.report);
       return;
     }
+    const record = e.target.closest("[data-record]");
+    if (record) {
+      e.stopPropagation();
+      this._startRecording(record.dataset.record);
+      return;
+    }
+    const recorded = e.target.closest("[data-report-recorded]");
+    if (recorded) {
+      e.stopPropagation();
+      this._reportRows(this._recordings.get(recorded.dataset.reportRecorded)?.rows ?? []);
+      return;
+    }
     const add = e.target.closest(".add");
     if (add) {
       e.stopPropagation();
@@ -1750,10 +1764,37 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._render();
   }
 
-  async _reportDevice(sender) {
-    // the sender's recent telegrams, anonymised, on the clipboard; the issue form opens empty (no
-    // data in the URL)
-    const rows = this._rows.filter((r) => r.sender === sender && r.dir === "rx" && !r.duplicate).slice(0, REPORT_TELEGRAMS).reverse();
+  _reportDevice(sender) {
+    // the sender's recent telegrams
+    return this._reportRows(this._rows.filter((r) => r.sender === sender && r.dir === "rx" && !r.duplicate).slice(0, REPORT_TELEGRAMS).reverse());
+  }
+
+  _recordButton(sender) {
+    const t = this._t;
+    const rec = this._recordings.get(sender);
+    if (!rec) return `<button class="icon-btn" data-record="${esc(sender)}" title="${esc(t.recordHint(RECORD_SECONDS))}" aria-label="${esc(t.record)}">${svg(ICON.play)}</button>`;
+    if (!rec.rows) return `<span class="tag warn">${esc(t.recording)}</span>`;
+    return rec.rows.length ? `<button class="chip text" data-report-recorded="${esc(sender)}">${svg(ICON.bug)}${esc(t.recordCopy(rec.rows.length))}</button>` : `<span class="tag">${esc(t.recordNone)}</span>`;
+  }
+
+  _startRecording(sender) {
+    // listen to one sender for a minute, so the telegrams of what the user does with the device are
+    // in the report; the copy needs a click again (browsers want a gesture for the clipboard)
+    if (this._recordings.has(sender) && !this._recordings.get(sender).rows) return;
+    const start = Date.now();
+    this._recordings.set(sender, { start });
+    this._notice(this._t.recordStarted(RECORD_SECONDS), true);
+    this._render(true);
+    setTimeout(() => {
+      const rows = this._rows.filter((r) => r.sender === sender && r.dir === "rx" && !r.duplicate && new Date(r.time).getTime() >= start).slice(0, REPORT_TELEGRAMS * 5).reverse();
+      this._recordings.set(sender, { start, rows });
+      this._notice(this._t.recordDone(rows.length), true);
+      if (this._view === "telegrams") this._render(true);
+    }, RECORD_SECONDS * 1000);
+  }
+
+  async _reportRows(rows) {
+    // anonymised on the clipboard; the issue form opens empty (no data in the URL)
     if (!rows.length) return;
     try {
       await navigator.clipboard.writeText(anonymisedCapture(rows, CAPTURE_KEYS).join("\n") + "\n");
@@ -2491,7 +2532,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             ${r.device_key && this._inPanel(r.device_key) ? `<button class="icon-btn" data-dev-panel="${esc(r.device_key)}" title="${esc(t.inPanelHint)}" aria-label="${esc(t.inPanel)}">${svg(ICON.list)}</button>` : ""}
             ${r.ha_device ? `<button class="icon-btn" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDevice)}">${svg(ICON.open)}</button>` : ""}
             ${this._canResend(r) ? `<button class="icon-btn" data-resend="${esc(key)}" title="${esc(t.resendHint)}" aria-label="${esc(t.resend)}">${svg(ICON.send)}</button>` : ""}
-            ${unknown ? `<button class="icon-btn" data-report="${esc(r.sender)}" title="${esc(t.reportHint)}" aria-label="${esc(t.report)}">${svg(ICON.bug)}</button>` : ""}
+            ${unknown ? `<button class="icon-btn" data-report="${esc(r.sender)}" title="${esc(t.reportHint)}" aria-label="${esc(t.report)}">${svg(ICON.bug)}</button>${this._recordButton(r.sender)}` : ""}
             ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
           </div>
           <dl class="meta">

@@ -246,7 +246,9 @@ several gateways, the gateway.
   lines and opens the device request on GitHub, where you paste them. Sender IDs, the gateway
   name and the times are replaced before anything is copied; the telegram data, status and
   signal strength stay, as the decoders need them. Nothing is sent from Home Assistant, and no
-  data goes into the link.
+  data goes into the link. **Record and report** (play button) listens to the sender for 60
+  seconds first, so the telegrams of what you do with the device are in the report: press its
+  buttons or trigger it, then open the sender's details again and copy the recorded telegrams.
 
 ### Search, filters, pause
 
