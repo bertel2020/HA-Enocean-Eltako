@@ -38,6 +38,22 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 - **Übernahme** der Geräte der alten Integration `eltako`, ohne die Aktoren neu einzulernen.
 - **Sicherheit bleibt im Aktor:** Wind-, Regen-, Frost- und Aussperrschutz werden nie ersetzt.
 
+## Screenshots
+
+Die Screenshots zeigen Beispieldaten aus dem Seitenleisten-Panel **EnOcean**.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/telegrams-desktop-light.png" alt="Live-Telegrammmonitor" width="100%">
+</p>
+
+| Geräte | Sender-IDs |
+| --- | --- |
+| ![Geräte](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/devices-desktop-light.png) | ![Sender-IDs](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/senders-desktop-light.png) |
+
+| Übernahme |
+| --- |
+| ![Übernahme](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/takeover-desktop-light.png) |
+
 ## Installation
 
 ### Über HACS (empfohlen)

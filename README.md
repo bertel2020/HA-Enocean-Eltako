@@ -38,6 +38,22 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 - **Takeover** of the devices of the old `eltako` integration without teaching the actuators in again.
 - **Safety stays in the actuator:** wind, rain, frost and lock-out protection are never replaced.
 
+## Screenshots
+
+The screenshots show sample data from the **EnOcean** sidebar panel.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/telegrams-desktop-light.png" alt="Live telegram monitor" width="100%">
+</p>
+
+| Devices | Sender IDs |
+| --- | --- |
+| ![Devices](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/devices-desktop-light.png) | ![Sender IDs](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/senders-desktop-light.png) |
+
+| Takeover |
+| --- |
+| ![Takeover](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/takeover-desktop-light.png) |
+
 ## Installation
 
 ### Via HACS (recommended)
