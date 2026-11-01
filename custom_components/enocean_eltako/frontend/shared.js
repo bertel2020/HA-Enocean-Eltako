@@ -152,7 +152,7 @@ export function documentationHtml(doc, t, profile, lang) {
       return `<section class="gw">
 <h2>${esc(gw.title)}</h2>
 ${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}
-<p class="sub">${esc(gw.model ?? "")}${gw.base_id ? ` · Base ID <span class="mono">${esc(gw.base_id)}</span>` : ""} · ${esc(d.counts(gw.devices.length, pool.length, blocked))}</p>
+<p class="sub">${esc(gw.model_name ?? gw.model ?? "")}${gw.base_id ? ` · Base ID <span class="mono">${esc(gw.base_id)}</span>` : ""} · ${esc(d.counts(gw.devices.length, pool.length, blocked))}</p>
 <h3>${esc(d.devices)}</h3>
 <table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${devices}</tbody></table>
 ${poolRows ? `<h3>${esc(d.pool)}</h3><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.usedBy)}</th><th>${esc(d.cols.sender)}</th><th>${esc(d.cols.poolState)}</th></tr></thead><tbody>${poolRows}</tbody></table>` : ""}
@@ -175,7 +175,7 @@ ${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.
   return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(d.title)}</title><style>
 body{font:13px/1.45 system-ui,sans-serif;color:#1c1c1a;margin:24px}
 h1{font-size:20px;font-weight:500;margin:0}h2{font-size:17px;font-weight:500;margin:0}h3{font-size:14px;font-weight:500;margin:18px 0 6px}
-.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px}
+.sub{color:#5f5e5a;font-size:12px}.mono{font-family:ui-monospace,monospace;font-size:12px;white-space:nowrap}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:500;color:#5f5e5a;font-size:12px;border-bottom:1px solid #888;padding:5px 8px 5px 0}
 td{border-bottom:1px solid #ddd;padding:6px 8px 6px 0;vertical-align:top}tr{break-inside:avoid}thead{display:table-header-group}h2,h3{break-after:avoid}
 section.gw{break-after:page;margin-top:24px}.gwnote{margin:2px 0 4px;font-style:italic}.note{margin-top:24px;padding:10px 14px;background:#f1efe8;border-radius:6px}

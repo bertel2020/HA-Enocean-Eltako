@@ -21,6 +21,7 @@ from .device import EnOceanDevice
 from .discovery import pending
 from .notes import Notes, device_key
 from .protocol.ids import format_id
+from .protocol.models import MODELS
 
 VERSION = 1
 
@@ -82,6 +83,9 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 "entry_id": entry.entry_id,
                 "title": entry.title,
                 "model": entry.data.get(CONF_MODEL),
+                "model_name": model.name
+                if (model := MODELS.get(entry.data.get(CONF_MODEL, "")))
+                else None,
                 "base_id": entry.data.get(CONF_BASE_ID),
                 "note": notes.gateway,
                 "manual": notes.manual,
