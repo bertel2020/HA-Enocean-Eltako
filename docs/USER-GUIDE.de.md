@@ -320,7 +320,8 @@ Aktor wirklich gelernt hat und direkt eingelernte Taster. In den Details jedes G
 Details jedes Gateways ein eigenes Notizfeld (Ort, Klemme, Sicherung, Batteriedatum, Repeater):
 gespeichert beim Tippen, in einem eigenen Speicher pro Gateway und Teil des Home-Assistant-
 Backups, in allen drei Ausgaben enthalten. Die Notiz eines Geräts gehört zu seiner Adresse, sie
-ist also wieder da, wenn du das Gerät neu anlegst. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
+ist also wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten an, die Notizen
+gelöschter Geräte zu vergessen. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
 (Name, ID, Funktion): direkt eingelernte Taster, Geräte anderer Systeme, alles, was Home
 Assistant nicht sieht. Sie dienen nur der Dokumentation und stehen in allen drei Ausgaben. Das
 JSON ist versioniert und auch für den Support gedacht. Das Menü bietet außerdem ein dichteres **Schaltschrank-Blatt** (Querformat, eine Tabelle pro

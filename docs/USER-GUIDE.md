@@ -304,7 +304,7 @@ buttons taught in directly. Each device's details have a **Notes** field and eac
 details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you
 type, kept in a store of its own per gateway and part of Home Assistant's backup, shown in all
 three outputs. A device's note belongs to its address, so it comes back if you add the device
-again. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
+again; a gateway's details offer to forget the notes of deleted devices. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
 function): buttons taught in directly, devices of other systems, anything Home Assistant
 cannot see. They are for the documentation only and appear in all three outputs. The JSON is
 versioned and also meant for support. The menu also offers a denser **cabinet sheet** (landscape, one table per gateway without the

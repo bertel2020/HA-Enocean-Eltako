@@ -1378,6 +1378,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (!this._manualEdit(e)) saveNote(e);
     });
     $("cards").addEventListener("click", (e) => {
+      const prune = e.target.closest("[data-prune-notes]");
+      if (prune) {
+        this._pruneNotes(prune.dataset.pruneNotes);
+        return;
+      }
       if (this._manualEdit(e)) return;
       const button = e.target.closest("[data-gateway-action]");
       if (!button) return;
@@ -2221,6 +2226,18 @@ class EnOceanEltakoPanel extends HTMLElement {
     return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
   }
 
+  async _pruneNotes(entryId) {
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/prune_notes", entry_id: entryId });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+      return;
+    }
+    const gateway = this._gateways.find((g) => g.entry_id === entryId);
+    if (gateway) gateway.orphan_notes = 0;
+    this._renderCards();
+  }
+
   async _saveManual(gateway) {
     try {
       await this._hass.callWS({ type: "enocean_eltako/set_manual", entry_id: gateway.entry_id, entries: gateway.manual });
@@ -2284,7 +2301,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
-          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">${this._manualEditor(gw)}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">${this._manualEditor(gw)}${gw.orphan_notes ? `<div><button class="chip text" data-prune-notes="${esc(gw.entry_id)}" title="${esc(t.doc.pruneHint)}">${esc(t.doc.prune(gw.orphan_notes))}</button></div>` : ""}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
         </article>`;
       })
       .join(""));
