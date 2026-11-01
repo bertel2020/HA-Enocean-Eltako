@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Hardware column** in the supported devices list: a ✓ where the repository holds a real capture of that model (`tests/fixtures/captures/<model id>.jsonl`).
 - **`scripts/capture_to_fixture.py`** turns a capture into an anonymous test fixture (IDs, gateway names and times replaced, telegram data kept), so a bug report can become a regression test.
 - **Quality scale**: a self-assessment against the Home Assistant integration quality scale (Bronze to Platinum) in [docs/quality_scale.md](docs/quality_scale.md), also in German.
 
@@ -21,6 +22,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Spalte „Hardware“** in der Liste der unterstützten Geräte: ein ✓, wo das Repository einen echten Mitschnitt dieses Modells enthält (`tests/fixtures/captures/<Modell-ID>.jsonl`).
 - **`scripts/capture_to_fixture.py`** macht aus einem Mitschnitt eine anonyme Testdatei (IDs, Gateway-Namen und Zeiten ersetzt, Telegrammdaten bleiben), damit aus einem Fehlerbericht ein Regressionstest werden kann.
 - **Quality Scale**: eine Selbsteinschätzung nach der Integration Quality Scale von Home Assistant (Bronze bis Platin) in [docs/quality_scale.de.md](docs/quality_scale.de.md), auch auf Englisch.
 
