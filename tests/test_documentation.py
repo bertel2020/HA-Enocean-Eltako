@@ -132,6 +132,7 @@ async def test_notes_are_saved_shown_and_kept(
         "gateway": "Keller, rechts",
         "devices": {"05-00-00-12": "Schrank 2, Platz 4"},
         "tests": {},
+        "manual": [],
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -142,3 +143,49 @@ async def test_notes_are_saved_shown_and_kept(
     device = next(iter(entry.runtime_data.devices.values()))
     entry.runtime_data.hub.notes[entry.entry_id].set_device("05-00-00-12", "")
     assert collect(hass)["gateways"][0]["devices"][0]["note"] == ""
+
+
+async def test_manual_entries_are_validated_stored_and_documented(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, entries, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/set_manual",
+                "entry_id": entry_id or entry.entry_id,
+                "entries": entries,
+            }
+        )
+        return await client.receive_json()
+
+    entries = [
+        {
+            "id": "a1",
+            "name": "  Taster Flur ",
+            "address": "00-12-34-56",
+            "function": "auf Licht Flur",
+        },
+        {"id": "b2", "name": "", "address": "", "function": ""},  # nothing written: dropped
+        {"id": "c3", "name": "Sensor Garten"},
+    ]
+    assert (await call(1, entries))["success"]
+    (gateway_doc,) = collect(hass)["gateways"]
+    assert gateway_doc["manual"] == [
+        {"id": "a1", "name": "Taster Flur", "address": "00-12-34-56", "function": "auf Licht Flur"},
+        {"id": "c3", "name": "Sensor Garten", "address": "", "function": ""},
+    ]
+
+    assert (await call(2, entries, "unknown"))["error"]["code"] == "not_found"
+    assert (await call(3, [{"id": "x", "name": "n" * 81}]))["success"] is False
+    assert (await call(4, [{"id": "x"}] * 201))["success"] is False
+    assert (await call(5, []))["success"]
+    assert collect(hass)["gateways"][0]["manual"] == []
+
+    await client.send_json({"id": 6, "type": "enocean_eltako/gateways"})
+    assert (await client.receive_json())["success"]

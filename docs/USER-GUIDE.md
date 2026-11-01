@@ -304,7 +304,10 @@ buttons taught in directly. Each device's details have a **Notes** field and eac
 details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you
 type, kept in a store of its own per gateway and part of Home Assistant's backup, shown in all
 three outputs. A device's note belongs to its address, so it comes back if you add the device
-again. The JSON is versioned and also meant for support. If the browser
+again. Under **Details** of a gateway you can also add **Further devices** by hand (name, ID,
+function): buttons taught in directly, devices of other systems, anything Home Assistant
+cannot see. They are for the documentation only and appear in all three outputs. The JSON is
+versioned and also meant for support. If the browser
 blocks the print window, the page is saved as a file to open and print.
 **Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
 arrow icon opens the device's page in Home Assistant.

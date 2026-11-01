@@ -37,7 +37,7 @@ from .device import UTE_WINDOW
 from .discovery import async_set_hidden
 from .documentation import collect as collect_documentation
 from .hub import async_get_hub
-from .notes import MAX_NOTE, device_key
+from .notes import MANUAL_FIELDS, MAX_MANUAL, MAX_NOTE, device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -68,6 +68,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_sender_test)
     websocket_api.async_register_command(hass, ws_documentation)
     websocket_api.async_register_command(hass, ws_set_note)
+    websocket_api.async_register_command(hass, ws_set_manual)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
@@ -354,6 +355,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             # senders hidden from discovery: the panel does not offer them as new devices
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
             "note": runtime.hub.notes[entry.entry_id].gateway,
+            "manual": runtime.hub.notes[entry.entry_id].manual,
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),
@@ -632,6 +634,33 @@ def ws_set_note(
         return
     else:
         notes.set_device(device_key(device.subentry), msg["text"])
+    connection.send_result(msg["id"])
+
+
+MANUAL_ENTRY: dict[Any, Any] = {
+    vol.Required("id"): vol.All(str, vol.Length(min=1, max=32)),
+    **{vol.Optional(k): vol.All(str, vol.Length(max=n)) for k, n in MANUAL_FIELDS.items()},
+}
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/set_manual",
+        vol.Required("entry_id"): str,
+        vol.Required("entries"): vol.All([MANUAL_ENTRY], vol.Length(max=MAX_MANUAL)),
+    }
+)
+@websocket_api.require_admin
+@callback
+def ws_set_manual(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Devices Home Assistant cannot see, written down for the installation documentation."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    entry.runtime_data.hub.notes[entry.entry_id].set_manual(msg["entries"])
     connection.send_result(msg["id"])
 
 
