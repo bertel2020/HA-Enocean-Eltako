@@ -344,7 +344,8 @@ Import sind Knöpfe des Reiters.
   (die folgenden Tabellen untereinander).
 - Vier weitere Druckabschnitte, in der Reihenfolge einer Installationsliste: **Gateway-Sender**
   (Sender-Nr. 0 bis 127 des Funk-Pools, also Basis-ID plus Nummer; freie Nummern sind zusammengefasst;
-  mehrere Sender eines Geräts (etwa Richtungstaster und GFVS) verweisen aufeinander;
+  mehrere Sender eines Geräts verweisen aufeinander, von Hand als eingelernt eingetragene Sender
+  (etwa die GFVS-Software, deren IDs frei sind) stehen darunter mit den Nummern ihres Geräts;
   Bus-Adresse und Rückmelde-ID schreibst du je Gerät auf), **Taster** (jeder Wandtaster mit den
   Aktoren auf linker und rechter Wippe, aus der Wandschalter-Option der Aktoren), **Funk-Sender**
   (Geräte, die nur senden, und Einträge von Hand) und **Eltako-Bus** (jedes Gerät mit Bus-Adresse,
