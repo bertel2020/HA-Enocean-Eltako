@@ -298,7 +298,7 @@ documentation**, **Documentation as CSV** and **Documentation as JSON**. All thr
 gateway: devices with address, EEP, area and wall switch, the senders Home Assistant assigned
 (with the teach-in kind and the result of the last sender test, which is kept) and the sender ID pool,
 including IDs that stay blocked after a device was deleted, and the unknown senders the gateway
-heard since the restart but that are not set up. The printout has one gateway per
+heard since the restart but that are not set up. With several gateways the printout opens with an overview page, one line per gateway. It has one gateway per
 page and a note on what Home Assistant cannot know: what an actuator has really learned, and
 buttons taught in directly. Each device's details have a **Notes** field and each gateway's
 details a note field of their own (place, terminal, fuse, battery date, repeater): saved as you

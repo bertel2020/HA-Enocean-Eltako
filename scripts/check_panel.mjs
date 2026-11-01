@@ -62,6 +62,14 @@ const doc = {
     },
   ],
 };
+// several gateways: the print gets an overview page first, one gateway alone does not
+const two = { ...doc, gateways: [...doc.gateways, { ...doc.gateways[0], title: "MGW-ETH Dach", note: "", devices: [], heard: [] }] };
+for (const lang of ["en", "de"]) {
+  const t = TEXT[lang];
+  const many = documentationHtml(two, t, (p) => p, lang);
+  if (!many.includes(`<h2>${t.doc.overview}</h2>`) || !many.includes("MGW-ETH Dach")) errors.push(`shared.js: documentationHtml (${lang}) has no overview for two gateways`);
+  if (documentationHtml(doc, t, (p) => p, lang).includes(`<h2>${t.doc.overview}</h2>`)) errors.push(`shared.js: documentationHtml (${lang}) shows an overview for one gateway`);
+}
 const profile = (p) => TEXT.en.profiles[p] || p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];
