@@ -8,11 +8,19 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 **English**
 
+#### Added
+
+- **Quality scale**: a self-assessment against the Home Assistant integration quality scale (Bronze to Platinum) in [docs/quality_scale.md](docs/quality_scale.md), also in German.
+
 #### Changed
 
 - **Signal curve** in the devices list is larger (96 × 32 px; the global 20 px icon size no longer squeezes it) and zooms to the data: the band is at least 16 dB wide, so a steady sender no longer shows a flat line. The weak-signal line appears only when it lies inside the band.
 
 **Deutsch**
+
+#### Hinzugefügt
+
+- **Quality Scale**: eine Selbsteinschätzung nach der Integration Quality Scale von Home Assistant (Bronze bis Platin) in [docs/quality_scale.de.md](docs/quality_scale.de.md), auch auf Englisch.
 
 #### Geändert
 
