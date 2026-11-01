@@ -84,6 +84,7 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 "model": entry.data.get(CONF_MODEL),
                 "base_id": entry.data.get(CONF_BASE_ID),
                 "note": notes.gateway,
+                "manual": notes.manual,
                 "devices": sorted(
                     (_device(hass, d, notes) for d in runtime.devices.values()),
                     key=lambda d: (d["virtual"], str(d["name"]).casefold()),

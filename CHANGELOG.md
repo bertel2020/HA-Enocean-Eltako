@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Further devices** in a gateway's details: write down buttons taught in directly, devices of other systems and anything else Home Assistant cannot see (name, ID, function). They appear in the printout, CSV and JSON of the installation documentation.
 - The printed **installation documentation** opens with an overview page, one line per gateway, when there are several gateways.
 - **Installation documentation** also lists the unknown senders a gateway heard since the restart (not set up), and keeps the result of the last **Test senders** across restarts.
 - **Notes** for the installation documentation: a field in each device's details and in each gateway's details (place, terminal, fuse, battery date). They are stored per gateway, belong to the device address and appear in the printout, CSV and JSON.
@@ -30,6 +31,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Weitere Geräte** in den Details eines Gateways: direkt eingelernte Taster, Geräte anderer Systeme und alles andere, was Home Assistant nicht sieht, lassen sich eintragen (Name, ID, Funktion). Sie stehen in Ausdruck, CSV und JSON der Installationsdokumentation.
 - Die gedruckte **Installationsdokumentation** beginnt bei mehreren Gateways mit einer Übersichtsseite, eine Zeile pro Gateway.
 - Die **Installationsdokumentation** nennt auch die unbekannten Sender, die ein Gateway seit dem Neustart gehört hat (nicht eingerichtet), und behält das Ergebnis des letzten **Sender testen** über Neustarts hinweg.
 - **Notizen** für die Installationsdokumentation: ein Feld in den Details jedes Geräts und jedes Gateways (Ort, Klemme, Sicherung, Batteriedatum). Sie werden pro Gateway gespeichert, gehören zur Geräteadresse und stehen in Ausdruck, CSV und JSON.

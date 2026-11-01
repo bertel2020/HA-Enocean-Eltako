@@ -53,7 +53,7 @@ const doc = {
       title: "FAM-USB <Keller>",
       model: "fam_usb",
       base_id: "FF-B7-44-80",
-      note: "Keller, rechts neben dem Zähler", heard: [{ id: "00-21-63-43", rorg: "F6", dbm: -71, last: "2026-11-01T13:00:00+00:00" }], hidden_senders: ["00-11-22-33"],
+      note: "Keller, rechts neben dem Zähler", manual: [{ id: "m1", name: "Taster Flur <links>", address: "00-12-34-56", function: "direkt auf Licht Flur eingelernt" }], heard: [{ id: "00-21-63-43", rorg: "F6", dbm: -71, last: "2026-11-01T13:00:00+00:00" }], hidden_senders: ["00-11-22-33"],
       devices: [
         { name: "Licht Flur", id: "05-10-A2-C1", eep: "M5-38-08:eltako", eep_extra: [], area: "Flur", model: null, virtual: false, note: "Schrank 2, Platz 4", wall_switch: { id: "05-10-AA-01", on: "a0", off: "a1" }, senders: [{ profile: "central", id: "FF-B7-44-91", ute: false, test: "confirmed" }, { profile: "rocker", id: "FF-B7-44-92", ute: false, test: null }] },
         { name: "Fenster", id: "00-8A-12-3F", eep: "D5-00-01:std", eep_extra: [], area: null, model: null, virtual: false, wall_switch: null, senders: [] },
@@ -74,12 +74,13 @@ const profile = (p) => TEXT.en.profiles[p] || p;
 for (const lang of ["en", "de"]) {
   const t = TEXT[lang];
   const rows = documentationCsv(doc, t, profile).trim().split("\n");
-  if (rows.length !== 1 + 2 + 1 + 1 + 1) errors.push(`shared.js: documentationCsv (${lang}) has ${rows.length} rows, expected 6`);
+  if (rows.length !== 1 + 2 + 1 + 1 + 1 + 1) errors.push(`shared.js: documentationCsv (${lang}) has ${rows.length} rows, expected 7`);
   if (!rows.some((r) => r.includes("00-21-63-43"))) errors.push(`shared.js: documentationCsv (${lang}) misses the heard sender`);
   const page = documentationHtml(doc, t, profile, lang);
   if (!page.includes("FF-B7-44-91") || !page.includes("05-10-AA-01") || !page.includes("00-11-22-33") || !page.includes("00-21-63-43")) errors.push(`shared.js: documentationHtml (${lang}) misses data`);
   if (!page.includes("Schrank 2, Platz 4") || !page.includes("Keller, rechts neben dem Zähler")) errors.push(`shared.js: documentationHtml (${lang}) misses the notes`);
   if (!documentationCsv(doc, t, profile).includes("Schrank 2, Platz 4")) errors.push(`shared.js: documentationCsv (${lang}) misses the note`);
+  if (!page.includes("direkt auf Licht Flur eingelernt") || page.includes("<links>")) errors.push(`shared.js: documentationHtml (${lang}) misses or does not escape the manual entries`);
   if (page.includes("<Keller>") || !page.includes("&lt;Keller&gt;")) errors.push(`shared.js: documentationHtml (${lang}) does not escape the gateway name`);
   if (/undefined|NaN/.test(page)) errors.push(`shared.js: documentationHtml (${lang}) shows undefined or NaN`);
 }

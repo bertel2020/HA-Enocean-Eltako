@@ -320,8 +320,10 @@ Aktor wirklich gelernt hat und direkt eingelernte Taster. In den Details jedes G
 Details jedes Gateways ein eigenes Notizfeld (Ort, Klemme, Sicherung, Batteriedatum, Repeater):
 gespeichert beim Tippen, in einem eigenen Speicher pro Gateway und Teil des Home-Assistant-
 Backups, in allen drei Ausgaben enthalten. Die Notiz eines Geräts gehört zu seiner Adresse, sie
-ist also wieder da, wenn du das Gerät neu anlegst. Das JSON ist versioniert und auch für den
-Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
+ist also wieder da, wenn du das Gerät neu anlegst. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
+(Name, ID, Funktion): direkt eingelernte Taster, Geräte anderer Systeme, alles, was Home
+Assistant nicht sieht. Sie dienen nur der Dokumentation und stehen in allen drei Ausgaben. Das
+JSON ist versioniert und auch für den Support gedacht. Blockiert der Browser das Druckfenster, wird die Seite als Datei
 gespeichert, die du öffnest und druckst.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.

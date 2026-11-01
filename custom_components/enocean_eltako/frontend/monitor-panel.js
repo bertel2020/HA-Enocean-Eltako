@@ -526,6 +526,9 @@ const STYLE = `
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .dev-detail .acts-row { margin-top: 8px; }
+  .manual { display: grid; gap: 6px; }
+  .manual .mrow { display: grid; grid-template-columns: 1fr 9em 2fr auto; gap: 6px; align-items: center; }
+  @media (max-width: 640px) { .manual .mrow { grid-template-columns: 1fr auto; } .manual .mrow input:nth-of-type(n+2) { grid-column: 1 / -1; } }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
@@ -1370,8 +1373,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       field._saving = setTimeout(() => this._saveNote(field), 600);
     };
     $("devices").addEventListener("input", saveNote);
-    $("cards").addEventListener("input", saveNote);
+    $("cards").addEventListener("input", (e) => {
+      if (!this._manualEdit(e)) saveNote(e);
+    });
     $("cards").addEventListener("click", (e) => {
+      if (this._manualEdit(e)) return;
       const button = e.target.closest("[data-gateway-action]");
       if (!button) return;
       const entry = button.closest(".card").dataset.entry;
@@ -2205,6 +2211,46 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
+  _manualEditor(gw) {
+    // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
+    const t = this._t.doc;
+    const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}" value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
+    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
+    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
+  }
+
+  async _saveManual(gateway) {
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_manual", entry_id: gateway.entry_id, entries: gateway.manual });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+    }
+  }
+
+  _manualEdit(e) {
+    // typing in an entry, adding one, removing one: the gateway keeps the list, the server gets all of it
+    const holder = e.target.closest?.("[data-entry-of]");
+    const gateway = holder && this._gateways.find((g) => g.entry_id === holder.dataset.entryOf);
+    if (!gateway) return false;
+    const field = e.target.closest("[data-manual-field]");
+    if (e.type === "input" && field) {
+      const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
+      entry[field.dataset.manualField] = field.value;
+      clearTimeout(gateway._manualSaving);
+      gateway._manualSaving = setTimeout(() => this._saveManual(gateway), 600);
+      return true;
+    }
+    if (e.type !== "click") return false;
+    const add = e.target.closest("[data-manual-add]");
+    const del = e.target.closest("[data-manual-del]");
+    if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "" }];
+    else if (del) gateway.manual = gateway.manual.filter((_, i) => i !== Number(del.dataset.manualDel));
+    else return false;
+    this._renderCards();
+    if (del) this._saveManual(gateway);
+    return true;
+  }
+
   _renderCards(background = false) {
     const t = this._t;
     const cards = this.shadowRoot.getElementById("cards");
@@ -2236,7 +2282,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <div class="gateway-title"><span class="name">${esc(gw.title)}</span><div class="gateway-status"><span class="pill ${pill[0]}"><i></i>${esc(pill[1])}</span><span class="sub">${esc(sub)}</span></div></div>
           ${gw.loaded ? `<div class="rate"><div><b>${esc(rate)}</b> <span>${esc(t.perMinute)}</span></div><span class="last">${esc(last)}</span></div><div class="gateway-count"><b>${esc(t.devicesN(gw.devices ?? "–"))}</b><span>${esc(t.freeN(gw.free_senders ?? "–"))}</span></div>` : ""}
           <div class="gateway-actions">${this._gateways.length > 1 || selected ? `<button class="chip" data-gateway-action="filter" title="${esc(t.cardHint)}" aria-pressed="${selected}">${svg(ICON.filter)}${esc(t.telegrams)}</button>` : ""}<button class="chip text" data-gateway-action="details" aria-expanded="${expanded}">${esc(t.details)}${svg(ICON.chevron)}</button></div>
-          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off"><div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
+          ${expanded ? `<div class="gateway-details"><div class="connection mono">${esc(gw.connection)}</div><div class="stats">${stat(t.queue, gw.queue ?? "–", gw.queue > 5)}${stat(t.unconfirmed, gw.unconfirmed ?? "–", gw.unconfirmed > 0)}${stat(t.freeSenders, gw.free_senders ?? "–", gw.free_senders === 0)}</div>${gw.via_proxy ? this._proxyLine(gw) : ""}<input class="note" data-note-gateway-only="${esc(gw.entry_id)}" value="${esc(gw.note ?? "")}" maxlength="500" placeholder="${esc(t.doc.gatewayNotePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">${this._manualEditor(gw)}<div class="gateway-actions"><button class="chip" data-open-integration="${esc(gw.entry_id)}">${svg(ICON.open)}${esc(t.openIntegration)}</button></div></div>` : ""}
         </article>`;
       })
       .join(""));

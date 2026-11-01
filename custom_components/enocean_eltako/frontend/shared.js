@@ -114,6 +114,9 @@ export function documentationCsv(doc, t, profile) {
       if (!d.senders.length) rows.push([...base, "", "", "", "", wall, "", d.note ?? ""]);
       for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || "", d.note ?? ""]);
     }
+    for (const m of gw.manual ?? []) {
+      rows.push([gw.title, gw.base_id ?? "", m.name, m.address, "", "", "", "", "", "", "", "", "", m.function]);
+    }
     for (const h of gw.heard ?? []) {
       rows.push([gw.title, gw.base_id ?? "", t.doc.notSetUp, h.id, "", "", "", "", "", "", "", "", "", `${h.rorg}${h.dbm != null ? `, ${h.dbm} dBm` : ""}`]);
     }
@@ -143,6 +146,7 @@ export function documentationHtml(doc, t, profile, lang) {
       const pool = gw.pools.flatMap((p) => p.senders);
       const poolRows = pool.map((s) => `<tr>${cell(`<span class="mono">${esc(s.id)}</span>`)}${cell(esc(s.device ?? d.deleted))}${cell(esc(`${profile(s.profile)}`))}${cell(esc(d.state[s.state] || s.state))}</tr>`).join("");
       const heardRows = (gw.heard ?? []).map((h) => `<tr>${cell(`<span class="mono">${esc(h.id)}</span>`)}${cell(esc(h.rorg))}${cell(esc(h.dbm != null ? `${h.dbm} dBm` : ""))}${cell(esc(new Date(h.last).toLocaleString(lang)))}</tr>`).join("");
+      const manualRows = (gw.manual ?? []).map((m) => `<tr>${cell(esc(m.name))}${cell(`<span class="mono">${esc(m.address)}</span>`)}${cell(esc(m.function))}</tr>`).join("");
       const blocked = pool.filter((s) => s.state === "blocked").length;
       return `<section class="gw">
 <h2>${esc(gw.title)}</h2>
@@ -151,6 +155,7 @@ ${gw.note ? `<p class="gwnote">${esc(gw.note)}</p>` : ""}
 <h3>${esc(d.devices)}</h3>
 <table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.address)}</th><th>${esc(d.cols.senders)}</th><th>${esc(d.cols.wall)}</th><th>${esc(d.notes)}</th></tr></thead><tbody>${devices}</tbody></table>
 ${poolRows ? `<h3>${esc(d.pool)}</h3><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.usedBy)}</th><th>${esc(d.cols.sender)}</th><th>${esc(d.cols.poolState)}</th></tr></thead><tbody>${poolRows}</tbody></table>` : ""}
+${manualRows ? `<h3>${esc(d.manualTitle)}</h3><table><thead><tr><th>${esc(d.cols.device)}</th><th>${esc(d.cols.senderId)}</th><th>${esc(d.manualFunction)}</th></tr></thead><tbody>${manualRows}</tbody></table>` : ""}
 ${heardRows ? `<h3>${esc(d.heard)}</h3><p class="sub">${esc(d.heardNote)}</p><table><thead><tr><th>${esc(d.cols.senderId)}</th><th>${esc(d.cols.type)}</th><th>${esc(d.cols.signal)}</th><th>${esc(d.cols.lastHeard)}</th></tr></thead><tbody>${heardRows}</tbody></table>` : ""}
 ${gw.hidden_senders.length ? `<h3>${esc(d.hidden)}</h3><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : ""}
 </section>`;

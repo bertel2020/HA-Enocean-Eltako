@@ -18,6 +18,8 @@ from .const import DOMAIN
 
 STORAGE_VERSION = 1
 MAX_NOTE = 500
+MAX_MANUAL = 200  # entries per gateway
+MANUAL_FIELDS = {"name": 80, "address": 40, "function": 200}
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
 
 
@@ -37,15 +39,23 @@ class Notes:
         self.devices: dict[str, str] = {}
         # the last sender test of a device: {"time": ..., "results": {profile: result}}
         self.tests: dict[str, dict[str, Any]] = {}
+        # devices Home Assistant cannot see (buttons taught in directly ...), written by hand
+        self.manual: list[dict[str, str]] = []
 
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
         self.gateway = str(stored.get("gateway", ""))
         self.devices = {str(k): str(v) for k, v in stored.get("devices", {}).items()}
         self.tests = {str(k): dict(v) for k, v in stored.get("tests", {}).items()}
+        self.manual = [{k: str(v) for k, v in e.items()} for e in stored.get("manual", [])]
 
     def _data(self) -> dict[str, Any]:
-        return {"gateway": self.gateway, "devices": self.devices, "tests": self.tests}
+        return {
+            "gateway": self.gateway,
+            "devices": self.devices,
+            "tests": self.tests,
+            "manual": self.manual,
+        }
 
     def _save(self) -> None:
         self._store.async_delay_save(self._data, SAVE_DELAY)
@@ -59,6 +69,15 @@ class Notes:
             self.devices[key] = text
         else:
             self.devices.pop(key, None)
+        self._save()
+
+    def set_manual(self, entries: list[dict[str, str]]) -> None:
+        """Replace the entries made by hand; one without any text is dropped."""
+        self.manual = [
+            {"id": e["id"], **{k: e.get(k, "").strip()[:n] for k, n in MANUAL_FIELDS.items()}}
+            for e in entries[:MAX_MANUAL]
+            if any(e.get(k, "").strip() for k in MANUAL_FIELDS)
+        ]
         self._save()
 
     def set_test(self, key: str, results: dict[str, str]) -> None:
