@@ -111,3 +111,20 @@ def test_replayed_telegrams_are_compared_by_reception_time() -> None:
     d.dispatch("gw1", SWITCH, timestamp=1180.0)  # three minutes later
     assert len(got) == 2
     assert [r.timestamp for r in got] == [1000.0, 1180.0]
+
+
+def test_heard_listener_sees_duplicates_from_every_gateway() -> None:
+    d = Dispatcher()
+    heard, got = [], []
+    remove = d.add_heard_listener(SWITCH.sender, heard.append)
+    d.add_listener(SWITCH.sender, got.append)
+    d.dispatch("gw1", SWITCH)
+    d.dispatch("gw2", RadioTelegram(Rorg.RPS, b"\x70", SWITCH.sender, 0x31))  # a duplicate
+    d.dispatch("gw1", RadioTelegram(Rorg.RPS, b"\x50", 0x01020304, 0x30))  # another sender
+    d.dispatch("gw1", SWITCH, timestamp=5.0)  # replayed: not counted
+    assert [r.gateway for r in heard] == ["gw1", "gw2"]
+    assert len(got) == 2  # the first and the replayed one; the duplicate is dropped
+    remove()
+    remove()  # twice is harmless
+    d.dispatch("gw1", RadioTelegram(Rorg.RPS, b"\x10", SWITCH.sender, 0x30))
+    assert len(heard) == 2

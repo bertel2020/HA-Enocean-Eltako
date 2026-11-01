@@ -3107,6 +3107,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     </div>`;
   }
 
+  _heardBy(h) {
+    // the gateways that hear the device, the strongest first; only shown for several gateways or
+    // a device that only a repeater carries
+    const t = this._t;
+    if (!h || (h.gateways.length < 2 && !h.repeater_only)) return "";
+    const rows = h.gateways.map((g) => `<div>${esc(g.name)} <span class="sub">${g.rssi != null ? `${esc(g.rssi)} dBm, ` : ""}${esc(t.heardCount(g.count))}</span>${g.entry_id === h.best ? ` <span class="tag" title="${esc(t.bestHint)}">${esc(t.best)}</span>` : ""}</div>`);
+    if (h.repeater_only) rows.push(`<div><span class="tag warn" title="${esc(t.repeaterOnlyHint)}">${esc(t.repeaterOnly)}</span></div>`);
+    return rows.join("");
+  }
+
   _devDetail(d, now) {
     const t = this._t;
     const x = this._devDetails.get(d.devKey);
@@ -3130,6 +3140,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.devCols.heard, esc(heard) + (x.silent ? ` <span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "")),
       item(t.signal, sig.rssi != null ? `${esc(sig.rssi)} dBm${sig.min != null ? ` <span class="sub">${esc(t.signalRange(sig.min, sig.max))}</span>` : ""}` : ""),
       item(t.repeater, x.repeat != null ? esc(x.repeat) : ""),
+      item(t.heardBy, this._heardBy(x.heard_by)),
       item(t.telegramsSinceStart, esc(x.telegrams.toLocaleString())),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
     ]);

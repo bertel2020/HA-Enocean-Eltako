@@ -300,6 +300,9 @@ besserer Gateway-Standort hilft. Auch deine Geräte ohne Telegramm im Puffer des
 in der Liste (**nicht gehört**, und **still** bei einem Gerät, dessen üblicher Abstand dreimal
 verstrichen ist). Bei einem unbekannten Sender kommen der Telegrammtyp dazu und was seine
 Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könnten.
+Bei mehreren Gateways zeigen die Details eines Geräts **Gehört von**: jedes Gateway mit letztem
+Signal und Telegrammzahl, das stärkste mit dem Hinweis **am besten**; ein Gerät, das kein Gateway
+direkt hört (ab 3 Telegrammen, alle wiederholt), trägt den Hinweis **nur über Repeater**.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 

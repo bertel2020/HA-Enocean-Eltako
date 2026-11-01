@@ -50,6 +50,7 @@ from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
+REPEATER_ONLY_MIN = 3  # telegrams heard before 'only via a repeater' is claimed
 # telegram types the panel may send, with the data lengths in bytes
 SEND_LENGTHS = {Rorg.RPS: (1,), Rorg.BS1: (1,), Rorg.BS4: (4,), Rorg.VLD: tuple(range(1, 15))}
 
@@ -520,6 +521,7 @@ def device_details(device: Any) -> dict[str, Any]:
         "category": model.category,
         "signal": {"rssi": stats.rssi, "min": stats.rssi_min, "max": stats.rssi_max},
         "repeat": stats.repeat_count,
+        "heard_by": heard_by(device),
         "telegrams": stats.telegrams,
         "interval": model.interval,
         "silent": device.silent,
@@ -538,6 +540,35 @@ def device_details(device: Any) -> dict[str, Any]:
             if k not in NOT_SETTINGS and isinstance(v, str | int | float | bool)
         },
         "entities": entities,
+    }
+
+
+def heard_by(device: Any) -> dict[str, Any]:
+    """Which gateways hear a device, how well, the best one, and whether only repeaters carry it."""
+    hass = device.hass
+    rows = []
+    for entry_id, heard in device.stats.heard.items():
+        entry = hass.config_entries.async_get_entry(entry_id)
+        rows.append(
+            {
+                "entry_id": entry_id,
+                "name": entry.title if entry else entry_id,
+                "count": heard.count,
+                "direct": heard.direct,
+                "rssi": heard.rssi,
+                "last": heard.last,
+            }
+        )
+    rows.sort(key=lambda r: (r["rssi"] is None, -(r["rssi"] or 0), r["name"]))
+    with_signal = [r for r in rows if r["rssi"] is not None]
+    total = sum(r["count"] for r in rows)
+    return {
+        "gateways": rows,
+        "best": with_signal[0]["entry_id"] if len(rows) > 1 and with_signal else None,
+        # radio only: a bus has no repeaters; a few telegrams, none of them direct
+        "repeater_only": bool(with_signal)
+        and total >= REPEATER_ONLY_MIN
+        and not any(r["direct"] for r in rows),
     }
 
 

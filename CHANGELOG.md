@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Heard by** in a device's details: with several gateways, each gateway with its last signal and telegram count and the strongest one tagged; a device that only a repeater carries is tagged **via repeater only**.
 - **Profile check repair**: a device whose last 5 telegrams in a row fit none of its profiles raises a repair (it was most likely set up with the wrong kind); a fitting telegram clears it.
 - **Report device** for unknown senders in the telegram details: copies the sender's last telegrams (up to 60) with IDs, gateway and times replaced and opens the new device request form on GitHub. Nothing goes into the link.
 - **Hardware column** in the supported devices list: a ✓ where the repository holds a real capture of that model (`tests/fixtures/captures/<model id>.jsonl`).
@@ -24,6 +25,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Gehört von** in den Details eines Geräts: bei mehreren Gateways jedes Gateway mit letztem Signal und Telegrammzahl, das stärkste markiert; ein Gerät, das nur über einen Repeater ankommt, trägt den Hinweis **nur über Repeater**.
 - **Reparatur „Profil passt nicht“**: ein Gerät, dessen letzte 5 Telegramme hintereinander zu keinem seiner Profile passen, löst eine Reparatur aus (es wurde sehr wahrscheinlich mit der falschen Art angelegt); ein passendes Telegramm hebt sie auf.
 - **Gerät melden** bei unbekannten Sendern in den Telegramm-Details: kopiert die letzten Telegramme des Senders (bis zu 60) mit ersetzten IDs, Gateway und Zeiten und öffnet das neue Formular für Geräteanfragen auf GitHub. Im Link stehen keine Daten.
 - **Spalte „Hardware“** in der Liste der unterstützten Geräte: ein ✓, wo das Repository einen echten Mitschnitt dieses Modells enthält (`tests/fixtures/captures/<Modell-ID>.jsonl`).

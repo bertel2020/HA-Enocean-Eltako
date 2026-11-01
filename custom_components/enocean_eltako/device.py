@@ -79,6 +79,16 @@ def wall_switch_state(
 
 
 @dataclass
+class GatewayHeard:
+    """How one gateway hears a device: telegrams, those without a repeater, last signal."""
+
+    count: int = 0
+    direct: int = 0
+    rssi: int | None = None  # dBm of the last telegram (ESP3 gateways only)
+    last: float = 0.0
+
+
+@dataclass
 class RadioStats:
     """E5/I7: when and how well the device was heard, and how its commands fared."""
 
@@ -92,6 +102,7 @@ class RadioStats:
     mismatches: int = 0  # telegrams in a row that fit none of the device's profiles
     commands: int = 0
     confirmed: int = 0
+    heard: dict[str, GatewayHeard] = field(default_factory=dict)  # per gateway entry ID
     # E11: seconds from command to the actuator's answer (queue wait and retries included)
     latencies: deque[float] = field(default_factory=lambda: deque(maxlen=LATENCY_SAMPLES))
 
@@ -198,16 +209,28 @@ class EnOceanDevice:
 
     def start(self) -> Callable[[], None]:
         dispatcher = self.entry.runtime_data.hub.dispatcher
-        remove = dispatcher.add_listener(self.device_id, self._on_received)
-        if not (wall_switch := self.options.get(OPT_WALL_SWITCH)):
-            return remove
-        remove_wall = dispatcher.add_listener(parse_id(wall_switch), self._on_wall_switch)
+        remove_listener = dispatcher.add_listener(self.device_id, self._on_received)
+        remove_heard = dispatcher.add_heard_listener(self.device_id, self._on_heard)
+        remove_wall = None
+        if wall_switch := self.options.get(OPT_WALL_SWITCH):
+            remove_wall = dispatcher.add_listener(parse_id(wall_switch), self._on_wall_switch)
 
-        def remove_both() -> None:
-            remove()
-            remove_wall()
+        def remove_all() -> None:
+            remove_listener()
+            remove_heard()
+            if remove_wall is not None:
+                remove_wall()
 
-        return remove_both
+        return remove_all
+
+    @callback
+    def _on_heard(self, received: ReceivedTelegram) -> None:
+        heard = self.stats.heard.setdefault(received.gateway, GatewayHeard())
+        heard.count += 1
+        heard.direct += received.telegram.status & 0x0F == 0
+        if received.telegram.dbm is not None:
+            heard.rssi = received.telegram.dbm
+        heard.last = received.timestamp
 
     @callback
     def _on_wall_switch(self, received: ReceivedTelegram) -> None:
