@@ -75,7 +75,7 @@ export const TEXT = {
       output: "Output", csvDevices: "Devices as CSV", columns: "Columns", columnGroups: { place: "Place and fuse", bus: "Bus and radio", upkeep: "Upkeep" },
       progress: (n, m) => `${n} of ${m} devices with a place`,
       errors: { bus_address: "1 to 126", bus_power: "A number, say 0,7", refused: "Not saved" },
-      editHint: "Fields with a frame on hover are changed right here and saved as you type.", asTable: "Table", manageIds: "ID management", manageHint: "Who uses which sender ID, free numbers, and release of the IDs of deleted devices.", of: "of",
+      editHint: "Fields with a frame on hover are changed right here and saved as you type.", poolTitle: "Sender ID pool", manageHint: "Who uses which sender ID, free numbers, and release of the IDs of deleted devices.", of: "of",
       links: {
         csvShort: "Links CSV", tablesCsv: "Sender tables CSV", byActuator: "By actuator", bySender: "By sender", controls: "Controls",
         honest: "What an actuator has really learned is stored in the actuator and cannot be read here. Every link says where it comes from: assigned (a sender Home Assistant holds), declared (the wall switch set for the device) or entered by you.",
@@ -447,7 +447,7 @@ export const TEXT = {
       output: "Ausgabe", csvDevices: "Geräte als CSV", columns: "Spalten", columnGroups: { place: "Ort und Sicherung", bus: "Bus und Funk", upkeep: "Wartung" },
       progress: (n, m) => `${n} von ${m} Geräten mit Ort`,
       errors: { bus_address: "1 bis 126", bus_power: "Eine Zahl, z. B. 0,7", refused: "Nicht gespeichert" },
-      editHint: "Felder mit Rahmen beim Überfahren änderst du direkt hier, sie werden beim Tippen gespeichert.", asTable: "Tabelle", manageIds: "ID-Verwaltung", manageHint: "Wer welche Sender-ID nutzt, freie Nummern und die Freigabe der IDs gelöschter Geräte.", of: "von",
+      editHint: "Felder mit Rahmen beim Überfahren änderst du direkt hier, sie werden beim Tippen gespeichert.", poolTitle: "Sender-ID-Pool", manageHint: "Wer welche Sender-ID nutzt, freie Nummern und die Freigabe der IDs gelöschter Geräte.", of: "von",
       links: {
         csvShort: "Verbindungen-CSV", tablesCsv: "Sender-Tabellen-CSV", byActuator: "Nach Aktor", bySender: "Nach Sender", controls: "Steuert",
         honest: "Was ein Aktor wirklich gelernt hat, steckt im Aktor und ist hier nicht lesbar. Jede Verbindung sagt, woher sie kommt: vergeben (ein Sender, den Home Assistant hält), angegeben (der Wandschalter der Geräteoptionen) oder von dir eingetragen.",

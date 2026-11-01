@@ -41,14 +41,12 @@ async function check(query, run) {
   const root = panel.shadowRoot;
   const view = async (name) => {
     if (name === "senders") {
-      // the sender ID pools: Installation > Senders > Gateway senders > ID management
+      // the sender ID pools: Installation > Senders > Gateway senders, above the table
       root.querySelector('#view [data-view="installation"]').click();
       await settle();
-      root.querySelectorAll("#installation .groups .chip")[1].click();
+      root.querySelectorAll("#installation .groups .itab")[1].click();
       await settle();
       root.querySelector('#installation [data-in-tab="gwsenders"]').click();
-      await settle();
-      root.querySelector('#installation [data-in-act="manage"]').click();
       await settle();
     } else {
       root.querySelector(`#view [data-view="${name}"]`).click();
@@ -143,11 +141,12 @@ for (const lang of ["en", "de"]) {
     await settle();
     expect("bulk bar after a pick", !!root.querySelector("#installation .bulk"), true);
     // the groups of tabs: senders (gateway senders, buttons, radio senders) and the bus (bus, power supplies)
-    const groupChips = () => [...root.querySelectorAll("#installation .groups .chip")];
+    const groupChips = () => [...root.querySelectorAll("#installation .groups .itab")];
     expect("installation groups", groupChips().length, 5);
     groupChips()[1].click();
     await settle();
-    expect("sender tabs", root.querySelectorAll("#installation .isubtabs .chip").length, 3);
+    expect("sender tabs", root.querySelectorAll("#installation .isubtabs .itab").length, 3);
+    expect("the sender ID pool sits above the table", root.querySelector("#poolBox").getBoundingClientRect !== undefined && root.querySelector("#poolBox").compareDocumentPosition(root.querySelector("#instBody")) & Node.DOCUMENT_POSITION_FOLLOWING, Node.DOCUMENT_POSITION_FOLLOWING);
     expect("gateway senders show 0 to 127 folded", root.querySelectorAll("#installation .itable tbody tr").length > 5, true);
     // fields are edited in the tables: a device with two senders has its bus address in two rows, and both follow
     const addr = root.querySelectorAll('#installation [data-in-field="bus_address"][data-in-key="sub1"]');
@@ -269,6 +268,15 @@ for (const lang of ["en", "de"]) {
     root.getElementById("sidFreeAll").click();
     expect("free all asks first", !!root.querySelector(".confirm [data-free-confirm]"), true);
     root.querySelector("[data-free-cancel]").click();
+    const rowFree = root.querySelector("#instBody [data-in-free]");
+    if (rowFree) {
+      // a blocked row of the table opens the confirmation in the pool above it
+      rowFree.click();
+      expect("a blocked row of the table asks before it frees the ID", !!root.querySelector("#senders .confirm [data-free-confirm]"), true);
+      root.querySelector("[data-free-cancel]").click();
+      root.getElementById("sidText").value = "";
+      root.getElementById("sidText").dispatchEvent(new Event("input"));
+    }
     expect("pool tiles", root.querySelectorAll(".ptile").length, 5); // the sample pool has IDs used elsewhere
     expect("blocked note", !!root.querySelector(".pnote"), true);
     root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();

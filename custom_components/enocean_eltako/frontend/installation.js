@@ -9,7 +9,7 @@ const { ICON, docBus, docTables, esc, foldFree, svg } = await import(`./shared.j
 
 // the typed fields of a device, in table order; installed is a date
 export const INSTALLATION_FIELDS = ["location", "group", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
-// the tabs in groups: the second row of chips shows the tabs of the group that is open
+// the tabs in groups: the second row of tabs shows the tabs of the group that is open
 const GROUPS = [
   { id: "site", tabs: ["areas", "devices"] },
   { id: "senders", tabs: ["gwsenders", "buttons", "radio"] },
@@ -25,6 +25,21 @@ const COLUMN_GROUPS = {
   upkeep: ["installed", "revision", "power", "note"],
 };
 const COLUMNS_KEY = "enocean_eltako_installation_columns"; // the groups shown, per browser
+const POOL_KEY = "enocean_eltako_installation_pool_closed"; // the sender ID pool is folded, per browser
+const loadPoolOpen = () => {
+  try {
+    return localStorage.getItem(POOL_KEY) !== "1";
+  } catch (err) {
+    return true;
+  }
+};
+const savePoolOpen = (open) => {
+  try {
+    localStorage.setItem(POOL_KEY, open ? "" : "1");
+  } catch (err) {
+    // not saved: shown for this visit
+  }
+};
 const loadColumns = () => {
   try {
     const saved = JSON.parse(localStorage.getItem(COLUMNS_KEY));
@@ -37,7 +52,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", last: {}, manage: false, columns: loadColumns(), group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "areas", last: {}, poolOpen: loadPoolOpen(), columns: loadColumns(), group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -74,8 +89,17 @@ export const INSTALLATION_STYLE = `
   .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: 12px ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .installation .log td.kind { white-space: nowrap; }
   .installation .none { color: var(--muted); padding: 8px 0; }
-  .installation .itop .groups { display: flex; gap: 6px; flex: 1 1 340px; flex-wrap: wrap; }
-  .installation .isubtabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 16px 0; }
+  .installation .itop { padding-bottom: 0; }
+  .installation .itop .groups { display: flex; gap: 4px; flex: 1 1 340px; flex-wrap: wrap; }
+  .installation .itab { font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
+  .installation .itab:hover { color: var(--text); }
+  .installation .itab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .installation .itab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+  .installation .isubtabs { display: flex; gap: 2px; flex-wrap: wrap; padding: 0 16px; border-bottom: 1px solid var(--line); }
+  .installation .isubtabs .itab { font-size: 13px; padding: 8px 10px 9px; }
+  .installation details.poolbox { border-bottom: 1px solid var(--line); }
+  .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .installation details.poolbox > summary .isub { font-weight: 400; }
   .installation details.imenu { position: relative; }
   .installation details.imenu summary { list-style: none; cursor: pointer; }
   .installation details.imenu summary::-webkit-details-marker { display: none; }
@@ -131,14 +155,25 @@ export function parseTable(text, t) {
 
 export const installation = {
   _managing() {
-    // the sender ID pools (Senders > Gateway senders > ID management) are open
-    return this._view === "installation" && this._in.tab === "gwsenders" && this._in.manage;
+    // the sender ID pools sit above the table of the gateway senders
+    return this._view === "installation" && this._in.tab === "gwsenders";
   },
 
   _setManage() {
-    // the pool block below the tab shows only while it is open
+    // the pool block above the table shows only on the gateway senders tab
     const panel = this.shadowRoot.getElementById("panel");
     if (panel) panel.dataset.isub = this._managing() ? "manage" : "";
+    const box = this.shadowRoot.getElementById("poolBox");
+    if (box) {
+      const t = this._t.inst;
+      this._replace(this.shadowRoot.getElementById("poolSummary"), `${esc(t.poolTitle)} <span class="isub">${esc(t.manageHint)}</span>`);
+      if (box.open !== this._in.poolOpen) box.open = this._in.poolOpen;
+    }
+  },
+
+  _poolToggled(open) {
+    this._in.poolOpen = open;
+    savePoolOpen(open);
   },
 
   async _loadInstallation() {
@@ -153,30 +188,29 @@ export const installation = {
   },
 
   _renderInstallation() {
-    const el = this.shadowRoot.getElementById("installation");
+    const head = this.shadowRoot.getElementById("instHead");
+    const el = this.shadowRoot.getElementById("instBody");
     if (!el || this._view !== "installation") return;
     const t = this._t;
     const state = this._in;
-    if (state.error) {
-      this._replace(el, `<div class="ibody"><div class="none">${esc(t.inst.failed)}</div></div>`);
-      return;
-    }
-    if (!state.doc) {
-      this._replace(el, `<div class="ibody"><div class="none">${esc(t.loading)}</div></div>`);
+    if (state.error || !state.doc) {
+      this._replace(head, "");
+      this._replace(el, `<div class="ibody"><div class="none">${esc(state.error ? t.inst.failed : t.loading)}</div></div>`);
       return;
     }
     const group = GROUPS.find((g) => g.tabs.includes(state.tab)) ?? GROUPS[0];
     state.last[group.id] = state.tab;
-    const chip = (tab, label, pressed) => `<button class="chip" data-in-tab="${tab}" aria-pressed="${pressed}">${esc(label)}</button>`;
-    const groups = GROUPS.map((g) => chip(state.last[g.id] ?? g.tabs[0], t.inst.groups[g.id], g === group)).join("");
-    const subtabs = group.tabs.length > 1 ? `<div class="isubtabs" role="group">${group.tabs.map((name) => chip(name, t.inst.tabs[name], state.tab === name)).join("")}</div>` : "";
+    const tab = (name, label, selected) => `<button class="itab" role="tab" data-in-tab="${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${esc(label)}</button>`;
+    const groups = GROUPS.map((g) => tab(state.last[g.id] ?? g.tabs[0], t.inst.groups[g.id], g === group)).join("");
+    const subtabs = group.tabs.length > 1 ? `<div class="isubtabs" role="tablist">${group.tabs.map((name) => tab(name, t.inst.tabs[name], state.tab === name)).join("")}</div>` : "";
     const item = (act, icon, label) => `<button data-in-act="${act}">${esc(label)}</button>`;
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
       <details class="imenu"><summary class="chip">${svg(ICON.download)}${esc(t.inst.output)}</summary><div class="items">${item("csv", "", t.inst.csvDevices)}${item("csv-tables", "", t.inst.links.tablesCsv)}${item("csv-links", "", t.inst.links.csvShort)}<hr>${item("json", "", "JSON")}</div></details>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
     const body = { areas: () => this._instAreas(), devices: () => this._instDevices(), gwsenders: () => this._instSenders(), buttons: () => this._instButtons(), radio: () => this._instRadio(), bus: () => this._instBus(), supplies: () => this._instSupplies(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
     this._setManage();
-    this._replace(el, `<div class="itop"><div class="groups" role="group">${groups}</div><div class="itools">${tools}</div></div>${subtabs}<div class="ibody">${body}</div>`);
+    this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${tools}</div></div>${subtabs}`);
+    this._replace(el, `<div class="ibody">${body}</div>`);
   },
 
   // ---- the tables of the sender and bus groups, from the same rows as the printout ------------------
@@ -207,7 +241,7 @@ export const installation = {
       const body = foldFree(senders).map((r) => {
         if (r.free) return `<tr class="free"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
         if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
-        if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="7"><span class="tag warn">${esc(T.blocked)}</span></td></tr>`;
+        if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="6"><span class="tag warn">${esc(T.blocked)}</span></td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td></tr>`;
         return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.place].filter(Boolean).join(", "))}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
       }).join("");
       const outside = externals.length
@@ -216,9 +250,7 @@ export const installation = {
       return body + outside;
     };
     const head = [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second];
-    const mode = `<div class="imode" style="display:flex;gap:6px;flex-wrap:wrap" role="group"><button class="chip" data-in-act="table" aria-pressed="${!this._in.manage}">${esc(t.inst.asTable)}</button><button class="chip" data-in-act="manage" aria-pressed="${this._in.manage}">${esc(t.inst.manageIds)}</button></div>`;
-    if (this._in.manage) return mode + `<p class="isub">${esc(t.inst.manageHint)}</p>`;
-    return mode + `<p class="isub">${esc(T.sendersIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(gw, parts.senders, parts.externals)) : ""));
+    return `<p class="isub">${esc(T.sendersIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(gw, parts.senders, parts.externals)) : ""));
   },
 
   _instButtons() {
@@ -401,6 +433,25 @@ export const installation = {
     if (tab) {
       state.tab = tab.dataset.inTab;
       this._renderInstallation();
+      if (this._managing()) this._loadPools();
+      return;
+    }
+    const free = e.target.closest("[data-in-free]");
+    if (free) {
+      // the release is confirmed in the pool above the table, where the blocked ID is listed
+      const plain = (id) => id.replaceAll("-", "").toUpperCase(); // the table writes IDs without dashes
+      let row = null;
+      const pool = this._pools.find((p) => (row = p.rows.find((r) => plain(r.id) === plain(free.dataset.inFree))));
+      if (!pool) return;
+      this._pool = pool.id;
+      this._sid.text = row.id;
+      this._sid.state = "";
+      this.shadowRoot.getElementById("sidText").value = row.id;
+      this._freeing = { id: row.id, device: row.device || row.ref || "" };
+      state.poolOpen = true;
+      this._setManage();
+      this._renderSenderIds();
+      this.shadowRoot.querySelector("#senders .confirm")?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
     const linkGroup = e.target.closest("[data-in-link-group]");
@@ -440,11 +491,6 @@ export const installation = {
     else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "csv-tables") this._documentation("csv-tables");
-    else if (act === "table" || act === "manage") {
-      this._in.manage = act === "manage";
-      this._renderInstallation();
-      if (act === "manage") this._loadPools();
-    }
     else if (act === "json") this._documentation("json");
     else if (act === "import") this.shadowRoot.getElementById("docFile").click();
     else if (act === "unpick") {
