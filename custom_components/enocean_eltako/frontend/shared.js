@@ -142,7 +142,7 @@ export function documentationCsv(doc, t, profile, table = "devices") {
           [T.busAddress, T.type, T.device, T.description, T.feedbackId, `${T.power} (W)`, T.busSource],
           ...bus.rows.map((r) => [r.address, r.type, r.device, [r.name, r.group].filter(Boolean).join(", "), r.feedback, r.power ?? "", { user: T.busSourceUser, table: T.busSourceTable, group: T.busGroupLine }[r.from] ?? ""]),
           [T.sum, "", "", "", "", bus.sum, ""],
-          ...(bus.capacity ? [[T.supply, bus.supply, "", "", "", bus.capacity, bus.ownCapacity ? T.busSourceUser : T.busSourceTable]] : []),
+          ...bus.supplies.map((x) => [T.supply, x.name || T.supplyNoName, "", x.first !== null || x.last !== null ? T.supplyRange(x.first ?? 1, x.last ?? 126) : "", "", x.capacity ?? "", x.standard ? T.busSourceTable : T.busSourceUser]),
           []
         );
       }
@@ -298,8 +298,20 @@ export function docBus(gw, t, info = {}) {
   }
   const counted = rows.filter((r) => r.power !== null);
   const sum = Math.round(counted.reduce((n, r) => n + r.power, 0) * 100) / 100;
-  const own = watts(gw.supply?.watts);
-  const capacity = own ?? (rows.length ? facts.supply_watts : null);
+  // the power supplies: what was written down, else the FAM14's own; one with a range of bus
+  // addresses is loaded by the devices in that range, a lone one by all of them
+  const given = (gw.supplies ?? [])
+    .map((x) => ({ name: x.name ?? "", capacity: watts(x.watts), first: /^\d+$/.test(x.first ?? "") ? Number(x.first) : null, last: /^\d+$/.test(x.last ?? "") ? Number(x.last) : null, standard: false }))
+    .filter((x) => x.capacity !== null || x.name);
+  const supplies = given.length ? given : rows.length ? [{ name: T.supplyFam14, capacity: facts.supply_watts, first: null, last: null, standard: true }] : [];
+  const ranged = (x) => x.first !== null || x.last !== null;
+  const inRange = (x, r) => r.address >= (x.first ?? 1) && r.address <= (x.last ?? facts.addresses);
+  for (const x of supplies) {
+    x.load = ranged(x) ? Math.round(rows.filter((r) => inRange(x, r)).reduce((n, r) => n + (r.power ?? 0), 0) * 100) / 100 : supplies.length === 1 ? sum : null;
+    x.percent = x.capacity && x.load !== null ? Math.round((x.load / x.capacity) * 100) : null;
+  }
+  const capacity = supplies.some((x) => x.capacity !== null) ? supplies.reduce((n, x) => n + (x.capacity ?? 0), 0) : null;
+  const unfed = supplies.length && supplies.every(ranged) ? [...new Set(rows.filter((r) => !supplies.some((x) => inRange(x, r))).map((r) => r.address))] : [];
   const taken = new Set();
   const dups = [...new Set(rows.filter((r, i) => rows.findIndex((x) => x.address === r.address) !== i).map((r) => r.address))];
   // the same type on consecutive addresses without a name that ties them to one device: probably
@@ -320,8 +332,8 @@ export function docBus(gw, t, info = {}) {
     sum,
     counted: counted.length,
     capacity,
-    supply: gw.supply?.name ?? "",
-    ownCapacity: own !== null,
+    supplies,
+    unfed,
     percent: capacity ? Math.round((sum / capacity) * 100) : null,
     dups,
     multi,
@@ -429,12 +441,15 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
       ? `<tr class="sub"><td class="mono">${r.from === r.to ? r.from : `${r.from} – ${r.to}`}</td><td colspan="5" style="text-align:left">${esc(T.free)}</td></tr>`
       : `<tr>${[`<span class="mono">${r.address}</span>`, esc(r.type), esc(r.device), esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", ")), `<span class="mono">${esc(r.feedback)}</span>`, power(r)].map(cell).join("")}</tr>`)).join("");
     const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td><b>${esc(num(bus.sum))}</b></td></tr>`;
-    const name = bus.supply || (bus.ownCapacity ? "" : T.supplyFam14);
-    const supply = bus.capacity ? `<p>${esc(T.supply)}: ${esc([name, num(bus.capacity)].filter(Boolean).join(", "))}${bus.percent !== null ? ` · ${esc(T.busLoad(num(bus.sum), num(bus.capacity), bus.percent))}` : ""}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</p>` : "";
+    const range = (x) => (x.first !== null || x.last !== null ? T.supplyRange(x.first ?? 1, x.last ?? 126) : "");
+    const line = (x) => `<li>${esc([x.name || T.supplyNoName, x.capacity !== null ? num(x.capacity) : "", range(x)].filter(Boolean).join(", "))}${x.percent !== null ? ` · ${esc(T.busLoad(num(x.load), num(x.capacity), x.percent))}` : ""}${x.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</li>`;
+    const total = bus.supplies.length > 1 || bus.supplies.some((x) => x.load === null) ? `<li><b>${esc(T.supplyTotal)}</b>: ${esc(T.busLoad(num(bus.sum), num(bus.capacity ?? 0), bus.percent ?? 0))}${bus.percent >= 80 ? ` · <b>${esc(T.busWarn)}</b>` : ""}</li>` : "";
+    const supply = bus.supplies.length ? `<p style="margin-bottom:2px">${esc(T.supply)}:</p><ul style="margin:0 0 8px;padding-left:18px">${bus.supplies.map(line).join("")}${bus.capacity !== null ? total : ""}</ul>` : "";
     const notes = [
       bus.rows.length - bus.counted ? T.busMissing(bus.rows.length - bus.counted) : "",
       bus.fromTable ? T.busFromTable(bus.source) : "",
       bus.dups.length ? T.busDup(bus.dups.join(", ")) : "",
+      bus.unfed.length ? T.busUnfed(bus.unfed.join(", ")) : "",
       bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
     ].filter(Boolean).map((n) => `<p class="sub">${esc(n)}</p>`).join("");
     return table([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum).replace("<table>", '<table class="rnum">') + supply + notes;

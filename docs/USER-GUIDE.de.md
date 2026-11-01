@@ -354,8 +354,11 @@ Import sind Knöpfe des Reiters.
   Leistungsbedarfs), mit `*` markiert. Ein Typ, den die Planungshilfe nicht kennt (neuere Geräte
   wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. Die Kanäle eines
   Geräts zählen einmal, wenn sie denselben Namen unter **Gehört zu** haben; ohne ihn zählt die
-  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14; Typ und Watt
-  eines anderen Netzteils trägst du in den Details des Gateways ein. Home Assistant kann den Bus
+  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. In den Details des
+  Gateways trägst du ein oder mehrere Netzteile ein (Typ, Watt); mit den Bus-Adressen, die ein
+  Netzteil versorgt, zeigt der Ausdruck die Auslastung je Netzteil und nennt Adressen, die kein
+  Netzteil versorgt, ohne sie nur die Gesamtsumme. Welche Adressen ein Netzteil versorgt, hängt
+  davon ab, wie die Hutschiene gesteckt ist, das weißt nur du. Home Assistant kann den Bus
   noch nicht lesen, deshalb schreibst du Bus-Adresse, Rückmelde-ID und die Einträge von Hand
   selbst auf.
 - **JSON** (Version 2: typisierte Felder, Verbindungen und das Protokoll; der Import liest weiter

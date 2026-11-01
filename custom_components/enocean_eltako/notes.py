@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 2
+STORAGE_VERSION = 3
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -50,10 +50,9 @@ MANUAL_FIELDS = {
     "feedback_id": 16,
     "bus_power": 8,
 }
-SUPPLY_FIELDS = {
-    "name": 60,
-    "watts": 8,
-}  # the power supply of the bus: what it is, what it delivers
+# a power supply of the bus: what it is, what it delivers, and the bus addresses it feeds (optional)
+SUPPLY_FIELDS = {"name": 60, "watts": 8, "first": 3, "last": 3}
+MAX_SUPPLIES = 8  # per gateway
 MAX_LOG = 500  # events per gateway
 MAX_LINKS = 500  # links entered by hand per gateway
 # the fields of a link entered by hand and their longest text
@@ -74,7 +73,8 @@ def device_key(subentry: ConfigSubentry) -> str:
 
 
 class _NotesStore(Store[dict[str, Any]]):
-    """Version 1 kept a device's note as a string; version 2 keeps a dict of typed fields."""
+    """Version 1 kept a device's note as a string; version 2 keeps a dict of typed fields;
+    version 3 keeps the power supplies of the bus as a list (version 2 had at most one)."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -84,6 +84,13 @@ class _NotesStore(Store[dict[str, Any]]):
                 key: {"note": value} if isinstance(value, str) else value
                 for key, value in old_data.get("devices", {}).items()
             }
+        if old_major_version < 3:
+            old = old_data.pop("supply", None)
+            old_data["supplies"] = (
+                [{"id": "s1", "name": "", "watts": "", "first": "", "last": "", **old}]
+                if isinstance(old, dict) and any(old.values())
+                else []
+            )
         return old_data
 
 
@@ -95,7 +102,7 @@ class Notes:
         self._signal_timer: CALLBACK_TYPE | None = None
         self._store = _NotesStore(hass, STORAGE_VERSION, f"{DOMAIN}.notes.{entry_id}")
         self.gateway = ""
-        self.supply: dict[str, str] = {"name": "", "watts": ""}
+        self.supplies: list[dict[str, str]] = []  # {id, name, watts, first, last}
         self.devices: dict[str, dict[str, str]] = {}  # key -> typed fields (only those set)
         # the last sender test of a device: {"time": ..., "results": {profile: result}}
         self.tests: dict[str, dict[str, Any]] = {}
@@ -118,7 +125,7 @@ class Notes:
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
         self.gateway = str(stored.get("gateway", ""))
-        self.supply = {k: str(stored.get("supply", {}).get(k, "")) for k in SUPPLY_FIELDS}
+        self.supplies = [{k: str(v) for k, v in e.items()} for e in stored.get("supplies", [])]
         self.devices = {
             str(k): {f: str(v[f]) for f in FIELDS if v.get(f)}
             for k, v in stored.get("devices", {}).items()
@@ -139,7 +146,7 @@ class Notes:
     def _data(self) -> dict[str, Any]:
         return {
             "gateway": self.gateway,
-            "supply": self.supply,
+            "supplies": self.supplies,
             "devices": self.devices,
             "tests": self.tests,
             "manual": self.manual,
@@ -197,12 +204,28 @@ class Notes:
         self.gateway = text.strip()[:MAX_NOTE]
         self._save()
 
-    def set_supply(self, name: str, watts: str) -> bool:
-        """The power supply of the FAM14 bus; False for a bad value (watts: a number)."""
-        name, watts = name.strip(), watts.strip()
-        if len(name) > SUPPLY_FIELDS["name"] or (watts and not _WATTS.fullmatch(watts)):
-            return False
-        self.supply = {"name": name, "watts": watts}
+    def set_supplies(self, entries: list[dict[str, str]]) -> bool:
+        """Replace the power supplies of the bus; False (nothing changed) for a bad value.
+
+        Watts are a number, first and last bus addresses of 1 to 126 with first not after last;
+        an entry without any text is dropped.
+        """
+        clean = []
+        for e in entries[:MAX_SUPPLIES]:
+            supply = {k: str(e.get(k, "")).strip() for k in SUPPLY_FIELDS}
+            if not any(supply.values()):
+                continue
+            if len(supply["name"]) > SUPPLY_FIELDS["name"]:
+                return False
+            if supply["watts"] and not _WATTS.fullmatch(supply["watts"]):
+                return False
+            for key in ("first", "last"):
+                if supply[key] and not valid_bus_address(supply[key]):
+                    return False
+            if supply["first"] and supply["last"] and int(supply["first"]) > int(supply["last"]):
+                return False
+            clean.append({"id": str(e.get("id") or uuid.uuid4().hex[:8]), **supply})
+        self.supplies = clean
         self._save()
         return True
 
@@ -270,11 +293,13 @@ class Notes:
             fresh = {f: v for f, v in gained.items() if v != self.devices.get(key, {}).get(f)}
             if fresh and self.set_fields(key, fresh):
                 notes += len(fresh)
-        supply = gateway.get("supply")
-        if isinstance(supply, dict) and (overwrite or not any(self.supply.values())):
-            before = self.supply
-            if self.set_supply(str(supply.get("name") or ""), str(supply.get("watts") or "")):
-                notes += self.supply != before
+        # an export of version 2 before the list: one supply as a dict
+        supplies = gateway.get("supplies", [gateway["supply"]] if "supply" in gateway else [])
+        supplies = [e for e in supplies if isinstance(e, dict)]
+        if supplies and (overwrite or not self.supplies):
+            before = self.supplies
+            if self.set_supplies(supplies):
+                notes += self.supplies != before
         entries = [e for e in gateway.get("manual", []) if isinstance(e, dict)]
         if overwrite:
             self.manual = []

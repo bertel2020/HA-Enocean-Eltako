@@ -533,12 +533,12 @@ const STYLE = `
   .dev-detail .acts-row { margin-top: 8px; }
   .manual { display: grid; gap: 6px; }
   .manual .mrow { display: grid; grid-template-columns: minmax(0, 1fr) 9em minmax(0, 2fr) 6em 8em 5em 2rem; gap: 6px; align-items: center; }
-  .manual .srow { display: grid; grid-template-columns: 1fr 7em auto; gap: 6px; align-items: center; }
+  .manual .srow { display: grid; grid-template-columns: minmax(0, 1fr) 6em 1rem 5em 5em 2rem; gap: 6px; align-items: center; }
   .manual .mhead { color: var(--muted); } .manual .mhead span { font-size: 11px; padding: 0 2px; }
   input.note[aria-invalid="true"] { border-color: var(--warn); }
   @media (max-width: 640px) { .manual .mrow { grid-template-columns: repeat(3, minmax(0, 1fr)) 2rem; }
     .manual .mrow input:nth-of-type(1) { grid-column: 1 / 4; } .manual .mrow input:nth-of-type(2), .manual .mrow input:nth-of-type(3) { grid-column: 1 / -1; }
-    .manual .mrow button { grid-column: 4; grid-row: 1; } .manual .mhead { display: none; } }
+    .manual .mrow button { grid-column: 4; grid-row: 1; } .manual .mhead { display: none; } .manual .srow { grid-template-columns: minmax(0, 1fr) 5em 1rem 2rem; } .manual .srow input:nth-of-type(1) { grid-column: 1 / 2; } .manual .srow input:nth-of-type(3), .manual .srow input:nth-of-type(4) { grid-column: span 2; } }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
@@ -2291,10 +2291,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t.doc;
     const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
     const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    const supply = (key, label, max) => `<input class="note" data-supply-field="${key}"${key === "watts" ? ' inputmode="decimal"' : ""} value="${esc(gw.supply?.[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const power = `<div class="srow">${supply("name", t.supplyName, 60)}${supply("watts", t.supplyWatts, 8)}<span class="sub">W</span></div>`;
+    const supply = (e, key, label, max) => `<input class="note" data-supply-field="${key}"${key === "watts" ? ' inputmode="decimal"' : key === "first" || key === "last" ? ' inputmode="numeric"' : ""} value="${esc(e[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
+    const supplyHead = (gw.supplies ?? []).length ? `<div class="srow mhead" aria-hidden="true"><span>${esc(t.supplyName)}</span><span>${esc(t.supplyWatts)}</span><span></span><span>${esc(t.supplyFirstHead)}</span><span>${esc(t.supplyLastHead)}</span><span></span></div>` : "";
+    const power = supplyHead + (gw.supplies ?? []).map((e, i) => `<div class="srow" data-supply-row="${i}">${supply(e, "name", t.supplyName, 60)}${supply(e, "watts", t.supplyWatts, 8)}<span class="sub">W</span>${supply(e, "first", t.supplyFirst, 3)}${supply(e, "last", t.supplyLast, 3)}<button class="icon-btn" data-supply-del="${i}" title="${esc(t.supplyRemove)}" aria-label="${esc(t.supplyRemove)}">${svg(ICON.close)}</button></div>`).join("");
     const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
+    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div><button class="chip text" data-supply-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.supplyAdd)}</button></div><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
   }
 
   async _importDocumentation(file) {
@@ -2341,9 +2342,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
   }
 
-  async _saveSupply(gateway) {
+  async _saveSupplies(gateway) {
     try {
-      await this._hass.callWS({ type: "enocean_eltako/set_supply", entry_id: gateway.entry_id, name: gateway.supply.name, watts: gateway.supply.watts });
+      await this._hass.callWS({ type: "enocean_eltako/set_supplies", entry_id: gateway.entry_id, supplies: gateway.supplies });
     } catch (err) {
       this._notice(this._t.doc.noteFailed);
     }
@@ -2369,9 +2370,19 @@ class EnOceanEltakoPanel extends HTMLElement {
       return bad;
     };
     if (e.type === "input" && supply) {
-      gateway.supply = { name: "", watts: "", ...gateway.supply, [supply.dataset.supplyField]: supply.value };
+      const row = gateway.supplies[Number(supply.closest("[data-supply-row]").dataset.supplyRow)];
+      row[supply.dataset.supplyField] = supply.value;
+      const check = { watts: badWatts, first: badAddress, last: badAddress }[supply.dataset.supplyField];
+      check?.(supply);
+      // first after last: both are marked
+      const order = Number(row.first) > Number(row.last) && row.first !== "" && row.last !== "";
+      supply.closest("[data-supply-row]").querySelectorAll('[data-supply-field="first"], [data-supply-field="last"]').forEach((input) => {
+        if (order) input.setAttribute("aria-invalid", "true");
+        else if (check === badAddress || !input.value.trim()) check?.(input);
+      });
       clearTimeout(gateway._supplySaving);
-      if (supply.dataset.supplyField !== "watts" || !badWatts(supply)) gateway._supplySaving = setTimeout(() => this._saveSupply(gateway), 600);
+      // nothing goes to the server while any supply field is marked, in this row or another
+      if (!holder.querySelector('[data-supply-field][aria-invalid="true"]')) gateway._supplySaving = setTimeout(() => this._saveSupplies(gateway), 600);
       return true;
     }
     const field = e.target.closest("[data-manual-field]");
@@ -2384,6 +2395,16 @@ class EnOceanEltakoPanel extends HTMLElement {
       return true;
     }
     if (e.type !== "click") return false;
+    const addSupply = e.target.closest("[data-supply-add]");
+    const delSupply = e.target.closest("[data-supply-del]");
+    if (addSupply || delSupply) {
+      gateway.supplies = addSupply
+        ? [...(gateway.supplies ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", watts: "", first: "", last: "" }]
+        : gateway.supplies.filter((_, i) => i !== Number(delSupply.dataset.supplyDel));
+      this._renderCards();
+      if (delSupply) this._saveSupplies(gateway);
+      return true;
+    }
     const add = e.target.closest("[data-manual-add]");
     const del = e.target.closest("[data-manual-del]");
     if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "", bus_address: "", feedback_id: "", bus_power: "" }];

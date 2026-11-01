@@ -129,10 +129,10 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 2, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
-        "supply": {"name": "", "watts": ""},
+        "supplies": [],
         "devices": {"05-00-00-12": {"note": "Schrank 2, Platz 4"}},
         "tests": {},
         "manual": [],
@@ -217,7 +217,7 @@ async def test_manual_entries_are_validated_stored_and_documented(
     assert manual["bus_power"] == "" and manual["bus_address"] == ""  # not watts, not an address
 
 
-async def test_the_bus_power_supply_is_validated_stored_and_documented(
+async def test_the_bus_power_supplies_are_validated_stored_and_documented(
     hass: HomeAssistant,
     gateway,  # noqa: F811
     hass_ws_client,
@@ -226,43 +226,91 @@ async def test_the_bus_power_supply_is_validated_stored_and_documented(
     notes = entry.runtime_data.hub.notes[entry.entry_id]
     client = await hass_ws_client(hass)
 
-    async def call(msg_id: int, name: str, watts: str, entry_id: str | None = None):
+    async def call(msg_id: int, supplies, entry_id: str | None = None):
         await client.send_json(
             {
                 "id": msg_id,
-                "type": "enocean_eltako/set_supply",
+                "type": "enocean_eltako/set_supplies",
                 "entry_id": entry_id or entry.entry_id,
-                "name": name,
-                "watts": watts,
+                "supplies": supplies,
             }
         )
         return await client.receive_json()
 
-    assert (await call(1, " FSNT14-12V ", "30"))["success"]
-    assert collect(hass)["gateways"][0]["supply"] == {"name": "FSNT14-12V", "watts": "30"}
-    assert (await call(2, "x", "1,5"))["success"]  # a comma is fine
-    assert (await call(3, "x", "viel"))["error"]["code"] == "invalid_format"
-    assert notes.supply == {"name": "x", "watts": "1,5"}  # the bad one changed nothing
-    assert (await call(4, "x", "1", "unknown"))["error"]["code"] == "not_found"
-    assert (await call(5, "n" * 61, "1"))["success"] is False
-    assert (await call(6, "", ""))["success"]
-    assert notes.supply == {"name": "", "watts": ""}
+    two = [
+        {"id": "a", "name": " FSNT14-12V ", "watts": "12", "first": "1", "last": "40"},
+        {"name": "FSNT14-12V", "watts": "1,5", "first": "41", "last": "126"},
+        {"id": "empty"},  # nothing written: dropped
+    ]
+    assert (await call(1, two))["success"]
+    (shown,) = collect(hass)["gateways"]
+    assert [(s["name"], s["watts"], s["first"], s["last"]) for s in shown["supplies"]] == [
+        ("FSNT14-12V", "12", "1", "40"),
+        ("FSNT14-12V", "1,5", "41", "126"),
+    ]
+    assert shown["supplies"][0]["id"] == "a" and shown["supplies"][1]["id"]  # a new one gets an ID
+    # the whole list is replaced, a bad value changes nothing
+    for bad in (
+        {"watts": "viel"},
+        {"watts": "1", "first": "0"},
+        {"watts": "1", "first": "127"},
+        {"watts": "1", "first": "50", "last": "40"},
+        {"name": "n" * 61},
+    ):
+        reply = await call(2, [bad])
+        assert reply["success"] is False or reply["error"]["code"] == "invalid_format"
+        assert len(notes.supplies) == 2
+    assert (await call(3, [], "unknown"))["error"]["code"] == "not_found"
+    assert (await call(4, [{"watts": "12"}] * 9))["success"] is False  # too many
+    assert (await call(5, []))["success"] and notes.supplies == []
 
-    # the supply and the bus power of a device come back from an export; a bad power is dropped
+    # an export brings the list back; one of version 2 had a single supply
     doc = {
-        "version": 1,
+        "version": 2,
         "gateways": [
             {
                 "base_id": entry.data["base_id"],
-                "supply": {"name": "FSNT14-12V", "watts": "30"},
+                "supplies": two[:1],
                 "devices": [{"note_key": "05-00-00-12", "bus_power": "viel"}],
             }
         ],
     }
     await client.send_json({"id": 7, "type": "enocean_eltako/import_documentation", "doc": doc})
     assert (await client.receive_json())["success"]
-    assert notes.supply == {"name": "FSNT14-12V", "watts": "30"}
-    assert notes.device("05-00-00-12")["bus_power"] == ""
+    assert [s["watts"] for s in notes.supplies] == ["12"]
+    assert notes.device("05-00-00-12")["bus_power"] == ""  # a bad power is dropped
+    old = {"base_id": entry.data["base_id"], "supply": {"name": "FSNT14", "watts": "30"}}
+    await client.send_json(
+        {
+            "id": 8,
+            "type": "enocean_eltako/import_documentation",
+            "doc": {"version": 2, "gateways": [old]},
+            "overwrite": True,
+        }
+    )
+    assert (await client.receive_json())["success"]
+    assert [(s["name"], s["watts"]) for s in notes.supplies] == [("FSNT14", "30")]
+
+
+async def test_version_2_notes_with_one_supply_are_migrated(
+    hass: HomeAssistant,
+    hass_storage,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass_storage[f"enocean_eltako.notes.{entry.entry_id}"] = {
+        "version": 2,
+        "key": f"enocean_eltako.notes.{entry.entry_id}",
+        "data": {"gateway": "", "devices": {}, "supply": {"name": "FSNT14-12V", "watts": "12"}},
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    assert [(s["name"], s["watts"], s["first"], s["last"]) for s in notes.supplies] == [
+        ("FSNT14-12V", "12", "", "")
+    ]
+    assert notes.supplies[0]["id"]
 
 
 @pytest.mark.parametrize(
@@ -544,7 +592,7 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     assert notes.device("05-00-00-12")["location"] == ""
     # a stored version 2 is read as it is
     await notes.async_flush()
-    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 2
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 3
 
 
 @pytest.mark.parametrize(
@@ -697,7 +745,7 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     assert notes.heard["00-21-63-43"]["rorg"] == "F6"
     await hass.config_entries.async_unload(entry.entry_id)
     assert notes._signal_timer is None
-    stored = await Store(hass, 2, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
     assert stored["heard"]["00-21-63-43"]["dbm"] == -71
 
