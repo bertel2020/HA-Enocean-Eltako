@@ -28,6 +28,7 @@ FIELDS = {
     "circuit": 80,
     "fuse": 40,
     "installed": 10,
+    "group": 80,  # what it is a part of: a device that sends under several IDs
     "bus_address": 8,  # the channel on the FAM14 bus, written down by hand
     "feedback_id": 16,  # the ID of its feedback telegrams (bus or decentral actuator)
     "bus_power": 8,  # watts it takes from the FAM14 bus, from its data sheet

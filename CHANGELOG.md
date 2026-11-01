@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- New device field **Part of**: radio IDs with the same value (a room controller such as the FUTH55 sends under several IDs) are one block in the **Radio senders** table of the printout, each ID saying what it sends.
 - **Eltako bus** table in the printout: every device with a bus address, by address, with the power it takes from the bus (written down by hand, from its data sheet), the sum and the load of the bus power supply, which you write down in the gateway details. Devices of the bus that Home Assistant does not hold are entries by hand with bus address, feedback ID and watts.
 - The printout has three more tables: **Gateway senders** (sender no. 0 to 127 of the radio pool, free numbers folded, a second mode pointing to its counterpart at +64), **Buttons** (each wall switch with the actuators on its left and right rocker) and **Radio senders** (devices that only send, and the entries by hand). New fields **Bus address** and **Feedback ID** per device, and **Sender tables CSV**.
 - A **checklist for a new gateway** in the printout: every assigned sender to teach in again when a radio gateway with another base ID takes over.
@@ -34,6 +35,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Neues Gerätefeld **Gehört zu**: Funk-IDs mit gleichem Wert (ein Raumregler wie der FUTH55 sendet unter mehreren IDs) stehen in der Tabelle **Funk-Sender** des Ausdrucks als ein Block, jede ID mit dem, was sie sendet.
 - Tabelle **Eltako-Bus** im Ausdruck: jedes Gerät mit Bus-Adresse, nach Adresse, mit der Leistung, die es vom Bus nimmt (von Hand aus dem Datenblatt eingetragen), der Summe und der Auslastung des Bus-Netzteils, das du in den Details des Gateways einträgst. Geräte am Bus, die Home Assistant nicht kennt, sind Einträge von Hand mit Bus-Adresse, Rückmelde-ID und Watt.
 - Der Ausdruck hat drei weitere Tabellen: **Gateway-Sender** (Sender-Nr. 0 bis 127 des Funk-Pools, freie Nummern zusammengefasst, ein zweiter Modus verweist auf sein Gegenstück bei +64), **Taster** (jeder Wandtaster mit den Aktoren auf linker und rechter Wippe) und **Funk-Sender** (Geräte, die nur senden, und die Einträge von Hand). Neue Felder **Bus-Adresse** und **Rückmelde-ID** je Gerät und **Sender-Tabellen-CSV**.
 - Eine **Checkliste für ein neues Gateway** im Ausdruck: jeder vergebene Sender, der neu einzulernen ist, wenn ein Funkgateway mit anderer Base-ID übernimmt.
