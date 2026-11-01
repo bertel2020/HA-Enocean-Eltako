@@ -330,33 +330,39 @@ Lernposition. Was ein Aktor wirklich gelernt hat, steckt im Aktor und lässt sic
 sagt der Reiter auch; eine nie getestete Verbindung heißt „nicht getestet“. Drucken, CSV, JSON und
 Import sind Knöpfe des Reiters.
 
-**Installationsdokumentation:** In der Geräteansicht bietet das ⋮-Menü **Installationsdokumentation
-drucken**, **Dokumentation als CSV** und **Dokumentation als JSON**. Alle drei umfassen jedes
-Gateway: Geräte mit Adresse, EEP, Bereich und Wandschalter, die von Home Assistant vergebenen
-Sender (mit Art des Einlernens und dem Ergebnis des letzten Sendertests, das erhalten bleibt) und den
-Sender-ID-Pool, auch IDs, die nach dem Löschen eines Geräts blockiert bleiben, und die unbekannten Sender, die
-das Gateway seit dem Neustart gehört hat, die aber nicht eingerichtet sind. Bei mehreren Gateways beginnt der Ausdruck mit einer Übersichtsseite, eine Zeile pro Gateway. Er hat
-pro Gateway eine Seite und einen Hinweis darauf, was Home Assistant nicht wissen kann: was ein
-Aktor wirklich gelernt hat und direkt eingelernte Taster. In den Details jedes Geräts gibt es ein Feld **Notizen** und in den
-Details jedes Gateways ein eigenes Notizfeld (Ort, Klemme, Sicherung, Batteriedatum, Repeater):
-gespeichert beim Tippen, in einem eigenen Speicher pro Gateway und Teil des Home-Assistant-
-Backups, in allen drei Ausgaben enthalten. Die Notiz eines Geräts gehört zu seiner Adresse, sie
-ist also wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten an, die Notizen
-gelöschter Geräte zu vergessen. Unter **Details** eines Gateways lassen sich außerdem **Weitere Geräte** von Hand eintragen
-(Name, ID, Funktion): direkt eingelernte Taster, Geräte anderer Systeme, alles, was Home
-Assistant nicht sieht. Sie dienen nur der Dokumentation und stehen in allen drei Ausgaben. Das
-JSON ist versioniert und auch für den Support gedacht. **Notizen aus JSON importieren** liest
-eine solche Datei wieder ein, etwa nach einem Gateway-Tausch: Gateways werden über die Base-ID
-zugeordnet, Geräte über die Adresse, und nur was noch leer ist, wird gefüllt. Importiert werden
-Notizen und weitere Geräte, nie die Geräte selbst. Hat ein getauschtes Gateway eine andere
-Base-ID, bietet das Panel an, das eine Gateway der Datei ohne Treffer in das eine hier
-eingerichtete Gateway ohne Treffer zu importieren. Die Installation führt pro Gateway ein kurzes
-Ereignisprotokoll (Geräte hinzugefügt oder entfernt, Sender vergeben oder entfernt, Einlernen,
-Sendertests, Importe). Das Menü bietet außerdem ein dichteres **Schaltschrank-Blatt** (Querformat, eine Tabelle pro
-Gateway ohne Pool und gehörte Sender) zum Aufhängen im Verteiler. Es verweist auf die Tabelle der
-Lernfunktionen, statt eine zu nennen, denn die richtige Funktion hängt von Typ und Revision des
-Aktors ab. Blockiert der Browser das Druckfenster, wird die Seite als Datei
-gespeichert, die du öffnest und druckst.
+**Ausgaben:** Die Knöpfe des Reiters Installation (und das ⋮-Menü der Geräteansicht) liefern:
+
+- **Drucken**: eine in sich geschlossene Seite mit Abschnitten, die du oben ein- oder ausschaltest
+  (sie werden nicht mitgedruckt): **Übergabe** (jedes Gerät mit Adresse, EEP, Sendern und den
+  typisierten Feldern), **Schaltschrank** (Geräte nach Ort, mit Stromkreis, Sicherung, Revision und
+  Versorgung), **Verbindungen**, eine **Checkliste für ein neues Gateway**, **Sender-IDs** (Pool mit
+  blockierten IDs, weitere Geräte, seit dem Neustart gehörte unbekannte Sender) und das
+  **Protokoll**. Bei mehreren Gateways beginnt sie mit einer Übersicht. Am Ende steht ein Hinweis,
+  was Home Assistant nicht wissen kann. Blockiert der Browser das Druckfenster, wird die Seite als
+  Datei gespeichert, die du öffnest und druckst.
+- **CSV** der Geräte (eine Zeile pro Sender) und **Verbindungen als CSV**.
+- **JSON** (Version 2: typisierte Felder, Verbindungen und das Protokoll; der Import liest weiter
+  Version 1).
+
+Die Checkliste ist für den Wechsel auf ein Funkgateway mit anderer Base-ID: seine Sender-IDs sind
+neu und die Aktoren kennen nur die alten, also muss jeder vergebene Sender neu eingelernt werden.
+Sie listet sie auf, jeden mit seiner Lernposition, falls du eine notiert hast, und verweist auf die
+Tabelle der Lernfunktionen (`docs/teach_in.de.md`), denn die richtige Funktion hängt von Typ und
+Revision des Aktors ab. Direkt eingelernte Taster und Wandschalter sind nicht betroffen.
+
+**Notizen und weitere Geräte:** In den Details jedes Geräts gibt es ein Feld **Notizen**, in den
+Details jedes Gateways ein eigenes Notizfeld und einen Editor für **Weitere Geräte** (Name, ID,
+Funktion: direkt eingelernte Taster, Geräte anderer Systeme). Gespeichert beim Tippen, in einem
+eigenen Speicher pro Gateway, Teil des Home-Assistant-Backups. Die Felder eines Geräts gehören zu
+seiner Adresse und sind wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten an,
+die der gelöschten Geräte zu vergessen.
+
+**Notizen aus JSON importieren** (Reiter Installation) liest einen Export wieder ein, etwa für ein
+neues Gateway: Gateways werden über die Base-ID zugeordnet, Geräte über die Adresse, und nur was
+noch leer ist, wird gefüllt. Felder, weitere Geräte, eingetragene Verbindungen und Lernpositionen
+kommen mit, die Geräte selbst nie. Hat ein Gateway eine andere Base-ID, bietet das Panel an, das
+eine Gateway der Datei ohne Treffer in das eine hier eingerichtete Gateway ohne Treffer zu
+importieren.
 **Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
 unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 

@@ -9,7 +9,7 @@
 // a failed import is remembered by the browser, so a top-level await here would leave the panel
 // blank until a hard reload (a part fetched while Home Assistant starts or a proxy hiccups).
 const VERSION = new URL(import.meta.url).search;
-let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState, INSTALLATION_STYLE, installation, installationState;
+let ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg, TEXT, TAKEOVER_STYLE, takeover, takeoverState, INSTALLATION_STYLE, installation, installationState;
 const LOAD_TRIES = 4;
 
 async function loadParts() {
@@ -24,7 +24,7 @@ async function loadParts() {
         import(`./takeover.js${v}`),
         import(`./installation.js${v}`),
       ]);
-      ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, documentationSheet, esc, svg } = shared);
+      ({ ICON, MAX_ROWS, anonymisedCapture, csv, documentationCsv, documentationHtml, esc, svg } = shared);
       ({ TEXT } = texts);
       ({ TAKEOVER_STYLE, takeover, takeoverState } = tk);
       ({ INSTALLATION_STYLE, installation, installationState } = inst);
@@ -972,8 +972,8 @@ class EnOceanEltakoPanel extends HTMLElement {
                 <button role="menuitem" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
                 <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-print">${svg(ICON.print)}${esc(t.doc.print)}</button>
-                <button role="menuitem" class="dev-only" data-act="doc-sheet">${svg(ICON.print)}${esc(t.doc.sheetItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>
+                <button role="menuitem" class="dev-only" data-act="doc-csv-links">${svg(ICON.download)}${esc(t.doc.linksCsvItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-json">${svg(ICON.download)}${esc(t.doc.jsonItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-import">${svg(ICON.upload)}${esc(t.doc.importItem)}</button>
                 <input type="file" id="docFile" accept="application/json,.json" hidden>
@@ -2137,10 +2137,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     const profile = (p) => this._profile(p);
     if (kind === "json") this._download(JSON.stringify(doc, null, 2) + "\n", "application/json", `enocean-documentation-${stamp}.json`);
-    else if (kind === "csv") this._download(documentationCsv(doc, this._t, profile), "text/csv", `enocean-documentation-${stamp}.csv`);
+    else if (kind === "csv" || kind === "csv-links") this._download(documentationCsv(doc, this._t, profile, kind === "csv" ? "devices" : "links"), "text/csv", `enocean-${kind === "csv" ? "installation" : "links"}-${stamp}.csv`);
     else {
-      const build = kind === "sheet" ? documentationSheet : documentationHtml;
-      const page = build(doc, this._t, profile, this._hass.language || "en");
+      const page = documentationHtml(doc, this._t, profile, this._hass.language || "en");
       const win = window.open("", "_blank");
       if (!win) {
         this._download(page, "text/html", `enocean-documentation-${stamp}.html`); // pop-ups blocked: open the file and print it

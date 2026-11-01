@@ -35,7 +35,7 @@ from .const import (
 )
 from .device import UTE_WINDOW
 from .discovery import async_set_hidden
-from .documentation import VERSION as DOCUMENTATION_VERSION
+from .documentation import IMPORTABLE_VERSIONS
 from .documentation import collect as collect_documentation
 from .hub import async_get_hub
 from .notes import (
@@ -675,7 +675,7 @@ def ws_import_documentation(
     """
     doc = msg["doc"]
     gateways = doc.get("gateways")
-    if doc.get("version") != DOCUMENTATION_VERSION or not isinstance(gateways, list):
+    if doc.get("version") not in IMPORTABLE_VERSIONS or not isinstance(gateways, list):
         connection.send_error(msg["id"], "unsupported_version", "not a documentation export")
         return
     loaded = {e.data.get(CONF_BASE_ID): e for e in hass.config_entries.async_loaded_entries(DOMAIN)}

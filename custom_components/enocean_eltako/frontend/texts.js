@@ -72,11 +72,11 @@ export const TEXT = {
     inst: {
       tabs: { areas: "By area", devices: "Devices", links: "Links", log: "Log" },
       links: {
-        byActuator: "By actuator", bySender: "By sender", controls: "Controls",
+        csvShort: "Links CSV", byActuator: "By actuator", bySender: "By sender", controls: "Controls",
         honest: "What an actuator has really learned is stored in the actuator and cannot be read here. Every link says where it comes from: assigned (a sender Home Assistant holds), declared (the wall switch set for the device) or entered by you.",
         from: { title: "From", ha: "Home Assistant", wall: "Wall switch", entered: "Entered" },
         role: "Role", learn: "Learn position", state: "State and proof", remove: "Remove link", none: "No links yet.",
-        source: { assigned: "assigned", declared: "declared", entered: "entered" },
+        source: { title: "Source", assigned: "assigned", declared: "declared", entered: "entered" },
         status: { confirmed: "answered", no_answer: "no answer", unverified: "not tested", declared: "declared", entered: "entered" },
         statusHint: { confirmed: "The last sender test was answered by the actuator", no_answer: "The last sender test got no answer: the actuator may not know this sender, or stays silent", unverified: "Home Assistant holds this sender, but the actuator was never tested", declared: "Set as the wall switch in the device's options; not checked", entered: "Written down by you; not checked" },
         teachIn: (when) => `taught in ${when}`, tested: (when) => `tested ${when}`,
@@ -226,7 +226,10 @@ export const TEXT = {
         return missing ? `${text} ${missing} gateways of the file are not set up here.` : text;
       },
       prune: (n) => `Remove ${n} notes of deleted devices`, pruneHint: "Notes stay when a device is deleted and come back if you add it again; this forgets them",
-      sheetItem: "Print cabinet sheet", sheetTitle: "Cabinet sheet", sheetFoot: "The learn function to set on an actuator depends on its type and revision: see the learn function table in the documentation of the integration (docs/teach_in.md) and the manual of the device.",
+      sections: { handover: "Handover", cabinet: "Cabinet", links: "Links", swap: "Checklist for a new gateway", ids: "Sender IDs", log: "Log" },
+      swapIntro: "A radio gateway with another base ID has other sender IDs, which the actuators do not know: each one has to learn the new senders. Teach them in one after the other and tick them off. Buttons taught in directly and wall switches are not affected. The learn function to set depends on the actuator's type and revision: see docs/teach_in.md and the device manual.",
+      swapStep: (role) => `teach in the new ${role}`,
+      linksCsvItem: "Links as CSV",
       notes: "Notes", notePlaceholder: "Where it sits, terminal, fuse, battery date …", gatewayNotePlaceholder: "Note on this gateway: place, repeater, wiring …", noteFailed: "The note could not be saved.",
       print: "Print installation documentation", csvItem: "Documentation as CSV", jsonItem: "Documentation as JSON",
       title: "Installation documentation", generated: (when) => `State of ${when}. What Home Assistant knows, not what the actuators have learned.`,
@@ -414,11 +417,11 @@ export const TEXT = {
     inst: {
       tabs: { areas: "Nach Bereich", devices: "Geräte", links: "Verbindungen", log: "Protokoll" },
       links: {
-        byActuator: "Nach Aktor", bySender: "Nach Sender", controls: "Steuert",
+        csvShort: "Verbindungen-CSV", byActuator: "Nach Aktor", bySender: "Nach Sender", controls: "Steuert",
         honest: "Was ein Aktor wirklich gelernt hat, steckt im Aktor und ist hier nicht lesbar. Jede Verbindung sagt, woher sie kommt: vergeben (ein Sender, den Home Assistant hält), angegeben (der Wandschalter der Geräteoptionen) oder von dir eingetragen.",
         from: { title: "Von", ha: "Home Assistant", wall: "Wandschalter", entered: "Eingetragen" },
         role: "Rolle", learn: "Lernposition", state: "Stand und Beleg", remove: "Verbindung entfernen", none: "Noch keine Verbindungen.",
-        source: { assigned: "vergeben", declared: "angegeben", entered: "eingetragen" },
+        source: { title: "Quelle", assigned: "vergeben", declared: "angegeben", entered: "eingetragen" },
         status: { confirmed: "Antwort", no_answer: "keine Antwort", unverified: "nicht getestet", declared: "angegeben", entered: "eingetragen" },
         statusHint: { confirmed: "Der letzte Sendertest wurde vom Aktor beantwortet", no_answer: "Der letzte Sendertest blieb ohne Antwort: der Aktor kennt den Sender vielleicht nicht oder bleibt stumm", unverified: "Home Assistant hält diesen Sender, der Aktor wurde aber nie getestet", declared: "In den Optionen des Geräts als Wandschalter angegeben; nicht geprüft", entered: "Von dir notiert; nicht geprüft" },
         teachIn: (when) => `eingelernt ${when}`, tested: (when) => `getestet ${when}`,
@@ -568,7 +571,10 @@ export const TEXT = {
         return missing ? `${text} ${missing} Gateways der Datei sind hier nicht eingerichtet.` : text;
       },
       prune: (n) => `${n} Notizen gelöschter Geräte entfernen`, pruneHint: "Notizen bleiben beim Löschen eines Geräts erhalten und kommen wieder, wenn du es neu anlegst; das vergisst sie",
-      sheetItem: "Schaltschrank-Blatt drucken", sheetTitle: "Schaltschrank-Blatt", sheetFoot: "Welche Lernfunktion am Aktor einzustellen ist, hängt von Typ und Revision ab: siehe die Tabelle der Einlernfunktionen in der Dokumentation der Integration (docs/teach_in.de.md) und das Handbuch des Geräts.",
+      sections: { handover: "Übergabe", cabinet: "Schaltschrank", links: "Verbindungen", swap: "Checkliste für ein neues Gateway", ids: "Sender-IDs", log: "Protokoll" },
+      swapIntro: "Ein Funkgateway mit anderer Base-ID hat andere Sender-IDs, die die Aktoren nicht kennen: jeder muss die neuen Sender lernen. Lerne sie nacheinander ein und hake sie ab. Direkt eingelernte Taster und Wandschalter sind nicht betroffen. Die einzustellende Lernfunktion hängt von Typ und Revision des Aktors ab: siehe docs/teach_in.de.md und das Handbuch des Geräts.",
+      swapStep: (role) => `neuen Sender „${role}“ einlernen`,
+      linksCsvItem: "Verbindungen als CSV",
       notes: "Notizen", notePlaceholder: "Einbauort, Klemme, Sicherung, Batteriedatum …", gatewayNotePlaceholder: "Notiz zu diesem Gateway: Standort, Repeater, Verdrahtung …", noteFailed: "Die Notiz konnte nicht gespeichert werden.",
       print: "Installationsdokumentation drucken", csvItem: "Dokumentation als CSV", jsonItem: "Dokumentation als JSON",
       title: "Installationsdokumentation", generated: (when) => `Stand ${when}. Was Home Assistant weiß, nicht was die Aktoren gelernt haben.`,
