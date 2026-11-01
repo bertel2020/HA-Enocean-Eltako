@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- The tables of the Senders and Bus groups are **editable in place**: bus address and feedback ID (gateway senders, bus), place (buttons, radio senders), **Part of** (radio senders) and bus power (bus). A device with several senders shows the same value in every row and all rows follow a change.
 - **Several power supplies** of the bus: each with type, watts and, optionally, the bus addresses it feeds. The printout shows the load of every supply with a range, the total, and addresses no supply feeds. The notes store is now version 3 (a single supply of version 2 is migrated).
 - The **Eltako bus** table lists bus addresses 1 to 126 (one per channel) with free runs folded and an address given twice reported, and takes the power of a type from Eltako's planning guide (07/2014) where you wrote none down; the supply defaults to the 12 W of the FAM14. Types the guide does not list (newer devices) have no value.
 - New device field **Part of**: radio IDs with the same value (a room controller such as the FUTH55 sends under several IDs) are one block in the **Radio senders** table of the printout, each ID saying what it sends.
@@ -39,6 +40,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Die Tabellen der Gruppen Sender und Bus sind **direkt bearbeitbar**: Bus-Adresse und Rückmelde-ID (Gateway-Sender, Bus), Ort (Taster, Funk-Sender), **Gehört zu** (Funk-Sender) und Leistung am Bus (Bus). Ein Gerät mit mehreren Sendern zeigt in jeder Zeile denselben Wert, und alle Zeilen folgen einer Änderung.
 - **Mehrere Netzteile** am Bus: jedes mit Typ, Watt und, wenn du willst, den Bus-Adressen, die es versorgt. Der Ausdruck zeigt die Auslastung jedes Netzteils mit Bereich, die Gesamtsumme und Adressen, die kein Netzteil versorgt. Der Notizen-Speicher hat jetzt Version 3 (ein einzelnes Netzteil der Version 2 wird übernommen).
 - Die Tabelle **Eltako-Bus** führt die Bus-Adressen 1 bis 126 (eine je Kanal) mit zusammengefassten freien Bereichen und meldet doppelt vergebene Adressen. Die Leistung eines Typs kommt, wo du keine eingetragen hast, aus der Eltako-Planungshilfe (07/2014); als Netzteil gelten die 12 W des FAM14. Typen, die die Planungshilfe nicht kennt (neuere Geräte), haben keinen Wert.
 - Neues Gerätefeld **Gehört zu**: Funk-IDs mit gleichem Wert (ein Raumregler wie der FUTH55 sendet unter mehreren IDs) stehen in der Tabelle **Funk-Sender** des Ausdrucks als ein Block, jede ID mit dem, was sie sendet.

@@ -332,7 +332,9 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   reported). The power is what a device takes from the bus, not the switched load: what you wrote
   down, otherwise the value of Eltako's planning guide (edition 07/2014, the table of the maximum
   power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
-  has no value, and the sum says how many devices have none. The channels of one device count
+  has no value, and the sum says how many devices have none. In the tables of the Senders and Bus
+  groups the fields of a device are changed right where they stand (bus address, feedback ID,
+  place, **Part of**, power; saved as you type). The channels of one device count
   once if they share a **Part of** name; without it the sum counts each channel and says so. The
   supply defaults to the 12 W of the FAM14. Under **Bus → Power supplies** you write down one or more
   power supplies (type, watts); with the bus addresses a supply feeds, the printout shows the load

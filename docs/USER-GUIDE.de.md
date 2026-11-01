@@ -356,7 +356,9 @@ Import sind Knöpfe des Reiters.
   Adresse wird gemeldet). Die Leistung ist die Aufnahme am Bus, nicht die geschaltete Last: was du
   eingetragen hast, sonst der Wert der Eltako-Planungshilfe (Ausgabe 07/2014, Tabelle des maximalen
   Leistungsbedarfs), mit `*` markiert. Ein Typ, den die Planungshilfe nicht kennt (neuere Geräte
-  wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. Die Kanäle eines
+  wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. In den Tabellen der Gruppen
+  Sender und Bus änderst du die Felder eines Geräts direkt dort, wo sie stehen (Bus-Adresse,
+  Rückmelde-ID, Ort, **Gehört zu**, Leistung; gespeichert beim Tippen). Die Kanäle eines
   Geräts zählen einmal, wenn sie denselben Namen unter **Gehört zu** haben; ohne ihn zählt die
   Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. Unter **Bus → Netzteile**
   trägst du ein oder mehrere Netzteile ein (Typ, Watt); mit den Bus-Adressen, die ein

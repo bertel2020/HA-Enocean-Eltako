@@ -226,6 +226,7 @@ export function docTables(gw, t, profile) {
         const d = byRef.get(s.ref);
         const others = [...taken].filter(([m, x]) => m !== n && x.ref && x.ref === s.ref).map(([m]) => m).sort((a, b) => a - b);
         Object.assign(row, {
+          key: d?.key ?? "",
           fn: T.categories[d?.category] ?? "",
           device: d?.model ?? s.device,
           name: s.device,
@@ -253,7 +254,7 @@ export function docTables(gw, t, profile) {
     if (!buttons.has(id)) buttons.set(id, { id, device: "", place: "", name: "", left: [], right: [] });
     return buttons.get(id);
   };
-  for (const d of gw.devices) if (d.category === "buttons" && !d.virtual) Object.assign(entry(d.id), { device: d.model ?? "", place: place(d), name: d.name });
+  for (const d of gw.devices) if (d.category === "buttons" && !d.virtual) Object.assign(entry(d.id), { key: d.key ?? "", location: d.location ?? "", area: d.area ?? "", device: d.model ?? "", place: place(d), name: d.name });
   for (const d of gw.devices) {
     const w = d.wall_switch;
     if (!w?.id) continue;
@@ -274,7 +275,7 @@ export function docTables(gw, t, profile) {
   // their rows follow each other, the group is the description and each ID says what it sends
   const radio = gw.devices
     .filter((d) => !d.virtual && ["sensors", "meters", "climate"].includes(d.category))
-    .map((d) => ({ id: d.id, device: d.model ?? "", place: place(d), description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
+    .map((d) => ({ key: d.key ?? "", id: d.id, device: d.model ?? "", place: place(d), location: d.location ?? "", area: d.area ?? "", own: d.name, partOf: d.group ?? "", category: T.categories[d.category], description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
     .sort((a, b) => (a.group || a.description).localeCompare(b.group || b.description) || a.id.localeCompare(b.id));
   for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", description: m.function, eep: "", sends: T.byHand, group: "" });
   return { senders, externals, buttons: buttonRows, radio };
@@ -290,11 +291,11 @@ const watts = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? N
 export function docBus(gw, t, info = {}) {
   const T = t.doc.tbl;
   const facts = { addresses: 126, supply_watts: 12, source: "", ...info };
-  const entry = (address, type, device, name, feedback, group, user, table) => ({ address: Number(address), type, device, name, feedback: feedback ?? "", group: group ?? "", user: watts(user), table: typeof table === "number" ? table : null });
+  const entry = (address, type, device, name, feedback, group, user, table, key = "") => ({ key, address: Number(address), type, device, name, feedback: feedback ?? "", group: group ?? "", raw: user ?? "", user: watts(user), table: typeof table === "number" ? table : null });
   const rows = [
     ...gw.devices
       .filter((d) => /^\d+$/.test(d.bus_address ?? "") && !d.virtual)
-      .map((d) => entry(d.bus_address, ["lighting", "covers"].includes(d.category) ? T.busTypes.actuator : T.busTypes.sender, d.model ?? "", d.name, d.feedback_id, d.group, d.bus_power, d.bus_power_table)),
+      .map((d) => entry(d.bus_address, ["lighting", "covers"].includes(d.category) ? T.busTypes.actuator : T.busTypes.sender, d.model ?? "", d.name, d.feedback_id, d.group, d.bus_power, d.bus_power_table, d.key)),
     ...(gw.manual ?? [])
       .filter((m) => /^\d+$/.test(m.bus_address ?? ""))
       .map((m) => entry(m.bus_address, T.busTypes.other, m.name, m.function, m.feedback_id, "", m.bus_power, m.bus_power_table)),
