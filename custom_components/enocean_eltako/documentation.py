@@ -18,15 +18,11 @@ from homeassistant.util import dt as dt_util
 from .catalog import OPT_WALL_OFF, OPT_WALL_ON, OPT_WALL_SWITCH
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
-from .notes import Notes
+from .discovery import pending
+from .notes import Notes, device_key
 from .protocol.ids import format_id
 
 VERSION = 1
-
-
-def note_key(device: EnOceanDevice) -> str:
-    """The key of a device's note: its address, which a deleted and re-added device keeps."""
-    return device.subentry.unique_id or device.subentry.subentry_id
 
 
 def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[str, Any]:
@@ -43,6 +39,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             "off": options.get(OPT_WALL_OFF),
         }
     model = device.model
+    test = notes.tests.get(device_key(device.subentry), {})
     return {
         "name": device.subentry.title,
         "key": device.subentry.subentry_id,
@@ -61,12 +58,13 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
                 "profile": profile,
                 "id": format_id(sender),
                 "ute": not model.sender_profile(profile).teach_in,
-                "test": device.last_sender_test.get(profile),
+                "test": test.get("results", {}).get(profile),
             }
             for profile, sender in device.senders.items()
         ],
         "wall_switch": wall,
-        "note": notes.devices.get(note_key(device), ""),
+        "note": notes.devices.get(device_key(device.subentry), ""),
+        "test_time": test.get("time"),
     }
 
 
@@ -103,6 +101,18 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                     }
                     for pool_id, (kind, owner, store) in pools.items()
                     if owner.entry_id == entry.entry_id
+                ],
+                # unknown senders heard since the restart that are not set up (and not hidden)
+                "heard": [
+                    {
+                        "id": format_id(t.sender),
+                        "rorg": f"{t.telegram.rorg:02X}",
+                        "dbm": t.telegram.dbm,
+                        "last": dt_util.utc_from_timestamp(t.timestamp).isoformat(
+                            timespec="seconds"
+                        ),
+                    }
+                    for t in pending(entry)
                 ],
                 "hidden_senders": sorted(
                     format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())

@@ -36,9 +36,8 @@ from .const import (
 from .device import UTE_WINDOW
 from .discovery import async_set_hidden
 from .documentation import collect as collect_documentation
-from .documentation import note_key
 from .hub import async_get_hub
-from .notes import MAX_NOTE
+from .notes import MAX_NOTE, device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
@@ -530,7 +529,7 @@ def device_details(device: Any) -> dict[str, Any]:
         "repeat": stats.repeat_count,
         "heard_by": heard_by(device),
         "note": device.entry.runtime_data.hub.notes[device.entry.entry_id].devices.get(
-            note_key(device), ""
+            device_key(device.subentry), ""
         ),
         "sender_test": device.sender_test_error() is None,
         "telegrams": stats.telegrams,
@@ -632,7 +631,7 @@ def ws_set_note(
         connection.send_error(msg["id"], "unknown_device", "no such device")
         return
     else:
-        notes.set_device(note_key(device), msg["text"])
+        notes.set_device(device_key(device.subentry), msg["text"])
     connection.send_result(msg["id"])
 
 
