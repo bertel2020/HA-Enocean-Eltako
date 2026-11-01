@@ -8,7 +8,7 @@ const VERSION = new URL(import.meta.url).search;
 const { ICON, esc, svg } = await import(`./shared.js${VERSION}`);
 
 // the typed fields of a device, in table order; installed is a date
-export const INSTALLATION_FIELDS = ["location", "circuit", "bus_address", "feedback_id", "fuse", "installed", "revision", "power", "note"];
+export const INSTALLATION_FIELDS = ["location", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
 const TABS = ["areas", "devices", "links", "log"];
 const SAVE_DELAY = 600; // ms after the last key
 

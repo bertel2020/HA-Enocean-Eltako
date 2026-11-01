@@ -132,6 +132,7 @@ async def test_notes_are_saved_shown_and_kept(
     stored = await Store(hass, 2, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
+        "supply": {"name": "", "watts": ""},
         "devices": {"05-00-00-12": {"note": "Schrank 2, Platz 4"}},
         "tests": {},
         "manual": [],
@@ -184,9 +185,16 @@ async def test_manual_entries_are_validated_stored_and_documented(
     ]
     assert (await call(1, entries))["success"]
     (gateway_doc,) = collect(hass)["gateways"]
+    no_bus = {"bus_address": "", "feedback_id": "", "bus_power": ""}
     assert gateway_doc["manual"] == [
-        {"id": "a1", "name": "Taster Flur", "address": "00-12-34-56", "function": "auf Licht Flur"},
-        {"id": "c3", "name": "Sensor Garten", "address": "", "function": ""},
+        {
+            "id": "a1",
+            "name": "Taster Flur",
+            "address": "00-12-34-56",
+            "function": "auf Licht Flur",
+            **no_bus,
+        },
+        {"id": "c3", "name": "Sensor Garten", "address": "", "function": "", **no_bus},
     ]
 
     assert (await call(2, entries, "unknown"))["error"]["code"] == "not_found"
@@ -197,6 +205,60 @@ async def test_manual_entries_are_validated_stored_and_documented(
 
     await client.send_json({"id": 6, "type": "enocean_eltako/gateways"})
     assert (await client.receive_json())["success"]
+
+    # a device of the Eltako bus that Home Assistant does not hold
+    bus = {"id": "f3", "name": "F3Z14D", "bus_address": "12-1", "bus_power": "0,5"}
+    assert (await call(7, [bus]))["success"]
+    (manual,) = collect(hass)["gateways"][0]["manual"]
+    assert manual["bus_address"] == "12-1" and manual["bus_power"] == "0,5"
+
+
+async def test_the_bus_power_supply_is_validated_stored_and_documented(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    client = await hass_ws_client(hass)
+
+    async def call(msg_id: int, name: str, watts: str, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/set_supply",
+                "entry_id": entry_id or entry.entry_id,
+                "name": name,
+                "watts": watts,
+            }
+        )
+        return await client.receive_json()
+
+    assert (await call(1, " FSNT14-12V ", "30"))["success"]
+    assert collect(hass)["gateways"][0]["supply"] == {"name": "FSNT14-12V", "watts": "30"}
+    assert (await call(2, "x", "1,5"))["success"]  # a comma is fine
+    assert (await call(3, "x", "viel"))["error"]["code"] == "invalid_format"
+    assert notes.supply == {"name": "x", "watts": "1,5"}  # the bad one changed nothing
+    assert (await call(4, "x", "1", "unknown"))["error"]["code"] == "not_found"
+    assert (await call(5, "n" * 61, "1"))["success"] is False
+    assert (await call(6, "", ""))["success"]
+    assert notes.supply == {"name": "", "watts": ""}
+
+    # the supply and the bus power of a device come back from an export; a bad power is dropped
+    doc = {
+        "version": 1,
+        "gateways": [
+            {
+                "base_id": entry.data["base_id"],
+                "supply": {"name": "FSNT14-12V", "watts": "30"},
+                "devices": [{"note_key": "05-00-00-12", "bus_power": "viel"}],
+            }
+        ],
+    }
+    await client.send_json({"id": 7, "type": "enocean_eltako/import_documentation", "doc": doc})
+    assert (await client.receive_json())["success"]
+    assert notes.supply == {"name": "FSNT14-12V", "watts": "30"}
+    assert notes.device("05-00-00-12")["bus_power"] == ""
 
 
 @pytest.mark.parametrize(

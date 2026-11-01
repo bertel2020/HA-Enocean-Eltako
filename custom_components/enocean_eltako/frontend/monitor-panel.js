@@ -532,7 +532,7 @@ const STYLE = `
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .dev-detail .acts-row { margin-top: 8px; }
   .manual { display: grid; gap: 6px; }
-  .manual .mrow { display: grid; grid-template-columns: 1fr 9em 2fr auto; gap: 6px; align-items: center; }
+  .manual .mrow { display: grid; grid-template-columns: 1fr 9em 2fr 6em 8em 5em auto; gap: 6px; align-items: center; }
   @media (max-width: 640px) { .manual .mrow { grid-template-columns: 1fr auto; } .manual .mrow input:nth-of-type(n+2) { grid-column: 1 / -1; } }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
@@ -2285,8 +2285,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
     const t = this._t.doc;
     const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}" value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
+    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 8)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
+    const supply = (key, label, max) => `<input class="note" data-supply-field="${key}" value="${esc(gw.supply?.[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
+    const power = `<div class="mrow" data-supply-row>${supply("name", t.supplyName, 60)}${supply("watts", t.supplyWatts, 8)}</div>`;
+    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}"><div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div></div>`;
   }
 
   async _importDocumentation(file) {
@@ -2333,11 +2335,26 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
   }
 
+  async _saveSupply(gateway) {
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_supply", entry_id: gateway.entry_id, name: gateway.supply.name, watts: gateway.supply.watts });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+    }
+  }
+
   _manualEdit(e) {
     // typing in an entry, adding one, removing one: the gateway keeps the list, the server gets all of it
     const holder = e.target.closest?.("[data-entry-of]");
     const gateway = holder && this._gateways.find((g) => g.entry_id === holder.dataset.entryOf);
     if (!gateway) return false;
+    const supply = e.target.closest("[data-supply-field]");
+    if (e.type === "input" && supply) {
+      gateway.supply = { name: "", watts: "", ...gateway.supply, [supply.dataset.supplyField]: supply.value };
+      clearTimeout(gateway._supplySaving);
+      gateway._supplySaving = setTimeout(() => this._saveSupply(gateway), 600);
+      return true;
+    }
     const field = e.target.closest("[data-manual-field]");
     if (e.type === "input" && field) {
       const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
@@ -2349,7 +2366,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (e.type !== "click") return false;
     const add = e.target.closest("[data-manual-add]");
     const del = e.target.closest("[data-manual-del]");
-    if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "" }];
+    if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "", bus_address: "", feedback_id: "", bus_power: "" }];
     else if (del) gateway.manual = gateway.manual.filter((_, i) => i !== Number(del.dataset.manualDel));
     else return false;
     this._renderCards();

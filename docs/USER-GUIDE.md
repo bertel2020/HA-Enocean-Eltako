@@ -320,7 +320,19 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   senders heard since the restart) and the **Log**. With several gateways it opens with an
   overview. It ends with a note on what Home Assistant cannot know. If the browser blocks the print
   window, the page is saved as a file to open and print.
-- **CSV** of the devices (one row per sender) and **Links as CSV**.
+- **CSV** of the devices (one row per sender), **Links as CSV** and **Sender tables CSV** (the
+  tables below, one under the other).
+- Four more print sections, in the order of an installation list: **Gateway senders** (sender no. 0
+  to 127 of the radio pool, which is the base ID plus the number; free numbers are folded; a second
+  mode, which takes the number plus 64, points to its counterpart and back; bus address and feedback
+  ID are fields you write down per device), **Buttons** (each wall switch with the actuators on its
+  left and right rocker, taken from the actuators' wall switch option), **Radio senders** (devices
+  that only send, and entries made by hand) and **Eltako bus** (every device with a bus address, by
+  address, with the power it takes from the bus and the sum). The power per device is the
+  consumption at the bus from its data sheet, not the switched load; it is written down by hand,
+  like the type and watts of the bus power supply (in the gateway's details), and the sum says how
+  many devices have no value yet. Home Assistant cannot read the bus yet, so nothing there is
+  filled in by itself.
 - **JSON** (version 2: typed fields, links and the log; the import still reads version 1).
 
 The checklist is for moving to a radio gateway with another base ID: its sender IDs are new and

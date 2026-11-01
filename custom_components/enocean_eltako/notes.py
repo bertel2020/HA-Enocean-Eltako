@@ -30,13 +30,27 @@ FIELDS = {
     "installed": 10,
     "bus_address": 8,  # the channel on the FAM14 bus, written down by hand
     "feedback_id": 16,  # the ID of its feedback telegrams (bus or decentral actuator)
+    "bus_power": 8,  # watts it takes from the FAM14 bus, from its data sheet
     "revision": 40,
     "power": 80,
     "note": MAX_NOTE,
 }
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_WATTS = re.compile(r"\d{1,4}([.,]\d{1,3})?")  # a number of watts, 1,2 or 1.2
 MAX_MANUAL = 200  # entries per gateway
-MANUAL_FIELDS = {"name": 80, "address": 40, "function": 200}
+# an entry by hand; a device on the Eltako bus that Home Assistant does not hold has bus fields
+MANUAL_FIELDS = {
+    "name": 80,
+    "address": 40,
+    "function": 200,
+    "bus_address": 8,
+    "feedback_id": 16,
+    "bus_power": 8,
+}
+SUPPLY_FIELDS = {
+    "name": 60,
+    "watts": 8,
+}  # the power supply of the bus: what it is, what it delivers
 MAX_LOG = 500  # events per gateway
 MAX_LINKS = 500  # links entered by hand per gateway
 # the fields of a link entered by hand and their longest text
@@ -73,6 +87,7 @@ class Notes:
         self._signal_timer: CALLBACK_TYPE | None = None
         self._store = _NotesStore(hass, STORAGE_VERSION, f"{DOMAIN}.notes.{entry_id}")
         self.gateway = ""
+        self.supply: dict[str, str] = {"name": "", "watts": ""}
         self.devices: dict[str, dict[str, str]] = {}  # key -> typed fields (only those set)
         # the last sender test of a device: {"time": ..., "results": {profile: result}}
         self.tests: dict[str, dict[str, Any]] = {}
@@ -95,6 +110,7 @@ class Notes:
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
         self.gateway = str(stored.get("gateway", ""))
+        self.supply = {k: str(stored.get("supply", {}).get(k, "")) for k in SUPPLY_FIELDS}
         self.devices = {
             str(k): {f: str(v[f]) for f in FIELDS if v.get(f)}
             for k, v in stored.get("devices", {}).items()
@@ -115,6 +131,7 @@ class Notes:
     def _data(self) -> dict[str, Any]:
         return {
             "gateway": self.gateway,
+            "supply": self.supply,
             "devices": self.devices,
             "tests": self.tests,
             "manual": self.manual,
@@ -172,6 +189,15 @@ class Notes:
         self.gateway = text.strip()[:MAX_NOTE]
         self._save()
 
+    def set_supply(self, name: str, watts: str) -> bool:
+        """The power supply of the FAM14 bus; False for a bad value (watts: a number)."""
+        name, watts = name.strip(), watts.strip()
+        if len(name) > SUPPLY_FIELDS["name"] or (watts and not _WATTS.fullmatch(watts)):
+            return False
+        self.supply = {"name": name, "watts": watts}
+        self._save()
+        return True
+
     def device(self, key: str) -> dict[str, str]:
         """All typed fields of a device, empty where nothing is written."""
         return {f: self.devices.get(key, {}).get(f, "") for f in FIELDS}
@@ -184,6 +210,8 @@ class Notes:
             if field not in FIELDS or len(value) > FIELDS[field]:
                 return False
             if field == "installed" and value and not _DATE.fullmatch(value):
+                return False
+            if field == "bus_power" and value and not _WATTS.fullmatch(value):
                 return False
             clean[field] = value
         current = self.devices.setdefault(key, {})
@@ -225,9 +253,16 @@ class Notes:
                     gained[field] = text[: FIELDS[field]]
             if "installed" in gained and not _DATE.fullmatch(gained["installed"]):
                 del gained["installed"]
+            if "bus_power" in gained and not _WATTS.fullmatch(gained["bus_power"]):
+                del gained["bus_power"]
             fresh = {f: v for f, v in gained.items() if v != self.devices.get(key, {}).get(f)}
             if fresh and self.set_fields(key, fresh):
                 notes += len(fresh)
+        supply = gateway.get("supply")
+        if isinstance(supply, dict) and (overwrite or not any(self.supply.values())):
+            before = self.supply
+            if self.set_supply(str(supply.get("name") or ""), str(supply.get("watts") or "")):
+                notes += self.supply != before
         entries = [e for e in gateway.get("manual", []) if isinstance(e, dict)]
         if overwrite:
             self.manual = []
@@ -244,6 +279,11 @@ class Notes:
                     "name": name,
                     "address": address,
                     "function": str(entry.get("function") or ""),
+                    **{
+                        k: str(entry.get(k) or "")[:n]
+                        for k, n in MANUAL_FIELDS.items()
+                        if k not in ("name", "address", "function")
+                    },
                 }
             )
         self.set_manual([*self.manual, *taken])

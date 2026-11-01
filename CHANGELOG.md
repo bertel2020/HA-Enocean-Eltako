@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Eltako bus** table in the printout: every device with a bus address, by address, with the power it takes from the bus (written down by hand, from its data sheet), the sum and the load of the bus power supply, which you write down in the gateway details. Devices of the bus that Home Assistant does not hold are entries by hand with bus address, feedback ID and watts.
 - The printout has three more tables: **Gateway senders** (sender no. 0 to 127 of the radio pool, free numbers folded, a second mode pointing to its counterpart at +64), **Buttons** (each wall switch with the actuators on its left and right rocker) and **Radio senders** (devices that only send, and the entries by hand). New fields **Bus address** and **Feedback ID** per device, and **Sender tables CSV**.
 - A **checklist for a new gateway** in the printout: every assigned sender to teach in again when a radio gateway with another base ID takes over.
 - **Links as CSV**, and the JSON export is now version 2 (typed fields, links, the log); the import still reads version 1.
@@ -33,6 +34,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- Tabelle **Eltako-Bus** im Ausdruck: jedes Gerät mit Bus-Adresse, nach Adresse, mit der Leistung, die es vom Bus nimmt (von Hand aus dem Datenblatt eingetragen), der Summe und der Auslastung des Bus-Netzteils, das du in den Details des Gateways einträgst. Geräte am Bus, die Home Assistant nicht kennt, sind Einträge von Hand mit Bus-Adresse, Rückmelde-ID und Watt.
 - Der Ausdruck hat drei weitere Tabellen: **Gateway-Sender** (Sender-Nr. 0 bis 127 des Funk-Pools, freie Nummern zusammengefasst, ein zweiter Modus verweist auf sein Gegenstück bei +64), **Taster** (jeder Wandtaster mit den Aktoren auf linker und rechter Wippe) und **Funk-Sender** (Geräte, die nur senden, und die Einträge von Hand). Neue Felder **Bus-Adresse** und **Rückmelde-ID** je Gerät und **Sender-Tabellen-CSV**.
 - Eine **Checkliste für ein neues Gateway** im Ausdruck: jeder vergebene Sender, der neu einzulernen ist, wenn ein Funkgateway mit anderer Base-ID übernimmt.
 - **Verbindungen als CSV**, und der JSON-Export ist jetzt Version 2 (typisierte Felder, Verbindungen, Protokoll); der Import liest weiter Version 1.
