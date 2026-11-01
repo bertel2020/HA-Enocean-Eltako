@@ -45,7 +45,10 @@ export const INSTALLATION_STYLE = `
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
   .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
   .installation .itable input.cell[data-in-field="group"] { min-width: 170px; }
-  .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"], .installation .itable input.cell[data-in-field="bus_power"] { min-width: 120px; }
+  .installation .itable input.cell[data-in-field="bus_address"] { min-width: 70px; }
+  .installation .itable input.cell[data-in-field="feedback_id"] { min-width: 100px; }
+  .installation .itable input.cell[data-in-field="bus_power"] { min-width: 72px; max-width: 96px; text-align: right; }
+  .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"] { font-family: ui-monospace, monospace; font-size: 12px; }
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
@@ -158,6 +161,12 @@ export const installation = {
 
   // ---- the tables of the sender and bus groups, from the same rows as the printout ------------------
 
+  _instCell(gw, key, field, value, label, placeholder = "") {
+    // a field of a device, edited in the table; an entry without a device (by hand) is plain text
+    if (!key) return esc(value);
+    return `<input class="cell" data-in-field="${field}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(key)}" value="${esc(value ?? "")}" placeholder="${esc(placeholder)}" aria-label="${esc(label)}" autocomplete="off">`;
+  },
+
   _instTable(head, rows, cls = "") {
     return `<div class="tablewrap"><table class="itable${cls}"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
   },
@@ -174,12 +183,12 @@ export const installation = {
   _instSenders() {
     const t = this._t;
     const T = t.doc.tbl;
-    const rows = (senders, externals) => {
+    const rows = (gw, senders, externals) => {
       const body = foldFree(senders).map((r) => {
         if (r.free) return `<tr class="free"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
         if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
         if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="7"><span class="tag warn">${esc(T.blocked)}</span></td></tr>`;
-        return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.place].filter(Boolean).join(", "))}</td><td>${esc(r.bus)}</td><td class="mono">${esc(r.feedback)}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
+        return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.place].filter(Boolean).join(", "))}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
       }).join("");
       const outside = externals.length
         ? `<tr class="outside"><td colspan="9">${esc(T.external)}</td></tr>${externals.map((r) => `<tr><td class="mono">–</td><td class="mono">${esc(r.id)}</td><td></td><td>${esc(r.device)}</td><td>${esc(r.name)}</td><td></td><td></td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`).join("")}`
@@ -189,7 +198,7 @@ export const installation = {
     const head = [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second];
     const mode = `<div class="imode" style="display:flex;gap:6px;flex-wrap:wrap" role="group"><button class="chip" data-in-act="table" aria-pressed="${!this._in.manage}">${esc(t.inst.asTable)}</button><button class="chip" data-in-act="manage" aria-pressed="${this._in.manage}">${esc(t.inst.manageIds)}</button></div>`;
     if (this._in.manage) return mode + `<p class="isub">${esc(t.inst.manageHint)}</p>`;
-    return mode + `<p class="isub">${esc(T.sendersIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(parts.senders, parts.externals)) : ""));
+    return mode + `<p class="isub">${esc(T.sendersIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(gw, parts.senders, parts.externals)) : ""));
   },
 
   _instButtons() {
@@ -197,22 +206,16 @@ export const installation = {
     const T = t.doc.tbl;
     const side = (list) => (list.length ? list.map(esc).join("<br>") : `<span class="isub">${esc(T.unassigned)}</span>`);
     const head = [T.id, T.device, T.place, T.description, T.left, T.right];
-    return `<p class="isub">${esc(T.buttonsIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.buttons.length ? this._instTable(head, parts.buttons.map((b) => `<tr><td class="mono">${esc(b.id)}</td><td>${esc(b.device)}</td><td>${esc(b.place)}</td><td>${esc(b.name)}</td><td>${side(b.left)}</td><td>${side(b.right)}</td></tr>`).join("")) : ""));
+    return `<p class="isub">${esc(T.buttonsIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.buttons.length ? this._instTable(head, parts.buttons.map((b) => `<tr><td class="mono">${esc(b.id)}</td><td>${esc(b.device)}</td><td>${b.key ? this._instCell(gw, b.key, "location", b.location, T.place, b.area) : esc(b.place)}</td><td>${esc(b.name)}</td><td>${side(b.left)}</td><td>${side(b.right)}</td></tr>`).join("")) : ""));
   },
 
   _instRadio() {
     const t = this._t;
     const T = t.doc.tbl;
-    const head = [T.id, T.device, T.place, T.description, T.eep, T.sends];
-    const rows = (radio) => radio.map((r, i) => {
-      const same = (x) => r.group && x?.group === r.group;
-      const end = radio.findIndex((x, j) => j > i && !same(x));
-      const span = !r.group ? 1 : same(radio[i - 1]) ? 0 : (end === -1 ? radio.length : end) - i;
-      const spanned = (html) => (span === 0 ? "" : `<td${span > 1 ? ` rowspan="${span}"` : ""}>${html}</td>`);
-      return `<tr><td class="mono">${esc(r.id)}</td>${spanned(esc(r.device))}${spanned(esc(r.place))}${spanned(esc(r.description))}<td class="mono">${esc(r.eep)}</td><td>${esc(r.sends)}</td></tr>`;
-    }).join("");
+    const head = [T.id, T.device, T.name, T.place, T.partOf, T.eep, T.sends];
+    const rows = (gw, radio) => radio.map((r) => `<tr><td class="mono">${esc(r.id)}</td><td>${esc(r.device)}</td><td>${esc(r.key ? r.own : r.description)}</td><td>${r.key ? this._instCell(gw, r.key, "location", r.location, T.place, r.area) : esc(r.place)}</td><td>${r.key ? this._instCell(gw, r.key, "group", r.partOf, T.partOf) : ""}</td><td class="mono">${esc(r.eep)}</td><td>${esc(r.key ? r.category : r.sends)}</td></tr>`).join("");
     const manual = this._gateways.filter((g) => g.loaded).map((g) => this._manualEditor(g)).join("");
-    return `<p class="isub">${esc(T.radioIntro)}</p>` + this._instPerGateway((gw, parts) => (parts.radio.length ? this._instTable(head, rows(parts.radio)) : "")) + manual;
+    return `<p class="isub">${esc(T.radioIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.radio.length ? this._instTable(head, rows(gw, parts.radio)) : "")) + manual;
   },
 
   _instBus() {
@@ -220,13 +223,13 @@ export const installation = {
     const T = t.doc.tbl;
     const lang = this._hass?.language || "en";
     const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
-    return `<p class="isub">${esc(T.busIntro.replace(" (*)", ""))}</p>` + this._instPerGateway((gw) => {
+    return `<p class="isub">${esc(T.busIntro.replace(" (*)", ""))} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw) => {
       const bus = docBus(gw, t, this._in.doc.bus_info);
       if (!bus.rows.length) return `<div class="none">${esc(T.busEmpty)}</div>`;
       const power = (r) => (r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : `${esc(num(r.power))}${r.from === "table" ? ` <span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : ""}`);
       const rows = bus.items.map((r) => (r.free
         ? `<tr class="free"><td class="mono">${r.from === r.to ? r.from : `${r.from} – ${r.to}`}</td><td colspan="5">${esc(T.free)}</td></tr>`
-        : `<tr><td class="mono">${r.address}</td><td>${esc(r.type)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", "))}</td><td class="mono">${esc(r.feedback)}</td><td class="num">${power(r)}</td></tr>`)).join("");
+        : `<tr><td class="mono">${r.address}</td><td>${esc(r.type)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", "))}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td class="num">${r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${this._instCell(gw, r.key, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : ""}</span>` : power(r)}</td></tr>`)).join("");
       const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td class="num"><b>${esc(num(bus.sum))}</b></td></tr>`;
       const load = (name, capacity, percent, text) => `<div class="load"><span>${esc(name)}</span><div class="barbg"><i class="${percent >= 80 ? "hot" : ""}" style="width:${Math.min(percent ?? 0, 100)}%"></i></div><span class="r">${esc(text)}${percent >= 80 ? ` <span class="tag warn">${esc(T.busWarn)}</span>` : ""}</span></div>`;
       const range = (x) => (x.first !== null || x.last !== null ? `, ${T.supplyRange(x.first ?? 1, x.last ?? 126)}` : "");
@@ -461,8 +464,13 @@ export const installation = {
     const device = this._instDevice(entryId, key);
     if (!device || device[field] === cell.value) return;
     const reply = await this._instSend(entryId, [{ device: key, values: { [field]: cell.value } }]);
-    if (reply?.saved) device[field] = cell.value;
-    else cell.classList.add("bad"); // refused: a date that is none, or the device is gone
+    if (reply?.saved) {
+      device[field] = cell.value;
+      // the same field of the same device in another row of a table (a device with several senders)
+      this.shadowRoot.querySelectorAll(`#installation [data-in-gw="${CSS.escape(entryId)}"][data-in-key="${CSS.escape(key)}"][data-in-field="${field}"]`).forEach((other) => {
+        if (other !== cell && other.value !== cell.value) other.value = cell.value;
+      });
+    } else cell.classList.add("bad"); // refused: a date that is none, or the device is gone
   },
 
   async _instSend(entryId, items) {
