@@ -89,7 +89,8 @@ export const INSTALLATION_STYLE = `
   .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: 12px ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .installation .log td.kind { white-space: nowrap; }
   .installation .none { color: var(--muted); padding: 8px 0; }
-  .installation .itop { padding-bottom: 0; }
+  .installation .itop { padding-bottom: 0; align-items: flex-end; }
+  .installation .itop .itools { padding-bottom: 8px; }
   .installation .itop .groups { display: flex; gap: 4px; flex: 1 1 340px; flex-wrap: wrap; }
   .installation .itab { font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
   .installation .itab:hover { color: var(--text); }
