@@ -386,6 +386,51 @@ class EnOceanDevice:
         if confirm:
             self.stats.commands += 1
 
+    def sender_test_error(self) -> str | None:
+        """Why the senders cannot be tested (a code for the panel), None when they can: only
+        switching actuators with a known state, as the test repeats that state."""
+        if self.model.kind != "switch" or not self.senders:
+            return "unsupported"
+        return "state_unknown" if self.wall_state is None else None
+
+    async def async_test_senders(self) -> list[dict[str, str]]:
+        """Send the actuator's current state through each sender in turn: harmless, and an
+        answer shows that the actuator knows that sender. No answer is not proof of the opposite
+        (the command may have arrived at an actuator that stays silent)."""
+        state = bool(self.wall_state)
+        results = []
+        for profile_id, sender_id in self.senders.items():
+            profile = self.model.sender_profile(profile_id)
+            if profile.switch_fn is not None:
+                result = await self._test_telegram(profile, sender_id, profile.switch_fn(state))
+            elif profile_id == ROCKER.id and self.options.get(
+                OPT_ROCKER_ON, "a0"
+            ) != self.options.get(
+                OPT_ROCKER_OFF, "a1"
+            ):  # a rocker that toggles would change the state
+                result = await self._test_telegram(
+                    profile, sender_id, self.rocker_button(state), ROCKER_STATUS_PRESSED
+                )
+                self.send(
+                    bytes(1), profile=profile_id, status=ROCKER_STATUS_RELEASED, confirm=False
+                )
+            else:
+                result = "skipped"
+            results.append(
+                {"profile": profile_id, "id": format_id(sender_id), "result": str(result)}
+            )
+        return results
+
+    async def _test_telegram(
+        self, profile: Any, sender_id: int, data: bytes, status: int = 0
+    ) -> SendResult | str:
+        telegram = RadioTelegram(profile.rorg, data, sender_id, status, BROADCAST)
+        expect = lambda t: t.sender == self.device_id and self.own_channel(t)  # noqa: E731
+        runtime = self.entry.runtime_data
+        if runtime.bus is not None and sender_id in runtime.bus.senders.pool:
+            return await runtime.bus.group.submit(telegram, Priority.BACKGROUND, expect=expect)
+        return await runtime.queue.submit(telegram, Priority.BACKGROUND, expect=expect)
+
     @callback
     def press(self, profile: str, button: bytes, *, confirm: bool = True) -> None:
         """Rocker profile: press and release, like a PTM switch."""

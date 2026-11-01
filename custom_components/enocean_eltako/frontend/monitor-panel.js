@@ -525,6 +525,7 @@ const STYLE = `
   .devices .dev.open { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .dev-detail .acts-row { margin-top: 8px; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
   .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0; }
@@ -778,6 +779,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._areas = [];
     this._labels = [];
     this._devDetails = new Map(); // device key -> what the server knows of it
+    this._senderTests = new Map(); // device key -> {running} | {results: {profile: result}} | {error}
     this._devOrder = null; // order kept while a row is open, so it does not move away
     this._keys = new Set(); // rows shown or pending, so a repeated history is not added twice
     this._cleared = new Set(); // rows removed with "clear display"
@@ -1173,6 +1175,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       const teach = e.target.closest("[data-teach]");
       if (teach) {
         this._openTeach(teach.dataset.teach);
+        return;
+      }
+      const senderTest = e.target.closest("[data-sender-test]");
+      if (senderTest) {
+        this._testSenders(senderTest.dataset.senderTest, senderTest.dataset.gateway);
         return;
       }
       const only = e.target.closest("[data-only]:is(button)");
@@ -3146,7 +3153,15 @@ class EnOceanEltakoPanel extends HTMLElement {
     ]);
     const fields = d.fields && d.fields.length ? d.fields.map((f) => (f.label === "on" || f.label === "state" ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>` : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`)).join("") : "";
     const values = fields || d.data ? `<div class="vbox">${fields ? `<div class="values">${fields}</div>` : ""}${d.data ? `<div class="mono sub">${esc(d.data)}</div>` : ""}</div>` : "";
-    const senders = x.senders.length ? table(x.senders.map((s) => [esc(this._profile(s.profile)), esc(s.id), esc(s.ute ? t.teachUte : t.teachTelegram)])) : "";
+    const test = this._senderTests.get(d.devKey) || {};
+    const verdict = (profile) => {
+      const result = test.results?.[profile];
+      return result ? `<span class="tag ${result === "confirmed" ? "ok" : "warn"}" title="${esc(t.senderTestResultHint[result] || "")}">${esc(t.senderTestResult[result] || result)}</span>` : "";
+    };
+    const senders = x.senders.length
+      ? table(x.senders.map((s) => [esc(this._profile(s.profile)), esc(s.id), esc(s.ute ? t.teachUte : t.teachTelegram), verdict(s.profile)]))
+        + (x.sender_test ? `<div class="acts-row"><button class="chip text" data-sender-test="${esc(d.devKey)}" data-gateway="${esc(x.entry_id)}" title="${esc(t.senderTestHint)}"${test.running ? " disabled" : ""}>${esc(test.running ? t.senderTesting : t.senderTest)}</button>${test.error ? ` <span class="tag warn">${esc(test.error)}</span>` : ""}</div>` : "")
+      : "";
     const c = x.commands;
     const commands = c && c.sent
       ? list([
@@ -3224,6 +3239,20 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._offset = at > 0 ? Math.floor(at / this._pageSize) * this._pageSize : 0;
     this._render();
     requestAnimationFrame(() => this.shadowRoot.querySelector(`.dev[data-dev="${CSS.escape(devKey)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+  }
+
+  async _testSenders(key, gateway) {
+    // the actuator's current state through each sender in turn; the answer shows who it knows
+    if (this._senderTests.get(key)?.running) return;
+    this._senderTests.set(key, { running: true });
+    this._render(true);
+    try {
+      const reply = await this._hass.callWS({ type: "enocean_eltako/sender_test", entry_id: gateway, device: key });
+      this._senderTests.set(key, { results: Object.fromEntries(reply.results.map((r) => [r.profile, r.result])) });
+    } catch (err) {
+      this._senderTests.set(key, { error: this._t.senderTestError[err.code] || this._t.senderTestError.failed });
+    }
+    if (this._view === "devices") this._render(true);
   }
 
   async _loadDevDetail(key, gateway) {

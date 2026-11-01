@@ -2387,3 +2387,103 @@ async def test_heard_by_lists_the_gateways_and_flags_a_repeater_only_device(
     assert [g["entry_id"] for g in result["gateways"]] == ["other", entry.entry_id]
     assert result["gateways"][0]["name"] == "other"  # not a config entry: the ID stands in
     assert result["best"] == "other" and result["repeater_only"] is False
+
+
+SWITCH_ID, TOGGLE_ID = "05-10-A2-C1", "05-10-A2-C2"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                SWITCH_ID,
+                "Licht Flur",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-91"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-92"},
+                ],
+                rocker_on_button="a0",
+                rocker_off_button="a1",
+            ),
+            _subentry(
+                "switch",
+                TOGGLE_ID,
+                "Licht Bad",
+                senders=[{"profile": "rocker", "sender_id": "FF-B7-44-93"}],
+                rocker_on_button="b0",
+                rocker_off_button="b0",
+            ),
+            _subentry(
+                "cover",
+                "05-00-00-24",
+                "Rollladen",
+                senders=[{"profile": "direction_rocker", "sender_id": "FF-B7-44-94"}],
+                routing="direction_rocker",
+                time_opens=20,
+                time_closes=20,
+                rocker_on_button="b1",
+                rocker_off_button="b0",
+            ),
+        ]
+    ],
+    indirect=True,
+)
+async def test_sender_test(hass: HomeAssistant, gateway, hass_ws_client) -> None:
+    import asyncio
+
+    from custom_components.enocean_eltako.protocol.send_queue import SendResult
+    from custom_components.enocean_eltako.websocket import device_details
+
+    entry, server = gateway
+    devices = {d.subentry.title: d for d in entry.runtime_data.devices.values()}
+    flur, bad, cover = devices["Licht Flur"], devices["Licht Bad"], devices["Rollladen"]
+    client = await hass_ws_client(hass)
+
+    async def ask(msg_id: int, device: str, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/sender_test",
+                "entry_id": entry_id or entry.entry_id,
+                "device": device,
+            }
+        )
+        return await client.receive_json()
+
+    assert flur.sender_test_error() == "state_unknown"  # no status heard yet
+    assert (await ask(1, flur.subentry.subentry_id))["error"]["code"] == "state_unknown"
+    assert (await ask(2, cover.subentry.subentry_id))["error"]["code"] == "unsupported"
+    assert (await ask(3, "nope"))["error"]["code"] == "unknown_device"
+    assert (await ask(4, "x", "unknown"))["error"]["code"] == "not_found"
+
+    _push(server, 0x05, b"\x70", 0x0510A2C1, 0x30)  # Licht Flur is on
+    _push(server, 0x05, b"\x70", 0x0510A2C2, 0x30)
+    await _settle(hass)
+    assert flur.sender_test_error() is None and flur.wall_state is True
+
+    async def answers() -> None:  # the actuator answers every command
+        for i in range(60):
+            _push(server, 0x05, bytes([0x70 if i % 2 else 0x50]), 0x0510A2C1, 0x30)
+            await asyncio.sleep(0.05)
+
+    answering = hass.async_create_task(answers())
+    result = await flur.async_test_senders()
+    answering.cancel()
+    assert sorted(result, key=lambda r: r["profile"]) == [
+        {"profile": "central", "id": "FF-B7-44-91", "result": "confirmed"},
+        {"profile": "rocker", "id": "FF-B7-44-92", "result": "confirmed"},
+    ]
+    for sender in ("FFB74491", "FFB74492"):  # the current state went out through both
+        assert bytes.fromhex(sender) in bytes(server.received)
+    assert flur.stats.commands == 0  # the stats of real commands are untouched
+    assert device_details(flur)["sender_test"] is True
+    assert (await bad.async_test_senders())[0]["result"] == "skipped"  # a toggling rocker
+
+    for outcome in (SendResult.UNCONFIRMED, SendResult.FAILED):  # no answer, no connection
+        future = hass.loop.create_future()
+        future.set_result(outcome)
+        flur.entry.runtime_data.queue.submit = lambda *a, _f=future, **k: _f
+        result = await flur.async_test_senders()
+        assert {r["result"] for r in result} == {str(outcome)}

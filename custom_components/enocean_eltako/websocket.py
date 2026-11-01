@@ -63,6 +63,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_send)
     websocket_api.async_register_command(hass, ws_teach_in)
     websocket_api.async_register_command(hass, ws_device_details)
+    websocket_api.async_register_command(hass, ws_sender_test)
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
@@ -522,6 +523,7 @@ def device_details(device: Any) -> dict[str, Any]:
         "signal": {"rssi": stats.rssi, "min": stats.rssi_min, "max": stats.rssi_max},
         "repeat": stats.repeat_count,
         "heard_by": heard_by(device),
+        "sender_test": device.sender_test_error() is None,
         "telegrams": stats.telegrams,
         "interval": model.interval,
         "silent": device.silent,
@@ -594,6 +596,34 @@ def ws_device_details(
         connection.send_error(msg["id"], "unknown_device", "no such device")
         return
     connection.send_result(msg["id"], device_details(device))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/sender_test",
+        vol.Required("entry_id"): str,
+        vol.Required("device"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sender_test(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Which senders of a switching actuator does it answer: its current state, sent through
+    each in turn, at background priority."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    device = entry.runtime_data.devices.get(msg["device"])
+    if device is None:
+        connection.send_error(msg["id"], "unknown_device", "no such device")
+        return
+    if (error := device.sender_test_error()) is not None:
+        connection.send_error(msg["id"], error, "the senders cannot be tested")
+        return
+    connection.send_result(msg["id"], {"results": await device.async_test_senders()})
 
 
 @websocket_api.websocket_command(
