@@ -331,7 +331,7 @@ in den Reiter Sender-IDs springt.
 - **Alle Geräte** hat typisierte Felder, die du direkt bearbeitest: Ort (drei Felder: Schrank,
   Reihe, Platz), Stromkreis, Sicherung, Einbaudatum, Revision (der Datumscode, denn er bestimmt die
   Lernfunktion), Versorgung (Netz, Batterietyp) und eine Notiz. Die Spalten zeigst du über das
-  Menü **Spalten** in Gruppen (Ort und Sicherung, Bus und Funk, Wartung). Die Art-Chips und die
+  Menü **Spalten** in Gruppen (Ort und Sicherung, Bus, Wartung); die Tabelle aller Arten zeigt nur Spalten, die jede Art hat, die übrigen (Bus-Adresse, Versorgung, Revision, Gehört zu) erscheinen, sobald du oben eine Art wählst. Die Art-Chips und die
   Filter **Fehlt: Ort** und **Fehlt: Sicherung** (mit Zähler) grenzen die Zeilen ein, **Gruppieren**
   ordnet sie nach Bereich oder Ort (der Schrank), und **Nächstes ohne Ort** setzt den Cursor ins
   erste Feld, das noch leer ist. Der Fortschritt zählt Geräte, Netzteile und von Hand notierte
