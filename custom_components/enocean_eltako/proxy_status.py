@@ -61,6 +61,11 @@ def summarize(status: dict[str, Any], port: int) -> dict[str, Any] | None:
     }
 
 
+def listed_ports(status: dict[str, Any]) -> list[Any]:
+    """Ports of the gateways the app lists, for telling why none matches ours."""
+    return [g.get("port") for g in status.get("gateways", []) if isinstance(g, dict)]
+
+
 def fallback_state(proxy: dict[str, Any] | None) -> tuple[Any, ...]:
     """What the connection sensor shows of the app's fallback gateway."""
     if not proxy:
@@ -83,14 +88,25 @@ def async_setup_proxy_status(
     async def poll(_now: Any = None) -> None:
         runtime = entry.runtime_data
         before = fallback_state(runtime.proxy)
+        error: dict[str, str] | None = None
         try:
             async with session.get(url, timeout=TIMEOUT) as response:
                 response.raise_for_status()
-                runtime.proxy = summarize(await response.json(), port)
-        except (aiohttp.ClientError, TimeoutError, ValueError) as err:
-            if runtime.proxy is not None:
-                _LOGGER.debug("Proxy app status from %s unavailable: %s", url, err)
+                status = await response.json()
+            runtime.proxy = summarize(status, port)
+            if runtime.proxy is None:
+                error = {
+                    "kind": "gateway",
+                    "detail": f"no gateway with port {port} in the status, it lists "
+                    f"{listed_ports(status)}",
+                }
+        except (aiohttp.ClientError, TimeoutError, ValueError, AttributeError) as err:
             runtime.proxy = None
+            error = {"kind": "request", "detail": f"{type(err).__name__}: {err}"}
+        if error != runtime.proxy_error:  # log a failure when it appears or changes, not every poll
+            if error is not None:
+                _LOGGER.debug("Proxy app status from %s unavailable: %s", url, error["detail"])
+            runtime.proxy_error = error
         if fallback_state(runtime.proxy) != before:  # the connection sensor's attributes
             for listener in list(runtime.connection_listeners):
                 listener()

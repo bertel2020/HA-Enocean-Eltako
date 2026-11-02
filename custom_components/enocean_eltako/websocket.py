@@ -379,6 +379,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "orphan_notes": len(runtime.hub.notes[entry.entry_id].orphans(_device_keys(entry))),
             "disconnected_since": runtime.disconnected_since,
             "proxy": runtime.proxy,
+            "proxy_error": runtime.proxy_error,
             "via_proxy": bool(entry.options.get(CONF_PROXY_REPLAY)),
         }
     return status

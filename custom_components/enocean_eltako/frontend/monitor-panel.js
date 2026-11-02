@@ -2491,7 +2491,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const p = gw.proxy;
     if (!p) {
-      return `<div class="proxy"><span class="tag">${esc(t.viaProxy("", ""))}</span><span class="muted">${esc(t.proxyUnreachable)}</span></div>`;
+      return `<div class="proxy"><span class="tag">${esc(t.viaProxy("", ""))}</span><span class="muted">${esc(gw.proxy_error?.kind === "gateway" ? t.proxyGatewayMissing : t.proxyUnreachable)}</span></div>`;
     }
     const share = Number(p.duty_of_limit ?? 0);
     const level = share >= 80 ? "bad" : share >= 50 ? "warn" : "";

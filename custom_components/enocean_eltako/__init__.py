@@ -108,6 +108,7 @@ class GatewayRuntime:
     connection_listeners: list[Callable[[], None]] = field(default_factory=list)
     gateway_device_id: str | None = None  # device registry ID, parent of all devices
     proxy: dict[str, Any] | None = None  # Device Proxy app status (proxy_status.py)
+    proxy_error: dict[str, str] | None = None  # why proxy is None: {"kind": request|gateway, ...}
     remove_reload_listener: Callable[[], None] | None = None
     drops: deque[float] = field(default_factory=lambda: deque(maxlen=20))  # time.time()
     probed_connection: float = 0.0  # Gateway.connected_at of the connection asked for its base ID
