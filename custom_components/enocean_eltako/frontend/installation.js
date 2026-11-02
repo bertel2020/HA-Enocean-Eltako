@@ -9,14 +9,23 @@ const { ICON, docBus, docTables, esc, foldFree, svg } = await import(`./shared.j
 
 // the typed fields of a device, in table order; installed is a date
 export const INSTALLATION_FIELDS = ["location", "group", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
-// the tabs in groups: the second row of tabs shows the tabs of the group that is open
-const GROUPS = [
-  { id: "site", tabs: ["areas", "devices"] },
-  { id: "senders", tabs: ["gwsenders", "buttons", "radio"] },
-  { id: "bus", tabs: ["bus", "supplies"] },
-  { id: "links", tabs: ["links"] },
-  { id: "log", tabs: ["log"] },
-];
+// the tabs: the devices (with a switch between the views), the sender IDs, the links, the log
+const TABS = ["devices", "gwsenders", "links", "log"];
+// the views of the devices tab, and the kinds of device each one shows
+const VIEWS = ["all", "bus", "funk", "virt"];
+const VIEW_KINDS = { all: null, bus: ["bus", "psu"], funk: ["sensor", "taster", "aktor"], virt: ["virt"] };
+const VIEW_OF = { bus: "bus", psu: "bus", sensor: "funk", taster: "funk", aktor: "funk", virt: "virt" };
+const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
+// the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
+// by what it is: a button, a sensor or an actuator on radio
+const kindOf = (d) => (d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+// a place is written "cabinet · row · slot"; older notes held free text, split at a comma
+const placeParts = (text) => {
+  const value = String(text ?? "");
+  const parts = value.split(value.includes("·") ? "·" : ",").map((p) => p.trim());
+  return [parts[0] ?? "", parts[1] ?? "", parts.slice(2).join(", ")];
+};
+const joinPlace = (parts) => parts.map((p) => p.trim()).join(" · ").replace(/(\s·\s?)+$/, "").replace(/^\s·\s?$/, "");
 const SAVE_DELAY = 600; // ms after the last key
 // the columns of the device table in groups that are shown or hidden
 const COLUMN_GROUPS = {
@@ -52,7 +61,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "areas", last: {}, poolOpen: loadPoolOpen(), columns: loadColumns(), group: "area", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -140,6 +149,27 @@ export const INSTALLATION_STYLE = `
   .installation .load .barbg i.hot { background: var(--warn); }
   .installation .load .r { text-align: right; color: var(--muted); }
   .installation .notes p { margin: 2px 0; }
+  .installation .gbar { flex-wrap: wrap; }
+  .installation .seg button .isub { margin-left: 4px; }
+  .installation .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .installation .chips .isub.lead { min-width: 40px; }
+  .installation button.tag { border: 0; font: inherit; font-size: calc(11px * var(--fs)); cursor: pointer; }
+  .installation button.tag:hover { color: var(--text); }
+  .installation .tag.bus { background: var(--accent-soft); color: var(--accent); }
+  .installation .itable tr.grp td { background: var(--soft); font-weight: 500; cursor: pointer; padding: 6px 8px; }
+  .installation .itable td .dash { color: var(--muted); }
+  .installation .place { display: flex; align-items: center; min-width: 210px; border: 1px solid transparent; border-radius: 6px; }
+  .installation .place:hover { border-color: var(--line); }
+  .installation .place:focus-within { border-color: var(--accent); background: var(--surface); }
+  .installation .place.empty { border: 1px dashed var(--line); }
+  .installation .place input { flex: 1 1 0; min-width: 0; width: 33%; box-sizing: border-box; font: inherit; font-size: calc(12px * var(--fs)); padding: 4px 6px; border: 0; background: transparent; color: inherit; }
+  .installation .place input:focus { outline: none; }
+  .installation .place i { color: var(--muted); font-style: normal; }
+  .installation details.colmenu { position: relative; }
+  .installation details.colmenu summary { list-style: none; cursor: pointer; }
+  .installation details.colmenu summary::-webkit-details-marker { display: none; }
+  .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 `;
 
 const gateways = (doc) => doc?.gateways ?? [];
@@ -214,16 +244,14 @@ export const installation = {
       this._replace(el, `<div class="ibody"><div class="none">${esc(state.error ? t.inst.failed : t.loading)}</div></div>`);
       return;
     }
-    const group = GROUPS.find((g) => g.tabs.includes(state.tab)) ?? GROUPS[0];
-    state.last[group.id] = state.tab;
     const tab = (name, label, selected) => `<button class="itab" role="tab" data-in-tab="${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${esc(label)}</button>`;
-    const groups = GROUPS.map((g) => tab(state.last[g.id] ?? g.tabs[0], t.inst.groups[g.id], g === group)).join("");
-    const subtabs = group.tabs.length > 1 ? `<div class="isubtabs" role="tablist">${group.tabs.map((name) => tab(name, t.inst.tabs[name], state.tab === name)).join("")}</div>` : "";
+    const groups = TABS.map((name) => tab(name, t.inst.tabNames[name], state.tab === name)).join("");
+    const subtabs = "";
     const item = (act, icon, label) => `<button data-in-act="${act}">${esc(label)}</button>`;
     const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
       <details class="imenu"><summary class="chip">${svg(ICON.download)}${esc(t.inst.output)}</summary><div class="items">${item("csv", "", t.inst.csvDevices)}${item("csv-tables", "", t.inst.links.tablesCsv)}${item("csv-links", "", t.inst.links.csvShort)}<hr>${item("json", "", "JSON")}</div></details>
       <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
-    const body = { areas: () => this._instAreas(), devices: () => this._instDevices(), gwsenders: () => this._instSenders(), buttons: () => this._instButtons(), radio: () => this._instRadio(), bus: () => this._instBus(), supplies: () => this._instSupplies(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
+    const body = { devices: () => this._instDevicesTab(), gwsenders: () => this._instSenders(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
     this._setManage();
     this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${tools}</div></div>${subtabs}`);
     this._replace(el, `<div class="ibody">${body}</div>`);
@@ -332,62 +360,103 @@ export const installation = {
     return `<p class="isub">${esc(t.doc.supplyHint)}</p>` + (gw.map((g) => `<section class="gw">${this._instGwHead(g)}${this._manualEditor(g, "supply")}</section>`).join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
   },
 
-  _instAreas() {
-    const t = this._t;
+  _instDevicesTab() {
+    // the devices in one of four views: all, on the Eltako bus, on radio, virtual
+    const t = this._t.inst;
     const state = this._in;
-    const seg = (group, label) => `<button data-in-group="${group}" aria-pressed="${state.group === group}">${esc(label)}</button>`;
-    const groupBy = `<div class="gbar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("area", t.inst.byArea)}${seg("location", t.inst.byPlace)}</div></div>`;
-    const sections = gateways(state.doc).map((gw) => {
-      const groups = new Map();
-      for (const d of gw.devices) {
-        const key = (state.group === "area" ? d.area : d.location) || t.inst.noGroup;
-        groups.set(key, [...(groups.get(key) ?? []), d]);
-      }
-      const cards = [...groups.entries()]
-        .sort(([a], [b]) => (a === t.inst.noGroup) - (b === t.inst.noGroup) || a.localeCompare(b))
-        .map(([name, devices]) => {
-          const todo = devices.filter(open).length;
-          const items = devices.map((d) => `<li>${esc(d.name)} <span class="isub">${esc(d.id)}${d.virtual ? ` · ${esc(t.doc.virtual)}` : ""}${d.location && state.group === "area" ? ` · ${esc(d.location)}` : ""}</span></li>`).join("");
-          return `<div class="gcard"><b>${esc(name)}</b><ul>${items}</ul>${todo ? `<span class="open">${esc(t.inst.openItems(todo))}</span>` : ""}</div>`;
-        })
-        .join("");
-      return `<section class="gw">${this._instGwHead(gw, gw.devices.length)}${cards ? `<div class="cards">${cards}</div>` : this._instEmpty(gw)}</section>`;
-    });
-    return groupBy + sections.join("");
+    const all = gateways(state.doc).flatMap((gw) => gw.devices);
+    const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
+    const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
+    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus() + this._instSupplies(), funk: () => this._instButtons() + this._instRadio() }[state.view]();
+    return `<div class="gbar"><div class="seg" role="group">${seg}</div></div>${body}`;
+  },
+
+  _instPlace(gw, d) {
+    // the place as three fields that look like one: cabinet, row, slot
+    const parts = placeParts(d.location);
+    const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
+    return `<div class="place${d.location ? "" : " empty"}" data-in-place data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}">${inputs}</div>`;
+  },
+
+  _instProgress() {
+    // how many devices have a place; virtual devices have none to give
+    const t = this._t.inst;
+    const all = gateways(this._in.doc).flatMap((gw) => gw.devices).filter((d) => !d.virtual);
+    const placed = all.filter((d) => d.location).length;
+    if (!all.length) return "";
+    const pct = Math.round((placed / all.length) * 100);
+    return `<div class="progress"><span>${esc(t.progress(placed, all.length))}</span><div class="barbg"><i style="width:${pct}%"></i></div><span>${pct} %</span>${placed < all.length ? `<button class="chip" data-in-act="next-open">${esc(t.nextOpen)}</button>` : ""}</div>`;
   },
 
   _instDevices() {
     const t = this._t;
+    const I = t.inst;
     const state = this._in;
+    const kinds = VIEW_KINDS[state.view];
     const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
+    const showArea = state.columns.has("place");
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
-    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(t.inst.search)}" aria-label="${esc(t.inst.search)}">`;
-    const sections = gateways(state.doc).map((gw) => {
-      const devices = gw.devices.filter((d) => matches(d, state.q));
-      const rows = devices
-        .map((d) => {
-          const cells = columns
-            .map((f) => `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`)
-            .join("");
-          const picked = state.selected.has(key(gw, d));
-          return `<tr><td><input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}"></td><td class="name">${esc(d.name)}<div class="isub">${esc(d.id)}${d.area ? ` · ${esc(d.area)}` : ""}</div></td>${cells}</tr>`;
+    const applies = (d, f) => (d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const pass = (d) => matches(d, state.q)
+      && (!kinds || kinds.includes(kindOf(d)))
+      && (state.art === "all" || kindOf(d) === state.art)
+      && (!state.miss.loc || (!d.virtual && !d.location))
+      && (!state.miss.fuse || (FUSE_KINDS.has(kindOf(d)) && !d.fuse));
+    const kindTag = (d) => `<button class="tag${kindOf(d) === "bus" ? " bus" : ""}" data-in-kind="${kindOf(d)}" title="${esc(I.kindHint)}">${esc(I.kinds[kindOf(d)])}${kindOf(d) === "bus" ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+    const span = columns.length + (showArea ? 1 : 0) + 2;
+    const row = (gw, d) => {
+      const cells = columns
+        .map((f) => {
+          if (!applies(d, f)) return `<td><span class="dash">–</span></td>`;
+          if (f === "location") return `<td>${this._instPlace(gw, d)}</td>`;
+          return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
         })
         .join("");
+      const picked = state.selected.has(key(gw, d));
+      const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
+      return `<tr><td><input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}"></td><td class="name">${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${kindTag(d)}</div></td>${area}${cells}</tr>`;
+    };
+    const sections = gateways(state.doc).map((gw) => {
+      const devices = gw.devices.filter(pass);
+      let rows;
+      if (state.group && devices.length) {
+        const groups = new Map();
+        for (const d of devices) {
+          const name = d.virtual && state.group === "location" ? I.virtualNoPlace : (state.group === "area" ? d.area : placeParts(d.location)[0]) || (state.group === "area" ? I.noGroup : I.noPlace);
+          groups.set(name, [...(groups.get(name) ?? []), d]);
+        }
+        const rank = (n) => (n === I.virtualNoPlace ? 2 : n === I.noGroup || n === I.noPlace ? 1 : 0);
+        rows = [...groups.entries()]
+          .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
+          .map(([name, list]) => {
+            const id = `${gw.entry_id}|${name}`;
+            const closed = state.folded.has(id);
+            return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="isub">${list.length}</span></td></tr>${closed ? "" : list.map((d) => row(gw, d)).join("")}`;
+          })
+          .join("");
+      } else rows = devices.map((d) => row(gw, d)).join("");
       const head = columns.map((f) => `<th>${esc(label(t, f))}</th>`).join("");
-      return `<section class="gw">${this._instGwHead(gw, devices.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(t.inst.device)}</th>${head}</tr></thead><tbody>${rows || `<tr><td colspan="${columns.length + 2}" class="none">${esc(t.inst.noDevices)}</td></tr>`}</tbody></table></div></section>`;
+      return `<section class="gw">${this._instGwHead(gw, devices.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(I.device)}</th>${showArea ? `<th>${esc(I.area)}</th>` : ""}${head}</tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div></section>`;
     });
     const picked = state.selected.size;
     const bulk = picked
-      ? `<div class="bulk"><b>${esc(t.inst.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(t.inst.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(t.inst.value)}" aria-label="${esc(t.inst.value)}"><button class="chip" data-in-act="bulk">${esc(t.inst.apply)}</button><button class="chip" data-in-act="unpick">${esc(t.inst.clearSelection)}</button></div>`
+      ? `<div class="bulk"><b>${esc(I.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(I.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(I.value)}" aria-label="${esc(I.value)}"><button class="chip" data-in-act="bulk">${esc(I.apply)}</button><button class="chip" data-in-act="unpick">${esc(I.clearSelection)}</button></div>`
       : "";
-    const paste = `<details><summary>${esc(t.inst.pasteTitle)}</summary><div style="display:grid;gap:8px;margin-top:8px"><span class="isub">${esc(t.inst.pasteHint)}</span><textarea class="paste" data-in-paste placeholder="${esc(t.inst.pastePlaceholder)}" aria-label="${esc(t.inst.pasteTitle)}">${esc(state.paste)}</textarea><div><button class="chip" data-in-act="paste">${esc(t.inst.apply)}</button> <button class="chip" data-in-act="copy-table">${esc(t.inst.copyTable)}</button> <span class="isub">${esc(state.pasteResult)}</span></div></div></details>`;
-    const groupChips = Object.keys(COLUMN_GROUPS).map((g) => `<button class="chip" data-in-columns="${g}" aria-pressed="${state.columns.has(g)}">${esc(t.inst.columnGroups[g])}</button>`).join("");
-    const all = gateways(state.doc).flatMap((gw) => gw.devices).filter((d) => !d.virtual);
-    const placed = all.filter((d) => d.location).length;
-    const progress = all.length
-      ? `<div class="progress"><span>${esc(t.inst.progress(placed, all.length))}</span><div class="barbg"><i style="width:${Math.round((placed / all.length) * 100)}%"></i></div><span>${Math.round((placed / all.length) * 100)} %</span></div>`
+    const paste = `<details><summary>${esc(I.pasteTitle)}</summary><div style="display:grid;gap:8px;margin-top:8px"><span class="isub">${esc(I.pasteHint)}</span><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div><button class="chip" data-in-act="paste">${esc(I.apply)}</button> <button class="chip" data-in-act="copy-table">${esc(I.copyTable)}</button> <span class="isub">${esc(state.pasteResult)}</span></div></div></details>`;
+    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}</div></details>`;
+    const present = gateways(state.doc).flatMap((gw) => gw.devices);
+    const kindList = (kinds ?? ["bus", "sensor", "taster", "aktor", "virt"]).filter((k) => k !== "psu");
+    const artChips = kindList.length > 1
+      ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
-    return `${progress}<div class="itools" style="align-items:center"><span class="isub">${esc(t.inst.columns)}</span>${groupChips}<span style="flex:1"></span>${search}</div>${bulk}${sections.join("")}${paste}`;
+    const missChips = state.view === "all"
+      ? `<div class="chips"><span class="isub lead">${esc(I.missing)}</span><button class="chip" data-in-miss="loc" aria-pressed="${state.miss.loc}">${esc(label(t, "location"))} <b>${present.filter((d) => !d.virtual && !d.location).length}</b></button><button class="chip" data-in-miss="fuse" aria-pressed="${state.miss.fuse}">${esc(label(t, "fuse"))} <b>${present.filter((d) => FUSE_KINDS.has(kindOf(d)) && !d.fuse).length}</b></button></div>`
+      : "";
+    const group = state.view === "all"
+      ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
+      : "";
+    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span>${menu}</div>${artChips}${missChips}${state.view === "all" ? this._instProgress() : ""}${bulk}${sections.join("")}${paste}`;
   },
 
   _instLinks() {
@@ -459,11 +528,51 @@ export const installation = {
   _installationClick(e) {
     const state = this._in;
     if (this._manualEdit(e)) return; // the rows of power supplies and entries by hand
+    if (state.colMenu && !e.target.closest(".colmenu")) {
+      state.colMenu = false;
+      this.shadowRoot.querySelector("#installation details.colmenu")?.removeAttribute("open");
+    }
     const tab = e.target.closest("[data-in-tab]");
     if (tab) {
       state.tab = tab.dataset.inTab;
       this._renderInstallation();
       if (this._managing()) this._loadPools();
+      return;
+    }
+    const view = e.target.closest("[data-in-view]");
+    if (view) {
+      state.view = view.dataset.inView;
+      state.art = "all";
+      state.selected.clear();
+      this._renderInstallation();
+      return;
+    }
+    const art = e.target.closest("[data-in-art]");
+    if (art) {
+      state.art = art.dataset.inArt;
+      this._renderInstallation();
+      return;
+    }
+    const miss = e.target.closest("[data-in-miss]");
+    if (miss) {
+      state.miss[miss.dataset.inMiss] = !state.miss[miss.dataset.inMiss];
+      this._renderInstallation();
+      return;
+    }
+    const kind = e.target.closest("[data-in-kind]");
+    if (kind) {
+      // a kind tag opens the view that belongs to it
+      state.view = VIEW_OF[kind.dataset.inKind] ?? "all";
+      state.art = "all";
+      this._renderInstallation();
+      return;
+    }
+    const fold = e.target.closest("[data-in-fold]");
+    if (fold) {
+      const id = fold.dataset.inFold;
+      if (state.folded.has(id)) state.folded.delete(id);
+      else state.folded.add(id);
+      this._renderInstallation();
       return;
     }
     const free = e.target.closest("[data-in-free]");
@@ -498,6 +607,7 @@ export const installation = {
     const columns = e.target.closest("[data-in-columns]");
     if (columns) {
       const name = columns.dataset.inColumns;
+      state.colMenu = true;
       if (state.columns.has(name)) state.columns.delete(name);
       else state.columns.add(name);
       try {
@@ -505,12 +615,6 @@ export const installation = {
       } catch (err) {
         // not saved: shown for this visit
       }
-      this._renderInstallation();
-      return;
-    }
-    const group = e.target.closest("[data-in-group]");
-    if (group) {
-      state.group = group.dataset.inGroup;
       this._renderInstallation();
       return;
     }
@@ -529,10 +633,24 @@ export const installation = {
     } else if (act === "bulk") this._instBulk();
     else if (act === "paste") this._instPaste();
     else if (act === "copy-table") this._instCopyTable();
+    else if (act === "next-open") {
+      // the devices without a place, the cursor in the first one
+      state.view = "all";
+      state.art = "all";
+      state.miss.loc = true;
+      this._renderInstallation();
+      this.shadowRoot.querySelector("#installation .place input")?.focus();
+    }
     else if (act === "add-link") this._instAddLink(e.target.closest("[data-in-act]").dataset.inGw);
   },
 
   _installationChange(e) {
+    const groupsel = e.target.closest("[data-in-groupsel]");
+    if (groupsel) {
+      this._in.group = groupsel.value;
+      this._renderInstallation();
+      return;
+    }
     const pick = e.target.closest("[data-in-pick]");
     if (!pick) return;
     const selected = this._in.selected;
@@ -555,6 +673,14 @@ export const installation = {
         this._renderInstallation();
         this.shadowRoot.querySelector("[data-in-search]")?.focus();
       }, 250);
+      return;
+    }
+    const part = e.target.closest("[data-in-part]");
+    if (part) {
+      const box = part.closest("[data-in-place]");
+      box.classList.toggle("empty", ![...box.querySelectorAll("input")].some((i) => i.value.trim()));
+      clearTimeout(box._saving);
+      box._saving = setTimeout(() => this._instSavePlace(box), SAVE_DELAY);
       return;
     }
     const learn = e.target.closest("[data-in-learn], [data-in-efield]");
@@ -606,6 +732,24 @@ export const installation = {
         if (other !== cell && other.value !== cell.value) other.value = cell.value;
       });
     } else this._instMark(cell, this._t.inst.errors.refused); // refused: a date that is none, or the device is gone
+  },
+
+  async _instSavePlace(box) {
+    // the three parts of a place go to the server as one text, "cabinet · row · slot"
+    const { inGw: entryId, inKey: key } = box.dataset;
+    const device = this._instDevice(entryId, key);
+    const value = joinPlace([...box.querySelectorAll("input")].map((i) => i.value));
+    if (!device || (device.location ?? "") === value) return;
+    const reply = await this._instSend(entryId, [{ device: key, values: { location: value } }]);
+    if (!reply?.saved) {
+      box.classList.add("bad");
+      return;
+    }
+    device.location = value;
+    box.classList.remove("bad");
+    // the progress follows; the rows stay as they are, so the cursor stays where it is
+    const bar = this.shadowRoot.querySelector("#installation .progress");
+    if (bar) bar.outerHTML = this._instProgress();
   },
 
   async _instSend(entryId, items) {

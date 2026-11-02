@@ -72,6 +72,11 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     viewInstallation: "Installation",
     inst: {
+      tabNames: { devices: "Devices", gwsenders: "Sender IDs", links: "Links", log: "Log" },
+      views: { all: "All devices", bus: "Bus", funk: "Radio", virt: "Virtual" },
+      kinds: { bus: "Eltako bus", sensor: "Radio sensor", taster: "Radio button", aktor: "Radio actuator", virt: "Virtual", psu: "Power supply" },
+      kindHint: "Open the view of this kind", art: "Kind", all: "All", missing: "Missing", nextOpen: "Next without a place",
+      groupNone: "None", noPlace: "No place", virtualNoPlace: "Virtual (no place)", area: "Area", placeParts: ["Cabinet", "Row", "Slot"],
       tabs: { areas: "Overview", devices: "Table", gwsenders: "Gateway senders", buttons: "Buttons", radio: "Radio senders", bus: "Eltako bus", supplies: "Power supplies", links: "Links", log: "Log" },
       groups: { site: "Devices", senders: "Senders", bus: "Bus", links: "Links", log: "Log" },
       output: "Output", csvDevices: "Devices as CSV", columns: "Columns", columnGroups: { place: "Place and fuse", bus: "Bus and radio", upkeep: "Upkeep" },
@@ -448,6 +453,11 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
     viewInstallation: "Anlage",
     inst: {
+      tabNames: { devices: "Geräte", gwsenders: "Sender-IDs", links: "Verbindungen", log: "Protokoll" },
+      views: { all: "Alle Geräte", bus: "Bus", funk: "Funk", virt: "Virtuell" },
+      kinds: { bus: "Eltako-Bus", sensor: "Funk Sensor", taster: "Funk Taster", aktor: "Funk Aktor", virt: "Virtuell", psu: "Netzteil" },
+      kindHint: "Die Ansicht dieser Art öffnen", art: "Art", all: "Alle", missing: "Fehlt", nextOpen: "Nächstes ohne Ort",
+      groupNone: "Keine", noPlace: "Ohne Ort", virtualNoPlace: "Virtuell (kein Ort)", area: "Bereich", placeParts: ["Schrank", "Reihe", "Platz"],
       tabs: { areas: "Übersicht", devices: "Tabelle", gwsenders: "Gateway-Sender", buttons: "Taster", radio: "Funk-Sender", bus: "Eltako-Bus", supplies: "Netzteile", links: "Verbindungen", log: "Protokoll" },
       groups: { site: "Geräte", senders: "Sender", bus: "Bus", links: "Verbindungen", log: "Protokoll" },
       output: "Ausgabe", csvDevices: "Geräte als CSV", columns: "Spalten", columnGroups: { place: "Ort und Sicherung", bus: "Bus und Funk", upkeep: "Wartung" },
