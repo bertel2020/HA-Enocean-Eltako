@@ -15,6 +15,14 @@ const TABS = ["devices", "gwsenders", "links", "log"];
 const VIEWS = ["all", "bus", "funk", "virt"];
 const VIEW_KINDS = { all: null, bus: ["bus", "psu"], funk: ["sensor", "taster", "aktor"], virt: ["virt"] };
 const VIEW_OF = { bus: "bus", psu: "bus", sensor: "funk", taster: "funk", aktor: "funk", virt: "virt" };
+// which kinds a field makes sense for (a field not listed here is for every kind): a button has no circuit or
+// fuse, a sensor no bus address, a bus device no battery
+const FIELD_KINDS = {
+  circuit: ["bus", "aktor"], fuse: ["bus", "aktor"], group: ["bus", "sensor", "aktor"], revision: ["bus", "aktor"],
+  bus_address: ["bus"], feedback_id: ["bus"], bus_power: ["bus"], power: ["taster", "sensor", "aktor"],
+};
+// the fields every kind has: the table of all kinds shows only these; the others appear when a kind is chosen
+const COMMON_FIELDS = new Set(["location", "circuit", "fuse", "installed", "note"]);
 const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
 // the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
 // by what it is: a button, a sensor or an actuator on radio
@@ -116,6 +124,7 @@ export const INSTALLATION_STYLE = `
   .installation .itable input.cell[data-in-field="feedback_id"] { min-width: 100px; }
   .installation .itable input.cell[data-in-field="bus_power"] { min-width: 72px; max-width: 96px; text-align: right; }
   .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"] { font-family: ui-monospace, monospace; font-size: calc(12px * var(--fs)); }
+  .installation .itable input.cell::placeholder { color: color-mix(in srgb, var(--muted) 60%, transparent); }
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
@@ -640,25 +649,31 @@ export const installation = {
     const I = t.inst;
     const state = this._in;
     const kinds = VIEW_KINDS[state.view];
-    const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
+    // the fields the column menu has on; a table shows those that some of its rows can use
+    const enabled = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
+    const short = (f) => I.shortField[f] || label(t, f);
     const showArea = state.columns.has("place");
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
-    const applies = (d, f) => (d.manual ? f in MANUAL_FIELD : d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : isVirtual(d) ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const applies = (d, f) => {
+      if (d.psu) return ["location", "circuit", "fuse", "note"].includes(f);
+      if (d.manual) return f === "location" || f === "note" || (kindOf(d) === "bus" ? ["bus_address", "feedback_id", "bus_power"].includes(f) : f === "power");
+      if (isVirtual(d)) return f === "note";
+      return !FIELD_KINDS[f] || FIELD_KINDS[f].includes(kindOf(d));
+    };
     const psus = (gw) => this._instExtras(gw);
     const pass = (d) => matches(d, state.q)
       && (!kinds || kinds.includes(kindOf(d)))
       && (state.art === "all" || kindOf(d) === state.art)
       && (!state.miss.loc || (!isVirtual(d) && !d.location))
       && (!state.miss.fuse || (FUSE_KINDS.has(kindOf(d)) && !d.fuse));
-    const span = columns.length + (showArea ? 1 : 0) + 2;
-    const row = (gw, d) => {
+    const row = (gw, d, columns) => {
       const cells = columns
         .map((f) => {
           if (!applies(d, f)) return `<td><span class="dash">–</span></td>`;
           if (f === "location") return `<td>${this._instPlace(gw, d)}</td>`;
-          if (d.manual) return `<td><input class="cell" data-in-mfield="${MANUAL_FIELD[f]}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
-          if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
-          return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          if (d.manual) return `<td><input class="cell" data-in-mfield="${MANUAL_FIELD[f]}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
         })
         .join("");
       const picked = state.selected.has(key(gw, d));
@@ -668,6 +683,8 @@ export const installation = {
     };
     const sections = gateways(state.doc).map((gw) => {
       const devices = [...gw.devices, ...psus(gw)].filter(pass);
+      const columns = enabled.filter((f) => (state.art !== "all" || COMMON_FIELDS.has(f)) && devices.some((d) => applies(d, f)));
+      const span = columns.length + (showArea ? 1 : 0) + 2;
       let rows;
       if (state.group && devices.length) {
         const groups = new Map();
@@ -681,10 +698,10 @@ export const installation = {
           .map(([name, list]) => {
             const id = `${gw.entry_id}|${name}`;
             const closed = state.folded.has(id);
-            return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="isub">${list.length}</span></td></tr>${closed ? "" : list.map((d) => row(gw, d)).join("")}`;
+            return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="isub">${list.length}</span></td></tr>${closed ? "" : list.map((d) => row(gw, d, columns)).join("")}`;
           })
           .join("");
-      } else rows = devices.map((d) => row(gw, d)).join("");
+      } else rows = devices.map((d) => row(gw, d, columns)).join("");
       const head = columns.map((f) => `<th>${esc(label(t, f))}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw, devices.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(I.device)}</th>${showArea ? `<th>${esc(I.area)}</th>` : ""}${head}</tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div></section>`;
     });
@@ -698,7 +715,7 @@ export const installation = {
         <li><b>2</b><div>${esc(I.sheetEdit)}</div></li>
         <li><b>3</b><div><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div class="sheetrun"><button class="chip" data-in-act="paste">${esc(I.sheetApply)}</button> <span class="isub" data-in-paste-info>${esc(state.pasteResult || this._instPasteSeen())}</span></div></div></li>
       </ol></details>`;
-    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}</div></details>`;
+    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}<span class="isub">${esc(I.columnsHint)}</span></div></details>`;
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
     const artChips = kindList.length > 1

@@ -313,7 +313,8 @@ jumps to the Sender IDs tab.
 - **All devices** has typed fields you edit in place: place (three fields: cabinet, row, slot),
   circuit, fuse, installation date, revision (the date code, as it decides the learn function),
   supply (mains, battery type) and a note. The **Columns** menu shows them in groups (place and
-  fuse, bus and radio, upkeep). The kind chips and the filters **Missing: Place** and **Missing:
+  fuse, bus, upkeep); the table of all kinds shows only the columns every kind has, the others (bus address,
+  supply, revision, part of) appear once you choose a kind above. The kind chips and the filters **Missing: Place** and **Missing:
   Fuse** (with a count) narrow the rows, **Group by** orders them by area or place (the cabinet),
   and **Next without a place** puts the cursor in the first field that is still empty. The
   progress counts devices, power supplies and entries written down by hand, but not virtual

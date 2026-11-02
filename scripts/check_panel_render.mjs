@@ -128,12 +128,18 @@ for (const lang of ["en", "de"]) {
     expect("the bus columns are hidden at first", root.querySelector('#installation [data-in-field="bus_address"]'), null);
     root.querySelector('#installation [data-in-columns="bus"]').click();
     await settle();
+    expect("the bus columns wait for a kind", root.querySelector('#installation [data-in-field="bus_address"]'), null);
+    root.querySelector('#installation [data-in-art="bus"]').click();
+    await settle();
+    expect("a kind shows only the columns it can use", root.querySelector('#installation [data-in-field="power"]'), null);
     const addrCell = root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"]');
     addrCell.value = "999";
     addrCell.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect("a wrong bus address is named under the field", !!root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"] + .cerr'), true);
     expect("a wrong bus address is not sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length, sentBefore);
+    root.querySelector('#installation [data-in-art="all"]').click();
+    await settle();
     expect("the upkeep columns are hidden at first", root.querySelector('#installation [data-in-field="installed"]'), null);
     root.querySelector('#installation [data-in-columns="upkeep"]').click();
     await settle();
