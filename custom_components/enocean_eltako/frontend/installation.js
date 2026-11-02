@@ -84,7 +84,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -184,6 +184,29 @@ export const INSTALLATION_STYLE = `
   .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .installation .docform .cerr { width: 100%; }
   .installation .itable select.cell { font: inherit; font-size: calc(12px * var(--fs)); padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+  .installation .lcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+  .installation .lhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; background: var(--soft); }
+  .installation .lhead .grow { flex: 1; }
+  .installation .lhead b { font-weight: 500; font-size: calc(14px * var(--fs)); }
+  .installation .lrow { display: grid; grid-template-columns: minmax(150px, 1.5fr) auto minmax(110px, 1fr) minmax(120px, 1fr) 30px; gap: 8px 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .installation .lrow input.cell { border-color: var(--line); }
+  .installation .lnone { padding: 10px 12px; color: var(--warn); font-size: calc(13px * var(--fs)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .installation .ladd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .installation .ladd input, .installation .ladd select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+  .installation .tag.src-assigned { background: color-mix(in srgb, var(--warn) 20%, transparent); color: inherit; }
+  .installation .tag.src-declared { background: var(--accent-soft); color: var(--accent); }
+  .installation .tag.src-entered { background: color-mix(in srgb, var(--ok) 18%, transparent); color: inherit; }
+  .installation .tag.role { background: var(--accent-soft); color: var(--accent); }
+  .installation .lrow > * { min-width: 0; }
+  .installation .lstate { overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: calc(12px * var(--fs)); }
+  .installation table.matrix th, .installation table.matrix td { text-align: center; min-width: 76px; }
+  .installation table.matrix th:first-child, .installation table.matrix td:first-child { text-align: left; min-width: 150px; }
+  .installation .mcell { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: calc(11px * var(--fs)); border: 1px solid var(--line); }
+  .installation .mcell.assigned { background: color-mix(in srgb, var(--warn) 20%, transparent); border-color: transparent; }
+  .installation .mcell.declared { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .installation .mcell.entered { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: transparent; }
+  .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; }
+  @media (max-width: 720px) { .installation .lrow { grid-template-columns: minmax(0, 1fr) 30px; } }
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
   .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
@@ -661,57 +684,140 @@ export const installation = {
   },
 
   _instLinks() {
-    // who is taught into which actuator; every link says where it comes from and what proves it
+    // who is taught into which actuator: cards by actuator or by sender, or a matrix of both
     const t = this._t;
     const state = this._in;
     const L = t.inst.links;
+    const seg = (view, text) => `<button data-in-linkview="${view}" aria-pressed="${state.linkView === view}">${esc(text)}</button>`;
+    const bar = `<div class="gbar"><div class="seg" role="group">${seg("actuator", L.byActuator)}${seg("sender", L.bySender)}${seg("matrix", L.matrix)}</div></div><div class="isub">${esc(L.honest)}</div>`;
+    const sections = gateways(state.doc).map((gw) => `<section class="gw">${this._instGwHead(gw)}${this._instLinksOf2(gw)}</section>`);
+    return bar + (sections.join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
+  },
+
+  _instLinkModel(gw) {
+    // the actuators and the senders of a gateway as the cards show them
+    const plain = (id) => String(id ?? "").replaceAll("-", "").toUpperCase();
+    const byNote = new Map(gw.devices.map((d) => [d.note_key, d]));
+    const byId = new Map(gw.devices.filter((d) => d.id).map((d) => [plain(d.id), d]));
+    const actuators = new Map();
+    for (const d of gw.devices) if (!isVirtual(d) && ["lighting", "covers", "climate"].includes(d.category)) actuators.set(d.note_key, { key: d.note_key, device: d, name: d.name, id: d.id, links: [] });
+    for (const l of gw.links) {
+      const key = l.to_key || `name|${l.to_name}`;
+      if (!actuators.has(key)) actuators.set(key, { key, device: byNote.get(l.to_key) ?? null, name: l.to_name, id: l.to_id, links: [] });
+      actuators.get(key).links.push(l);
+    }
+    const senders = new Map();
+    for (const l of gw.links) {
+      const key = l.from_id ? plain(l.from_id) : `name|${l.from_name}`;
+      if (!senders.has(key)) senders.set(key, { key, id: l.from_id, name: l.from_kind === "entered" ? l.from_name : "", kind: l.from_kind, device: byId.get(plain(l.from_id)) ?? null, links: [] });
+      senders.get(key).links.push(l);
+    }
+    return { plain, byNote, byId, actuators: [...actuators.values()].sort((a, b) => a.name.localeCompare(b.name)), senders: [...senders.values()].sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id)) };
+  },
+
+  _instLinksOf2(gw) {
+    const t = this._t;
+    const L = t.inst.links;
+    const state = this._in;
+    const model = this._instLinkModel(gw);
+    const testable = (a) => a.device && a.device.category === "lighting" && (a.device.senders ?? []).length > 0;
+    const untested = (l) => l.source === "assigned" && l.status === "unverified";
+    const nTested = model.actuators.flatMap((a) => (testable(a) ? a.links.filter((l) => l.source === "assigned") : []));
+    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const without = model.actuators.filter((a) => !a.links.length && a.device).length;
+    const noAnswer = gw.links.filter((l) => l.status === "no_answer").length;
+    const notTested = nTested.filter(untested).length;
+    const tiles = `<div class="tiles">${tile(L.tiles.actuators, String(model.actuators.length))}${tile(L.tiles.links, String(gw.links.length))}${tile(L.tiles.none, String(without), without > 0)}${tile(L.tiles.noAnswer, String(noAnswer), noAnswer > 0)}${tile(L.tiles.untested, String(notTested))}</div>`;
+    const chip = (attr, value, current, text, count = null) => `<button class="chip" ${attr}="${value}" aria-pressed="${current === value}">${esc(text)}${count === null ? "" : ` <b>${count}</b>`}</button>`;
+    const filters = state.linkView === "matrix" ? "" : `<div class="chips"><span class="isub lead">${esc(L.show)}</span>${chip("data-in-linkfilter", "all", state.linkFilter, L.filters.all)}${chip("data-in-linkfilter", "none", state.linkFilter, L.filters.none, without)}${chip("data-in-linkfilter", "untested", state.linkFilter, L.filters.untested, notTested)}${chip("data-in-linkfilter", "noanswer", state.linkFilter, L.filters.noanswer, noAnswer)}</div><div class="chips"><span class="isub lead">${esc(L.source.title)}</span>${chip("data-in-linksource", "all", state.linkSource, L.filters.all)}${["assigned", "declared", "entered"].map((x) => chip("data-in-linksource", x, state.linkSource, L.source[x])).join("")}</div>`;
+    const passLink = (l) => (state.linkSource === "all" || l.source === state.linkSource) && (state.linkFilter !== "untested" || untested(l)) && (state.linkFilter !== "noanswer" || l.status === "no_answer");
+    const body = state.linkView === "matrix" ? this._instLinkMatrix(gw, model) : state.linkView === "sender" ? this._instLinkBySender(gw, model, passLink) : this._instLinkByActuator(gw, model, passLink, testable);
+    return `${tiles}${filters}${body}`;
+  },
+
+  _instLinkRow(gw, l, model, mode) {
+    // one link: the other end, the role and where it comes from, the learn position, the state and proof
+    const t = this._t;
+    const L = t.inst.links;
     const when = (iso) => new Date(iso).toLocaleString(this._hass.language);
-    const seg = (group, text) => `<button data-in-link-group="${group}" aria-pressed="${state.linkGroup === group}">${esc(text)}</button>`;
-    const toggle = `<div class="gbar"><span class="isub">${esc(t.inst.groupBy)}</span><div class="seg" role="group">${seg("actuator", L.byActuator)}${seg("sender", L.bySender)}</div></div>
-      <div class="isub">${esc(L.honest)}</div>`;
-    const input = (gw, attr, value, placeholder, extra = "") => `<input class="cell" ${attr} data-in-gw="${esc(gw.entry_id)}" value="${esc(value)}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" autocomplete="off" ${extra}>`;
-    const fromLabel = (l) => (l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${L.from[l.from_kind]} · ${l.from_id}`);
-    const role = (l) => (l.source === "assigned" ? this._profile(l.role) : l.role);
-    const evidence = (l) => [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean).join(" · ");
-    const status = (l) => `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>`;
-    const row = (gw, l, target) => {
-      const learn = l.source === "entered"
-        ? input(gw, `data-in-efield="learn" data-in-eid="${esc(l.id)}"`, l.learn, L.learn)
-        : input(gw, `data-in-learn="${esc(l.key)}"`, l.learn, L.learn);
-      const cells = l.source === "entered"
-        ? `<td>${input(gw, `data-in-efield="from_name" data-in-eid="${esc(l.id)}"`, l.from_name, L.fromName)}${input(gw, `data-in-efield="from_id" data-in-eid="${esc(l.id)}"`, l.from_id, L.fromId)}</td><td>${input(gw, `data-in-efield="role" data-in-eid="${esc(l.id)}"`, l.role, L.role)}</td>`
-        : `<td>${esc(target ? l.to_name : fromLabel(l))}<div class="isub">${esc(target ? l.to_id : "")}</div></td><td>${esc(role(l))}</td>`;
-      const first = l.source === "entered" ? "" : "";
-      return `<tr>${cells}<td>${learn}</td><td>${status(l)}<div class="isub">${esc(evidence(l))}</div></td><td>${l.source === "entered" ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>` : `<span class="isub">${esc(L.source[l.source])}</span>`}${first}</td></tr>`;
-    };
-    const head = `<thead><tr><th>${esc(L.from.title)}</th><th>${esc(L.role)}</th><th>${esc(L.learn)}</th><th>${esc(L.state)}</th><th></th></tr></thead>`;
-    const sections = gateways(state.doc).map((gw) => {
-      let body;
-      if (state.linkGroup === "actuator") {
-        const groups = new Map();
-        for (const l of gw.links) {
-          const key = l.to_key || `name|${l.to_name}`;
-          groups.set(key, [...(groups.get(key) ?? []), l]);
-        }
-        body = [...groups.values()]
-          .sort((a, b) => a[0].to_name.localeCompare(b[0].to_name))
-          .map((links) => `<div class="gcard" style="margin-bottom:10px"><b>${esc(links[0].to_name)} <span class="isub">${esc(links[0].to_id)}</span></b><div class="tablewrap"><table class="itable">${head}<tbody>${links.map((l) => row(gw, l, false)).join("")}</tbody></table></div><div class="isub">${esc(L.otherSenders)}</div></div>`)
-          .join("");
-      } else {
-        const groups = new Map();
-        for (const l of gw.links) {
-          const key = l.from_id || l.from_name;
-          groups.set(key, [...(groups.get(key) ?? []), l]);
-        }
-        body = [...groups.values()]
-          .map((links) => `<div class="gcard" style="margin-bottom:10px"><b>${esc(fromLabel(links[0]))}</b><div class="tablewrap"><table class="itable"><thead><tr><th>${esc(L.controls)}</th><th>${esc(L.role)}</th><th>${esc(L.learn)}</th><th>${esc(L.state)}</th><th></th></tr></thead><tbody>${links.map((l) => row(gw, l, true)).join("")}</tbody></table></div></div>`)
-          .join("");
-      }
-      const options = [...gw.devices.filter((d) => !isVirtual(d)).map((d) => `<option value="${esc(d.note_key)}">${esc(d.name)} · ${esc(d.id)}</option>`), `<option value="">${esc(L.otherTarget)}</option>`].join("");
-      const add = `<div class="bulk" data-in-link-form="${esc(gw.entry_id)}"><b>${esc(L.addTitle)}</b><input data-in-new="from_name" placeholder="${esc(L.fromName)}" aria-label="${esc(L.fromName)}"><input data-in-new="from_id" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}"><span>→</span><select data-in-new="to_key" aria-label="${esc(L.target)}">${options}</select><input data-in-new="to_name" placeholder="${esc(L.otherName)}" aria-label="${esc(L.otherName)}"><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="add-link" data-in-gw="${esc(gw.entry_id)}">${esc(L.add)}</button></div>`;
-      return `<section class="gw">${this._instGwHead(gw)}${body || `<div class="none">${esc(L.none)}</div>`}${add}</section>`;
-    });
-    return toggle + sections.join("");
+    const plain = model.plain;
+    const goto = (device, name) => (device ? `<a data-in-goto="${esc(device.key)}">${esc(name)}</a>` : esc(name));
+    let who;
+    if (mode === "actuator") {
+      const device = model.byId.get(plain(l.from_id)) ?? null;
+      const numbers = l.from_kind === "ha" ? (gw.numbers?.get(l.to_key) ?? []) : [];
+      const label = l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${L.from[l.from_kind]} · ${l.from_id}`;
+      who = `<div class="nm"><div style="min-width:0">${goto(device, label)}${l.from_kind === "ha" && numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}" title="${esc(t.inst.senderTagHint)}">${esc(t.inst.senderTag(numbers.join(", ")))}</button>` : ""}</div></div>`;
+    } else {
+      const target = model.byNote.get(l.to_key) ?? null;
+      who = `<div class="nm"><div style="min-width:0">${goto(target, l.to_name)}<div class="isub">${esc(l.to_id)}</div></div></div>`;
+    }
+    const role = l.source === "assigned" ? this._profile(l.role) : l.role;
+    const learn = l.source === "entered"
+      ? `<input class="cell" data-in-efield="learn" data-in-eid="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`
+      : `<input class="cell" data-in-learn="${esc(l.key)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`;
+    const evidence = [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean).join(" · ");
+    const state = l.source === "assigned"
+      ? `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>${evidence ? `<span class="isub">${esc(evidence)}</span>` : ""}`
+      : `<span class="isub">${esc(L.statusHint[l.status] ?? "")}</span>`;
+    const action = l.source === "entered"
+      ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>`
+      : `<button class="icon-btn" data-in-goto="${esc(model.byNote.get(l.to_key)?.key ?? "")}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>`;
+    return `<div class="lrow">${who}<span><span class="tag role">${esc(role || "–")}</span> <span class="tag src-${l.source}" title="${esc(L.sourceHint[l.source])}">${esc(L.source[l.source])}</span></span>${learn}<div class="lstate">${state}</div>${action}</div>`;
+  },
+
+  _instLinkAddForm(gw, model, key, mode) {
+    // adding a link by hand: the other end, the role and where it was taught
+    const L = this._t.inst.links;
+    if (this._in.linkAdd !== key) return "";
+    const known = mode === "actuator"
+      ? [...gw.devices.filter((d) => !["lighting", "covers", "climate"].includes(d.category) || isVirtual(d)).map((d) => `<option value="d|${esc(d.key)}">${esc(d.name)}</option>`), `<option value="other">${esc(L.otherSender)}</option>`]
+      : [...model.actuators.map((a) => `<option value="a|${esc(a.key)}">${esc(a.name)}</option>`), `<option value="other">${esc(L.otherTarget)}</option>`];
+    return `<div class="ladd" data-in-linkform="${esc(key)}" data-in-gw="${esc(gw.entry_id)}" data-in-linkmode="${mode}"><select data-in-new="other" aria-label="${esc(mode === "actuator" ? L.fromName : L.target)}">${known.join("")}</select><input data-in-new="name" placeholder="${esc(L.nameOrId)}" aria-label="${esc(L.nameOrId)}" hidden><input data-in-new="id" class="mono" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}" hidden><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}" list="in-roles"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="link-add">${esc(L.add)}</button><button class="chip" data-in-act="link-cancel">${esc(L.cancel)}</button></div><datalist id="in-roles">${L.roles.map((r) => `<option value="${esc(r)}"></option>`).join("")}</datalist>`;
+  },
+
+  _instLinkByActuator(gw, model, pass, testable) {
+    const L = this._t.inst.links;
+    const state = this._in;
+    const cards = model.actuators.map((a) => {
+      const shown = a.links.filter(pass);
+      if (state.linkFilter === "none" ? a.links.length > 0 || !a.device : state.linkFilter !== "all" ? !shown.length : state.linkSource !== "all" && !shown.length) return "";
+      const key = `a|${a.key}`;
+      const running = state.testing.has(a.key);
+      const numbers = a.device ? (gw.numbers?.get(a.device.note_key) ?? []) : [];
+      const head = `<div class="lhead"><div><b>${a.device ? `<a data-in-goto="${esc(a.device.key)}">${esc(a.name)}</a>` : esc(a.name)}</b><div class="isub">${esc([a.device?.model, a.id].filter(Boolean).join(" · "))}</div></div>${a.device ? this._instKindTag(a.device) : ""}${numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}">${esc(this._t.inst.senderTag(numbers.join(", ")))}</button>` : ""}<span class="grow"></span><span class="isub">${a.links.length ? L.count(a.links.length) : ""}</span>${testable(a) ? `<button class="chip" data-in-test="${esc(a.device.key)}" data-in-gw="${esc(gw.entry_id)}" ${running ? "disabled" : ""}>${esc(running ? L.testing : L.test)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addLink)}</button></div>`;
+      const rows = a.links.length ? shown.map((l) => this._instLinkRow(gw, l, model, "actuator")).join("") : `<div class="lnone">${esc(L.noLink)}</div>`;
+      return `<div class="lcard">${head}${rows}${this._instLinkAddForm(gw, model, key, "actuator")}</div>`;
+    }).join("");
+    return cards || `<div class="none">${esc(L.none)}</div>`;
+  },
+
+  _instLinkBySender(gw, model, pass) {
+    const L = this._t.inst.links;
+    const state = this._in;
+    const wallWithoutDevice = (x) => x.kind === "wall" && !x.device;
+    const cards = model.senders.map((x) => {
+      const shown = x.links.filter(pass);
+      if (!shown.length) return "";
+      const key = `s|${x.key}`;
+      const title = x.kind === "ha" ? `${L.from.ha} · ${x.id}` : [x.name, x.id].filter(Boolean).join(" · ");
+      const head = `<div class="lhead"><div><b>${x.device ? `<a data-in-goto="${esc(x.device.key)}">${esc(title)}</a>` : esc(title)}</b></div><span class="grow"></span>${wallWithoutDevice(x) || (x.kind === "entered" && !x.device && x.id) ? `<button class="chip" data-in-walldoc="${esc(x.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.documentHint)}">${esc(L.document)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addActuator)}</button></div>`;
+      return `<div class="lcard">${head}${shown.map((l) => this._instLinkRow(gw, l, model, "sender")).join("")}${this._instLinkAddForm(gw, model, key, "sender")}</div>`;
+    }).join("");
+    return cards || `<div class="none">${esc(L.none)}</div>`;
+  },
+
+  _instLinkMatrix(gw, model) {
+    const L = this._t.inst.links;
+    const senders = model.senders;
+    if (!senders.length || !model.actuators.length) return `<div class="none">${esc(L.none)}</div>`;
+    const short = (r) => String(r ?? "").replace(/\s+/g, " ").slice(0, 14) || "·";
+    const head = `<tr><th></th>${senders.map((x) => `<th>${esc(x.kind === "ha" ? `${L.from.ha} ${String(x.id).slice(-2)}` : x.name || x.id)}</th>`).join("")}</tr>`;
+    const rows = model.actuators.map((a) => `<tr><td>${a.device ? `<a data-in-goto="${esc(a.device.key)}">${esc(a.name)}</a>` : esc(a.name)}</td>${senders.map((x) => {
+      const l = a.links.find((y) => (y.from_id ? model.plain(y.from_id) : `name|${y.from_name}`) === x.key);
+      return `<td>${l ? `<span class="mcell ${l.source}" title="${esc(L.source[l.source])}${l.learn ? ` · ${esc(l.learn)}` : ""}">${esc(short(l.source === "assigned" ? this._profile(l.role) : l.role))}</span>` : `<button class="mplus" data-in-mx data-in-gw="${esc(gw.entry_id)}" data-in-a="${esc(a.key)}" data-in-s="${esc(x.key)}" title="${esc(L.addLink)}">+</button>`}</td>`;
+    }).join("")}</tr>`).join("");
+    return `<div class="tablewrap"><table class="itable matrix"><thead>${head}</thead><tbody>${rows}</tbody></table></div><p class="isub">${esc(L.matrixHint)}</p>`;
   },
 
   _instLog() {
@@ -841,10 +947,44 @@ export const installation = {
       this.shadowRoot.querySelector("#senders .confirm")?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
-    const linkGroup = e.target.closest("[data-in-link-group]");
-    if (linkGroup) {
-      state.linkGroup = linkGroup.dataset.inLinkGroup;
+    const linkView = e.target.closest("[data-in-linkview]");
+    if (linkView) {
+      state.linkView = linkView.dataset.inLinkview;
+      state.linkAdd = "";
       this._renderInstallation();
+      return;
+    }
+    const linkFilter = e.target.closest("[data-in-linkfilter]");
+    if (linkFilter) {
+      state.linkFilter = linkFilter.dataset.inLinkfilter;
+      this._renderInstallation();
+      return;
+    }
+    const linkSource = e.target.closest("[data-in-linksource]");
+    if (linkSource) {
+      state.linkSource = linkSource.dataset.inLinksource;
+      this._renderInstallation();
+      return;
+    }
+    const linkAdd = e.target.closest("[data-in-linkadd]");
+    if (linkAdd) {
+      state.linkAdd = state.linkAdd === linkAdd.dataset.inLinkadd ? "" : linkAdd.dataset.inLinkadd;
+      this._renderInstallation();
+      return;
+    }
+    const test = e.target.closest("[data-in-test]");
+    if (test) {
+      this._instTest(test.dataset.inGw, test.dataset.inTest);
+      return;
+    }
+    const wallDoc = e.target.closest("[data-in-walldoc]");
+    if (wallDoc) {
+      this._instDocumentId(wallDoc.dataset.inGw, wallDoc.dataset.inWalldoc);
+      return;
+    }
+    const matrixCell = e.target.closest("[data-in-mx]");
+    if (matrixCell) {
+      this._instMatrixAdd(matrixCell.dataset.inGw, matrixCell.dataset.inA, matrixCell.dataset.inS);
       return;
     }
     const del = e.target.closest("[data-in-del]");
@@ -907,10 +1047,22 @@ export const installation = {
       this._renderInstallation();
       this.shadowRoot.querySelector("#installation .place input")?.focus();
     }
-    else if (act === "add-link") this._instAddLink(e.target.closest("[data-in-act]").dataset.inGw);
+    else if (act === "link-add") this._instLinkAdd(e.target.closest("[data-in-linkform]"));
+    else if (act === "link-cancel") {
+      state.linkAdd = "";
+      this._renderInstallation();
+    }
   },
 
   _installationChange(e) {
+    const other = e.target.closest('select[data-in-new="other"]');
+    if (other) {
+      const form = other.closest("[data-in-linkform]");
+      const free = other.value === "other";
+      form.querySelector('[data-in-new="name"]').hidden = !free;
+      form.querySelector('[data-in-new="id"]').hidden = !free || form.dataset.inLinkmode === "sender";
+      return;
+    }
     const mkind = e.target.closest("select[data-in-mfield]");
     if (mkind) {
       this._instManualInput(mkind);
@@ -1196,17 +1348,87 @@ export const installation = {
     if (!(await this._instSetLinks(gw, this._instEntered(gw)))) field.classList.add("bad");
   },
 
-  async _instAddLink(entryId) {
-    const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
-    const form = this.shadowRoot.querySelector(`[data-in-link-form="${CSS.escape(entryId)}"]`);
-    if (!gw || !form) return;
+  async _instLinkAdd(form) {
+    // a link written down: from a known device or an ID, to an actuator, with its role and learn position
+    const state = this._in;
+    const gw = gateways(state.doc).find((g) => g.entry_id === form.dataset.inGw);
+    if (!gw) return;
     const get = (name) => form.querySelector(`[data-in-new="${name}"]`).value.trim();
-    const link = { id: Math.random().toString(36).slice(2, 10), from_id: get("from_id"), from_name: get("from_name"), to_key: get("to_key"), to_name: get("to_name"), role: get("role"), learn: get("learn") };
+    const [side, ref] = get("other").split("|");
+    const mode = form.dataset.inLinkmode;
+    const link = { id: Math.random().toString(36).slice(2, 10), from_id: "", from_name: "", to_key: "", to_name: "", role: get("role"), learn: get("learn") };
+    const fixed = form.dataset.inLinkform.slice(2);
+    if (mode === "actuator") {
+      // the actuator is the card; the other end is chosen
+      if (fixed.startsWith("name|")) link.to_name = fixed.slice(5);
+      else link.to_key = fixed;
+      if (side === "d") {
+        const d = gw.devices.find((x) => x.key === ref);
+        Object.assign(link, { from_id: d?.id ?? "", from_name: d?.name ?? "" });
+      } else Object.assign(link, { from_id: get("id"), from_name: get("name") });
+    } else {
+      // the sender is the card; the actuator is chosen
+      const sender = this._instLinkModel(gw).senders.find((x) => x.key === fixed);
+      Object.assign(link, { from_id: sender?.id ?? "", from_name: sender?.name ?? "" });
+      if (side === "a" && !ref.startsWith("name|")) link.to_key = ref;
+      else if (side === "a") link.to_name = ref.slice(5);
+      else link.to_name = get("name");
+    }
     if (!(link.from_id || link.from_name) || !(link.to_key || link.to_name)) {
       this._notice(this._t.inst.links.incomplete);
       return;
     }
+    state.linkAdd = "";
     if (await this._instSetLinks(gw, [...this._instEntered(gw), link])) await this._loadInstallation();
+  },
+
+  async _instMatrixAdd(entryId, actuatorKey, senderKey) {
+    // a + in the matrix: a link with no role yet, written down at once
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+    if (!gw) return;
+    const model = this._instLinkModel(gw);
+    const actuator = model.actuators.find((a) => a.key === actuatorKey);
+    const sender = model.senders.find((x) => x.key === senderKey);
+    if (!actuator || !sender) return;
+    const link = { id: Math.random().toString(36).slice(2, 10), from_id: sender.id ?? "", from_name: sender.name ?? "", to_key: actuator.device ? actuator.key : "", to_name: actuator.device ? "" : actuator.name, role: "", learn: "" };
+    if (await this._instSetLinks(gw, [...this._instEntered(gw), link])) await this._loadInstallation();
+  },
+
+  async _instTest(entryId, key) {
+    // the actuator's state through each of its senders in turn; the links show who answered
+    const state = this._in;
+    const gw = gateways(state.doc).find((g) => g.entry_id === entryId);
+    const device = gw?.devices.find((d) => d.key === key);
+    if (!device || state.testing.has(device.note_key)) return;
+    state.testing.add(device.note_key);
+    this._renderInstallation();
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/sender_test", entry_id: entryId, device: key });
+    } catch (err) {
+      this._notice(this._t.senderTestError[err.code] || this._t.senderTestError.failed);
+    }
+    state.testing.delete(device.note_key);
+    await this._loadInstallation();
+  },
+
+  async _instDocumentId(entryId, id) {
+    // a button ID that an actuator names but Home Assistant has no device for: an entry written down, ID filled in
+    const state = this._in;
+    const gw = gateways(state.doc).find((g) => g.entry_id === entryId);
+    if (!gw) return;
+    const plain = (x) => String(x ?? "").replaceAll("-", "").toUpperCase();
+    let entry = gw.manual.find((m) => plain(m.address) === plain(id));
+    if (!entry) {
+      const link = gw.links.find((l) => plain(l.from_id) === plain(id));
+      entry = { id: Math.random().toString(36).slice(2, 10), name: link?.from_name || "", address: id, function: "", bus_address: "", feedback_id: "", bus_power: "", kind: "taster", location: "", power: "" };
+      gw.manual = [...gw.manual, entry];
+      if (!(await this._instSaveManual(gw))) return;
+    }
+    state.tab = "devices";
+    state.view = "funk";
+    state.art = "all";
+    state.hl = `manual|${entry.id}`;
+    this._renderInstallation();
   },
 
   async _instRemoveLink(entryId, id) {
