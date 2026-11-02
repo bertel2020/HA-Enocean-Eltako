@@ -10,7 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
-- **Appearance** of the panel (palette button in the header): three colour schemes (Ocean, Forest, Graphite), each light and dark; light, dark or like Home Assistant; font size small, normal or large (12, 14 or 16 px, every size in the panel follows). The choice is stored per Home Assistant user and cached in the browser.
+- **Appearance** of the panel (palette button in the header): three colour schemes (Ocean, Forest, Graphite), each light and dark; light, dark or like Home Assistant; font size small, normal or large (12.6, 14 or 16 px, every size in the panel follows). The choice is stored per Home Assistant user and cached in the browser.
 
 - The tables of the Senders and Bus groups are **editable in place**: bus address and feedback ID (gateway senders, bus), place (buttons, radio senders), **Part of** (radio senders) and bus power (bus). A device with several senders shows the same value in every row and all rows follow a change.
 - **Several power supplies** of the bus: each with type, watts and, optionally, the bus addresses it feeds. The printout shows the load of every supply with a range, the total, and addresses no supply feeds. The notes store is now version 3 (a single supply of version 2 is migrated).
@@ -45,7 +45,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
-- **Darstellung** des Panels (Paletten-Schaltfläche in der Kopfzeile): drei Farbschemata (Ozean, Wald, Graphit), je hell und dunkel; hell, dunkel oder wie Home Assistant; Schriftgröße klein, normal oder groß (12, 14 oder 16 px, alle Größen im Panel ziehen mit). Die Wahl wird pro Home-Assistant-Benutzer gespeichert und im Browser zwischengespeichert.
+- **Darstellung** des Panels (Paletten-Schaltfläche in der Kopfzeile): drei Farbschemata (Ozean, Wald, Graphit), je hell und dunkel; hell, dunkel oder wie Home Assistant; Schriftgröße klein, normal oder groß (12,6, 14 oder 16 px, alle Größen im Panel ziehen mit). Die Wahl wird pro Home-Assistant-Benutzer gespeichert und im Browser zwischengespeichert.
 
 - Die Tabellen der Gruppen Sender und Bus sind **direkt bearbeitbar**: Bus-Adresse und Rückmelde-ID (Gateway-Sender, Bus), Ort (Taster, Funk-Sender), **Gehört zu** (Funk-Sender) und Leistung am Bus (Bus). Ein Gerät mit mehreren Sendern zeigt in jeder Zeile denselben Wert, und alle Zeilen folgen einer Änderung.
 - **Mehrere Netzteile** am Bus: jedes mit Typ, Watt und, wenn du willst, den Bus-Adressen, die es versorgt. Der Ausdruck zeigt die Auslastung jedes Netzteils mit Bereich, die Gesamtsumme und Adressen, die kein Netzteil versorgt. Der Notizen-Speicher hat jetzt Version 3 (ein einzelnes Netzteil der Version 2 wird übernommen).

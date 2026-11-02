@@ -886,7 +886,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this.shadowRoot.getElementById("lookMenu").innerHTML =
       group("scheme", t.scheme, Object.keys(SCHEMES).map((name) => [name, t.schemes[name], accent(name)])) +
       group("mode", t.mode, MODES.map((name) => [name, t.modes[name]])) +
-      group("size", t.size, Object.keys(SIZES).map((name) => [name, `${t.sizes[name]} · ${SIZES[name]} px`]));
+      group("size", t.size, Object.keys(SIZES).map((name) => [name, t.sizes[name]]));
   }
 
   _toggleLook(open = this.shadowRoot.getElementById("lookMenu").hidden) {
