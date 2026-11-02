@@ -301,21 +301,62 @@ sender **answered** or **no answer**. No answer does not prove that the sender i
 actuator, as an actuator may stay silent; a rocker that toggles is not tested. A dimmer gets its current brightness as a dim command through its central command; its rocker is not tested, as a press could change the brightness. Covers are not tested at all: every command moves them or interrupts a run. The test does not
 count in the command statistics.
 
-**Installation view:** the **Installation** tab gathers the documentation in one place, in groups. Under **Devices**, **Overview**
-shows the devices of each gateway grouped by Home Assistant area or by the place you wrote down,
-with how many still have no place. the **Table** has typed fields you edit in place:
-place (cabinet, row, slot), circuit, fuse, installation date, revision (the date code, as it decides
-the learn function), power (mains, battery type) and a note. Select rows to set one field for all of
-them, or **paste from a spreadsheet**: a header row, an Address column and columns named like the
-fields; empty cells change nothing, and **Copy the table** gives the same layout to edit and paste
-back. **Log** lists what happened: devices added or removed, senders assigned or removed, teach-ins,
-sender tests and imports. **Links** shows who is taught into which actuator, by actuator or by sender. Every link says where
-it comes from: **assigned** (a sender Home Assistant holds for the actuator, with when its teach-in
-was sent and what the last sender test said), **declared** (the wall switch set in the device's
+**Installation view:** the **Installation** tab gathers the documentation in one place, in four
+tabs: **Devices**, **Sender IDs**, **Links** and **Log**. The tables are the same rows as in the
+printout.
+
+**Devices** has a switch between four views at the top. Every row names its **kind** as a tag
+(Eltako bus, radio sensor, radio button, radio actuator, virtual, power supply); a click on it opens
+the view of that kind, and a device with sender IDs from the pool carries **Sender 1, 2**, which
+jumps to the Sender IDs tab.
+
+- **All devices** has typed fields you edit in place: place (three fields: cabinet, row, slot),
+  circuit, fuse, installation date, revision (the date code, as it decides the learn function),
+  supply (mains, battery type) and a note. The **Columns** menu shows them in groups (place and
+  fuse, bus and radio, upkeep). The kind chips and the filters **Missing: Place** and **Missing:
+  Fuse** (with a count) narrow the rows, **Group by** orders them by area or place (the cabinet),
+  and **Next without a place** puts the cursor in the first field that is still empty. The
+  progress counts devices, power supplies and entries written down by hand, but not virtual
+  devices: they have no place. Select rows to set one field for all of them, or **paste from a
+  spreadsheet**: a header row, an Address column and columns named like the fields; empty cells
+  change nothing, and **Copy the table** gives the same layout to edit and paste back.
+- **Bus** shows the Eltako bus grouped by **power supply**: each supply is a header row with its
+  type, watts and the bus addresses it feeds (all edited right there), with a load bar and a
+  warning when it is overloaded; addresses no supply feeds sit in a group of their own. A strip of
+  tiles names duplicate addresses, used and free addresses, the total power and the state of the
+  supplies. You edit bus address, feedback ID and power in the row (the power is what the device
+  takes from the bus; without a value of your own the one from Eltako's planning guide counts,
+  marked **table**).
+- **Radio** lists the radio devices (buttons, sensors, actuators) and the entries written down by
+  hand. The columns (menu **Columns**): place, sender ID (all of them for a device with several
+  IDs), what it sends, **supply** (battery type, mains), part of, **signal** and **link**. The
+  signal is a dot with the time of the last telegram: green within a day, yellow within a week,
+  red after that, plus the strength and "via repeater only". The link shows what a button or
+  sensor controls and what controls an actuator, each name a jump to the device. **Write down a
+  device** adds an entry by hand (name, ID, kind, function): a button taught in directly or a
+  device of another system. It carries the tag **only written down**, also shows in **All
+  devices** and has place and supply like a device; Home Assistant creates nothing and teaches
+  nothing in.
+- **Virtual** shows what Home Assistant sends: pool number, sender ID, the entities a virtual
+  device follows and the actuators it was taught into according to your notes. With a gateway of
+  another base ID every one of these senders has to be taught in again.
+
+**Sender IDs** is the table of the gateway senders: one row per sender (not per device; a device
+can hold several), number 0 to 127, the gateway's own ID as number 0, free numbers folded, blocked
+IDs with their release, and the sender ID pool above it. The device names jump to the device.
+**Links** shows who is taught into which actuator, as a card per actuator, per sender or as a
+matrix. Every link names the other end, the role (a left or right rocker, say) and where it comes
+from: **assigned** (a sender Home Assistant holds for the actuator, with when its teach-in was
+sent and what the last sender test said), **declared** (the wall switch set in the device's
 options) or **entered** (written down by you: a button taught in directly, an actuator of another
-system). Each link has a field for its learn position. What an actuator has really learned is
-stored in the actuator and cannot be read, so the tab says so; a link that was never tested says
-"not tested". Print, CSV, JSON and import are buttons of the tab.
+system; only these can be removed here). Each link has a field for its learn position. An actuator
+without a link is marked; filters and tiles show those without a link, not tested and without an
+answer. **Test senders** runs the sender test from an actuator's card, **+ Link** and **+ Actuator**
+write a link down (so does a **+** in the matrix), and a wall switch ID without a device gets
+**Write down as device**. What an actuator has really learned is stored in the actuator and cannot
+be read, so the tab says so; a link that was never tested says "not tested". **Log** lists what
+happened: devices added or removed, senders assigned or removed, teach-ins, sender tests and
+imports. Print, CSV, JSON and import are buttons of the tab.
 
 **Outputs:** the buttons of the Installation tab (and the ⋮ menu of the Devices view) give:
 
@@ -339,13 +380,12 @@ stored in the actuator and cannot be read, so the tab says so; a link that was n
   reported). The power is what a device takes from the bus, not the switched load: what you wrote
   down, otherwise the value of Eltako's planning guide (edition 07/2014, the table of the maximum
   power need), marked with `*`. A type the guide does not list (newer devices such as the F3Z14D)
-  has no value, and the sum says how many devices have none. The **Devices** table has a progress line (devices with a place), shows its columns in groups you
-  switch on and off (place and fuse, bus and radio, upkeep) and names a wrong bus address or
-  watts value under the field instead of sending it. In the tables of the Senders and Bus
-  groups the fields of a device are changed right where they stand (bus address, feedback ID,
-  place, **Part of**, power; saved as you type). The channels of one device count
+  has no value, and the sum says how many devices have none. The **Devices** table names a wrong bus address or
+  watts value under the field instead of sending it. In the **Bus** view
+  the fields of a device are changed right where they stand (bus address, feedback ID,
+  **Part of**, power; saved as you type). The channels of one device count
   once if they share a **Part of** name; without it the sum counts each channel and says so. The
-  supply defaults to the 12 W of the FAM14. Under **Bus → Power supplies** you write down one or more
+  supply defaults to the 12 W of the FAM14. In the **Bus** view you write down one or more
   power supplies (type, watts); with the bus addresses a supply feeds, the printout shows the load
   of each one and names addresses no supply feeds, without them only the total. Which addresses a
   supply feeds depends on how the rail is plugged together, so only you know it. Home Assistant cannot read the bus yet, so bus address, feedback ID and the
@@ -364,9 +404,10 @@ last signal, whether any telegram came without a repeater) and the unknown sende
 "via repeater only" and the list of heard senders do not start empty after a restart.
 
 **Notes and further devices:** each device's details have a **Notes** field, each gateway's
-details a note field of its own, and under **Senders → Radio senders** in the Installation tab an
-editor for **Further devices** (name, ID, function: buttons taught in directly, devices of other
-systems; bus address, feedback ID and watts when it sits on the Eltako bus). Saved as you type, kept in a store of its
+details a note field of its own, and under **Devices → Radio** in the Installation tab the button
+**Write down a device** for entries by hand (name, ID, kind, function: buttons taught in directly,
+devices of other systems; bus address, feedback ID and watts when it sits on the Eltako bus; place
+and supply are edited in the table). Saved as you type, kept in a store of its
 own per gateway, part of Home Assistant's backup. A device's fields belong to its address, so they
 come back if you add the device again; a gateway's details offer to forget those of deleted
 devices.
@@ -377,8 +418,8 @@ filled in. Fields, further devices, entered links and learn positions come along
 devices themselves. If a gateway has another base ID, the panel offers to import the one gateway of
 the file that found no match into the one set up here that got nothing.
 **Telegrams** opens that device's telegrams, the **+** of an unknown sender asks whether to **Set up as
-device** or **Only write down** (an entry under **Other devices** with the ID filled in, for the
-documentation; Home Assistant creates nothing), and the arrow icon opens the device's page in Home Assistant.
+device** or **Only write down** (an entry tagged *only written down* under **Devices → Radio** with the ID
+filled in, for the documentation; Home Assistant creates nothing), and the arrow icon opens the device's page in Home Assistant.
 
 **Teach in** (graduation cap icon, for devices with a sender ID of their own) teaches the device
 into its actuator without opening the device page: put the actuator into learn mode (on Eltako
@@ -402,7 +443,7 @@ all of them at once: set an **area**, add or remove **labels** (a tick adds the 
 tick removes it, a dash leaves it; new labels are created in the form), **disable** or **enable**
 the devices, and **remove** them. Area, labels and disabling are Home Assistant's own, so they show
 on the device page and work in automations. **Remove** asks first and deletes the devices with their
-entities; their sender IDs stay blocked until you confirm under **Installation → Senders → Gateway senders → Sender ID pool** that the actuators
+entities; their sender IDs stay blocked until you confirm under **Installation → Sender IDs → Sender ID pool** that the actuators
 have forgotten them. A device's labels show under its name, and the search finds them.
 
 ### Send a telegram
@@ -418,7 +459,7 @@ to any telegram; the telegram appears in the list as sent. In the details of a s
 
 ## Sender IDs
 
-The **Sender ID pool** (Installation → Senders → Gateway senders, above the table, can be folded) shows who uses which sender ID: per gateway (and per bus
+The **Sender ID pool** (Installation → Sender IDs, above the table, can be folded) shows who uses which sender ID: per gateway (and per bus
 group) the free IDs of the pool, and each device with its IDs, their profile and status, blocked
 IDs first. Radio gateways hand out base ID + 1…127. The pool map shows every ID as a small
 square (free, assigned, blocked, used elsewhere; the legend below names the colours); the tooltip
