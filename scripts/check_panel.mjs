@@ -38,7 +38,7 @@ for (const [name, scheme] of Object.entries(SCHEMES)) {
 }
 const clean = cleanPrefs({ scheme: "pink", mode: "x", size: "huge" });
 if (clean.scheme !== "ocean" || clean.mode !== "auto" || clean.size !== "normal") errors.push("theme.js: cleanPrefs keeps unknown values");
-if (tokens({ scheme: "forest", mode: "light", size: "small" }, false)["--fs"] !== "0.857" || tokens({ scheme: "forest", mode: "light", size: "large" }, true)["--fs"] !== "1.143") errors.push("theme.js: size factors differ from 12/14/16 px");
+if (tokens({ scheme: "forest", mode: "light", size: "small" }, false)["--fs"] !== "0.9" || tokens({ scheme: "forest", mode: "light", size: "large" }, true)["--fs"] !== "1.143") errors.push("theme.js: size factors differ from 12.6/14/16 px");
 if (tokens({ scheme: "graphite", mode: "dark", size: "normal" }, true)["--accent"] !== "#d4dae2") errors.push("theme.js: graphite dark accent differs");
 if (SIZES.normal !== 14) errors.push("theme.js: the normal size is not 14 px");
 

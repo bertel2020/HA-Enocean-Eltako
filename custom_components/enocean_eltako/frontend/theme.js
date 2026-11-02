@@ -37,7 +37,7 @@ const COMMON = {
 };
 
 // base font size in px; every size in the panel is a multiple of it (14 px = factor 1)
-export const SIZES = { small: 12, normal: 14, large: 16 };
+export const SIZES = { small: 12.6, normal: 14, large: 16 };
 export const MODES = ["auto", "light", "dark"];
 export const DEFAULTS = { scheme: "ocean", mode: "auto", size: "normal" };
 
