@@ -20,12 +20,26 @@ from .catalog import OPT_WALL_OFF, OPT_WALL_ON, OPT_WALL_SWITCH
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
 from .discovery import pending
+from .heard import heard_by
 from .notes import Notes, device_key
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 
 VERSION = 2  # 2: typed device fields, links, the event log; the import still takes 1
 IMPORTABLE_VERSIONS = (1, VERSION)
+
+
+def _signal(device: EnOceanDevice) -> dict[str, Any] | None:
+    """When a device was last heard and how well; a virtual device has no telegrams (None)."""
+    if device.virtual is not None:
+        return None
+    heard = heard_by(device)
+    rssi = [row["rssi"] for row in heard["gateways"] if row["rssi"] is not None]
+    return {
+        "last": device.stats.last_seen,
+        "rssi": max(rssi, default=None),
+        "repeater_only": heard["repeater_only"],
+    }
 
 
 def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[str, Any]:
@@ -71,6 +85,7 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             }
             for profile, sender in device.senders.items()
         ],
+        "signal": _signal(device),
         "wall_switch": wall,
         "bus_power_table": bus_power(device._model_label),
         **notes.device(device_key(device.subentry)),
