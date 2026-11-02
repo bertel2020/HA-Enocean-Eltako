@@ -18,7 +18,14 @@ const VIEW_OF = { bus: "bus", psu: "bus", sensor: "funk", taster: "funk", aktor:
 const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
 // the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
 // by what it is: a button, a sensor or an actuator on radio
-const kindOf = (d) => (d.psu ? "psu" : d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+// the columns of the radio view that can be shown; the first three at first
+const FUNK_COLUMNS = ["loc", "id", "sends", "pow", "grp", "sig", "conn"];
+const FUNK_DEFAULT = ["id", "sig", "conn"];
+const SIGNAL_FRESH = 24 * 3600; // heard within a day: fine; within a week: late; else: silent
+const SIGNAL_LATE = 7 * 24 * 3600;
+// a field of an entry written by hand, by the name the table gives it
+const MANUAL_FIELD = { location: "location", power: "power", note: "function", bus_address: "bus_address", feedback_id: "feedback_id", bus_power: "bus_power" };
 const SUPPLY_BLANK = { name: "", watts: "", first: "", last: "", location: "", circuit: "", fuse: "", note: "" };
 const wnum = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 const anum = (text) => (/^\d+$/.test(text ?? "") ? Number(text) : null);
@@ -65,7 +72,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkGroup: "actuator", selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -154,6 +161,17 @@ export const INSTALLATION_STYLE = `
   .installation .load .r { text-align: right; color: var(--muted); }
   .installation .notes p { margin: 2px 0; }
   .installation .gbar { flex-wrap: wrap; }
+  .installation .sig { white-space: nowrap; }
+  .installation .sig .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .installation .sig .dot.ok { background: var(--ok); }
+  .installation .sig .dot.late { background: var(--warn); }
+  .installation .sig .dot.silent { background: #d33; }
+  .installation .lk a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .installation .itable tr.hl td { background: color-mix(in srgb, var(--warn) 22%, transparent); }
+  .installation .docform { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
+  .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+  .installation .docform .cerr { width: 100%; }
+  .installation .itable select.cell { font: inherit; font-size: calc(12px * var(--fs)); padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
   .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
@@ -272,6 +290,15 @@ export const installation = {
     this._setManage();
     this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${tools}</div></div>${subtabs}`);
     this._replace(el, `<div class="ibody">${body}</div>`);
+    if (state.hl) {
+      const row = [...el.querySelectorAll("[data-in-row]")].find((r) => r.dataset.inRow === state.hl);
+      state.hl = "";
+      if (row) {
+        row.classList.add("hl");
+        row.scrollIntoView({ block: "center" });
+        setTimeout(() => row.classList.remove("hl"), 2000);
+      }
+    }
   },
 
   // ---- the tables of the sender and bus groups, from the same rows as the printout ------------------
@@ -326,21 +353,84 @@ export const installation = {
     return `<p class="isub">${esc(T.sendersIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(gw, parts.senders, parts.externals)) : ""));
   },
 
-  _instButtons() {
+  _instExtras(gw) {
+    // what the device table lists besides the devices: the power supplies and the entries written by hand
     const t = this._t;
-    const T = t.doc.tbl;
-    const side = (list) => (list.length ? list.map(esc).join("<br>") : `<span class="isub">${esc(T.unassigned)}</span>`);
-    const head = [T.id, T.device, T.place, T.description, T.left, T.right];
-    return `<p class="isub">${esc(T.buttonsIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.buttons.length ? this._instTable(head, parts.buttons.map((b) => `<tr><td class="mono">${esc(b.id)}</td><td>${esc(b.device)}</td><td>${b.key ? this._instCell(gw, b.key, "location", b.location, T.place, b.area) : esc(b.place)}</td><td>${esc(b.name)}</td><td>${side(b.left)}</td><td>${side(b.right)}</td></tr>`).join("")) : ""));
+    const supplies = (gw.supplies ?? []).map((x) => ({ psu: true, sid: x.id, key: `psu|${x.id}`, name: x.name || t.doc.tbl.supplyNoName, id: "", area: "", virtual: false, bus_address: "", location: x.location, circuit: x.circuit, fuse: x.fuse, note: x.note, model: x.watts ? `${x.watts} W` : "" }));
+    const manual = (gw.manual ?? []).map((m) => ({ manual: true, mid: m.id, key: `manual|${m.id}`, kindRaw: m.kind, name: m.name || m.address || t.inst.funk.unnamed, id: m.address, area: "", virtual: false, bus_address: m.bus_address, feedback_id: m.feedback_id, bus_power: m.bus_power, location: m.location, power: m.power, note: m.function, group: "", circuit: "", fuse: "", installed: "", revision: "" }));
+    return [...supplies, ...manual];
   },
 
-  _instRadio() {
+  _instLinksOf(gw, d) {
+    // what a radio device controls (its ID as the sender of a link) and what controls it
+    const T = this._t.inst.funk;
+    const plain = (id) => String(id ?? "").replaceAll("-", "").toUpperCase();
+    const mine = new Set([d.id, ...(d.ids ?? []).map((x) => x.id)].filter(Boolean).map(plain));
+    const goto = (key, name) => (key && gw.devices.some((x) => x.note_key === key) ? `<a data-in-goto="${esc(gw.devices.find((x) => x.note_key === key).key)}">${esc(name)}</a>` : esc(name));
+    const out = gw.links.filter((l) => mine.has(plain(l.from_id)));
+    const into = d.note_key ? gw.links.filter((l) => l.to_key === d.note_key) : [];
+    const lines = [];
+    if (out.length) lines.push(`${esc(T.controls)} ${out.map((l) => `${goto(l.to_key, l.to_name)}${l.role ? ` <span class="isub">${esc(l.source === "assigned" ? this._profile(l.role) : l.role)}</span>` : ""}`).join(", ")}`);
+    if (into.length) lines.push(`${esc(T.controlledBy)} ${into.map((l) => esc(l.from_name || l.from_id)).join(", ")}`);
+    return lines.length ? lines.join("<br>") : `<span class="isub">${esc(d.category === "buttons" || d.manual ? T.noLink : "–")}</span>`;
+  },
+
+  _instSignal(d) {
+    const T = this._t;
+    const sig = d.signal;
+    if (!sig || sig.last == null) return `<span class="isub">${esc(d.manual ? T.inst.funk.documented : T.inst.funk.notHeard)}</span>`;
+    const age = Math.max(0, Math.round(this._now() / 1000 - sig.last));
+    const level = age <= SIGNAL_FRESH ? "ok" : age <= SIGNAL_LATE ? "late" : "silent";
+    return `<span class="sig"><i class="dot ${level}"></i>${esc(T.ago(age))}</span><div class="isub">${[sig.rssi != null ? `${sig.rssi} dBm` : "", sig.repeater_only ? T.repeaterOnly : ""].filter(Boolean).map(esc).join(" · ")}</div>`;
+  },
+
+  _instFunk() {
+    // the devices that send by radio, with where they sit, what supplies them, how they are heard and what they control
     const t = this._t;
-    const T = t.doc.tbl;
-    const head = [T.id, T.device, T.name, T.place, T.partOf, T.eep, T.sends];
-    const rows = (gw, radio) => radio.map((r) => `<tr><td class="mono">${esc(r.id)}</td><td>${esc(r.device)}</td><td>${esc(r.key ? r.own : r.description)}</td><td>${r.key ? this._instCell(gw, r.key, "location", r.location, T.place, r.area) : esc(r.place)}</td><td>${r.key ? this._instCell(gw, r.key, "group", r.partOf, T.partOf) : ""}</td><td class="mono">${esc(r.eep)}</td><td>${esc(r.key ? r.category : r.sends)}</td></tr>`).join("");
-    const manual = this._gateways.filter((g) => g.loaded).map((g) => this._manualEditor(g)).join("");
-    return `<p class="isub">${esc(T.radioIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.radio.length ? this._instTable(head, rows(gw, parts.radio)) : "")) + manual;
+    const I = t.inst;
+    const F = I.funk;
+    const state = this._in;
+    const cols = FUNK_COLUMNS.filter((c) => state.funkCols.has(c));
+    const radio = (gw) => [...gw.devices.filter((d) => ["sensor", "taster", "aktor"].includes(kindOf(d))), ...this._instExtras(gw).filter((d) => d.manual && kindOf(d) !== "bus")]
+      .filter((d) => (state.art === "all" || kindOf(d) === state.art) && matches(d, state.q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const all = gateways(state.doc).flatMap((gw) => [...gw.devices.filter((d) => ["sensor", "taster", "aktor"].includes(kindOf(d))), ...this._instExtras(gw).filter((d) => d.manual && kindOf(d) !== "bus")]);
+    const now = this._now() / 1000;
+    const late = all.filter((d) => d.signal?.last != null && now - d.signal.last > SIGNAL_LATE).length;
+    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tiles = `<div class="tiles">${tile(F.tileDevices, esc(F.devicesN(all.length)))}${tile(F.tileDocumented, String(all.filter((d) => d.manual).length))}${tile(F.tileSilent, String(late), late > 0)}${tile(F.tileRepeater, String(all.filter((d) => d.signal?.repeater_only).length))}</div>`;
+    const kinds = ["taster", "sensor", "aktor"];
+    const artChips = `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
+    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${FUNK_COLUMNS.map((c) => `<label><input type="checkbox" data-in-funkcol="${c}" ${state.funkCols.has(c) ? "checked" : ""}>${esc(F.cols[c])}</label>`).join("")}</div></details>`;
+    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    const form = state.docForm
+      ? `<div class="docform"><input data-in-doc-field="name" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}"><input data-in-doc-field="address" class="mono" maxlength="11" placeholder="${esc(F.idPlaceholder)}" aria-label="${esc(t.doc.manualAddress)}">${gateways(state.doc).length > 1 ? `<select data-in-doc-field="gateway" aria-label="${esc(F.gateway)}">${gateways(state.doc).map((g) => `<option value="${esc(g.entry_id)}">${esc(g.title)}</option>`).join("")}</select>` : ""}<select data-in-doc-field="kind" aria-label="${esc(I.art)}">${kinds.map((k) => `<option value="${k}">${esc(I.kinds[k])}</option>`).join("")}</select><input data-in-doc-field="function" placeholder="${esc(t.doc.manualFunction)}" aria-label="${esc(t.doc.manualFunctionHead)}" style="flex:1;min-width:160px"><button class="chip" data-in-act="doc-add">${esc(F.add)}</button><button class="chip" data-in-act="doc-cancel">${esc(F.cancel)}</button>${state.docError ? `<div class="cerr" role="alert">${esc(state.docError)}</div>` : ""}</div>`
+      : "";
+    const tools = `<div class="itools" style="align-items:center">${search}<span style="flex:1"></span><button class="chip" data-in-act="doc-open">${esc(F.document)}</button>${menu}</div>`;
+    const input = (d, gw, field, value, placeholder, extra = "") => (d.manual
+      ? `<input class="cell" data-in-mfield="${MANUAL_FIELD[field] ?? field}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(value ?? "")}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}: ${esc(d.name)}" autocomplete="off" ${extra}>`
+      : `<input class="cell" data-in-field="${field}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(value ?? "")}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}: ${esc(d.name)}" autocomplete="off" ${extra}>`);
+    const cell = (c, gw, d) => {
+      if (c === "loc") return `<td>${this._instPlace(gw, d)}</td>`;
+      if (c === "id") return `<td class="mono">${esc(d.id)}${(d.ids ?? []).filter((x) => x.id !== d.id).map((x) => `<br>${esc(x.id)}`).join("")}${d.ids?.length > 1 ? `<div class="isub" style="font-family:inherit">${esc(F.manyIds(d.ids.length))}</div>` : ""}</td>`;
+      if (c === "sends") return `<td>${d.manual ? input(d, gw, "note", d.note, t.doc.manualFunctionHead) : esc([t.doc.tbl.categories[d.category], d.eep].filter(Boolean).join(" · ") || "–")}</td>`;
+      if (c === "pow") return `<td>${input(d, gw, "power", d.power, label(t, "power"))}</td>`;
+      if (c === "grp") return `<td>${d.manual ? '<span class="dash">–</span>' : input(d, gw, "group", d.group, label(t, "group"))}</td>`;
+      if (c === "sig") return `<td>${this._instSignal(d)}</td>`;
+      return `<td class="lk">${this._instLinksOf(gw, d)}</td>`;
+    };
+    const sections = gateways(state.doc).map((gw) => {
+      const rows = radio(gw).map((d) => {
+        const kindSelect = d.manual ? ` <select class="cell" data-in-mfield="kind" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" aria-label="${esc(I.art)}: ${esc(d.name)}">${kinds.map((k) => `<option value="${k}" ${kindOf(d) === k ? "selected" : ""}>${esc(I.kinds[k])}</option>`).join("")}</select>` : "";
+        const name = d.manual ? `<input class="cell" data-in-mfield="name" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d.name === F.unnamed ? "" : d.name)}" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}" autocomplete="off">` : esc(d.name);
+        const sub = d.manual ? "" : `<div class="isub">${esc([d.model, d.eep].filter(Boolean).join(" · "))}</div>`;
+        const delete_ = d.manual ? `<td><button class="icon-btn" data-in-mdel="${esc(d.mid)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.manualRemove)}" aria-label="${esc(t.doc.manualRemove)}">${svg(ICON.close)}</button></td>` : "<td></td>";
+        return `<tr data-in-row="${esc(d.key)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
+      }).join("");
+      const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
+      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
+    });
+    return `${tiles}${tools}${artChips}${form}${sections.join("")}<p class="isub">${esc(F.hint)}</p>`;
   },
 
   _instBus() {
@@ -422,10 +512,10 @@ export const installation = {
     // the devices in one of four views: all, on the Eltako bus, on radio, virtual
     const t = this._t.inst;
     const state = this._in;
-    const all = gateways(state.doc).flatMap((gw) => gw.devices);
+    const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
     const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
-    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus(), funk: () => this._instButtons() + this._instRadio() }[state.view]();
+    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
     return `<div class="gbar"><div class="seg" role="group">${seg}</div></div>${body}`;
   },
 
@@ -433,14 +523,14 @@ export const installation = {
     // the place as three fields that look like one: cabinet, row, slot
     const parts = placeParts(d.location);
     const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
-    const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : `data-in-key="${esc(d.key)}"`;
+    const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : d.manual ? `data-in-mid="${esc(d.mid)}"` : `data-in-key="${esc(d.key)}"`;
     return `<div class="place${d.location ? "" : " empty"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs}</div>`;
   },
 
   _instProgress() {
     // how many devices have a place; virtual devices have none to give
     const t = this._t.inst;
-    const all = gateways(this._in.doc).flatMap((gw) => [...gw.devices.filter((d) => !d.virtual), ...(gw.supplies ?? [])]);
+    const all = gateways(this._in.doc).flatMap((gw) => [...gw.devices.filter((d) => !d.virtual), ...(gw.supplies ?? []), ...(gw.manual ?? [])]);
     const placed = all.filter((d) => d.location).length;
     if (!all.length) return "";
     const pct = Math.round((placed / all.length) * 100);
@@ -455,8 +545,8 @@ export const installation = {
     const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
     const showArea = state.columns.has("place");
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
-    const applies = (d, f) => (d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
-    const psus = (gw) => (gw.supplies ?? []).map((x) => ({ psu: true, sid: x.id, key: `psu|${x.id}`, name: x.name || t.doc.tbl.supplyNoName, id: "", area: "", virtual: false, bus_address: "", location: x.location, circuit: x.circuit, fuse: x.fuse, note: x.note, model: x.watts ? `${x.watts} W` : "" }));
+    const applies = (d, f) => (d.manual ? f in MANUAL_FIELD : d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const psus = (gw) => this._instExtras(gw);
     const pass = (d) => matches(d, state.q)
       && (!kinds || kinds.includes(kindOf(d)))
       && (state.art === "all" || kindOf(d) === state.art)
@@ -468,14 +558,15 @@ export const installation = {
         .map((f) => {
           if (!applies(d, f)) return `<td><span class="dash">–</span></td>`;
           if (f === "location") return `<td>${this._instPlace(gw, d)}</td>`;
+          if (d.manual) return `<td><input class="cell" data-in-mfield="${MANUAL_FIELD[f]}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
           if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
           return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
         })
         .join("");
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
-      const pick = d.psu ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}</div></td>${area}${cells}</tr>`;
+      const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
+      return `<tr data-in-row="${esc(d.key)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const devices = [...gw.devices, ...psus(gw)].filter(pass);
@@ -588,7 +679,6 @@ export const installation = {
 
   _installationClick(e) {
     const state = this._in;
-    if (this._manualEdit(e)) return; // the rows of power supplies and entries by hand
     if (state.colMenu && !e.target.closest(".colmenu")) {
       state.colMenu = false;
       this.shadowRoot.querySelector("#installation details.colmenu")?.removeAttribute("open");
@@ -626,6 +716,25 @@ export const installation = {
       state.view = VIEW_OF[kind.dataset.inKind] ?? "all";
       state.art = "all";
       this._renderInstallation();
+      return;
+    }
+    const goto = e.target.closest("[data-in-goto]");
+    if (goto) {
+      // a link's device: the All devices view with its row marked
+      state.view = "all";
+      state.art = "all";
+      state.q = "";
+      state.hl = goto.dataset.inGoto;
+      this._renderInstallation();
+      return;
+    }
+    const mdel = e.target.closest("[data-in-mdel]");
+    if (mdel) {
+      const gw = gateways(state.doc).find((g) => g.entry_id === mdel.dataset.inGw);
+      if (!gw) return;
+      gw.manual = gw.manual.filter((x) => x.id !== mdel.dataset.inMdel);
+      this._renderInstallation();
+      this._instSaveManual(gw);
       return;
     }
     const supplyAdd = e.target.closest("[data-in-supply-add]");
@@ -683,6 +792,15 @@ export const installation = {
       this._instRemoveLink(del.dataset.inGw, del.dataset.inDel);
       return;
     }
+    const funkcol = e.target.closest("[data-in-funkcol]");
+    if (funkcol) {
+      const name = funkcol.dataset.inFunkcol;
+      state.colMenu = true;
+      if (state.funkCols.has(name)) state.funkCols.delete(name);
+      else state.funkCols.add(name);
+      this._renderInstallation();
+      return;
+    }
     const columns = e.target.closest("[data-in-columns]");
     if (columns) {
       const name = columns.dataset.inColumns;
@@ -712,6 +830,15 @@ export const installation = {
     } else if (act === "bulk") this._instBulk();
     else if (act === "paste") this._instPaste();
     else if (act === "copy-table") this._instCopyTable();
+    else if (act === "doc-open") {
+      state.docForm = true;
+      state.docError = "";
+      this._renderInstallation();
+      this.shadowRoot.querySelector('#installation [data-in-doc-field="name"]')?.focus();
+    } else if (act === "doc-cancel") {
+      state.docForm = false;
+      this._renderInstallation();
+    } else if (act === "doc-add") this._instDocAdd();
     else if (act === "next-open") {
       // the devices without a place, the cursor in the first one
       state.view = "all";
@@ -724,6 +851,11 @@ export const installation = {
   },
 
   _installationChange(e) {
+    const mkind = e.target.closest("select[data-in-mfield]");
+    if (mkind) {
+      this._instManualInput(mkind);
+      return;
+    }
     const groupsel = e.target.closest("[data-in-groupsel]");
     if (groupsel) {
       this._in.group = groupsel.value;
@@ -740,7 +872,6 @@ export const installation = {
 
   _installationInput(e) {
     const state = this._in;
-    if (this._manualEdit(e)) return;
     if (e.target.matches("[data-in-paste]")) {
       state.paste = e.target.value;
       return;
@@ -757,6 +888,11 @@ export const installation = {
     const sfield = e.target.closest("[data-in-sfield]");
     if (sfield) {
       this._instSupplyInput(sfield);
+      return;
+    }
+    const mfield = e.target.closest("[data-in-mfield]");
+    if (mfield) {
+      this._instManualInput(mfield);
       return;
     }
     const part = e.target.closest("[data-in-part]");
@@ -820,8 +956,20 @@ export const installation = {
 
   async _instSavePlace(box) {
     // the three parts of a place go to the server as one text, "cabinet · row · slot"
-    const { inGw: entryId, inKey: key, inSid: sid } = box.dataset;
+    const { inGw: entryId, inKey: key, inSid: sid, inMid: mid } = box.dataset;
     const value = joinPlace([...box.querySelectorAll("input")].map((i) => i.value));
+    if (mid) {
+      // an entry written by hand keeps its place in its own list
+      const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+      const entry = gw?.manual.find((x) => x.id === mid);
+      if (!entry || entry.location === value) return;
+      entry.location = value;
+      if (await this._instSaveManual(gw)) {
+        const bar = this.shadowRoot.querySelector("#installation .progress");
+        if (bar) bar.outerHTML = this._instProgress();
+      } else box.classList.add("bad");
+      return;
+    }
     if (sid) {
       // a power supply keeps its place in its own list
       const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
@@ -846,6 +994,56 @@ export const installation = {
     // the progress follows; the rows stay as they are, so the cursor stays where it is
     const bar = this.shadowRoot.querySelector("#installation .progress");
     if (bar) bar.outerHTML = this._instProgress();
+  },
+
+  _instManualInput(input) {
+    // a field of an entry written by hand: checked while typing, the whole list goes to the server after a pause
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === input.dataset.inGw);
+    const entry = gw?.manual.find((x) => x.id === input.dataset.inMid);
+    if (!entry) return;
+    const field = input.dataset.inMfield;
+    entry[field] = input.value;
+    const text = input.value.trim();
+    const bad = (field === "bus_address" && text !== "" && !(/^\d{1,3}$/.test(text) && Number(text) >= 1 && Number(text) <= 126)) || (field === "bus_power" && text !== "" && !/^\d{1,4}([.,]\d{1,3})?$/.test(text));
+    input.classList.toggle("bad", bad);
+    clearTimeout(gw._manualSaving);
+    if (!this.shadowRoot.querySelector("#installation [data-in-mfield].bad")) gw._manualSaving = setTimeout(() => this._instSaveManual(gw), SAVE_DELAY);
+  },
+
+  async _instSaveManual(gw) {
+    const entries = gw.manual.map(({ bus_power_table, ...entry }) => entry);
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_manual", entry_id: gw.entry_id, entries });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+      return false;
+    }
+    const status = this._gateways.find((g) => g.entry_id === gw.entry_id);
+    if (status) status.manual = entries.map((x) => ({ ...x }));
+    return true;
+  },
+
+  async _instDocAdd() {
+    // an entry written by hand from the form: name, ID, kind, what it does
+    const state = this._in;
+    const form = this.shadowRoot.querySelector("#installation .docform");
+    const get = (name) => form.querySelector(`[data-in-doc-field="${name}"]`).value.trim();
+    const gw = gateways(state.doc).find((g) => g.entry_id === form.querySelector('[data-in-doc-field="gateway"]')?.value) ?? gateways(state.doc)[0];
+    const plain = get("address").replaceAll("-", "").toUpperCase();
+    state.docError = "";
+    if (!get("name")) state.docError = this._t.inst.funk.needName;
+    else if (!/^[0-9A-F]{8}$/.test(plain)) state.docError = this._t.inst.funk.badId;
+    else if (gw.manual.some((m) => m.address.replaceAll("-", "").toUpperCase() === plain)) state.docError = this._t.inst.funk.known;
+    if (state.docError) {
+      this._renderInstallation();
+      return;
+    }
+    const id = Math.random().toString(36).slice(2, 10);
+    gw.manual = [...gw.manual, { id, name: get("name"), address: plain.match(/../g).join("-"), function: get("function"), bus_address: "", feedback_id: "", bus_power: "", kind: get("kind"), location: "", power: "" }];
+    state.docForm = false;
+    state.hl = `manual|${id}`;
+    this._renderInstallation();
+    this._instSaveManual(gw);
   },
 
   _instSupplyInput(input) {
