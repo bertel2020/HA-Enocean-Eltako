@@ -1974,7 +1974,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       gw.manual = [...(gw.manual ?? []), entry];
       await this._saveManual(gw);
     }
-    this._in.tab = "radio";
+    this._in.tab = "devices";
+    this._in.view = "funk";
     this._setView("installation");
     // the Installation view fills in a moment after it opens: wait up to two seconds for the row
     const index = gw.manual.indexOf(entry);
