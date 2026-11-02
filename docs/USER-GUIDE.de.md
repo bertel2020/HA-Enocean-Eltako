@@ -343,7 +343,9 @@ in den Reiter Sender-IDs springt.
   Typ, Watt und den Bus-Adressen, die es versorgt (alles direkt dort bearbeitbar), mit
   Auslastungsbalken und einer Warnung bei Überlast; Adressen, die kein Netzteil versorgt, stehen in
   einer eigenen Gruppe. Eine Kachelleiste nennt doppelte Adressen, belegte und freie Adressen, die
-  Gesamtleistung und den Zustand der Netzteile. Bus-Adresse, Rückmelde-ID und Leistung bearbeitest
+  Gesamtleistung und den Zustand der Netzteile. Geräte der Eltako-Baureihe 14 (FSR14, FUD14,
+  FSB14 …) zählen als Eltako-Bus, auch ohne Adresse: sie stehen in der Gruppe **Noch keine
+  Bus-Adresse**, bis du die Adresse einträgst. Bus-Adresse, Rückmelde-ID und Leistung bearbeitest
   du in der Zeile (die Leistung ist die Aufnahme am Bus; ohne eigenen Wert gilt der der
   Eltako-Planungshilfe, mit **Tabelle** markiert).
 - **Funk** listet die Funk-Geräte (Taster, Sensoren, Aktoren) und die von Hand notierten Einträge.

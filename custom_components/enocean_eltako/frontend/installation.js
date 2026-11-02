@@ -30,7 +30,11 @@ const senderNumbers = (gw) => {
   for (const s of pool.senders) if (s.ref) numbers.set(s.ref, [...(numbers.get(s.ref) ?? []), idNum(s.id) - base].sort((a, b) => a - b));
   return numbers;
 };
-const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : isVirtual(d) ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+// the Eltako series 14 (FSR14, FUD14, FSB14, F3Z14D ...) hangs on the FAM14 bus
+const BUS_MODEL = /^F[A-Z0-9]{1,4}14/;
+// a device other devices can be taught into: lights and covers, and the heating actuators on the bus (not a room controller)
+const isActuator = (d) => !isVirtual(d) && (["lighting", "covers"].includes(d.category) || (d.category === "climate" && kindOf(d) === "bus"));
+const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : isVirtual(d) ? "virt" : /^\d+$/.test(d.bus_address ?? "") || BUS_MODEL.test(d.model ?? "") ? "bus" : d.category === "buttons" ? "taster" : ["sensors", "meters", "climate"].includes(d.category) ? "sensor" : "aktor");
 // the columns of the radio view that can be shown; the first three at first
 const FUNK_COLUMNS = ["loc", "id", "sends", "pow", "grp", "sig", "conn"];
 const FUNK_DEFAULT = ["id", "sig", "conn"];
@@ -79,7 +83,7 @@ const loadColumns = () => {
   } catch (err) {
     // no storage: the default
   }
-  return new Set(["place", "bus"]);
+  return new Set(["place"]);
 };
 
 // the view's state when the panel starts
@@ -198,6 +202,8 @@ export const INSTALLATION_STYLE = `
   .installation .tag.src-entered { background: color-mix(in srgb, var(--ok) 18%, transparent); color: inherit; }
   .installation .tag.role { background: var(--accent-soft); color: var(--accent); }
   .installation .lrow > * { min-width: 0; }
+  .installation .lrow .nm, .installation .lrow .lstate > span, .installation .lrow .nm a { overflow-wrap: anywhere; }
+  .installation .lrow .tag { white-space: normal; }
   .installation .lstate { overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: calc(12px * var(--fs)); }
   .installation table.matrix th, .installation table.matrix td { text-align: center; min-width: 76px; }
   .installation table.matrix th:first-child, .installation table.matrix td:first-child { text-align: left; min-width: 150px; }
@@ -206,7 +212,11 @@ export const INSTALLATION_STYLE = `
   .installation .mcell.declared { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   .installation .mcell.entered { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: transparent; }
   .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; }
-  @media (max-width: 720px) { .installation .lrow { grid-template-columns: minmax(0, 1fr) 30px; } }
+  @media (max-width: 720px) {
+    .installation .lrow { display: flex; flex-wrap: wrap; }
+    .installation .lrow > :nth-child(1), .installation .lrow > :nth-child(2), .installation .lrow > :nth-child(4) { flex: 1 1 100%; }
+    .installation .lrow > :nth-child(3) { flex: 1 1 60%; }
+  }
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
   .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
@@ -220,6 +230,8 @@ export const INSTALLATION_STYLE = `
   .installation .psurow .barbg i { display: block; height: 100%; background: var(--accent); }
   .installation .psurow .barbg i.hot { background: var(--warn); }
   .installation .seg button .isub { margin-left: 4px; }
+  .installation .gbar .seg { max-width: 100%; overflow-x: auto; }
+  .installation .gbar .seg button { white-space: nowrap; }
   .installation .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .installation .chips .isub.lead { min-width: 40px; }
   .installation button.tag { border: 0; font: inherit; font-size: calc(11px * var(--fs)); cursor: pointer; }
@@ -506,7 +518,7 @@ export const installation = {
 
   _instKindTag(d) {
     const kind = kindOf(d);
-    return `<button class="tag${kind === "bus" ? " bus" : ""}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+    return `<button class="tag${kind === "bus" ? " bus" : ""}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" && d.bus_address ? ` · ${esc(d.bus_address)}` : ""}</button>`;
   },
 
   _instSendTag(gw, d) {
@@ -524,8 +536,10 @@ export const installation = {
     const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
     const bus = docBus(gw, t, this._in.doc.bus_info);
     const own = gw.supplies ?? [];
+    // devices of the bus series without an address yet: they get one in a group of their own
+    const unaddressed = gw.devices.filter((d) => kindOf(d) === "bus" && !/^\d+$/.test(d.bus_address ?? ""));
     const addButton = `<div><button class="chip" data-in-supply-add="${esc(gw.entry_id)}">${esc(t.doc.supplyAdd)}</button></div>`;
-    if (!bus.rows.length && !own.length) return `<div class="none">${esc(T.busEmpty)}</div>${addButton}`;
+    if (!bus.rows.length && !own.length && !unaddressed.length) return `<div class="none">${esc(T.busEmpty)}</div>${addButton}`;
     // a supply feeds the addresses in its range; a lone supply without a range feeds them all
     const supplies = own.map((s) => ({ s, first: anum(s.first), last: anum(s.last), capacity: wnum(s.watts) }));
     const ranged = (x) => x.first !== null || x.last !== null;
@@ -544,7 +558,7 @@ export const installation = {
     const row = (r) => {
       const d = r.key ? gw.devices.find((x) => x.key === r.key) : null;
       const name = d ? `${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${this._instKindTag(d)}${this._instSendTag(gw, d)}</div>` : `${esc(r.device)}<div class="isub">${esc(r.name)}</div>`;
-      const tag = r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : "";
+      const tag = r.pending ? "" : r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : "";
       const power = r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${cell(r, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${tag}</span>` : r.power === null ? tag : esc(num(r.power));
       return `<tr${dups.has(r.address) ? ' class="dup"' : ""}><td class="name">${name}</td><td class="mono">${r.key ? cell(r, "bus_address", String(r.address), T.busAddress, "1–126") : r.address}</td><td>${r.key ? cell(r, "feedback_id", r.feedback, T.feedbackId, "00000081") : esc(r.feedback)}</td><td class="num">${power}</td><td>${r.key ? cell(r, "group", r.group, T.partOf) : esc(r.group)}</td></tr>`;
     };
@@ -567,6 +581,7 @@ export const installation = {
       body += `<tr class="psu"><td colspan="5"><div class="psurow"><b>${esc(standard.name)}</b><span class="isub">${esc(num(standard.capacity ?? 0))}${standard.percent !== null ? ` · ${standard.percent} %` : ""}</span><span class="isub">${esc(B.standardNote)}</span></div></td></tr>`;
     }
     if (without.length) body += `${own.length ? `<tr class="psu bad"><td colspan="5"><b>${esc(B.noSupply)}</b> <span class="isub">${without.length}</span></td></tr>` : ""}${without.map(row).join("")}`;
+    if (unaddressed.length) body += `<tr class="psu bad"><td colspan="5"><b>${esc(B.noAddress)}</b> <span class="isub">${unaddressed.length} · ${esc(B.noAddressHint)}</span></td></tr>${unaddressed.map((d) => row({ key: d.key, address: "", feedback: d.feedback_id ?? "", group: d.group ?? "", raw: d.bus_power ?? "", table: d.bus_power_table ?? null, from: "", power: null, pending: true })).join("")}`;
     const sum = `<tr><td colspan="3"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td class="num"><b>${esc(num(bus.sum))}</b></td><td></td></tr>`;
     const overCount = groups.filter((g) => g.u.over).length;
     const runs = bus.items.filter((r) => r.free).map((r) => (r.from === r.to ? `${r.from}` : `${r.from}–${r.to}`));
@@ -700,7 +715,7 @@ export const installation = {
     const byNote = new Map(gw.devices.map((d) => [d.note_key, d]));
     const byId = new Map(gw.devices.filter((d) => d.id).map((d) => [plain(d.id), d]));
     const actuators = new Map();
-    for (const d of gw.devices) if (!isVirtual(d) && ["lighting", "covers", "climate"].includes(d.category)) actuators.set(d.note_key, { key: d.note_key, device: d, name: d.name, id: d.id, links: [] });
+    for (const d of gw.devices) if (isActuator(d)) actuators.set(d.note_key, { key: d.note_key, device: d, name: d.name, id: d.id, links: [] });
     for (const l of gw.links) {
       const key = l.to_key || `name|${l.to_name}`;
       if (!actuators.has(key)) actuators.set(key, { key, device: byNote.get(l.to_key) ?? null, name: l.to_name, id: l.to_id, links: [] });
@@ -771,7 +786,7 @@ export const installation = {
     const L = this._t.inst.links;
     if (this._in.linkAdd !== key) return "";
     const known = mode === "actuator"
-      ? [...gw.devices.filter((d) => !["lighting", "covers", "climate"].includes(d.category) || isVirtual(d)).map((d) => `<option value="d|${esc(d.key)}">${esc(d.name)}</option>`), `<option value="other">${esc(L.otherSender)}</option>`]
+      ? [...gw.devices.filter((d) => !isActuator(d)).map((d) => `<option value="d|${esc(d.key)}">${esc(d.name)}</option>`), `<option value="other">${esc(L.otherSender)}</option>`]
       : [...model.actuators.map((a) => `<option value="a|${esc(a.key)}">${esc(a.name)}</option>`), `<option value="other">${esc(L.otherTarget)}</option>`];
     return `<div class="ladd" data-in-linkform="${esc(key)}" data-in-gw="${esc(gw.entry_id)}" data-in-linkmode="${mode}"><select data-in-new="other" aria-label="${esc(mode === "actuator" ? L.fromName : L.target)}">${known.join("")}</select><input data-in-new="name" placeholder="${esc(L.nameOrId)}" aria-label="${esc(L.nameOrId)}" hidden><input data-in-new="id" class="mono" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}" hidden><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}" list="in-roles"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="link-add">${esc(L.add)}</button><button class="chip" data-in-act="link-cancel">${esc(L.cancel)}</button></div><datalist id="in-roles">${L.roles.map((r) => `<option value="${esc(r)}"></option>`).join("")}</datalist>`;
   },

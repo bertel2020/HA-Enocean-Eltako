@@ -125,6 +125,9 @@ for (const lang of ["en", "de"]) {
     expect("a cell is saved after typing", JSON.stringify(edits.map((m) => m.items)), '[[{"device":"sub2","values":{"fuse":"F4 B10"}}]]');
     // a wrong value is named under the field and not sent; columns are shown in groups; the progress counts places
     const sentBefore = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length;
+    expect("the bus columns are hidden at first", root.querySelector('#installation [data-in-field="bus_address"]'), null);
+    root.querySelector('#installation [data-in-columns="bus"]').click();
+    await settle();
     const addrCell = root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"]');
     addrCell.value = "999";
     addrCell.dispatchEvent(new Event("input", { bubbles: true }));
@@ -245,7 +248,7 @@ for (const lang of ["en", "de"]) {
     await settle();
     root.querySelector('#installation [data-in-tab="links"]').click();
     await settle();
-    expect("a card per actuator (five of them)", root.querySelectorAll("#installation .lcard").length, 5);
+    expect("a card per actuator (four: the room controller is none)", root.querySelectorAll("#installation .lcard").length, 4);
     expect("link rows by actuator", root.querySelectorAll("#installation .lrow").length, 4);
     expect("a link says where it comes from", root.querySelectorAll('#installation .lrow .tag[class*="src-"]').length, 4);
     expect("the tiles count actuators, links, actuators without a link, no answer, not tested", root.querySelectorAll("#installation .tile").length, 5);
@@ -277,7 +280,7 @@ for (const lang of ["en", "de"]) {
     expect("link cards by sender", root.querySelectorAll("#installation .lcard").length >= 4, true);
     root.querySelector('#installation [data-in-linkview="matrix"]').click();
     await settle();
-    expect("the matrix has a row per actuator", root.querySelectorAll("#installation table.matrix tbody tr").length, 5);
+    expect("the matrix has a row per actuator", root.querySelectorAll("#installation table.matrix tbody tr").length, 4);
     root.querySelector('#installation [data-in-tab="log"]').click();
     await settle();
     expect("log rows", root.querySelectorAll("#installation .log tbody tr").length, 3);

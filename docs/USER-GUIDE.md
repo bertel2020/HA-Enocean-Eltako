@@ -324,7 +324,8 @@ jumps to the Sender IDs tab.
   type, watts and the bus addresses it feeds (all edited right there), with a load bar and a
   warning when it is overloaded; addresses no supply feeds sit in a group of their own. A strip of
   tiles names duplicate addresses, used and free addresses, the total power and the state of the
-  supplies. You edit bus address, feedback ID and power in the row (the power is what the device
+  supplies. Devices of the Eltako series 14 (FSR14, FUD14, FSB14 ...) count as Eltako bus even
+  without an address: they sit in the group **No bus address yet** until you write it down. You edit bus address, feedback ID and power in the row (the power is what the device
   takes from the bus; without a value of your own the one from Eltako's planning guide counts,
   marked **table**).
 - **Radio** lists the radio devices (buttons, sensors, actuators) and the entries written down by
