@@ -207,9 +207,6 @@ export const INSTALLATION_STYLE = `
   .installation .lnone { padding: 10px 12px; color: var(--warn); font-size: calc(13px * var(--fs)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, transparent); }
   .installation .ladd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
   .installation .ladd input, .installation .ladd select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
-  .installation .tag.src-assigned { background: color-mix(in srgb, var(--warn) 20%, transparent); color: inherit; }
-  .installation .tag.src-declared { background: var(--accent-soft); color: var(--accent); }
-  .installation .tag.src-entered { background: color-mix(in srgb, var(--ok) 18%, transparent); color: inherit; }
   .installation .tag.role { background: var(--accent-soft); color: var(--accent); }
   .installation .lrow > * { min-width: 0; }
   .installation .lrow .nm, .installation .lrow .lstate > span, .installation .lrow .nm a { overflow-wrap: anywhere; }
@@ -223,7 +220,8 @@ export const INSTALLATION_STYLE = `
   .installation .mcell.assigned { background: color-mix(in srgb, var(--warn) 20%, transparent); border-color: transparent; }
   .installation .mcell.declared { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   .installation .mcell.entered { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: transparent; }
-  .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; }
+  .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; width: 26px; height: 26px; border-radius: 50%; }
+  .installation .mplus:hover { background: var(--accent-soft); color: var(--accent); }
   @media (max-width: 720px) {
     .installation .lrow { display: flex; flex-wrap: wrap; }
     .installation .lrow > :nth-child(1), .installation .lrow > :nth-child(2), .installation .lrow > :nth-child(4) { flex: 1 1 100%; }
@@ -272,7 +270,50 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
-`;
+
+  /* colour: one hue per kind, used for tags, chips, row stripes and cards */
+  .installation { --k-bus: #2f6fb5; --k-sensor: #139a87; --k-taster: #7b5cc9; --k-aktor: #d77f1f; --k-virt: #c2477f; --k-psu: #6b7b8d; }
+  .installation .k-bus, .installation [data-k="bus"] { --k: var(--k-bus); }
+  .installation .k-sensor, .installation [data-k="sensor"] { --k: var(--k-sensor); }
+  .installation .k-taster, .installation [data-k="taster"] { --k: var(--k-taster); }
+  .installation .k-aktor, .installation [data-k="aktor"] { --k: var(--k-aktor); }
+  .installation .k-virt, .installation [data-k="virt"] { --k: var(--k-virt); }
+  .installation .k-psu, .installation [data-k="psu"] { --k: var(--k-psu); }
+  .installation .tag.kind { background: color-mix(in srgb, var(--k) 16%, transparent); color: color-mix(in srgb, var(--k) 70%, var(--text)); font-weight: 500; }
+  .installation .tag.kind:hover { background: color-mix(in srgb, var(--k) 26%, transparent); }
+  .installation .itable tr[data-k] > td:first-child { box-shadow: inset 3px 0 0 var(--k); }
+  .installation .chip[data-k]::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--k); display: inline-block; margin-right: 6px; }
+  .installation .chip[data-k][aria-pressed="true"] { border-color: var(--k); background: color-mix(in srgb, var(--k) 14%, transparent); color: color-mix(in srgb, var(--k) 75%, var(--text)); }
+  .installation .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .installation .seg button[aria-pressed="true"] .isub { color: inherit; opacity: 0.85; }
+  .installation .tile { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--soft)); font-size: calc(16px * var(--fs)); font-weight: 500; line-height: 1.35; }
+  .installation .tile small { font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .installation .tile.ok { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, var(--soft)); }
+  .installation .tile.bad { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .itable th { border-bottom: 2px solid var(--line); }
+  .installation .itable tbody tr:not(.grp):not(.psu):not(.free):hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .installation .itable tr.grp td { background: color-mix(in srgb, var(--accent) 10%, var(--soft)); }
+  .installation .itable tr.psu td { background: color-mix(in srgb, var(--k-psu) 14%, transparent); }
+  .installation .itable tr.psu.bad td { background: color-mix(in srgb, var(--warn) 20%, transparent); }
+  .installation .gwhead h3 { border-left: 3px solid var(--accent); padding-left: 10px; }
+  .installation .progress .barbg { height: 8px; border-radius: 4px; }
+  .installation .lcard { border-left: 4px solid var(--k, var(--line)); }
+  .installation .lhead { background: color-mix(in srgb, var(--k, var(--accent)) 9%, var(--soft)); }
+  .installation .tag.role, .installation .tag[class*="src-"] { font-weight: 500; }
+  .installation [data-src="assigned"], .installation .tag.src-assigned { --s: var(--k-aktor); }
+  .installation [data-src="declared"], .installation .tag.src-declared { --s: var(--k-bus); }
+  .installation [data-src="entered"], .installation .tag.src-entered { --s: var(--ok); }
+  .installation .tag[class*="src-"] { background: color-mix(in srgb, var(--s) 18%, transparent); color: color-mix(in srgb, var(--s) 70%, var(--text)); }
+  .installation .chip[data-src]::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--s); display: inline-block; margin-right: 6px; }
+  .installation .chip[data-src][aria-pressed="true"] { border-color: var(--s); background: color-mix(in srgb, var(--s) 14%, transparent); color: color-mix(in srgb, var(--s) 75%, var(--text)); }
+  .installation .itable tr[data-k] > td.name:first-child { padding-left: 14px; }
+  .installation .tag.ev { --e: var(--k-psu); background: color-mix(in srgb, var(--e) 16%, transparent); color: color-mix(in srgb, var(--e) 72%, var(--text)); font-weight: 500; }
+  .installation .tag.ev-device_added { --e: var(--ok); }
+  .installation .tag.ev-device_removed, .installation .tag.ev-sender_removed { --e: var(--warn); }
+  .installation .tag.ev-sender_assigned { --e: var(--k-bus); }
+  .installation .tag.ev-teach_in { --e: var(--k-taster); }
+  .installation .tag.ev-sender_test { --e: var(--k-sensor); }
+  .installation .tag.ev-import { --e: var(--k-psu); }`;
 
 const gateways = (doc) => doc?.gateways ?? [];
 const label = (t, field) => t.inst.fields[field];
@@ -455,7 +496,7 @@ export const installation = {
     const plain = (id) => String(id ?? "").replaceAll("-", "").toUpperCase();
     const all = gateways(state.doc).flatMap((gw) => gw.devices.filter(isVirtual).map((d) => ({ gw, d })));
     const taught = ({ gw, d }) => gw.links.filter((l) => l.source === "entered" && plain(l.from_id) === plain(d.id));
-    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
     const sensors = all.filter(({ d }) => d.virtual);
     const tiles = `<div class="tiles">${tile(V.tileDevices, esc(I.funk.devicesN(all.length)))}${tile(V.tileLinked, `${all.filter((x) => taught(x).length).length} ${esc(I.of)} ${all.length}`)}${tile(V.tileNoSource, String(sensors.filter(({ d }) => !d.follows?.length).length), sensors.some(({ d }) => !d.follows?.length))}</div>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
@@ -465,7 +506,7 @@ export const installation = {
         const nr = numbers.length ? numbers.map((n) => `<a data-in-snd="${esc(gw.entry_id)}|${n}">${n}</a>`).join(", ") : "–";
         const follows = d.follows?.length ? d.follows.map((e) => `<span class="mono">${esc(e)}</span>`).join("<br>") : `<span class="isub">${esc(d.virtual ? V.noSource : V.sendsPress)}</span>`;
         const into = taught({ gw, d }).map((l) => (l.to_key && gw.devices.some((x) => x.note_key === l.to_key) ? `<a data-in-goto="${esc(gw.devices.find((x) => x.note_key === l.to_key).key)}">${esc(l.to_name)}</a>` : esc(l.to_name)) + (l.role ? ` <span class="isub">${esc(l.role)}</span>` : "") + (l.learn ? ` <span class="isub">· ${esc(l.learn)}</span>` : ""));
-        return `<tr data-in-row="${esc(d.key)}"><td class="name">${esc(d.name)}<div class="isub">${esc(d.model ?? "")}</div><div>${this._instKindTag(d)}</div></td><td class="mono">${nr}</td><td class="mono">${esc(d.id)}</td><td>${follows}</td><td class="lk">${into.length ? into.join("<br>") : `<span class="isub">${esc(V.noLink)}</span>`}</td></tr>`;
+        return `<tr data-in-row="${esc(d.key)}" data-k="virt"><td class="name">${esc(d.name)}<div class="isub">${esc(d.model ?? "")}</div><div>${this._instKindTag(d)}</div></td><td class="mono">${nr}</td><td class="mono">${esc(d.id)}</td><td>${follows}</td><td class="lk">${into.length ? into.join("<br>") : `<span class="isub">${esc(V.noLink)}</span>`}</td></tr>`;
       }).join("");
       const head = [I.device, V.cols.nr, V.cols.id, V.cols.follows, V.cols.taught].map((h) => `<th>${esc(h)}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr>${head}</tr></thead><tbody>${rows || `<tr><td colspan="5" class="none">${esc(V.none)}</td></tr>`}</tbody></table></div></section>`;
@@ -495,10 +536,10 @@ export const installation = {
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices.filter((d) => ["sensor", "taster", "aktor"].includes(kindOf(d))), ...this._instExtras(gw).filter((d) => d.manual && kindOf(d) !== "bus")]);
     const now = this._now() / 1000;
     const late = all.filter((d) => d.signal?.last != null && now - d.signal.last > SIGNAL_LATE).length;
-    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
     const tiles = `<div class="tiles">${tile(F.tileDevices, esc(F.devicesN(all.length)))}${tile(F.tileDocumented, String(all.filter((d) => d.manual).length))}${tile(F.tileSilent, String(late), late > 0)}${tile(F.tileRepeater, String(all.filter((d) => d.signal?.repeater_only).length))}</div>`;
     const kinds = ["taster", "sensor", "aktor"];
-    const artChips = `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
+    const artChips = `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${FUNK_COLUMNS.map((c) => `<label><input type="checkbox" data-in-funkcol="${c}" ${state.funkCols.has(c) ? "checked" : ""}>${esc(F.cols[c])}</label>`).join("")}</div></details>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     const form = state.docForm
@@ -523,7 +564,7 @@ export const installation = {
         const name = d.manual ? `<input class="cell" data-in-mfield="name" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d.name === F.unnamed ? "" : d.name)}" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}" autocomplete="off">` : esc(d.name);
         const sub = d.manual ? "" : `<div class="isub">${esc([d.model, d.eep].filter(Boolean).join(" · "))}</div>`;
         const delete_ = d.manual ? `<td><button class="icon-btn" data-in-mdel="${esc(d.mid)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.manualRemove)}" aria-label="${esc(t.doc.manualRemove)}">${svg(ICON.close)}</button></td>` : "<td></td>";
-        return `<tr data-in-row="${esc(d.key)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
+        return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
       }).join("");
       const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
@@ -538,7 +579,7 @@ export const installation = {
 
   _instKindTag(d) {
     const kind = kindOf(d);
-    return `<button class="tag${kind === "bus" ? " bus" : ""}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" && d.bus_address ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+    return `<button class="tag kind k-${kind}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" && d.bus_address ? ` · ${esc(d.bus_address)}` : ""}</button>`;
   },
 
   _instSendTag(gw, d) {
@@ -580,7 +621,7 @@ export const installation = {
       const name = d ? `${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${this._instKindTag(d)}${this._instSendTag(gw, d)}</div>` : `${esc(r.device)}<div class="isub">${esc(r.name)}</div>`;
       const tag = r.pending ? "" : r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : "";
       const power = r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${cell(r, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${tag}</span>` : r.power === null ? tag : esc(num(r.power));
-      return `<tr${dups.has(r.address) ? ' class="dup"' : ""}><td class="name">${name}</td><td class="mono">${r.key ? cell(r, "bus_address", String(r.address), T.busAddress, "1–126") : r.address}</td><td>${r.key ? cell(r, "feedback_id", r.feedback, T.feedbackId, "00000081") : esc(r.feedback)}</td><td class="num">${power}</td><td>${r.key ? cell(r, "group", r.group, T.partOf) : esc(r.group)}</td></tr>`;
+      return `<tr data-k="bus"${dups.has(r.address) ? ' class="dup"' : ""}><td class="name">${name}</td><td class="mono">${r.key ? cell(r, "bus_address", r.address === "" ? "" : String(r.address), T.busAddress, t.inst.shortField.bus_address) : r.address}</td><td>${r.key ? cell(r, "feedback_id", r.feedback, T.feedbackId, t.inst.shortField.feedback_id) : esc(r.feedback)}</td><td class="num">${power}</td><td>${r.key ? cell(r, "group", r.group, T.partOf) : esc(r.group)}</td></tr>`;
     };
     const sfield = (x, field, ph, width) => `<input class="cell" data-in-sfield="${field}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(x.s.id)}" value="${esc(x.s[field] ?? "")}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" style="width:${width}px;min-width:0" autocomplete="off"${field === "watts" ? ' inputmode="decimal"' : field === "name" ? "" : ' inputmode="numeric"'}>`;
     const usage = (capacity, rows) => {
@@ -593,7 +634,7 @@ export const installation = {
       const u = usage(x.capacity, rowsOf[i]);
       const text = x.capacity !== null ? `${num(u.l)} ${t.inst.of} ${num(x.capacity)}${u.over ? ` · ${B.overloaded}` : ""}` : num(u.l);
       const place = [x.s.location, x.s.circuit, x.s.fuse].filter(Boolean).join(", ");
-      return { u, html: `<tr class="psu${u.over ? " bad" : ""}"><td colspan="5"><div class="psurow">${sfield(x, "name", t.doc.supplyName, 150)}${sfield(x, "watts", t.doc.supplyWatts, 64)}<span class="isub">W</span><span class="isub">${esc(T.busAddress)}</span>${sfield(x, "first", t.doc.supplyFirst, 56)}<span>–</span>${sfield(x, "last", t.doc.supplyLast, 56)}${bar(u)}<span class="isub">${esc(text)}</span>${place ? `<span class="isub">· ${esc(place)}</span>` : ""}<button class="icon-btn" data-in-supply-del="${esc(x.s.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.supplyRemove)}" aria-label="${esc(t.doc.supplyRemove)}">${svg(ICON.close)}</button></div></td></tr>${rowsOf[i].map(row).join("")}` };
+      return { u, html: `<tr class="psu${u.over ? " bad" : ""}" data-k="psu"><td colspan="5"><div class="psurow">${sfield(x, "name", t.doc.supplyName, 150)}${sfield(x, "watts", t.doc.supplyWatts, 64)}<span class="isub">W</span><span class="isub">${esc(T.busAddress)}</span>${sfield(x, "first", t.doc.supplyFirst, 56)}<span>–</span>${sfield(x, "last", t.doc.supplyLast, 56)}${bar(u)}<span class="isub">${esc(text)}</span>${place ? `<span class="isub">· ${esc(place)}</span>` : ""}<button class="icon-btn" data-in-supply-del="${esc(x.s.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.supplyRemove)}" aria-label="${esc(t.doc.supplyRemove)}">${svg(ICON.close)}</button></div></td></tr>${rowsOf[i].map(row).join("")}` };
     });
     let body = groups.map((g) => g.html).join("");
     if (!own.length) {
@@ -606,8 +647,8 @@ export const installation = {
     const overCount = groups.filter((g) => g.u.over).length;
     const runs = bus.items.filter((r) => r.free).map((r) => (r.from === r.to ? `${r.from}` : `${r.from}–${r.to}`));
     const missing = bus.rows.length - bus.counted;
-    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
-    const tiles = `<div class="tiles">${tile(B.duplicates, esc(bus.dups.length ? B.dupText(bus.dups.join(", ")) : B.none), bus.dups.length > 0)}${tile(B.used, esc(B.usedOf(new Set(bus.rows.map((r) => r.address)).size)))}${tile(B.free, esc(runs.slice(0, 6).join(", ") + (runs.length > 6 ? " …" : "")))}${tile(B.power, `${esc(num(bus.sum))}${missing ? ` <span class="isub">${esc(B.withoutValue(missing))}</span>` : ""}`)}${tile(B.supplies, esc(overCount ? B.supplyOver(overCount) : without.length && own.length ? B.supplyWithout(without.length) : B.supplyOk), overCount > 0 || (own.length > 0 && without.length > 0))}</div>`;
+    const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tiles = `<div class="tiles">${tile(B.duplicates, esc(bus.dups.length ? B.dupText(bus.dups.join(", ")) : B.none), bus.dups.length > 0 ? true : "ok")}${tile(B.used, esc(B.usedOf(new Set(bus.rows.map((r) => r.address)).size)))}${tile(B.free, esc(runs.slice(0, 6).join(", ") + (runs.length > 6 ? " …" : "")))}${tile(B.power, `${esc(num(bus.sum))}${missing ? ` <span class="isub">${esc(B.withoutValue(missing))}</span>` : ""}`)}${tile(B.supplies, esc(overCount ? B.supplyOver(overCount) : without.length && own.length ? B.supplyWithout(without.length) : B.supplyOk), overCount > 0 || (own.length > 0 && without.length > 0) ? true : "ok")}</div>`;
     const notes = [
       bus.fromTable ? T.busFromTable(bus.source).replace(/^\* /, "") : "",
       bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
@@ -679,7 +720,7 @@ export const installation = {
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
       const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr data-in-row="${esc(d.key)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
+      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const devices = [...gw.devices, ...psus(gw)].filter(pass);
@@ -719,7 +760,7 @@ export const installation = {
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
     const artChips = kindList.length > 1
-      ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
+      ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
     const missChips = state.view === "all"
       ? `<div class="chips"><span class="isub lead">${esc(I.missing)}</span><button class="chip" data-in-miss="loc" aria-pressed="${state.miss.loc}">${esc(label(t, "location"))} <b>${present.filter((d) => !isVirtual(d) && !d.location).length}</b></button><button class="chip" data-in-miss="fuse" aria-pressed="${state.miss.fuse}">${esc(label(t, "fuse"))} <b>${present.filter((d) => FUSE_KINDS.has(kindOf(d)) && !d.fuse).length}</b></button></div>`
@@ -771,13 +812,13 @@ export const installation = {
     const testable = (a) => a.device && a.device.category === "lighting" && (a.device.senders ?? []).length > 0;
     const untested = (l) => l.source === "assigned" && l.status === "unverified";
     const nTested = model.actuators.flatMap((a) => (testable(a) ? a.links.filter((l) => l.source === "assigned") : []));
-    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
     const without = model.actuators.filter((a) => !a.links.length && a.device).length;
     const noAnswer = gw.links.filter((l) => l.status === "no_answer").length;
     const notTested = nTested.filter(untested).length;
-    const tiles = `<div class="tiles">${tile(L.tiles.actuators, String(model.actuators.length))}${tile(L.tiles.links, String(gw.links.length))}${tile(L.tiles.none, String(without), without > 0)}${tile(L.tiles.noAnswer, String(noAnswer), noAnswer > 0)}${tile(L.tiles.untested, String(notTested))}</div>`;
+    const tiles = `<div class="tiles">${tile(L.tiles.actuators, String(model.actuators.length))}${tile(L.tiles.links, String(gw.links.length))}${tile(L.tiles.none, String(without), without > 0 ? true : "ok")}${tile(L.tiles.noAnswer, String(noAnswer), noAnswer > 0 ? true : "ok")}${tile(L.tiles.untested, String(notTested))}</div>`;
     const chip = (attr, value, current, text, count = null) => `<button class="chip" ${attr}="${value}" aria-pressed="${current === value}">${esc(text)}${count === null ? "" : ` <b>${count}</b>`}</button>`;
-    const filters = state.linkView === "matrix" ? "" : `<div class="chips"><span class="isub lead">${esc(L.show)}</span>${chip("data-in-linkfilter", "all", state.linkFilter, L.filters.all)}${chip("data-in-linkfilter", "none", state.linkFilter, L.filters.none, without)}${chip("data-in-linkfilter", "untested", state.linkFilter, L.filters.untested, notTested)}${chip("data-in-linkfilter", "noanswer", state.linkFilter, L.filters.noanswer, noAnswer)}</div><div class="chips"><span class="isub lead">${esc(L.source.title)}</span>${chip("data-in-linksource", "all", state.linkSource, L.filters.all)}${["assigned", "declared", "entered"].map((x) => chip("data-in-linksource", x, state.linkSource, L.source[x])).join("")}</div>`;
+    const filters = state.linkView === "matrix" ? "" : `<div class="chips"><span class="isub lead">${esc(L.show)}</span>${chip("data-in-linkfilter", "all", state.linkFilter, L.filters.all)}${chip("data-in-linkfilter", "none", state.linkFilter, L.filters.none, without)}${chip("data-in-linkfilter", "untested", state.linkFilter, L.filters.untested, notTested)}${chip("data-in-linkfilter", "noanswer", state.linkFilter, L.filters.noanswer, noAnswer)}</div><div class="chips"><span class="isub lead">${esc(L.source.title)}</span>${chip("data-in-linksource", "all", state.linkSource, L.filters.all)}${["assigned", "declared", "entered"].map((x) => chip("data-in-linksource", x, state.linkSource, L.source[x]).replace('<button class="chip"', `<button class="chip" data-src="${x}"`)).join("")}</div>`;
     const passLink = (l) => (state.linkSource === "all" || l.source === state.linkSource) && (state.linkFilter !== "untested" || untested(l)) && (state.linkFilter !== "noanswer" || l.status === "no_answer");
     const body = state.linkView === "matrix" ? this._instLinkMatrix(gw, model) : state.linkView === "sender" ? this._instLinkBySender(gw, model, passLink) : this._instLinkByActuator(gw, model, passLink, testable);
     return `${tiles}${filters}${body}`;
@@ -835,7 +876,7 @@ export const installation = {
       const numbers = a.device ? (gw.numbers?.get(a.device.note_key) ?? []) : [];
       const head = `<div class="lhead"><div><b>${a.device ? `<a data-in-goto="${esc(a.device.key)}">${esc(a.name)}</a>` : esc(a.name)}</b><div class="isub">${esc([a.device?.model, a.id].filter(Boolean).join(" · "))}</div></div>${a.device ? this._instKindTag(a.device) : ""}${numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}">${esc(this._t.inst.senderTag(numbers.join(", ")))}</button>` : ""}<span class="grow"></span><span class="isub">${a.links.length ? L.count(a.links.length) : ""}</span>${testable(a) ? `<button class="chip" data-in-test="${esc(a.device.key)}" data-in-gw="${esc(gw.entry_id)}" ${running ? "disabled" : ""}>${esc(running ? L.testing : L.test)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addLink)}</button></div>`;
       const rows = a.links.length ? shown.map((l) => this._instLinkRow(gw, l, model, "actuator")).join("") : `<div class="lnone">${esc(L.noLink)}</div>`;
-      return `<div class="lcard">${head}${rows}${this._instLinkAddForm(gw, model, key, "actuator")}</div>`;
+      return `<div class="lcard" data-k="${a.device ? kindOf(a.device) : "aktor"}">${head}${rows}${this._instLinkAddForm(gw, model, key, "actuator")}</div>`;
     }).join("");
     return cards || `<div class="none">${esc(L.none)}</div>`;
   },
@@ -850,7 +891,7 @@ export const installation = {
       const key = `s|${x.key}`;
       const title = x.kind === "ha" ? `${L.from.ha} · ${x.id}` : [x.name, x.id].filter(Boolean).join(" · ");
       const head = `<div class="lhead"><div><b>${x.device ? `<a data-in-goto="${esc(x.device.key)}">${esc(title)}</a>` : esc(title)}</b></div><span class="grow"></span>${wallWithoutDevice(x) || (x.kind === "entered" && !x.device && x.id) ? `<button class="chip" data-in-walldoc="${esc(x.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.documentHint)}">${esc(L.document)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addActuator)}</button></div>`;
-      return `<div class="lcard">${head}${shown.map((l) => this._instLinkRow(gw, l, model, "sender")).join("")}${this._instLinkAddForm(gw, model, key, "sender")}</div>`;
+      return `<div class="lcard" data-k="${x.device ? kindOf(x.device) : x.kind === "ha" ? "virt" : "taster"}">${head}${shown.map((l) => this._instLinkRow(gw, l, model, "sender")).join("")}${this._instLinkAddForm(gw, model, key, "sender")}</div>`;
     }).join("");
     return cards || `<div class="none">${esc(L.none)}</div>`;
   },
@@ -874,7 +915,7 @@ export const installation = {
     const rows = gateways(this._in.doc)
       .flatMap((gw) => gw.log.map((e) => ({ ...e, gateway: gw.title })))
       .sort((a, b) => b.time.localeCompare(a.time))
-      .map((e) => `<tr><td class="mono">${esc(new Date(e.time).toLocaleString(this._hass.language))}</td><td class="kind">${esc(t.inst.events[e.kind] || e.kind)}</td><td>${esc(e.detail || e.device)}</td>${multi ? `<td class="isub">${esc(e.gateway)}</td>` : ""}</tr>`)
+      .map((e) => `<tr><td class="mono">${esc(new Date(e.time).toLocaleString(this._hass.language))}</td><td class="kind"><span class="tag ev ev-${esc(e.kind)}">${esc(t.inst.events[e.kind] || e.kind)}</span></td><td>${esc(e.detail || e.device)}</td>${multi ? `<td class="isub">${esc(e.gateway)}</td>` : ""}</tr>`)
       .join("");
     if (!rows) return `<div class="none">${esc(t.inst.noLog)}</div>`;
     return `<div class="tablewrap"><table class="itable log"><thead><tr><th>${esc(t.time)}</th><th>${esc(t.inst.event)}</th><th>${esc(t.inst.detail)}</th>${multi ? `<th>${esc(t.gateway)}</th>` : ""}</tr></thead><tbody>${rows}</tbody></table></div>`;
