@@ -220,6 +220,14 @@ export const INSTALLATION_STYLE = `
     .installation .lrow > :nth-child(1), .installation .lrow > :nth-child(2), .installation .lrow > :nth-child(4) { flex: 1 1 100%; }
     .installation .lrow > :nth-child(3) { flex: 1 1 60%; }
   }
+  .installation details.sheet { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .installation details.sheet > summary { cursor: pointer; font-weight: 500; font-size: calc(14px * var(--fs)); }
+  .installation details.sheet > p { margin: 8px 0 0; max-width: 90ch; }
+  .installation ol.sheetsteps { list-style: none; margin: 12px 0 2px; padding: 0; display: grid; gap: 12px; }
+  .installation ol.sheetsteps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; font-size: calc(13px * var(--fs)); }
+  .installation ol.sheetsteps li > b { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); font-weight: 500; font-size: calc(12px * var(--fs)); }
+  .installation ol.sheetsteps textarea.paste { min-height: 72px; font: inherit; font-size: calc(13px * var(--fs)); }
+  .installation .sheetrun { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
   .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
@@ -684,7 +692,12 @@ export const installation = {
     const bulk = picked
       ? `<div class="bulk"><b>${esc(I.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(I.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(I.value)}" aria-label="${esc(I.value)}"><button class="chip" data-in-act="bulk">${esc(I.apply)}</button><button class="chip" data-in-act="unpick">${esc(I.clearSelection)}</button></div>`
       : "";
-    const paste = `<details><summary>${esc(I.pasteTitle)}</summary><div style="display:grid;gap:8px;margin-top:8px"><span class="isub">${esc(I.pasteHint)}</span><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div><button class="chip" data-in-act="paste">${esc(I.apply)}</button> <button class="chip" data-in-act="copy-table">${esc(I.copyTable)}</button> <span class="isub">${esc(state.pasteResult)}</span></div></div></details>`;
+    const paste = `<details class="sheet" ${state.paste || state.pasteResult ? "open" : ""}><summary>${esc(I.pasteTitle)}</summary><p class="isub">${esc(I.pasteHint)}</p>
+      <ol class="sheetsteps">
+        <li><b>1</b><div><button class="chip" data-in-act="copy-table">${esc(I.copyTable)}</button> <span class="isub">${esc(I.sheetCopyHint)}</span></div></li>
+        <li><b>2</b><div>${esc(I.sheetEdit)}</div></li>
+        <li><b>3</b><div><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div class="sheetrun"><button class="chip" data-in-act="paste">${esc(I.sheetApply)}</button> <span class="isub" data-in-paste-info>${esc(state.pasteResult || this._instPasteSeen())}</span></div></div></li>
+      </ol></details>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}</div></details>`;
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
@@ -1104,6 +1117,9 @@ export const installation = {
     const state = this._in;
     if (e.target.matches("[data-in-paste]")) {
       state.paste = e.target.value;
+      state.pasteResult = "";
+      const info = this.shadowRoot.querySelector("#installation [data-in-paste-info]");
+      if (info) info.textContent = this._instPasteSeen();
       return;
     }
     if (e.target.matches("[data-in-search]")) {
@@ -1475,6 +1491,13 @@ export const installation = {
     }
     this._notice(this._t.inst.bulkDone(saved), saved > 0);
     this._renderInstallation();
+  },
+
+  _instPasteSeen() {
+    // what the pasted text is taken for, before it is applied
+    if (!this._in.paste.trim()) return "";
+    const parsed = parseTable(this._in.paste, this._t);
+    return parsed.address === undefined || parsed.address < 0 || !parsed.columns.length ? this._t.inst.pasteBad : this._t.inst.pasteSeen(parsed.rows.length, parsed.columns.length);
   },
 
   async _instPaste() {
