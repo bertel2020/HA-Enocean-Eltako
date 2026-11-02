@@ -33,7 +33,7 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 - **Devices:** switching actuators, dimmers, shutters, heating actuators and room controllers, window handles, contacts, rockers, meters, sensors, Permundo plugs and VLD actuators. Any of the standard EnOcean profiles can be added as a generic device. Full list: [docs/devices.md](docs/devices.md).
 - **Covers** with controller and direction-rocker senders in parallel, position tracking, vent slots, slat tilt and a travel time assistant.
 - **Virtual sensors:** Home Assistant entities sent as EnOcean contact, motion, temperature, brightness, weather or rocker, e.g. to feed the shading automatic of an actuator.
-- **Teach-in, discovery and a live telegram monitor** in the **EnOcean** sidebar panel, plus capture and diagnostics for bug reports.
+- **Teach-in, discovery and a live telegram monitor** in the **EnOcean** sidebar panel, plus capture and diagnostics for bug reports. Three colour schemes (light/dark) and three font sizes are selectable.
 - **Device Proxy app:** shares one gateway between Home Assistant and other programs, replays the telegrams missed during a restart and is set up from its announcement.
 - **Takeover** of the devices of the old `eltako` integration without teaching the actuators in again.
 - **Safety stays in the actuator:** wind, rain, frost and lock-out protection are never replaced.

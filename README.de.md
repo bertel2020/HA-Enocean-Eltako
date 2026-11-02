@@ -33,7 +33,7 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 - **Geräte:** Schaltaktoren, Dimmer, Rollläden, Heizungsaktoren und Raumregler, Fenstergriffe, Kontakte, Taster, Zähler, Sensoren, Permundo-Zwischenstecker und VLD-Aktoren. Jedes Standardprofil von EnOcean lässt sich als generisches Gerät anlegen. Vollständige Liste: [docs/devices.de.md](docs/devices.de.md).
 - **Rollläden** mit Controller- und Richtungstaster-Sender parallel, Positionsverfolgung, Lüftungsschlitzen, Lamellenstellung und Laufzeit-Assistent.
 - **Virtuelle Sensoren:** Home-Assistant-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur, -Helligkeit, -Wetter oder -Taster senden, z. B. für die Beschattungsautomatik eines Aktors.
-- **Anlernen, Discovery und ein Live-Telegramm-Monitor** im Seitenleisten-Panel **EnOcean**, dazu Mitschnitt und Diagnosedaten für Fehlerberichte.
+- **Anlernen, Discovery und ein Live-Telegramm-Monitor** im Seitenleisten-Panel **EnOcean**, dazu Mitschnitt und Diagnosedaten für Fehlerberichte. Drei Farbschemata (hell/dunkel) und drei Schriftgrößen sind wählbar.
 - **App Device Proxy:** teilt ein Gateway zwischen Home Assistant und anderen Programmen, liefert die beim Neustart verpassten Telegramme nach und wird anhand ihrer Meldung eingerichtet.
 - **Übernahme** der Geräte der alten Integration `eltako`, ohne die Aktoren neu einzulernen.
 - **Sicherheit bleibt im Aktor:** Wind-, Regen-, Frost- und Aussperrschutz werden nie ersetzt.
