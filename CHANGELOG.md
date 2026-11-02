@@ -4,6 +4,20 @@ All notable changes to this project are documented here, in English and German: 
 has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
+### [Unreleased]
+
+**English**
+
+#### Changed
+
+- The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
+
+**Deutsch**
+
+#### Geändert
+
+- Der Katalogeintrag **Wippentaster** (EnOcean) und die Geräte-Dokumentation nennen jetzt die **EnOcean-Tastermodule PTM 210/215** (F6-02-01), die in vielen Tastern stecken.
+
 ### [1.5.0] - 2026-11-02
 
 **English**
