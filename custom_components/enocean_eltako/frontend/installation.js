@@ -193,7 +193,8 @@ export const INSTALLATION_STYLE = `
   .installation .lhead .grow { flex: 1; }
   .installation .lhead b { font-weight: 500; font-size: calc(14px * var(--fs)); }
   .installation .lrow { display: grid; grid-template-columns: minmax(150px, 1.5fr) auto minmax(110px, 1fr) minmax(120px, 1fr) 30px; gap: 8px 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
-  .installation .lrow input.cell { border-color: var(--line); }
+  .installation .lrow input.cell { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; }
+  .installation .lrow input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .lnone { padding: 10px 12px; color: var(--warn); font-size: calc(13px * var(--fs)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, transparent); }
   .installation .ladd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
   .installation .ladd input, .installation .ladd select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
@@ -203,6 +204,8 @@ export const INSTALLATION_STYLE = `
   .installation .tag.role { background: var(--accent-soft); color: var(--accent); }
   .installation .lrow > * { min-width: 0; }
   .installation .lrow .nm, .installation .lrow .lstate > span, .installation .lrow .nm a { overflow-wrap: anywhere; }
+  .installation .lrow .lstate { min-width: 0; }
+  .installation .lrow .lstate > span.isub { flex: 1 1 100%; min-width: 0; }
   .installation .lrow .tag { white-space: normal; }
   .installation .lstate { overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: calc(12px * var(--fs)); }
   .installation table.matrix th, .installation table.matrix td { text-align: center; min-width: 76px; }
@@ -771,10 +774,10 @@ export const installation = {
     const learn = l.source === "entered"
       ? `<input class="cell" data-in-efield="learn" data-in-eid="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`
       : `<input class="cell" data-in-learn="${esc(l.key)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`;
-    const evidence = [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean).join(" · ");
+    const evidence = [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean);
     const state = l.source === "assigned"
-      ? `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>${evidence ? `<span class="isub">${esc(evidence)}</span>` : ""}`
-      : `<span class="isub">${esc(L.statusHint[l.status] ?? "")}</span>`;
+      ? `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>${evidence.map((e) => `<span class="isub">${esc(e)}</span>`).join("")}`
+      : "";
     const action = l.source === "entered"
       ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>`
       : `<button class="icon-btn" data-in-goto="${esc(model.byNote.get(l.to_key)?.key ?? "")}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>`;
