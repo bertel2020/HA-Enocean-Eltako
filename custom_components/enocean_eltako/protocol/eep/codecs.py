@@ -8,7 +8,7 @@ from typing import Any
 
 from ..telegram import RadioTelegram, Rorg
 from . import EEPRef
-from .eltako import heating, sensors, shutter, switching
+from .eltako import futh, heating, sensors, shutter, switching
 from .model import decode
 from .std.profiles import PROFILES
 
@@ -53,6 +53,7 @@ DECODERS: dict[EEPRef, Decoder] = {
         heating.decode_status(t.data) if t.rorg in (Rorg.RPS, Rorg.BS4) else None
     ),
     EEPRef("A5-10-06", "eltako"): _eltako(Rorg.BS4, sensors.decode_room_controller),
+    EEPRef("F6-02-01", "eltako"): _eltako(Rorg.RPS, futh.decode_code),
     EEPRef("A5-12-01", "eltako"): _eltako(Rorg.BS4, sensors.decode_meter),
     EEPRef("A5-12-02", "eltako"): _eltako(Rorg.BS4, lambda d: sensors.decode_meter(d, "A5-12-02")),
     EEPRef("A5-12-03", "eltako"): _eltako(Rorg.BS4, lambda d: sensors.decode_meter(d, "A5-12-03")),

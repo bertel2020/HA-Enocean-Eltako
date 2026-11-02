@@ -276,6 +276,8 @@ export function docTables(gw, t, profile) {
   // their rows follow each other, the group is the description and each ID says what it sends
   const radio = gw.devices
     .filter((d) => !d.virtual && ["sensors", "meters", "climate"].includes(d.category))
+    // a device sending from several IDs (FUTH): a row per ID, each with its own profile
+    .flatMap((d) => (d.ids?.length ? d.ids.map((x) => ({ ...d, id: x.id, eep: x.eep, eep_extra: [] })) : [d]))
     .map((d) => ({ key: d.key ?? "", id: d.id, device: d.model ?? "", place: place(d), location: d.location ?? "", area: d.area ?? "", own: d.name, partOf: d.group ?? "", category: T.categories[d.category], description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
     .sort((a, b) => (a.group || a.description).localeCompare(b.group || b.description) || a.id.localeCompare(b.id));
   for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", description: m.function, eep: "", sends: T.byHand, group: "" });

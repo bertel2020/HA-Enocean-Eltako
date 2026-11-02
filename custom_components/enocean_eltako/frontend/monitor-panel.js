@@ -195,6 +195,12 @@ const STYLE = `
   .menu button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; text-align: left; white-space: nowrap; }
   .menu button:hover, .menu button:focus-visible { background: var(--accent-soft); }
   .menu svg { color: var(--muted); }
+  /* the menu of the + button of an unknown sender: set up as a device, or only written down */
+  .addmenu { position: fixed; z-index: 5; display: grid; min-width: 240px; padding: 6px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%); }
+  .addmenu button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; text-align: left; font-size: calc(14px * var(--fs)); }
+  .addmenu button:hover, .addmenu button:focus-visible { background: var(--accent-soft); }
+  .addmenu svg { color: var(--muted); flex: none; }
+  .addmenu small { display: block; color: var(--muted); font-size: calc(12px * var(--fs)); }
 
   .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .search { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 6px 0 12px;
@@ -517,14 +523,7 @@ const STYLE = `
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .dev-detail .acts-row { margin-top: 8px; }
-  .manual { display: grid; gap: 6px; }
-  .manual .mrow { display: grid; grid-template-columns: minmax(0, 1fr) 9em minmax(0, 2fr) 6em 8em 5em 2rem; gap: 6px; align-items: center; }
-  .manual .srow { display: grid; grid-template-columns: minmax(0, 1fr) 6em 1rem 5em 5em 2rem; gap: 6px; align-items: center; }
-  .manual .mhead { color: var(--muted); } .manual .mhead span { font-size: calc(11px * var(--fs)); padding: 0 2px; }
   input.note[aria-invalid="true"] { border-color: var(--warn); }
-  @media (max-width: 640px) { .manual .mrow { grid-template-columns: repeat(3, minmax(0, 1fr)) 2rem; }
-    .manual .mrow input:nth-of-type(1) { grid-column: 1 / 4; } .manual .mrow input:nth-of-type(2), .manual .mrow input:nth-of-type(3) { grid-column: 1 / -1; }
-    .manual .mrow button { grid-column: 4; grid-row: 1; } .manual .mhead { display: none; } .manual .srow { grid-template-columns: minmax(0, 1fr) 5em 1rem 2rem; } .manual .srow input:nth-of-type(1) { grid-column: 1 / 2; } .manual .srow input:nth-of-type(3), .manual .srow input:nth-of-type(4) { grid-column: span 2; } }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: calc(13px * var(--fs)); font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
@@ -801,6 +800,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._onPointer = (e) => {
       const look = this.shadowRoot.querySelector(".look");
       if (look && !e.composedPath().includes(look) && !this.shadowRoot.getElementById("lookMenu").hidden) this._toggleLook(false);
+      if (!e.composedPath().some((el) => el.classList?.contains("addmenu") || el.classList?.contains("add"))) this._closeAddMenu();
       const more = this.shadowRoot.querySelector(".more");
       if (more && !e.composedPath().includes(more) && !this.shadowRoot.getElementById("moreMenu").hidden) this._toggleMenu(false);
     };
@@ -1250,7 +1250,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
       const add = e.target.closest(".add");
       if (add) {
-        this._addDevice(add.dataset.id);
+        this._addMenu(add);
         return;
       }
       const page = e.target.closest("[data-device-page]");
@@ -1469,16 +1469,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       field._saving = setTimeout(() => this._saveNote(field), 600);
     };
     $("devices").addEventListener("input", saveNote);
-    $("cards").addEventListener("input", (e) => {
-      if (!this._manualEdit(e)) saveNote(e);
-    });
+    $("cards").addEventListener("input", saveNote);
     $("cards").addEventListener("click", (e) => {
       const prune = e.target.closest("[data-prune-notes]");
       if (prune) {
         this._pruneNotes(prune.dataset.pruneNotes);
         return;
       }
-      if (this._manualEdit(e)) return;
       const button = e.target.closest("[data-gateway-action]");
       if (!button) return;
       const entry = button.closest(".card").dataset.entry;
@@ -1512,6 +1509,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     } else if ((e.key === "p" || e.key === "P") && shortcut) {
       e.preventDefault();
       this._togglePause();
+    } else if (e.key === "Escape" && this.shadowRoot.querySelector(".addmenu")) {
+      this._closeAddMenu(true);
     } else if (e.key === "Escape" && this.shadowRoot.activeElement === input) {
       this._setText("");
       input.blur();
@@ -1803,7 +1802,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const add = e.target.closest(".add");
     if (add) {
       e.stopPropagation();
-      this._addDevice(add.dataset.id);
+      this._addMenu(add);
       return;
     }
     const page = e.target.closest("[data-device-page]");
@@ -1909,6 +1908,75 @@ class EnOceanEltakoPanel extends HTMLElement {
     await this._refreshStatus();
     this._render();
     this._notice(this._t.hideResult.done(sender), true);
+  }
+
+  _addMenu(button) {
+    // the + of an unknown sender asks: set it up as a device in Home Assistant, or only write it down
+    const open = this.shadowRoot.querySelector(".addmenu");
+    const again = open && open._for === button.dataset.id;
+    this._closeAddMenu();
+    if (again) return;
+    const t = this._t;
+    const menu = document.createElement("div");
+    menu.className = "addmenu";
+    menu.setAttribute("role", "menu");
+    menu._for = button.dataset.id;
+    menu.innerHTML = `<button role="menuitem" data-addact="device">${svg(ICON.plus)}<span>${esc(t.addAsDevice)}<small>${esc(t.addAsDeviceHint)}</small></span></button>
+      <button role="menuitem" data-addact="document">${svg(ICON.list)}<span>${esc(t.addDocOnly)}<small>${esc(t.addDocOnlyHint)}</small></span></button>`;
+    menu.addEventListener("click", (e) => {
+      const act = e.target.closest("[data-addact]")?.dataset.addact;
+      if (!act) return;
+      e.stopPropagation();
+      this._closeAddMenu();
+      if (act === "device") this._addDevice(button.dataset.id);
+      else this._documentSender(button.dataset.gateway, button.dataset.id);
+    });
+    this.shadowRoot.appendChild(menu);
+    const box = button.getBoundingClientRect();
+    const width = menu.offsetWidth;
+    menu.style.left = `${Math.max(8, Math.min(box.right - width, window.innerWidth - width - 8))}px`;
+    const below = box.bottom + 4;
+    menu.style.top = `${below + menu.offsetHeight > window.innerHeight ? Math.max(8, box.top - menu.offsetHeight - 4) : below}px`;
+    menu._anchor = button;
+    button.setAttribute("aria-expanded", "true");
+    menu.querySelector("button").focus();
+  }
+
+  _closeAddMenu(refocus = false) {
+    const menu = this.shadowRoot.querySelector(".addmenu");
+    if (!menu) return;
+    menu._anchor?.removeAttribute("aria-expanded");
+    if (refocus) menu._anchor?.focus();
+    menu.remove();
+  }
+
+  async _documentSender(gateway, sender) {
+    // only for the documentation: an entry under "Other devices" with the ID filled in, then its name field
+    const gw = this._gateways.find((g) => g.entry_id === gateway);
+    if (!gw) {
+      this._notice(this._t.addResult.failed);
+      return;
+    }
+    const same = (a) => String(a).replace(/[^0-9a-f]/gi, "").toLowerCase();
+    let entry = (gw.manual ?? []).find((e) => same(e.address) === same(sender));
+    if (!entry) {
+      entry = { id: Math.random().toString(36).slice(2, 10), name: "", address: sender, function: "", bus_address: "", feedback_id: "", bus_power: "", kind: "", location: "", power: "" };
+      gw.manual = [...(gw.manual ?? []), entry];
+      await this._saveManual(gw);
+    }
+    this._in.tab = "devices";
+    this._in.view = "funk";
+    this._setView("installation");
+    // the Installation view fills in a moment after it opens: wait up to two seconds for the row
+    for (let tries = 0; tries < 40; tries++) {
+      const name = this.shadowRoot.querySelector(`#installation [data-in-mid="${entry.id}"][data-in-mfield="name"]`);
+      if (name) {
+        name.scrollIntoView({ block: "center" });
+        name.focus();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 
   async _addDevice(sender) {
@@ -2361,21 +2429,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
-  _manualEditor(gw, part = "manual") {
-    // part "manual": devices Home Assistant cannot see (buttons taught in directly ...); part "supply": the
-    // power supplies of the bus; both for the documentation
-    const t = this._t.doc;
-    const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    const supply = (e, key, label, max) => `<input class="note" data-supply-field="${key}"${key === "watts" ? ' inputmode="decimal"' : key === "first" || key === "last" ? ' inputmode="numeric"' : ""} value="${esc(e[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const supplyHead = (gw.supplies ?? []).length ? `<div class="srow mhead" aria-hidden="true"><span>${esc(t.supplyName)}</span><span>${esc(t.supplyWatts)}</span><span></span><span>${esc(t.supplyFirstHead)}</span><span>${esc(t.supplyLastHead)}</span><span></span></div>` : "";
-    const power = supplyHead + (gw.supplies ?? []).map((e, i) => `<div class="srow" data-supply-row="${i}">${supply(e, "name", t.supplyName, 60)}${supply(e, "watts", t.supplyWatts, 8)}<span class="sub">W</span>${supply(e, "first", t.supplyFirst, 3)}${supply(e, "last", t.supplyLast, 3)}<button class="icon-btn" data-supply-del="${i}" title="${esc(t.supplyRemove)}" aria-label="${esc(t.supplyRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
-    const supplies = `<div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div><button class="chip text" data-supply-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.supplyAdd)}</button></div>`;
-    const manual = `<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div>`;
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}">${part === "supply" ? supplies : manual}</div>`;
-  }
-
   async _importDocumentation(file) {
     // notes and entries made by hand from an earlier JSON export; only what is empty is filled in
     const t = this._t.doc;
@@ -2418,81 +2471,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     } catch (err) {
       this._notice(this._t.doc.noteFailed);
     }
-  }
-
-  async _saveSupplies(gateway) {
-    try {
-      await this._hass.callWS({ type: "enocean_eltako/set_supplies", entry_id: gateway.entry_id, supplies: gateway.supplies });
-    } catch (err) {
-      this._notice(this._t.doc.noteFailed);
-    }
-  }
-
-  _manualEdit(e) {
-    // typing in an entry, adding one, removing one: the gateway keeps the list, the server gets all of it
-    const holder = e.target.closest?.("[data-entry-of]");
-    const gateway = holder && this._gateways.find((g) => g.entry_id === holder.dataset.entryOf);
-    if (!gateway) return false;
-    const supply = e.target.closest("[data-supply-field]");
-    // a number of watts, 1,2 or 1.2: anything else is marked and not sent
-    const badWatts = (input) => {
-      const bad = input.value.trim() !== "" && !/^\d{1,4}([.,]\d{1,3})?$/.test(input.value.trim());
-      input.setAttribute("aria-invalid", String(bad));
-      return bad;
-    };
-    // a bus address: a whole number from 1 to 126
-    const badAddress = (input) => {
-      const text = input.value.trim();
-      const bad = text !== "" && !(/^\d{1,3}$/.test(text) && Number(text) >= 1 && Number(text) <= 126);
-      input.setAttribute("aria-invalid", String(bad));
-      return bad;
-    };
-    if (e.type === "input" && supply) {
-      const row = gateway.supplies[Number(supply.closest("[data-supply-row]").dataset.supplyRow)];
-      row[supply.dataset.supplyField] = supply.value;
-      const check = { watts: badWatts, first: badAddress, last: badAddress }[supply.dataset.supplyField];
-      check?.(supply);
-      // first after last: both are marked
-      const order = Number(row.first) > Number(row.last) && row.first !== "" && row.last !== "";
-      supply.closest("[data-supply-row]").querySelectorAll('[data-supply-field="first"], [data-supply-field="last"]').forEach((input) => {
-        if (order) input.setAttribute("aria-invalid", "true");
-        else if (check === badAddress || !input.value.trim()) check?.(input);
-      });
-      clearTimeout(gateway._supplySaving);
-      // nothing goes to the server while any supply field is marked, in this row or another
-      if (!holder.querySelector('[data-supply-field][aria-invalid="true"]')) gateway._supplySaving = setTimeout(() => this._saveSupplies(gateway), 600);
-      return true;
-    }
-    const field = e.target.closest("[data-manual-field]");
-    if (e.type === "input" && field) {
-      const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
-      entry[field.dataset.manualField] = field.value;
-      clearTimeout(gateway._manualSaving);
-      const bad = { bus_power: badWatts, bus_address: badAddress }[field.dataset.manualField]?.(field) ?? false;
-      if (!bad) gateway._manualSaving = setTimeout(() => this._saveManual(gateway), 600);
-      return true;
-    }
-    if (e.type !== "click") return false;
-    const addSupply = e.target.closest("[data-supply-add]");
-    const delSupply = e.target.closest("[data-supply-del]");
-    if (addSupply || delSupply) {
-      gateway.supplies = addSupply
-        ? [...(gateway.supplies ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", watts: "", first: "", last: "" }]
-        : gateway.supplies.filter((_, i) => i !== Number(delSupply.dataset.supplyDel));
-      this._renderCards();
-      if (this._view === "installation") this._renderInstallation();
-      if (delSupply) this._saveSupplies(gateway);
-      return true;
-    }
-    const add = e.target.closest("[data-manual-add]");
-    const del = e.target.closest("[data-manual-del]");
-    if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "", bus_address: "", feedback_id: "", bus_power: "" }];
-    else if (del) gateway.manual = gateway.manual.filter((_, i) => i !== Number(del.dataset.manualDel));
-    else return false;
-    this._renderCards();
-    if (this._view === "installation") this._renderInstallation();
-    if (del) this._saveManual(gateway);
-    return true;
   }
 
   _renderCards(background = false) {
@@ -2694,7 +2672,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             ${r.ha_device ? `<button class="icon-btn" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDevice)}">${svg(ICON.open)}</button>` : ""}
             ${this._canResend(r) ? `<button class="icon-btn" data-resend="${esc(key)}" title="${esc(t.resendHint)}" aria-label="${esc(t.resend)}">${svg(ICON.send)}</button>` : ""}
             ${unknown ? `<button class="icon-btn" data-report="${esc(r.sender)}" title="${esc(t.reportHint)}" aria-label="${esc(t.report)}">${svg(ICON.bug)}</button>${this._recordButton(r.sender)}` : ""}
-            ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
+            ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
           </div>
           <dl class="meta">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true, true))}</dd></div>
@@ -3449,7 +3427,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const acts = d.quiet
       ? teach + page
       : `${teach}${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
-          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
+          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
     const picked = !!d.devKey && this._sel.has(d.devKey);

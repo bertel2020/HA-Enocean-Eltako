@@ -1,6 +1,12 @@
 {
   "entity": {
     "binary_sensor": {
+      "pump": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
       "gateway_connection": {
         "default": "mdi:lan-disconnect",
         "state": {
@@ -197,6 +203,9 @@
       },
       "night_setback": {
         "default": "mdi:weather-night"
+      },
+      "hygrostat_temperature": {
+        "default": "mdi:thermometer-water"
       },
       "position_accuracy": {
         "default": "mdi:target"

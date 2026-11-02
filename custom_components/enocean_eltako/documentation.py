@@ -20,12 +20,26 @@ from .catalog import OPT_WALL_OFF, OPT_WALL_ON, OPT_WALL_SWITCH
 from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
 from .discovery import pending
+from .heard import heard_by
 from .notes import Notes, device_key
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 
 VERSION = 2  # 2: typed device fields, links, the event log; the import still takes 1
 IMPORTABLE_VERSIONS = (1, VERSION)
+
+
+def _signal(device: EnOceanDevice) -> dict[str, Any] | None:
+    """When a device was last heard and how well; a virtual device has no telegrams (None)."""
+    if device.virtual is not None:
+        return None
+    heard = heard_by(device)
+    rssi = [row["rssi"] for row in heard["gateways"] if row["rssi"] is not None]
+    return {
+        "last": device.stats.last_seen,
+        "rssi": max(rssi, default=None),
+        "repeater_only": heard["repeater_only"],
+    }
 
 
 def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[str, Any]:
@@ -54,6 +68,11 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
         "id": format_id(device.device_id),
         "eep": str(model.receive) if model.receive else None,
         "eep_extra": [str(ref) for ref in model.receive_extra],
+        # a device sending from several IDs (FUTH): each with its own profile
+        "ids": [
+            {"id": format_id(radio_id), "eep": str(link.eep)}
+            for radio_id, link in device.linked.items()
+        ],
         "area": area.name if area else None,
         "labels": sorted(entry.labels) if entry else [],
         "entities": len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0,
@@ -66,6 +85,9 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             }
             for profile, sender in device.senders.items()
         ],
+        "signal": _signal(device),
+        # the entities a virtual sensor follows (empty for any other device)
+        "follows": list(device.virtual.sources) if device.virtual is not None else [],
         "wall_switch": wall,
         "bus_power_table": bus_power(device._model_label),
         **notes.device(device_key(device.subentry)),

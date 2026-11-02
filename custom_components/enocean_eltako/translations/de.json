@@ -169,11 +169,12 @@
         "fbh": "Bewegungs- und Helligkeitssensor (FBH65 …)",
         "co2": "CO2-Sensor (FCO2TF65)",
         "room_controller": "Raumregler (FUTH, FTR65HS …)",
+        "futh": "Raumregler mit mehreren IDs (FUTH55ED, FUTH65D)",
         "weather": "Wetterstation (FWS61, FWG14MS)",
         "psc": "Permundo PSC132 / PSC234 Zwischenstecker",
         "rocker_contact": "Kontakt über Tastertelegramme (FTS14EM, Garagentor …)",
         "heating_actuator": "Heizungsaktor, Home Assistant regelt (FHK14, FAE14 …)",
-        "enocean_rocker": "Wippentaster (NodOn, PEHA, Jung …)",
+        "enocean_rocker": "Wippentaster (PTM 210/215, NodOn, PEHA, Jung …)",
         "enocean_window_handle": "Fenstergriff (Hoppe SecuSignal …)",
         "enocean_contact": "Tür-/Fensterkontakt (NodOn …)",
         "gas_meter": "Gaszähler (F3Z14D …)",
@@ -497,6 +498,7 @@
             "model_fbh": "Bewegungs- und Helligkeitssensor",
             "model_co2": "CO2-Sensor",
             "model_room_controller": "Raumregler",
+            "model_futh": "Raumregler, mehrere IDs",
             "model_weather": "Wetterstation",
             "model_psc": "Permundo PSC132 / PSC234 Zwischenstecker",
             "model_rocker_contact": "Kontakt über Tastertelegramme",
@@ -537,10 +539,11 @@
             "model_fbh": "FBH65",
             "model_co2": "FCO2TF65",
             "model_room_controller": "FUTH, FTR65HS",
+            "model_futh": "FUTH55ED, FUTH65D: die niedrigste seiner vier IDs (endet auf 00)",
             "model_weather": "FWS61, FWG14MS",
             "model_rocker_contact": "FTS14EM, Garagentor",
             "model_heating_actuator": "FHK14, FAE14",
-            "model_enocean_rocker": "NodOn, PEHA, Jung",
+            "model_enocean_rocker": "PTM 210/215, NodOn, PEHA, Jung",
             "model_enocean_window_handle": "Hoppe SecuSignal",
             "model_enocean_contact": "NodOn",
             "model_gas_meter": "F3Z14D",
@@ -932,6 +935,9 @@
       "night_setback": {
         "name": "Nachtabsenkung"
       },
+      "hygrostat_temperature": {
+        "name": "Temperatur Hygrostat"
+      },
       "dawn": {
         "name": "Dämmerung"
       },
@@ -1109,6 +1115,9 @@
           "on": "Nass",
           "off": "Trocken"
         }
+      },
+      "pump": {
+        "name": "Pumpe"
       },
       "gateway_connection": {
         "name": "Verbindung",
