@@ -523,14 +523,7 @@ const STYLE = `
   .devices .dev.open .expand .chev { transform: rotate(180deg); }
   .devices .dev-detail { grid-column: 1 / -1; cursor: default; padding: 4px 4px 8px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .dev-detail .acts-row { margin-top: 8px; }
-  .manual { display: grid; gap: 6px; }
-  .manual .mrow { display: grid; grid-template-columns: minmax(0, 1fr) 9em minmax(0, 2fr) 6em 8em 5em 2rem; gap: 6px; align-items: center; }
-  .manual .srow { display: grid; grid-template-columns: minmax(0, 1fr) 6em 1rem 5em 5em 2rem; gap: 6px; align-items: center; }
-  .manual .mhead { color: var(--muted); } .manual .mhead span { font-size: calc(11px * var(--fs)); padding: 0 2px; }
   input.note[aria-invalid="true"] { border-color: var(--warn); }
-  @media (max-width: 640px) { .manual .mrow { grid-template-columns: repeat(3, minmax(0, 1fr)) 2rem; }
-    .manual .mrow input:nth-of-type(1) { grid-column: 1 / 4; } .manual .mrow input:nth-of-type(2), .manual .mrow input:nth-of-type(3) { grid-column: 1 / -1; }
-    .manual .mrow button { grid-column: 4; grid-row: 1; } .manual .mhead { display: none; } .manual .srow { grid-template-columns: minmax(0, 1fr) 5em 1rem 2rem; } .manual .srow input:nth-of-type(1) { grid-column: 1 / 2; } .manual .srow input:nth-of-type(3), .manual .srow input:nth-of-type(4) { grid-column: span 2; } }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .dev-detail .dsec h4 { margin: 0 0 8px; font-size: calc(13px * var(--fs)); font-weight: 500; color: var(--muted); }
   /* values as small tiles, like the Device Proxy's statistics */
@@ -1476,16 +1469,13 @@ class EnOceanEltakoPanel extends HTMLElement {
       field._saving = setTimeout(() => this._saveNote(field), 600);
     };
     $("devices").addEventListener("input", saveNote);
-    $("cards").addEventListener("input", (e) => {
-      if (!this._manualEdit(e)) saveNote(e);
-    });
+    $("cards").addEventListener("input", saveNote);
     $("cards").addEventListener("click", (e) => {
       const prune = e.target.closest("[data-prune-notes]");
       if (prune) {
         this._pruneNotes(prune.dataset.pruneNotes);
         return;
       }
-      if (this._manualEdit(e)) return;
       const button = e.target.closest("[data-gateway-action]");
       if (!button) return;
       const entry = button.closest(".card").dataset.entry;
@@ -1970,7 +1960,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const same = (a) => String(a).replace(/[^0-9a-f]/gi, "").toLowerCase();
     let entry = (gw.manual ?? []).find((e) => same(e.address) === same(sender));
     if (!entry) {
-      entry = { id: Math.random().toString(36).slice(2, 10), name: "", address: sender, function: "", bus_address: "", feedback_id: "", bus_power: "" };
+      entry = { id: Math.random().toString(36).slice(2, 10), name: "", address: sender, function: "", bus_address: "", feedback_id: "", bus_power: "", kind: "", location: "", power: "" };
       gw.manual = [...(gw.manual ?? []), entry];
       await this._saveManual(gw);
     }
@@ -1978,12 +1968,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._in.view = "funk";
     this._setView("installation");
     // the Installation view fills in a moment after it opens: wait up to two seconds for the row
-    const index = gw.manual.indexOf(entry);
     for (let tries = 0; tries < 40; tries++) {
-      const row = this.shadowRoot.querySelector(`[data-entry-of="${gw.entry_id}"] [data-manual-row="${index}"]`);
-      if (row) {
-        row.scrollIntoView({ block: "center" });
-        row.querySelector('[data-manual-field="name"]')?.focus();
+      const name = this.shadowRoot.querySelector(`#installation [data-in-mid="${entry.id}"][data-in-mfield="name"]`);
+      if (name) {
+        name.scrollIntoView({ block: "center" });
+        name.focus();
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -2440,16 +2429,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
-  _manualEditor(gw) {
-    // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
-    const t = this._t.doc;
-    const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
-    const manual = `<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div>`;
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}">${manual}</div>`;
-  }
-
   async _importDocumentation(file) {
     // notes and entries made by hand from an earlier JSON export; only what is empty is filled in
     const t = this._t.doc;
@@ -2492,45 +2471,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     } catch (err) {
       this._notice(this._t.doc.noteFailed);
     }
-  }
-
-  _manualEdit(e) {
-    // typing in an entry, adding one, removing one: the gateway keeps the list, the server gets all of it
-    const holder = e.target.closest?.("[data-entry-of]");
-    const gateway = holder && this._gateways.find((g) => g.entry_id === holder.dataset.entryOf);
-    if (!gateway) return false;
-    // a number of watts, 1,2 or 1.2: anything else is marked and not sent
-    const badWatts = (input) => {
-      const bad = input.value.trim() !== "" && !/^\d{1,4}([.,]\d{1,3})?$/.test(input.value.trim());
-      input.setAttribute("aria-invalid", String(bad));
-      return bad;
-    };
-    // a bus address: a whole number from 1 to 126
-    const badAddress = (input) => {
-      const text = input.value.trim();
-      const bad = text !== "" && !(/^\d{1,3}$/.test(text) && Number(text) >= 1 && Number(text) <= 126);
-      input.setAttribute("aria-invalid", String(bad));
-      return bad;
-    };
-    const field = e.target.closest("[data-manual-field]");
-    if (e.type === "input" && field) {
-      const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
-      entry[field.dataset.manualField] = field.value;
-      clearTimeout(gateway._manualSaving);
-      const bad = { bus_power: badWatts, bus_address: badAddress }[field.dataset.manualField]?.(field) ?? false;
-      if (!bad) gateway._manualSaving = setTimeout(() => this._saveManual(gateway), 600);
-      return true;
-    }
-    if (e.type !== "click") return false;
-    const add = e.target.closest("[data-manual-add]");
-    const del = e.target.closest("[data-manual-del]");
-    if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "", bus_address: "", feedback_id: "", bus_power: "" }];
-    else if (del) gateway.manual = gateway.manual.filter((_, i) => i !== Number(del.dataset.manualDel));
-    else return false;
-    this._renderCards();
-    if (this._view === "installation") this._renderInstallation();
-    if (del) this._saveManual(gateway);
-    return true;
   }
 
   _renderCards(background = false) {
