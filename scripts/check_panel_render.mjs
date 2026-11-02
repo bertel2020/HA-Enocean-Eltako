@@ -114,9 +114,9 @@ for (const lang of ["en", "de"]) {
     expect("four tabs: devices, sender IDs, links, log", root.querySelectorAll("#installation .groups .itab").length, 4);
     expect("the views are a segmented control", root.querySelectorAll("#installation .seg button").length, 4);
     expect("a gateway section names its device count", !!root.querySelector("#installation section.gw .gwhead .isub:last-child"), true);
-    expect("every row names its kind (8 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 13);
+    expect("every row names its kind (10 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 15);
     expect("the kind chips count the kinds", [...root.querySelectorAll("#installation [data-in-art]")].map((b) => b.textContent.replace(/\s+/g, " ").trim()).join("|").length > 0, true);
-    expect("installation table rows (8 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr").length, 13);
+    expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr").length, 15);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
     cell.value = "F4 B10";
     cell.dispatchEvent(new Event("input", { bubbles: true }));
@@ -209,6 +209,16 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-act="doc-add"]').click();
     await settle();
     expect("a documented device is a new row and goes to the server", root.querySelectorAll('#installation [data-in-mfield="name"]').length === 3 && fake.sent.filter((m) => m.type === "enocean_eltako/set_manual").length === 1, true);
+    // the virtual view: what Home Assistant sends, what it follows, and the jump to the sender number
+    root.querySelector('#installation [data-in-view="virt"]').click();
+    await settle();
+    expect("the virtual view lists the two virtual devices", root.querySelectorAll("#installation .itable tbody tr").length, 2);
+    expect("a virtual sensor names what it follows", root.querySelector("#installation .itable tbody").textContent.includes("binary_sensor.fenster_bad"), true);
+    root.querySelector("#installation .itable [data-in-snd]").click();
+    await settle();
+    expect("a sender number opens the Sender IDs tab with the row marked", root.querySelector('#installation [data-in-tab="gwsenders"]').getAttribute("aria-selected"), "true");
+    root.querySelector('#installation [data-in-tab="devices"]').click();
+    await settle();
     root.querySelector('#installation [data-in-view="bus"]').click();
     await settle();
     expect("the bus table has a sum, tiles and load bars in the supply rows", root.querySelectorAll("#installation .itable tbody tr").length > 3 && root.querySelectorAll("#installation .tile").length === 5 && root.querySelectorAll("#installation .psurow .barbg").length > 0, true);

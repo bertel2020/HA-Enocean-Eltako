@@ -18,7 +18,19 @@ const VIEW_OF = { bus: "bus", psu: "bus", sensor: "funk", taster: "funk", aktor:
 const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
 // the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
 // by what it is: a button, a sensor or an actuator on radio
-const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+// Home Assistant sends from it: a virtual sensor, or a button of the category virtual
+const isVirtual = (d) => Boolean(d.virtual) || d.category === "virtual";
+const idNum = (id) => parseInt(String(id).replace(/-/g, ""), 16);
+// the sender numbers (0 to 127 of the radio pool) that each device holds, by its note key
+const senderNumbers = (gw) => {
+  const base = gw.base_id ? idNum(gw.base_id) : null;
+  const pool = (gw.pools ?? []).find((p) => p.kind === "radio");
+  const numbers = new Map();
+  if (base === null || !pool) return numbers;
+  for (const s of pool.senders) if (s.ref) numbers.set(s.ref, [...(numbers.get(s.ref) ?? []), idNum(s.id) - base].sort((a, b) => a - b));
+  return numbers;
+};
+const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : isVirtual(d) ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
 // the columns of the radio view that can be shown; the first three at first
 const FUNK_COLUMNS = ["loc", "id", "sends", "pow", "grp", "sig", "conn"];
 const FUNK_DEFAULT = ["id", "sig", "conn"];
@@ -192,11 +204,12 @@ export const INSTALLATION_STYLE = `
   .installation .tag.bus { background: var(--accent-soft); color: var(--accent); }
   .installation .itable tr.grp td { background: var(--soft); font-weight: 500; cursor: pointer; padding: 6px 8px; }
   .installation .itable td .dash { color: var(--muted); }
-  .installation .place { display: flex; align-items: center; min-width: 210px; border: 1px solid transparent; border-radius: 6px; }
+  .installation .place { display: flex; align-items: center; min-width: 250px; border: 1px solid transparent; border-radius: 6px; }
   .installation .place:hover { border-color: var(--line); }
   .installation .place:focus-within { border-color: var(--accent); background: var(--surface); }
-  .installation .place.empty { border: 1px dashed var(--line); }
+  .installation .place.blank { border: 1px dashed var(--line); }
   .installation .place input { flex: 1 1 0; min-width: 0; width: 33%; box-sizing: border-box; font: inherit; font-size: calc(12px * var(--fs)); padding: 4px 6px; border: 0; background: transparent; color: inherit; }
+  .installation .place input:first-child { flex: 1.5 1 0; }
   .installation .place input:focus { outline: none; }
   .installation .place i { color: var(--muted); font-style: normal; }
   .installation details.colmenu { position: relative; }
@@ -260,7 +273,10 @@ export const installation = {
     const state = this._in;
     try {
       state.doc = await this._hass.callWS({ type: "enocean_eltako/documentation" });
-      for (const gw of state.doc.gateways) gw.supplies = (gw.supplies ?? []).map((x) => ({ ...SUPPLY_BLANK, ...x }));
+      for (const gw of state.doc.gateways) {
+        gw.supplies = (gw.supplies ?? []).map((x) => ({ ...SUPPLY_BLANK, ...x }));
+        gw.numbers = senderNumbers(gw);
+      }
       state.error = false;
     } catch (err) {
       state.error = true;
@@ -342,7 +358,7 @@ export const installation = {
         if (r.free) return `<tr class="free"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
         if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
         if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="6"><span class="tag warn">${esc(T.blocked)}</span></td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td></tr>`;
-        return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.place].filter(Boolean).join(", "))}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
+        return `<tr data-in-row="snd|${esc(gw.entry_id)}|${r.nr}"><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${[r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ")}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
       }).join("");
       const outside = externals.length
         ? `<tr class="outside"><td colspan="9">${esc(T.external)}</td></tr>${externals.map((r) => `<tr><td class="mono">–</td><td class="mono">${esc(r.id)}</td><td></td><td>${esc(r.device)}</td><td>${esc(r.name)}</td><td></td><td></td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`).join("")}`
@@ -373,6 +389,33 @@ export const installation = {
     if (out.length) lines.push(`${esc(T.controls)} ${out.map((l) => `${goto(l.to_key, l.to_name)}${l.role ? ` <span class="isub">${esc(l.source === "assigned" ? this._profile(l.role) : l.role)}</span>` : ""}`).join(", ")}`);
     if (into.length) lines.push(`${esc(T.controlledBy)} ${into.map((l) => esc(l.from_name || l.from_id)).join(", ")}`);
     return lines.length ? lines.join("<br>") : `<span class="isub">${esc(d.category === "buttons" || d.manual ? T.noLink : "–")}</span>`;
+  },
+
+  _instVirt() {
+    // what Home Assistant sends: the virtual devices with their sender numbers, what they follow and what they were taught into
+    const t = this._t;
+    const I = t.inst;
+    const V = I.virt;
+    const state = this._in;
+    const plain = (id) => String(id ?? "").replaceAll("-", "").toUpperCase();
+    const all = gateways(state.doc).flatMap((gw) => gw.devices.filter(isVirtual).map((d) => ({ gw, d })));
+    const taught = ({ gw, d }) => gw.links.filter((l) => l.source === "entered" && plain(l.from_id) === plain(d.id));
+    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const sensors = all.filter(({ d }) => d.virtual);
+    const tiles = `<div class="tiles">${tile(V.tileDevices, esc(I.funk.devicesN(all.length)))}${tile(V.tileLinked, `${all.filter((x) => taught(x).length).length} ${esc(I.of)} ${all.length}`)}${tile(V.tileNoSource, String(sensors.filter(({ d }) => !d.follows?.length).length), sensors.some(({ d }) => !d.follows?.length))}</div>`;
+    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    const sections = gateways(state.doc).map((gw) => {
+      const rows = gw.devices.filter((d) => isVirtual(d) && matches(d, state.q)).map((d) => {
+        const numbers = gw.numbers?.get(d.note_key) ?? [];
+        const nr = numbers.length ? numbers.map((n) => `<a data-in-snd="${esc(gw.entry_id)}|${n}">${n}</a>`).join(", ") : "–";
+        const follows = d.follows?.length ? d.follows.map((e) => `<span class="mono">${esc(e)}</span>`).join("<br>") : `<span class="isub">${esc(d.virtual ? V.noSource : V.sendsPress)}</span>`;
+        const into = taught({ gw, d }).map((l) => (l.to_key && gw.devices.some((x) => x.note_key === l.to_key) ? `<a data-in-goto="${esc(gw.devices.find((x) => x.note_key === l.to_key).key)}">${esc(l.to_name)}</a>` : esc(l.to_name)) + (l.role ? ` <span class="isub">${esc(l.role)}</span>` : "") + (l.learn ? ` <span class="isub">· ${esc(l.learn)}</span>` : ""));
+        return `<tr data-in-row="${esc(d.key)}"><td class="name">${esc(d.name)}<div class="isub">${esc(d.model ?? "")}</div><div>${this._instKindTag(d)}</div></td><td class="mono">${nr}</td><td class="mono">${esc(d.id)}</td><td>${follows}</td><td class="lk">${into.length ? into.join("<br>") : `<span class="isub">${esc(V.noLink)}</span>`}</td></tr>`;
+      }).join("");
+      const head = [I.device, V.cols.nr, V.cols.id, V.cols.follows, V.cols.taught].map((h) => `<th>${esc(h)}</th>`).join("");
+      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr>${head}</tr></thead><tbody>${rows || `<tr><td colspan="5" class="none">${esc(V.none)}</td></tr>`}</tbody></table></div></section>`;
+    });
+    return `${tiles}<div class="itools" style="align-items:center">${search}</div>${sections.join("")}<p class="isub">${esc(V.hint)}</p>`;
   },
 
   _instSignal(d) {
@@ -425,7 +468,7 @@ export const installation = {
         const name = d.manual ? `<input class="cell" data-in-mfield="name" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d.name === F.unnamed ? "" : d.name)}" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}" autocomplete="off">` : esc(d.name);
         const sub = d.manual ? "" : `<div class="isub">${esc([d.model, d.eep].filter(Boolean).join(" · "))}</div>`;
         const delete_ = d.manual ? `<td><button class="icon-btn" data-in-mdel="${esc(d.mid)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.manualRemove)}" aria-label="${esc(t.doc.manualRemove)}">${svg(ICON.close)}</button></td>` : "<td></td>";
-        return `<tr data-in-row="${esc(d.key)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
+        return `<tr data-in-row="${esc(d.key)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
       }).join("");
       const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
@@ -441,6 +484,12 @@ export const installation = {
   _instKindTag(d) {
     const kind = kindOf(d);
     return `<button class="tag${kind === "bus" ? " bus" : ""}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+  },
+
+  _instSendTag(gw, d) {
+    // the sender numbers of a device: a jump to its rows in the Sender IDs tab
+    const numbers = gw.numbers?.get(d.note_key) ?? [];
+    return numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}" title="${esc(this._t.inst.senderTagHint)}">${esc(this._t.inst.senderTag(numbers.join(", ")))}</button>` : "";
   },
 
   _instBusOf(gw) {
@@ -471,7 +520,7 @@ export const installation = {
     const cell = (r, field, value, label, placeholder) => this._instCell(gw, r.key, field, value, label, placeholder);
     const row = (r) => {
       const d = r.key ? gw.devices.find((x) => x.key === r.key) : null;
-      const name = d ? `${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${this._instKindTag(d)}</div>` : `${esc(r.device)}<div class="isub">${esc(r.name)}</div>`;
+      const name = d ? `${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${this._instKindTag(d)}${this._instSendTag(gw, d)}</div>` : `${esc(r.device)}<div class="isub">${esc(r.name)}</div>`;
       const tag = r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : "";
       const power = r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${cell(r, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${tag}</span>` : r.power === null ? tag : esc(num(r.power));
       return `<tr${dups.has(r.address) ? ' class="dup"' : ""}><td class="name">${name}</td><td class="mono">${r.key ? cell(r, "bus_address", String(r.address), T.busAddress, "1–126") : r.address}</td><td>${r.key ? cell(r, "feedback_id", r.feedback, T.feedbackId, "00000081") : esc(r.feedback)}</td><td class="num">${power}</td><td>${r.key ? cell(r, "group", r.group, T.partOf) : esc(r.group)}</td></tr>`;
@@ -515,7 +564,7 @@ export const installation = {
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
     const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
-    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
+    const body = { all: () => this._instDevices(), virt: () => this._instVirt(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
     return `<div class="gbar"><div class="seg" role="group">${seg}</div></div>${body}`;
   },
 
@@ -524,13 +573,13 @@ export const installation = {
     const parts = placeParts(d.location);
     const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
     const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : d.manual ? `data-in-mid="${esc(d.mid)}"` : `data-in-key="${esc(d.key)}"`;
-    return `<div class="place${d.location ? "" : " empty"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs}</div>`;
+    return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs}</div>`;
   },
 
   _instProgress() {
     // how many devices have a place; virtual devices have none to give
     const t = this._t.inst;
-    const all = gateways(this._in.doc).flatMap((gw) => [...gw.devices.filter((d) => !d.virtual), ...(gw.supplies ?? []), ...(gw.manual ?? [])]);
+    const all = gateways(this._in.doc).flatMap((gw) => [...gw.devices.filter((d) => !isVirtual(d)), ...(gw.supplies ?? []), ...(gw.manual ?? [])]);
     const placed = all.filter((d) => d.location).length;
     if (!all.length) return "";
     const pct = Math.round((placed / all.length) * 100);
@@ -545,12 +594,12 @@ export const installation = {
     const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
     const showArea = state.columns.has("place");
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
-    const applies = (d, f) => (d.manual ? f in MANUAL_FIELD : d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const applies = (d, f) => (d.manual ? f in MANUAL_FIELD : d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : isVirtual(d) ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
     const psus = (gw) => this._instExtras(gw);
     const pass = (d) => matches(d, state.q)
       && (!kinds || kinds.includes(kindOf(d)))
       && (state.art === "all" || kindOf(d) === state.art)
-      && (!state.miss.loc || (!d.virtual && !d.location))
+      && (!state.miss.loc || (!isVirtual(d) && !d.location))
       && (!state.miss.fuse || (FUSE_KINDS.has(kindOf(d)) && !d.fuse));
     const span = columns.length + (showArea ? 1 : 0) + 2;
     const row = (gw, d) => {
@@ -566,7 +615,7 @@ export const installation = {
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
       const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr data-in-row="${esc(d.key)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
+      return `<tr data-in-row="${esc(d.key)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const devices = [...gw.devices, ...psus(gw)].filter(pass);
@@ -574,7 +623,7 @@ export const installation = {
       if (state.group && devices.length) {
         const groups = new Map();
         for (const d of devices) {
-          const name = d.virtual && state.group === "location" ? I.virtualNoPlace : (state.group === "area" ? d.area : placeParts(d.location)[0]) || (state.group === "area" ? I.noGroup : I.noPlace);
+          const name = isVirtual(d) && state.group === "location" ? I.virtualNoPlace : (state.group === "area" ? d.area : placeParts(d.location)[0]) || (state.group === "area" ? I.noGroup : I.noPlace);
           groups.set(name, [...(groups.get(name) ?? []), d]);
         }
         const rank = (n) => (n === I.virtualNoPlace ? 2 : n === I.noGroup || n === I.noPlace ? 1 : 0);
@@ -602,7 +651,7 @@ export const installation = {
       ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
     const missChips = state.view === "all"
-      ? `<div class="chips"><span class="isub lead">${esc(I.missing)}</span><button class="chip" data-in-miss="loc" aria-pressed="${state.miss.loc}">${esc(label(t, "location"))} <b>${present.filter((d) => !d.virtual && !d.location).length}</b></button><button class="chip" data-in-miss="fuse" aria-pressed="${state.miss.fuse}">${esc(label(t, "fuse"))} <b>${present.filter((d) => FUSE_KINDS.has(kindOf(d)) && !d.fuse).length}</b></button></div>`
+      ? `<div class="chips"><span class="isub lead">${esc(I.missing)}</span><button class="chip" data-in-miss="loc" aria-pressed="${state.miss.loc}">${esc(label(t, "location"))} <b>${present.filter((d) => !isVirtual(d) && !d.location).length}</b></button><button class="chip" data-in-miss="fuse" aria-pressed="${state.miss.fuse}">${esc(label(t, "fuse"))} <b>${present.filter((d) => FUSE_KINDS.has(kindOf(d)) && !d.fuse).length}</b></button></div>`
       : "";
     const group = state.view === "all"
       ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
@@ -658,7 +707,7 @@ export const installation = {
           .map((links) => `<div class="gcard" style="margin-bottom:10px"><b>${esc(fromLabel(links[0]))}</b><div class="tablewrap"><table class="itable"><thead><tr><th>${esc(L.controls)}</th><th>${esc(L.role)}</th><th>${esc(L.learn)}</th><th>${esc(L.state)}</th><th></th></tr></thead><tbody>${links.map((l) => row(gw, l, true)).join("")}</tbody></table></div></div>`)
           .join("");
       }
-      const options = [...gw.devices.filter((d) => !d.virtual).map((d) => `<option value="${esc(d.note_key)}">${esc(d.name)} · ${esc(d.id)}</option>`), `<option value="">${esc(L.otherTarget)}</option>`].join("");
+      const options = [...gw.devices.filter((d) => !isVirtual(d)).map((d) => `<option value="${esc(d.note_key)}">${esc(d.name)} · ${esc(d.id)}</option>`), `<option value="">${esc(L.otherTarget)}</option>`].join("");
       const add = `<div class="bulk" data-in-link-form="${esc(gw.entry_id)}"><b>${esc(L.addTitle)}</b><input data-in-new="from_name" placeholder="${esc(L.fromName)}" aria-label="${esc(L.fromName)}"><input data-in-new="from_id" placeholder="${esc(L.fromId)}" aria-label="${esc(L.fromId)}"><span>→</span><select data-in-new="to_key" aria-label="${esc(L.target)}">${options}</select><input data-in-new="to_name" placeholder="${esc(L.otherName)}" aria-label="${esc(L.otherName)}"><input data-in-new="role" placeholder="${esc(L.role)}" aria-label="${esc(L.role)}"><input data-in-new="learn" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}"><button class="chip" data-in-act="add-link" data-in-gw="${esc(gw.entry_id)}">${esc(L.add)}</button></div>`;
       return `<section class="gw">${this._instGwHead(gw)}${body || `<div class="none">${esc(L.none)}</div>`}${add}</section>`;
     });
@@ -713,14 +762,25 @@ export const installation = {
     const kind = e.target.closest("[data-in-kind]");
     if (kind) {
       // a kind tag opens the view that belongs to it
+      state.tab = "devices";
       state.view = VIEW_OF[kind.dataset.inKind] ?? "all";
       state.art = "all";
       this._renderInstallation();
       return;
     }
+    const snd = e.target.closest("[data-in-snd]");
+    if (snd) {
+      // the sender number of a device: its row in the Sender IDs tab
+      state.tab = "gwsenders";
+      state.hl = `snd|${snd.dataset.inSnd}`;
+      this._renderInstallation();
+      if (this._managing()) this._loadPools();
+      return;
+    }
     const goto = e.target.closest("[data-in-goto]");
     if (goto) {
       // a link's device: the All devices view with its row marked
+      state.tab = "devices";
       state.view = "all";
       state.art = "all";
       state.q = "";
@@ -898,7 +958,7 @@ export const installation = {
     const part = e.target.closest("[data-in-part]");
     if (part) {
       const box = part.closest("[data-in-place]");
-      box.classList.toggle("empty", ![...box.querySelectorAll("input")].some((i) => i.value.trim()));
+      box.classList.toggle("blank", ![...box.querySelectorAll("input")].some((i) => i.value.trim()));
       clearTimeout(box._saving);
       box._saving = setTimeout(() => this._instSavePlace(box), SAVE_DELAY);
       return;
