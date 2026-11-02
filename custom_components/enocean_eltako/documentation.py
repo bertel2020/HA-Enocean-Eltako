@@ -86,6 +86,8 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
             for profile, sender in device.senders.items()
         ],
         "signal": _signal(device),
+        # the entities a virtual sensor follows (empty for any other device)
+        "follows": list(device.virtual.sources) if device.virtual is not None else [],
         "wall_switch": wall,
         "bus_power_table": bus_power(device._model_label),
         **notes.device(device_key(device.subentry)),

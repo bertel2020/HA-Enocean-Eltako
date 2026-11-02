@@ -1013,3 +1013,16 @@ async def test_the_documentation_tells_when_a_device_was_heard_and_how_well(
     assert device_doc["signal"]["rssi"] == -71
     assert device_doc["signal"]["last"] is not None
     assert device_doc["signal"]["repeater_only"] is False
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_a_device_that_is_not_virtual_follows_nothing(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    (device_doc,) = collect(hass)["gateways"][0]["devices"]
+    assert device_doc["follows"] == [] and device_doc["virtual"] is False
