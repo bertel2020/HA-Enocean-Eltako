@@ -369,8 +369,9 @@ gateway: gateways are matched by base ID, devices by address, and only what is s
 filled in. Fields, further devices, entered links and learn positions come along, never the
 devices themselves. If a gateway has another base ID, the panel offers to import the one gateway of
 the file that found no match into the one set up here that got nothing.
-**Telegrams** opens that device's telegrams, **Add device** sets up an unknown sender, and the
-arrow icon opens the device's page in Home Assistant.
+**Telegrams** opens that device's telegrams, the **+** of an unknown sender asks whether to **Set up as
+device** or **Only write down** (an entry under **Other devices** with the ID filled in, for the
+documentation; Home Assistant creates nothing), and the arrow icon opens the device's page in Home Assistant.
 
 **Teach in** (graduation cap icon, for devices with a sender ID of their own) teaches the device
 into its actuator without opening the device page: put the actuator into learn mode (on Eltako

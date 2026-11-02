@@ -195,6 +195,12 @@ const STYLE = `
   .menu button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; text-align: left; white-space: nowrap; }
   .menu button:hover, .menu button:focus-visible { background: var(--accent-soft); }
   .menu svg { color: var(--muted); }
+  /* the menu of the + button of an unknown sender: set up as a device, or only written down */
+  .addmenu { position: fixed; z-index: 5; display: grid; min-width: 240px; padding: 6px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%); }
+  .addmenu button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; text-align: left; font-size: calc(14px * var(--fs)); }
+  .addmenu button:hover, .addmenu button:focus-visible { background: var(--accent-soft); }
+  .addmenu svg { color: var(--muted); flex: none; }
+  .addmenu small { display: block; color: var(--muted); font-size: calc(12px * var(--fs)); }
 
   .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .search { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 6px 0 12px;
@@ -801,6 +807,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._onPointer = (e) => {
       const look = this.shadowRoot.querySelector(".look");
       if (look && !e.composedPath().includes(look) && !this.shadowRoot.getElementById("lookMenu").hidden) this._toggleLook(false);
+      if (!e.composedPath().some((el) => el.classList?.contains("addmenu") || el.classList?.contains("add"))) this._closeAddMenu();
       const more = this.shadowRoot.querySelector(".more");
       if (more && !e.composedPath().includes(more) && !this.shadowRoot.getElementById("moreMenu").hidden) this._toggleMenu(false);
     };
@@ -1250,7 +1257,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       }
       const add = e.target.closest(".add");
       if (add) {
-        this._addDevice(add.dataset.id);
+        this._addMenu(add);
         return;
       }
       const page = e.target.closest("[data-device-page]");
@@ -1512,6 +1519,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     } else if ((e.key === "p" || e.key === "P") && shortcut) {
       e.preventDefault();
       this._togglePause();
+    } else if (e.key === "Escape" && this.shadowRoot.querySelector(".addmenu")) {
+      this._closeAddMenu(true);
     } else if (e.key === "Escape" && this.shadowRoot.activeElement === input) {
       this._setText("");
       input.blur();
@@ -1803,7 +1812,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const add = e.target.closest(".add");
     if (add) {
       e.stopPropagation();
-      this._addDevice(add.dataset.id);
+      this._addMenu(add);
       return;
     }
     const page = e.target.closest("[data-device-page]");
@@ -1909,6 +1918,75 @@ class EnOceanEltakoPanel extends HTMLElement {
     await this._refreshStatus();
     this._render();
     this._notice(this._t.hideResult.done(sender), true);
+  }
+
+  _addMenu(button) {
+    // the + of an unknown sender asks: set it up as a device in Home Assistant, or only write it down
+    const open = this.shadowRoot.querySelector(".addmenu");
+    const again = open && open._for === button.dataset.id;
+    this._closeAddMenu();
+    if (again) return;
+    const t = this._t;
+    const menu = document.createElement("div");
+    menu.className = "addmenu";
+    menu.setAttribute("role", "menu");
+    menu._for = button.dataset.id;
+    menu.innerHTML = `<button role="menuitem" data-addact="device">${svg(ICON.plus)}<span>${esc(t.addAsDevice)}<small>${esc(t.addAsDeviceHint)}</small></span></button>
+      <button role="menuitem" data-addact="document">${svg(ICON.list)}<span>${esc(t.addDocOnly)}<small>${esc(t.addDocOnlyHint)}</small></span></button>`;
+    menu.addEventListener("click", (e) => {
+      const act = e.target.closest("[data-addact]")?.dataset.addact;
+      if (!act) return;
+      e.stopPropagation();
+      this._closeAddMenu();
+      if (act === "device") this._addDevice(button.dataset.id);
+      else this._documentSender(button.dataset.gateway, button.dataset.id);
+    });
+    this.shadowRoot.appendChild(menu);
+    const box = button.getBoundingClientRect();
+    const width = menu.offsetWidth;
+    menu.style.left = `${Math.max(8, Math.min(box.right - width, window.innerWidth - width - 8))}px`;
+    const below = box.bottom + 4;
+    menu.style.top = `${below + menu.offsetHeight > window.innerHeight ? Math.max(8, box.top - menu.offsetHeight - 4) : below}px`;
+    menu._anchor = button;
+    button.setAttribute("aria-expanded", "true");
+    menu.querySelector("button").focus();
+  }
+
+  _closeAddMenu(refocus = false) {
+    const menu = this.shadowRoot.querySelector(".addmenu");
+    if (!menu) return;
+    menu._anchor?.removeAttribute("aria-expanded");
+    if (refocus) menu._anchor?.focus();
+    menu.remove();
+  }
+
+  async _documentSender(gateway, sender) {
+    // only for the documentation: an entry under "Other devices" with the ID filled in, then its name field
+    const gw = this._gateways.find((g) => g.entry_id === gateway);
+    if (!gw) {
+      this._notice(this._t.addResult.failed);
+      return;
+    }
+    const same = (a) => String(a).replace(/[^0-9a-f]/gi, "").toLowerCase();
+    let entry = (gw.manual ?? []).find((e) => same(e.address) === same(sender));
+    if (!entry) {
+      entry = { id: Math.random().toString(36).slice(2, 10), name: "", address: sender, function: "", bus_address: "", feedback_id: "", bus_power: "" };
+      gw.manual = [...(gw.manual ?? []), entry];
+      await this._saveManual(gw);
+    }
+    this._in.tab = "radio";
+    this._setView("installation");
+    // the Installation view fills in a moment after it opens: wait up to two seconds for the row
+    const index = gw.manual.indexOf(entry);
+    for (let tries = 0; tries < 40; tries++) {
+      const row = this.shadowRoot.querySelector(`[data-entry-of="${gw.entry_id}"] [data-manual-row="${index}"]`);
+      if (row) {
+        row.scrollIntoView({ block: "center" });
+        row.querySelector('[data-manual-field="name"]')?.focus();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 
   async _addDevice(sender) {
@@ -2694,7 +2772,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             ${r.ha_device ? `<button class="icon-btn" data-device-page="${esc(r.ha_device)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDevice)}">${svg(ICON.open)}</button>` : ""}
             ${this._canResend(r) ? `<button class="icon-btn" data-resend="${esc(key)}" title="${esc(t.resendHint)}" aria-label="${esc(t.resend)}">${svg(ICON.send)}</button>` : ""}
             ${unknown ? `<button class="icon-btn" data-report="${esc(r.sender)}" title="${esc(t.reportHint)}" aria-label="${esc(t.report)}">${svg(ICON.bug)}</button>${this._recordButton(r.sender)}` : ""}
-            ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
+            ${unknown && !hidden ? `<button class="icon-btn" data-hide="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" title="${esc(t.hideSenderHint)}" aria-label="${esc(t.hideSender)}">${svg(ICON.hide)}</button><button class="icon-btn add" data-id="${esc(r.sender)}" data-gateway="${esc(r.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.add)}">${svg(ICON.plus)}</button>` : ""}
           </div>
           <dl class="meta">
           <div><dt>${esc(t.time)}</dt><dd class="mono">${esc(this._time(time, true, true))}</dd></div>
@@ -3449,7 +3527,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const acts = d.quiet
       ? teach + page
       : `${teach}${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
-          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
+          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
         }`;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
     const picked = !!d.devKey && this._sel.has(d.devKey);

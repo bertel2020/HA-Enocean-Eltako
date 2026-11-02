@@ -10,12 +10,14 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- The **+** of an unknown sender (Devices view and telegram details) opens a menu: **Set up as device** as before, or **Only write down**, which adds an entry under **Other devices** (Installation → Senders → Radio senders) with the ID filled in and puts the cursor in its name field. Nothing is created in Home Assistant and nothing is learned into an actuator; an ID already written down is not added twice.
 - The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
 
 **Deutsch**
 
 #### Geändert
 
+- Das **+** eines unbekannten Senders (Geräteansicht und Telegramm-Details) öffnet ein Menü: **Als Gerät anlegen** wie bisher oder **Nur dokumentieren**; das legt einen Eintrag unter **Weitere Geräte** (Anlage → Sender → Funk-Sender) mit ausgefüllter ID an und setzt den Cursor ins Feld Name. In Home Assistant entsteht nichts, und in keinen Aktor wird etwas eingelernt; eine schon notierte ID wird nicht doppelt angelegt.
 - Der Katalogeintrag **Wippentaster** (EnOcean) und die Geräte-Dokumentation nennen jetzt die **EnOcean-Tastermodule PTM 210/215** (F6-02-01), die in vielen Tastern stecken.
 
 ### [1.5.0] - 2026-11-02
