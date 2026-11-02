@@ -320,25 +320,64 @@ beweist nicht, dass der Aktor den Sender nicht kennt, denn ein Aktor kann stumm 
 umschaltender Wipptaster wird nicht getestet. Ein Dimmer bekommt seine aktuelle Helligkeit als Dimmbefehl über den Zentralbefehl; sein Wipptaster wird nicht getestet, denn ein Druck könnte die Helligkeit ändern. Rollläden werden gar nicht getestet: jeder Befehl bewegt sie oder unterbricht eine Fahrt. Der Test zählt nicht in der Befehlsstatistik.
 
 **Ansicht Anlage:** Der Reiter **Anlage** bündelt Dokumentation und Verwaltung an einer Stelle,
-in Gruppen: **Geräte** (Übersicht, Tabelle), **Sender** (Gateway-Sender, Taster, Funk-Sender),
-**Bus** (Eltako-Bus, Netzteile), **Verbindungen** und **Protokoll**. Die Tabellen der Gruppen
-Sender und Bus sind dieselben Zeilen wie im Ausdruck.
-**Übersicht** zeigt die Geräte jedes Gateways nach Home-Assistant-Bereich oder nach dem
-von dir notierten Ort gruppiert, mit der Zahl der Geräte ohne Ort. Die **Tabelle** hat
-typisierte Felder, die du direkt bearbeitest: Ort (Schrank, Reihe, Platz), Stromkreis, Sicherung,
-Einbaudatum, Revision (der Datumscode, denn er bestimmt die Lernfunktion), Versorgung (Netz,
-Batterietyp) und eine Notiz. Mit markierten Zeilen setzt du ein Feld für alle auf einmal, oder du
-**fügst aus einer Tabellenkalkulation ein**: eine Kopfzeile, eine Spalte Adresse und Spalten, die
-wie die Felder heißen; leere Zellen ändern nichts, und **Tabelle kopieren** liefert dasselbe Layout
-zum Bearbeiten und Zurückfügen. **Protokoll** listet, was passiert ist: Geräte hinzugefügt oder
-entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. **Verbindungen** zeigt, wer in welchen Aktor eingelernt ist, nach Aktor oder nach Sender. Jede
-Verbindung sagt, woher sie kommt: **vergeben** (ein Sender, den Home Assistant für den Aktor hält,
-mit dem Zeitpunkt seines Einlernens und dem Ergebnis des letzten Sendertests), **angegeben** (der
-Wandschalter aus den Optionen des Geräts) oder **eingetragen** (von dir notiert: ein direkt
-eingelernter Taster, ein Aktor eines anderen Systems). Jede Verbindung hat ein Feld für ihre
-Lernposition. Was ein Aktor wirklich gelernt hat, steckt im Aktor und lässt sich nicht lesen, das
-sagt der Reiter auch; eine nie getestete Verbindung heißt „nicht getestet“. Drucken, CSV, JSON und
-Import sind Knöpfe des Reiters.
+in vier Reitern: **Geräte**, **Sender-IDs**, **Verbindungen** und **Protokoll**. Die Tabellen
+sind dieselben Zeilen wie im Ausdruck.
+
+**Geräte** hat oben einen Umschalter zwischen vier Ansichten. Jede Zeile nennt ihre **Art** als
+Kennzeichen (Eltako-Bus, Funk Sensor, Funk Taster, Funk Aktor, Virtuell, Netzteil); ein Klick darauf
+öffnet die Ansicht dieser Art, und ein Gerät mit Sender-IDs aus dem Pool trägt **Sender 1, 2**, das
+in den Reiter Sender-IDs springt.
+
+- **Alle Geräte** hat typisierte Felder, die du direkt bearbeitest: Ort (drei Felder: Schrank,
+  Reihe, Platz), Stromkreis, Sicherung, Einbaudatum, Revision (der Datumscode, denn er bestimmt die
+  Lernfunktion), Versorgung (Netz, Batterietyp) und eine Notiz. Die Spalten zeigst du über das
+  Menü **Spalten** in Gruppen (Ort und Sicherung, Bus und Funk, Wartung). Die Art-Chips und die
+  Filter **Fehlt: Ort** und **Fehlt: Sicherung** (mit Zähler) grenzen die Zeilen ein, **Gruppieren**
+  ordnet sie nach Bereich oder Ort (der Schrank), und **Nächstes ohne Ort** setzt den Cursor ins
+  erste Feld, das noch leer ist. Der Fortschritt zählt Geräte, Netzteile und von Hand notierte
+  Einträge, aber keine virtuellen Geräte: für sie gibt es keinen Ort. Mit markierten Zeilen setzt
+  du ein Feld für alle auf einmal, oder du **fügst aus einer Tabellenkalkulation ein**: eine
+  Kopfzeile, eine Spalte Adresse und Spalten, die wie die Felder heißen; leere Zellen ändern
+  nichts, und **Tabelle kopieren** liefert dasselbe Layout zum Bearbeiten und Zurückfügen.
+- **Bus** zeigt den Eltako-Bus gruppiert nach **Netzteil**: Jedes Netzteil ist eine Kopfzeile mit
+  Typ, Watt und den Bus-Adressen, die es versorgt (alles direkt dort bearbeitbar), mit
+  Auslastungsbalken und einer Warnung bei Überlast; Adressen, die kein Netzteil versorgt, stehen in
+  einer eigenen Gruppe. Eine Kachelleiste nennt doppelte Adressen, belegte und freie Adressen, die
+  Gesamtleistung und den Zustand der Netzteile. Bus-Adresse, Rückmelde-ID und Leistung bearbeitest
+  du in der Zeile (die Leistung ist die Aufnahme am Bus; ohne eigenen Wert gilt der der
+  Eltako-Planungshilfe, mit **Tabelle** markiert).
+- **Funk** listet die Funk-Geräte (Taster, Sensoren, Aktoren) und die von Hand notierten Einträge.
+  Die Spalten (Menü **Spalten**): Ort, Sender-ID (bei mehreren IDs eines Geräts alle), Sendet,
+  **Versorgung** (Batterietyp, Netz), Gehört zu, **Signal** und **Verbindung**. Das Signal ist ein
+  Punkt mit der Zeit des letzten Telegramms: grün innerhalb eines Tages, gelb innerhalb einer
+  Woche, danach rot; dazu die Stärke und „nur über Repeater“. Die Verbindung zeigt, was ein
+  Taster oder Sensor steuert und was einen Aktor steuert, jeder Name ein Sprung zum Gerät.
+  **Gerät dokumentieren** legt einen Eintrag von Hand an (Name, ID, Art, Funktion): ein direkt
+  eingelernter Taster oder ein Gerät eines anderen Systems. Er trägt das Kennzeichen **nur
+  dokumentiert**, steht auch in **Alle Geräte** und hat Ort und Versorgung wie ein Gerät; Home
+  Assistant legt nichts an und lernt nichts ein.
+- **Virtuell** zeigt, was Home Assistant sendet: Pool-Nummer, Sender-ID, die Entitäten, denen ein
+  virtuelles Gerät folgt, und die Aktoren, in die es laut Notiz eingelernt ist. Bei einem Gateway
+  mit anderer Base-ID muss jeder dieser Sender neu eingelernt werden.
+
+**Sender-IDs** ist die Tabelle der Gateway-Sender: eine Zeile je Sender (nicht je Gerät; ein Gerät
+kann mehrere halten), Nummer 0 bis 127, die Gateway-ID selbst als Nummer 0, freie Nummern
+zusammengefasst, blockierte IDs mit der Freigabe, dazu der Sender-ID-Pool darüber. Die Gerätenamen
+springen zum Gerät. **Verbindungen** zeigt, wer in welchen Aktor eingelernt ist, als Karte je
+Aktor, je Sender oder als Matrix. Jede Verbindung nennt das andere Ende, die Rolle (etwa linke
+oder rechte Wippe) und woher sie kommt: **vergeben** (ein Sender, den Home Assistant für den
+Aktor hält, mit dem Zeitpunkt seines Einlernens und dem Ergebnis des letzten Sendertests),
+**angegeben** (der Wandschalter aus den Optionen des Geräts) oder **eingetragen** (von dir
+notiert: ein direkt eingelernter Taster, ein Aktor eines anderen Systems; nur diese lassen sich
+hier entfernen). Jede Verbindung hat ein Feld für ihre Lernposition. Ein Aktor ohne Verbindung
+ist markiert; Filter und Kacheln zeigen die ohne Verbindung, die nicht getesteten und die ohne
+Antwort. **Sender testen** startet den Sendertest von der Karte eines Aktors, **+ Verbindung**
+und **+ Aktor** notieren eine Verbindung (ebenso ein **+** in der Matrix), und eine
+Wandschalter-ID ohne Gerät bekommt **Als Gerät notieren**. Was ein Aktor wirklich gelernt hat,
+steckt im Aktor und lässt sich nicht lesen, das sagt der Reiter auch; eine nie getestete
+Verbindung heißt „nicht getestet“. **Protokoll** listet, was passiert ist: Geräte hinzugefügt
+oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. Drucken, CSV,
+JSON und Import sind Knöpfe des Reiters.
 
 **Ausgaben:** Die Knöpfe des Reiters Anlage (und das ⋮-Menü der Geräteansicht) liefern:
 
@@ -363,13 +402,12 @@ Import sind Knöpfe des Reiters.
   Adresse wird gemeldet). Die Leistung ist die Aufnahme am Bus, nicht die geschaltete Last: was du
   eingetragen hast, sonst der Wert der Eltako-Planungshilfe (Ausgabe 07/2014, Tabelle des maximalen
   Leistungsbedarfs), mit `*` markiert. Ein Typ, den die Planungshilfe nicht kennt (neuere Geräte
-  wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. Die Tabelle **Geräte** hat eine Fortschrittszeile (Geräte mit Ort), zeigt ihre Spalten in
-  Gruppen, die du ein- und ausschaltest (Ort und Sicherung, Bus und Funk, Wartung), und nennt
-  eine falsche Bus-Adresse oder Wattzahl unter dem Feld, statt sie zu senden. In den Tabellen
-  der Gruppen Sender und Bus änderst du die Felder eines Geräts direkt dort, wo sie stehen (Bus-Adresse,
-  Rückmelde-ID, Ort, **Gehört zu**, Leistung; gespeichert beim Tippen). Die Kanäle eines
+  wie der F3Z14D), hat keinen Wert, und die Summe sagt, wie vielen er fehlt. Die Tabelle **Geräte** nennt
+  eine falsche Bus-Adresse oder Wattzahl unter dem Feld, statt sie zu senden. In der Ansicht
+  **Bus** änderst du die Felder eines Geräts direkt dort, wo sie stehen (Bus-Adresse,
+  Rückmelde-ID, **Gehört zu**, Leistung; gespeichert beim Tippen). Die Kanäle eines
   Geräts zählen einmal, wenn sie denselben Namen unter **Gehört zu** haben; ohne ihn zählt die
-  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. Unter **Bus → Netzteile**
+  Summe jeden Kanal und weist darauf hin. Als Netzteil gelten die 12 W des FAM14. In der Ansicht **Bus**
   trägst du ein oder mehrere Netzteile ein (Typ, Watt); mit den Bus-Adressen, die ein
   Netzteil versorgt, zeigt der Ausdruck die Auslastung je Netzteil und nennt Adressen, die kein
   Netzteil versorgt, ohne sie nur die Gesamtsumme. Welche Adressen ein Netzteil versorgt, hängt
@@ -392,9 +430,10 @@ einmal pro Minute geschrieben. **Gehört von**, „nur über Repeater“ und die
 Sender beginnen nach einem Neustart also nicht leer.
 
 **Notizen und weitere Geräte:** In den Details jedes Geräts gibt es ein Feld **Notizen**, in den
-Details jedes Gateways ein eigenes Notizfeld, und unter **Sender → Funk-Sender** im Reiter
-Anlage einen Editor für **Weitere Geräte** (Name, ID, Funktion: direkt eingelernte Taster, Geräte
-anderer Systeme; bei Geräten am Eltako-Bus auch Bus-Adresse, Rückmelde-ID und Watt). Gespeichert beim Tippen, in einem
+Details jedes Gateways ein eigenes Notizfeld, und unter **Geräte → Funk** im Reiter
+Anlage den Knopf **Gerät dokumentieren** für Einträge von Hand (Name, ID, Art, Funktion: direkt
+eingelernte Taster, Geräte anderer Systeme; bei Geräten am Eltako-Bus auch Bus-Adresse,
+Rückmelde-ID und Watt; Ort und Versorgung bearbeitest du in der Tabelle). Gespeichert beim Tippen, in einem
 eigenen Speicher pro Gateway, Teil des Home-Assistant-Backups. Die Felder eines Geräts gehören zu
 seiner Adresse und sind wieder da, wenn du das Gerät neu anlegst; die Gateway-Details bieten an,
 die der gelöschten Geräte zu vergessen.
@@ -406,8 +445,9 @@ kommen mit, die Geräte selbst nie. Hat ein Gateway eine andere Base-ID, bietet 
 eine Gateway der Datei ohne Treffer in das eine hier eingerichtete Gateway ohne Treffer zu
 importieren.
 **Telegramme** öffnet die Telegramme dieses Geräts, das **+** eines unbekannten Senders fragt, ob du ihn
-**Als Gerät anlegen** oder **Nur dokumentieren** willst (ein Eintrag unter **Weitere Geräte** mit
-ausgefüllter ID, für die Dokumentation; Home Assistant legt nichts an), und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
+**Als Gerät anlegen** oder **Nur dokumentieren** willst (ein Eintrag mit dem Kennzeichen *nur
+dokumentiert* unter **Geräte → Funk** mit ausgefüllter ID, für die Dokumentation; Home Assistant
+legt nichts an), und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
 **Einlernen** (Doktorhut-Symbol, bei Geräten mit eigener Sender-ID) lernt das Gerät in seinen
 Aktor ein, ohne dafür die Geräteseite zu öffnen: Aktor in den Lernmodus bringen (bei Eltako
@@ -433,7 +473,7 @@ Haken fügt das Label allen hinzu, ohne Haken wird es entfernt, ein Strich läss
 legst du im Formular an), die Geräte **deaktivieren** oder wieder **aktivieren** und sie
 **entfernen**. Bereich, Labels und Deaktivieren sind die von Home Assistant, sie gelten also auch
 auf der Geräteseite und in Automationen. **Entfernen** fragt vorher nach und löscht die Geräte
-mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Anlage → Sender → Gateway-Sender → Sender-ID-Pool** bestätigst, dass
+mit ihren Entitäten; ihre Sender-IDs bleiben gesperrt, bis du unter **Anlage → Sender-IDs → Sender-ID-Pool** bestätigst, dass
 die Aktoren sie vergessen haben. Die Labels eines Geräts stehen unter seinem Namen, und die Suche
 findet sie.
 
@@ -451,7 +491,7 @@ als gesendet. In den Details eines gesendeten Telegramms schickt **Nochmal sende
 
 ## Sender-IDs
 
-Der **Sender-ID-Pool** (Anlage → Sender → Gateway-Sender, über der Tabelle, einklappbar) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
+Der **Sender-ID-Pool** (Anlage → Sender-IDs, über der Tabelle, einklappbar) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
 Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
 gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127. Die Pool-Karte zeigt jede ID als
 kleines Feld (frei, zugewiesen, gesperrt, anderweitig belegt; die Legende darunter nennt die
