@@ -56,7 +56,7 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 | Licht und Schalten | Permundo PSC132 / PSC234 Zwischenstecker | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std` | switch, light, sensor | - |
 | Licht und Schalten | Schalt- oder Dimmaktor (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch | - |
 | Rollläden und Jalousien | Rollladenaktor (VLD D2-05) | EnOcean | `D2-05-00:std` | `vld: D2-05-00:std` | cover | - |
-| Taster und Kontakte | Wippentaster (NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event | - |
+| Taster und Kontakte | Wippentaster (PTM 210/215, NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event | - |
 | Taster und Kontakte | Fenstergriff (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor | - |
 | Taster und Kontakte | Tür-/Fensterkontakt (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor | - |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Fensterkontakt | Home Assistant | - | `contact: D5-00-01:std` | button, sensor | - |

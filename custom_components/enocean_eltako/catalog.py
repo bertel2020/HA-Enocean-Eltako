@@ -447,7 +447,7 @@ CATALOG: dict[str, DeviceModel] = {
             base="rocker",
             options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
             manufacturer="EnOcean",
-            examples="NodOn, PEHA, Jung",
+            examples="EnOcean PTM 210/215, NodOn, PEHA, Jung",
         ),
         DeviceModel(
             "enocean_window_handle",
