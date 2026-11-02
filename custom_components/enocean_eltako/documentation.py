@@ -54,6 +54,11 @@ def _device(hass: HomeAssistant, device: EnOceanDevice, notes: Notes) -> dict[st
         "id": format_id(device.device_id),
         "eep": str(model.receive) if model.receive else None,
         "eep_extra": [str(ref) for ref in model.receive_extra],
+        # a device sending from several IDs (FUTH): each with its own profile
+        "ids": [
+            {"id": format_id(radio_id), "eep": str(link.eep)}
+            for radio_id, link in device.linked.items()
+        ],
         "area": area.name if area else None,
         "labels": sorted(entry.labels) if entry else [],
         "entities": len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0,

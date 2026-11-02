@@ -240,6 +240,23 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
             value_fn=_field("night_setback", 0),
         ),
     ),
+    "futh": (  # on top of those of the room controller: the other IDs of the FUTH
+        EnOceanSensorDescription(key="humidity", **HUMIDITY, value_fn=_field("humidity")),
+        EnOceanSensorDescription(
+            key="hygrostat_temperature",
+            translation_key="hygrostat_temperature",
+            **TEMPERATURE,
+            entity_registry_enabled_default=False,
+            value_fn=_field("hygrostat_temperature"),
+        ),
+        EnOceanSensorDescription(
+            key="heating_mode",
+            translation_key="heating_mode",
+            device_class=SensorDeviceClass.ENUM,
+            options=["normal", "night_setback", "setback", "off"],
+            value_fn=lambda v: v.get("heating_mode"),
+        ),
+    ),
     "weather": (
         EnOceanSensorDescription(
             key="dawn",
@@ -459,7 +476,7 @@ def model_descriptions(device: EnOceanDevice) -> tuple[EnOceanSensorDescription,
         if (chosen := device.options.get(OPT_FIELDS)) is not None:
             descriptions = tuple(d for d in descriptions if d.key in chosen)
         return descriptions
-    return SENSORS.get(model.kind, ())
+    return SENSORS.get(model.kind, ()) + (SENSORS.get(model.id, ()) if model.base else ())
 
 
 async def async_setup_entry(

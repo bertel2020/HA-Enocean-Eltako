@@ -792,3 +792,23 @@ def test_the_bus_table_of_the_planning_guide_and_the_bus_addresses() -> None:
         False,
         False,
     ]
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("futh", "FF-80-1C-00", "FUTH Bad"), _subentry("meter", "05-00-00-12", "Zähler")]],
+    indirect=True,
+)
+async def test_a_device_with_several_ids_lists_each_with_its_profile(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    (shown,) = collect(hass)["gateways"]
+    futh = next(d for d in shown["devices"] if d["name"] == "FUTH Bad")
+    assert futh["ids"] == [
+        {"id": "FF-80-1C-01", "eep": "A5-10-06:eltako"},
+        {"id": "FF-80-1C-10", "eep": "F6-02-01:eltako"},
+        {"id": "FF-80-1C-11", "eep": "F6-02-01:eltako"},
+        {"id": "FF-80-1C-12", "eep": "A5-10-12:std"},
+    ]
+    assert next(d for d in shown["devices"] if d["name"] == "Zähler")["ids"] == []
