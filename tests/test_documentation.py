@@ -89,6 +89,87 @@ async def test_collect_describes_gateway_devices_senders_and_pool(
     assert shown["hidden_senders"] == []
 
 
+async def test_version_4_manual_entries_get_the_fields_of_version_5(
+    hass: HomeAssistant,
+    hass_storage,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass_storage[f"enocean_eltako.notes.{entry.entry_id}"] = {
+        "version": 4,
+        "key": f"enocean_eltako.notes.{entry.entry_id}",
+        "data": {
+            "gateway": "",
+            "devices": {},
+            "manual": [
+                {"id": "a", "name": "Taster Flur", "address": "00-12-34-56", "function": "Flur"}
+            ],
+        },
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    (manual,) = notes.manual
+    assert (manual["name"], manual["address"], manual["function"]) == (
+        "Taster Flur",
+        "00-12-34-56",
+        "Flur",
+    )
+    assert [manual[k] for k in ("kind", "location", "power")] == ["", "", ""]
+    await notes.async_flush()
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 5
+
+
+async def test_a_manual_entry_keeps_its_kind_place_and_power(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    client = await hass_ws_client(hass)
+    ids = iter(range(1, 10))
+
+    async def call(entries):
+        await client.send_json(
+            {
+                "id": next(ids),
+                "type": "enocean_eltako/set_manual",
+                "entry_id": entry.entry_id,
+                "entries": entries,
+            }
+        )
+        return await client.receive_json()
+
+    sensor = {
+        "id": "a",
+        "name": "Fensterkontakt Bad",
+        "address": "05-A3-C4-E1",
+        "kind": "sensor",
+        "location": "Bad",
+        "power": "Solar",
+    }
+    assert (await call([sensor]))["success"]
+    assert {k: notes.manual[0][k] for k in sensor} == sensor
+    # a kind that is none counts as a button
+    assert (await call([{**sensor, "kind": "lamp"}]))["success"]
+    assert notes.manual[0]["kind"] == ""
+    # an export brings the kind, place and power back
+    assert (await call([sensor]))["success"]
+    export = collect(hass)
+    notes.set_manual([])
+    await client.send_json(
+        {"id": next(ids), "type": "enocean_eltako/import_documentation", "doc": export}
+    )
+    assert (await client.receive_json())["success"]
+    assert {k: notes.manual[0][k] for k in ("kind", "location", "power")} == {
+        "kind": "sensor",
+        "location": "Bad",
+        "power": "Solar",
+    }
+
+
 @pytest.mark.parametrize(
     "gateway",
     [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
@@ -129,7 +210,7 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 5, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
         "supplies": [],
@@ -185,7 +266,15 @@ async def test_manual_entries_are_validated_stored_and_documented(
     ]
     assert (await call(1, entries))["success"]
     (gateway_doc,) = collect(hass)["gateways"]
-    no_bus = {"bus_address": "", "feedback_id": "", "bus_power": "", "bus_power_table": None}
+    no_bus = {
+        "bus_address": "",
+        "feedback_id": "",
+        "bus_power": "",
+        "kind": "",
+        "location": "",
+        "power": "",
+        "bus_power_table": None,
+    }
     assert gateway_doc["manual"] == [
         {
             "id": "a1",
@@ -311,6 +400,89 @@ async def test_version_2_notes_with_one_supply_are_migrated(
         ("FSNT14-12V", "12", "", "")
     ]
     assert notes.supplies[0]["id"]
+    # version 4: the supply has a place, circuit, fuse and note too, empty until written down
+    assert [notes.supplies[0][k] for k in ("location", "circuit", "fuse", "note")] == [
+        "",
+        "",
+        "",
+        "",
+    ]
+
+
+async def test_version_3_supplies_get_the_fields_of_version_4(
+    hass: HomeAssistant,
+    hass_storage,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass_storage[f"enocean_eltako.notes.{entry.entry_id}"] = {
+        "version": 3,
+        "key": f"enocean_eltako.notes.{entry.entry_id}",
+        "data": {
+            "gateway": "",
+            "devices": {},
+            "supplies": [
+                {"id": "s1", "name": "FSNT14-12V", "watts": "24", "first": "1", "last": "20"}
+            ],
+        },
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    (supply,) = notes.supplies
+    assert (supply["id"], supply["name"], supply["watts"], supply["first"], supply["last"]) == (
+        "s1",
+        "FSNT14-12V",
+        "24",
+        "1",
+        "20",
+    )
+    assert [supply[k] for k in ("location", "circuit", "fuse", "note")] == ["", "", "", ""]
+    await notes.async_flush()
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 5
+
+
+async def test_a_supply_keeps_its_place_circuit_fuse_and_note(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    client = await hass_ws_client(hass)
+
+    ids = iter(range(1, 10))
+
+    async def call(supplies):
+        await client.send_json(
+            {
+                "id": next(ids),
+                "type": "enocean_eltako/set_supplies",
+                "entry_id": entry.entry_id,
+                "supplies": supplies,
+            }
+        )
+        return await client.receive_json()
+
+    placed = {
+        "id": "a",
+        "name": "FSNT14-12V",
+        "watts": "24",
+        "location": "Schrank 1 · Reihe 1 · 1",
+        "circuit": "K1",
+        "fuse": "B10",
+        "note": "neben dem FAM14",
+    }
+    assert (await call([placed]))["success"]
+    (shown,) = collect(hass)["gateways"]
+    assert {k: shown["supplies"][0][k] for k in placed} == placed
+    # an entry with only a place is not empty; one too long changes nothing
+    assert (await call([{"location": "Schrank 2"}]))["success"]
+    assert [s["location"] for s in notes.supplies] == ["Schrank 2"]
+    reply = await call([{"location": "x" * 121}])
+    assert reply["success"] is False or reply["error"]["code"] == "invalid_format"
+    assert [s["location"] for s in notes.supplies] == ["Schrank 2"]
 
 
 @pytest.mark.parametrize(
@@ -592,7 +764,7 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     assert notes.device("05-00-00-12")["location"] == ""
     # a stored version 2 is read as it is
     await notes.async_flush()
-    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 3
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 5
 
 
 @pytest.mark.parametrize(
@@ -745,7 +917,7 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     assert notes.heard["00-21-63-43"]["rorg"] == "F6"
     await hass.config_entries.async_unload(entry.entry_id)
     assert notes._signal_timer is None
-    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 5, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
     assert stored["heard"]["00-21-63-43"]["dbm"] == -71
 
@@ -792,3 +964,65 @@ def test_the_bus_table_of_the_planning_guide_and_the_bus_addresses() -> None:
         False,
         False,
     ]
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("futh", "FF-80-1C-00", "FUTH Bad"), _subentry("meter", "05-00-00-12", "Zähler")]],
+    indirect=True,
+)
+async def test_a_device_with_several_ids_lists_each_with_its_profile(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    (shown,) = collect(hass)["gateways"]
+    futh = next(d for d in shown["devices"] if d["name"] == "FUTH Bad")
+    assert futh["ids"] == [
+        {"id": "FF-80-1C-01", "eep": "A5-10-06:eltako"},
+        {"id": "FF-80-1C-10", "eep": "F6-02-01:eltako"},
+        {"id": "FF-80-1C-11", "eep": "F6-02-01:eltako"},
+        {"id": "FF-80-1C-12", "eep": "A5-10-12:std"},
+    ]
+    assert next(d for d in shown["devices"] if d["name"] == "Zähler")["ids"] == []
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_the_documentation_tells_when_a_device_was_heard_and_how_well(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+
+    entry, _server = gateway
+    dispatcher = entry.runtime_data.hub.dispatcher
+    (device_doc,) = collect(hass)["gateways"][0]["devices"]
+    # nothing heard yet
+    assert device_doc["signal"] == {"last": None, "rssi": None, "repeater_only": False}
+
+    for i in range(3):
+        dispatcher.dispatch(
+            entry.entry_id,
+            RadioTelegram(Rorg.BS4, bytes([0, 3, i, 0x0C]), 0x05000012, 0x00, dbm=-71),
+        )
+    await hass.async_block_till_done()
+    (device_doc,) = collect(hass)["gateways"][0]["devices"]
+    assert device_doc["signal"]["rssi"] == -71
+    assert device_doc["signal"]["last"] is not None
+    assert device_doc["signal"]["repeater_only"] is False
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_a_device_that_is_not_virtual_follows_nothing(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    (device_doc,) = collect(hass)["gateways"][0]["devices"]
+    assert device_doc["follows"] == [] and device_doc["virtual"] is False

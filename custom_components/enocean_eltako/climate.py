@@ -83,17 +83,28 @@ class RoomControllerClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
         if (last := await self.async_get_last_state()) is not None:
             self._attr_current_temperature = last.attributes.get("current_temperature")
             self._attr_target_temperature = last.attributes.get(ATTR_TEMPERATURE)
+            self._attr_current_humidity = last.attributes.get("current_humidity")
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Only heating; the controller is operated on site."""
 
     def _apply(self, values: dict[str, Any]) -> bool:
-        before = (self._attr_current_temperature, self._attr_target_temperature)
+        before = (
+            self._attr_current_temperature,
+            self._attr_target_temperature,
+            self._attr_current_humidity,
+        )
+        if "humidity" in values:  # a FUTH: its hygrostat
+            self._attr_current_humidity = values["humidity"]
         if "temperature" in values:
             self._attr_current_temperature = values["temperature"]
         if "setpoint" in values:
             self._attr_target_temperature = values["setpoint"]
-        return before != (self._attr_current_temperature, self._attr_target_temperature)
+        return before != (
+            self._attr_current_temperature,
+            self._attr_target_temperature,
+            self._attr_current_humidity,
+        )
 
 
 class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):

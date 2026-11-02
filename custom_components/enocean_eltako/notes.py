@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 3
+STORAGE_VERSION = 5
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -49,9 +49,23 @@ MANUAL_FIELDS = {
     "bus_address": 3,
     "feedback_id": 16,
     "bus_power": 8,
+    "kind": 10,  # what it is on radio, one of MANUAL_KINDS; empty counts as a button
+    "location": FIELDS["location"],
+    "power": FIELDS["power"],  # mains, battery type ...
 }
-# a power supply of the bus: what it is, what it delivers, and the bus addresses it feeds (optional)
-SUPPLY_FIELDS = {"name": 60, "watts": 8, "first": 3, "last": 3}
+MANUAL_KINDS = ("taster", "sensor", "aktor")
+# a power supply of the bus: what it is, what it delivers, the bus addresses it feeds (optional)
+# and, as for a device, where it sits and which circuit and fuse feed it
+SUPPLY_FIELDS = {
+    "name": 60,
+    "watts": 8,
+    "first": 3,
+    "last": 3,
+    "location": FIELDS["location"],
+    "circuit": FIELDS["circuit"],
+    "fuse": FIELDS["fuse"],
+    "note": MAX_NOTE,
+}
 MAX_SUPPLIES = 8  # per gateway
 MAX_LOG = 500  # events per gateway
 MAX_LINKS = 500  # links entered by hand per gateway
@@ -74,7 +88,9 @@ def device_key(subentry: ConfigSubentry) -> str:
 
 class _NotesStore(Store[dict[str, Any]]):
     """Version 1 kept a device's note as a string; version 2 keeps a dict of typed fields;
-    version 3 keeps the power supplies of the bus as a list (version 2 had at most one)."""
+    version 3 keeps the power supplies of the bus as a list (version 2 had at most one); version 4
+    gives each supply a place, circuit, fuse and note like a device has; version 5 gives an entry
+    made by hand a kind, a place and a supply (battery type or mains)."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -91,6 +107,18 @@ class _NotesStore(Store[dict[str, Any]]):
                 if isinstance(old, dict) and any(old.values())
                 else []
             )
+        if old_major_version < 4:
+            old_data["supplies"] = [
+                {**{k: "" for k in SUPPLY_FIELDS}, **e}
+                for e in old_data.get("supplies", [])
+                if isinstance(e, dict)
+            ]
+        if old_major_version < 5:
+            old_data["manual"] = [
+                {**{k: "" for k in MANUAL_FIELDS}, **e}
+                for e in old_data.get("manual", [])
+                if isinstance(e, dict)
+            ]
         return old_data
 
 
@@ -102,7 +130,7 @@ class Notes:
         self._signal_timer: CALLBACK_TYPE | None = None
         self._store = _NotesStore(hass, STORAGE_VERSION, f"{DOMAIN}.notes.{entry_id}")
         self.gateway = ""
-        self.supplies: list[dict[str, str]] = []  # {id, name, watts, first, last}
+        self.supplies: list[dict[str, str]] = []  # {id} and the SUPPLY_FIELDS
         self.devices: dict[str, dict[str, str]] = {}  # key -> typed fields (only those set)
         # the last sender test of a device: {"time": ..., "results": {profile: result}}
         self.tests: dict[str, dict[str, Any]] = {}
@@ -125,14 +153,20 @@ class Notes:
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
         self.gateway = str(stored.get("gateway", ""))
-        self.supplies = [{k: str(v) for k, v in e.items()} for e in stored.get("supplies", [])]
+        self.supplies = [
+            {**{k: "" for k in SUPPLY_FIELDS}, **{k: str(v) for k, v in e.items()}}
+            for e in stored.get("supplies", [])
+        ]
         self.devices = {
             str(k): {f: str(v[f]) for f in FIELDS if v.get(f)}
             for k, v in stored.get("devices", {}).items()
             if isinstance(v, dict)
         }
         self.tests = {str(k): dict(v) for k, v in stored.get("tests", {}).items()}
-        self.manual = [{k: str(v) for k, v in e.items()} for e in stored.get("manual", [])]
+        self.manual = [
+            {**{k: "" for k in MANUAL_FIELDS}, **{k: str(v) for k, v in e.items()}}
+            for e in stored.get("manual", [])
+        ]
         self.log = [{k: str(v) for k, v in e.items()} for e in stored.get("log", [])]
         self.known = {str(k): dict(v) for k, v in stored.get("known", {}).items()}
         self.links = [{k: str(v) for k, v in e.items()} for e in stored.get("links", [])]
@@ -215,7 +249,7 @@ class Notes:
             supply = {k: str(e.get(k, "")).strip() for k in SUPPLY_FIELDS}
             if not any(supply.values()):
                 continue
-            if len(supply["name"]) > SUPPLY_FIELDS["name"]:
+            if any(len(supply[k]) > n for k, n in SUPPLY_FIELDS.items()):
                 return False
             if supply["watts"] and not _WATTS.fullmatch(supply["watts"]):
                 return False
@@ -388,6 +422,8 @@ class Notes:
                 entry["bus_power"] = ""  # not a number of watts
             if entry["bus_address"] and not valid_bus_address(entry["bus_address"]):
                 entry["bus_address"] = ""  # not an address of the bus
+            if entry["kind"] not in MANUAL_KINDS:
+                entry["kind"] = ""  # not a kind: it counts as a button
         self._save()
 
     def set_links(self, entries: list[dict[str, str]]) -> None:

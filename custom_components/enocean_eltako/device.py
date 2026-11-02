@@ -29,6 +29,7 @@ from .catalog import (
     ROCKER_STATUS_PRESSED,
     ROCKER_STATUS_RELEASED,
     DeviceModel,
+    LinkedId,
     model_for,
 )
 from .const import (
@@ -43,7 +44,7 @@ from .notes import device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
-from .protocol.eep.eltako import switching
+from .protocol.eep.eltako import futh, switching
 from .protocol.eep.model import out_of_range
 from .protocol.eep.std.profiles import PROFILES
 from .protocol.eep.teach_in import decode_teach_in_4bs
@@ -149,6 +150,24 @@ class EnOceanDevice:
         self._ute_until = 0.0  # ... until this time.monotonic()
         self.last_values: dict[str, Any] = {}  # the last decoded values of the device's channel
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
+        # a device sending from several IDs (FUTH): the ID it listens to -> what that ID means
+        self.linked: dict[int, LinkedId] = {
+            (self.device_id + link.offset) & 0xFFFFFFFF: link for link in self.model.linked
+        }
+
+    @property
+    def radio_ids(self) -> tuple[int, ...]:
+        """The IDs the device sends from: its own, or the linked ones of a multi-ID device."""
+        return tuple(self.linked) or (self.device_id,)
+
+    def owns(self, sender: int) -> bool:
+        return sender in self.linked if self.linked else sender == self.device_id
+
+    def receive_refs(self, sender: int) -> tuple[EEPRef, ...]:
+        """The profiles a telegram of this sender ID may be decoded with."""
+        if (link := self.linked.get(sender)) is not None:
+            return (link.eep,)
+        return tuple(r for r in (self.model.receive, *self.model.receive_extra) if r is not None)
 
     @property
     def channel(self) -> int:
@@ -215,15 +234,21 @@ class EnOceanDevice:
 
     def start(self) -> Callable[[], None]:
         dispatcher = self.entry.runtime_data.hub.dispatcher
-        remove_listener = dispatcher.add_listener(self.device_id, self._on_received)
-        remove_heard = dispatcher.add_heard_listener(self.device_id, self._on_heard)
+        removers = [
+            remove
+            for radio_id in self.radio_ids
+            for remove in (
+                dispatcher.add_listener(radio_id, self._on_received),
+                dispatcher.add_heard_listener(radio_id, self._on_heard),
+            )
+        ]
         remove_wall = None
         if wall_switch := self.options.get(OPT_WALL_SWITCH):
             remove_wall = dispatcher.add_listener(parse_id(wall_switch), self._on_wall_switch)
 
         def remove_all() -> None:
-            remove_listener()
-            remove_heard()
+            for remove in removers:
+                remove()
             if remove_wall is not None:
                 remove_wall()
 
@@ -338,11 +363,13 @@ class EnOceanDevice:
             self._answer_ute(received.telegram)
             return
         values, matched = None, None
-        for ref in (self.model.receive, *self.model.receive_extra):
-            if ref is not None and (values := decode_telegram(ref, received.telegram)) is not None:
+        for ref in self.receive_refs(received.sender):
+            if (values := decode_telegram(ref, received.telegram)) is not None:
                 matched = ref
                 break
         self._count_mismatch(received.telegram, values, matched)
+        if values is not None and (link := self.linked.get(received.sender)):
+            values = futh.interpret(link.role, values)  # what this ID means
         if values is None or values.get("channel", self.channel) != self.channel:
             return
         self.last_received = received

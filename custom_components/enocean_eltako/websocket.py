@@ -37,6 +37,7 @@ from .device import UTE_WINDOW
 from .discovery import async_set_hidden
 from .documentation import IMPORTABLE_VERSIONS
 from .documentation import collect as collect_documentation
+from .heard import heard_by
 from .hub import async_get_hub
 from .notes import (
     FIELDS,
@@ -65,7 +66,6 @@ from .takeover_ws import async_setup_takeover_websocket
 MAX_CANDIDATES = 4
 MAX_BULK = 500  # devices in one table edit
 MAX_IMPORT_GATEWAYS = 20
-REPEATER_ONLY_MIN = 3  # telegrams heard before 'only via a repeater' is claimed
 # telegram types the panel may send, with the data lengths in bytes
 SEND_LENGTHS = {Rorg.RPS: (1,), Rorg.BS1: (1,), Rorg.BS4: (4,), Rorg.VLD: tuple(range(1, 15))}
 
@@ -210,7 +210,7 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["ha_device"] = ha_device_id(device)
                     data["profile"] = profile
                     return data
-            elif device.device_id == telegram.sender:
+            elif device.owns(telegram.sender):
                 data["device"] = device.subentry.title
                 data["device_key"] = device.subentry.subentry_id
                 data["ha_device"] = ha_device_id(device)
@@ -218,8 +218,8 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["model"] = label
                 elif device.model.example_list:
                     data["models"] = list(device.model.example_list)  # which of these is unknown
-                for ref in (device.model.receive, *device.model.receive_extra):
-                    if ref is not None and (values := decode_telegram(ref, telegram)):
+                for ref in device.receive_refs(telegram.sender):
+                    if values := decode_telegram(ref, telegram):
                         data["eep"] = str(ref)
                         data["values"] = {k: _json_value(v) for k, v in values.items()}
                         data["fields"] = readable_fields(
@@ -312,35 +312,39 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
             (DOMAIN, device.unique_prefix), device.entry.entry_id
         )
         area = ar.async_get(hass).async_get_area(entry.area_id) if entry and entry.area_id else None
-        rows.append(
-            {
-                "id": format_id(device.device_id),
-                "device": device.subentry.title,
-                "last_seen": device.stats.last_seen,
-                "silent": device.silent,
-                "eep": str(device.model.receive) if device.model.receive else None,
-                "model": device._model_label,
-                "models": [] if device._model_label else list(device.model.example_list),
-                "category": device.model.category,
-                "area": area.name if area else None,
-                "entities": (
-                    len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
-                ),
-                "ha_device": entry.id if entry else None,
-                "labels": sorted(entry.labels) if entry else [],
-                "disabled": bool(entry and entry.disabled),
-                # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
-                "key": device.subentry.subentry_id,
-                "teach": [
-                    {
-                        "profile": profile,
-                        "id": format_id(sender),
-                        "ute": not device.model.sender_profile(profile).teach_in,
-                    }
-                    for profile, sender in device.senders.items()
-                ],
-            }
-        )
+        row = {
+            "id": format_id(device.radio_ids[0]),
+            "device": device.subentry.title,
+            "last_seen": device.stats.last_seen,
+            "silent": device.silent,
+            "eep": str(device.model.receive) if device.model.receive else None,
+            "model": device._model_label,
+            "models": [] if device._model_label else list(device.model.example_list),
+            "category": device.model.category,
+            "area": area.name if area else None,
+            "entities": (
+                len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
+            ),
+            "ha_device": entry.id if entry else None,
+            "labels": sorted(entry.labels) if entry else [],
+            "disabled": bool(entry and entry.disabled),
+            # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
+            "key": device.subentry.subentry_id,
+            "teach": [
+                {
+                    "profile": profile,
+                    "id": format_id(sender),
+                    "ute": not device.model.sender_profile(profile).teach_in,
+                }
+                for profile, sender in device.senders.items()
+            ],
+        }
+        rows.append(row)
+        # a device with several IDs (FUTH): one line per ID, the entities counted once
+        rows += [
+            {**row, "id": format_id(radio_id), "entities": 0, "teach": []}
+            for radio_id in device.radio_ids[1:]
+        ]
     return rows
 
 
@@ -574,35 +578,6 @@ def device_details(device: Any) -> dict[str, Any]:
             if k not in NOT_SETTINGS and isinstance(v, str | int | float | bool)
         },
         "entities": entities,
-    }
-
-
-def heard_by(device: Any) -> dict[str, Any]:
-    """Which gateways hear a device, how well, the best one, and whether only repeaters carry it."""
-    hass = device.hass
-    rows = []
-    for entry_id, heard in device.stats.heard.items():
-        entry = hass.config_entries.async_get_entry(entry_id)
-        rows.append(
-            {
-                "entry_id": entry_id,
-                "name": entry.title if entry else entry_id,
-                "count": heard.count,
-                "direct": heard.direct,
-                "rssi": heard.rssi,
-                "last": heard.last,
-            }
-        )
-    rows.sort(key=lambda r: (r["rssi"] is None, -(r["rssi"] or 0), r["name"]))
-    with_signal = [r for r in rows if r["rssi"] is not None]
-    total = sum(r["count"] for r in rows)
-    return {
-        "gateways": rows,
-        "best": with_signal[0]["entry_id"] if len(rows) > 1 and with_signal else None,
-        # radio only: a bus has no repeaters; a few telegrams, none of them direct
-        "repeater_only": bool(with_signal)
-        and total >= REPEATER_ONLY_MIN
-        and not any(r["direct"] for r in rows),
     }
 
 
@@ -1023,7 +998,7 @@ async def ws_hide_sender(
         connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
         return
     runtime = entry.runtime_data
-    if any(device.device_id == sender for device in runtime.devices.values()):
+    if any(device.owns(sender) for device in runtime.devices.values()):
         connection.send_error(msg["id"], "known_device", "this sender is a set-up device")
         return
     hidden = runtime.hub.hidden.get(entry.entry_id, set())

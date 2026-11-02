@@ -102,6 +102,14 @@ BINARY_SENSORS: dict[str, tuple[EnOceanBinarySensorDescription, ...]] = {
             value_fn=lambda v: None if "WA0" not in v else v["WA0"] == 1,
         ),
     ),
+    "futh": (
+        EnOceanBinarySensorDescription(
+            key="pump",
+            translation_key="pump",
+            device_class=BinarySensorDeviceClass.RUNNING,
+            value_fn=lambda v: v.get("pump"),
+        ),
+    ),
     "fbh": (
         EnOceanBinarySensorDescription(
             key="motion",
@@ -151,7 +159,9 @@ def custom_binary_descriptions(
 def model_binary_descriptions(device: EnOceanDevice) -> tuple[EnOceanBinarySensorDescription, ...]:
     if device.model.kind == CUSTOM and (definition := custom_definition(device.options)):
         return custom_binary_descriptions(definition)
-    return BINARY_SENSORS.get(device.model.kind, ())
+    return BINARY_SENSORS.get(device.model.kind, ()) + (
+        BINARY_SENSORS.get(device.model.id, ()) if device.model.base else ()
+    )
 
 
 BUTTONS = ("a1", "a0", "b1", "b0")  # F6-02-01 R1 values 0...3

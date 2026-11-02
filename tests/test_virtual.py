@@ -393,3 +393,27 @@ async def test_virtual_edges(hass: HomeAssistant, gateway) -> None:  # noqa: F81
     hass.states.async_set("sensor.lux", "bright", {"unit_of_measurement": "lx"})
     await _settle(hass)
     assert bytes(server.received) == b""
+
+
+@pytest.mark.parametrize("gateway", [VIRTUALS], indirect=True)
+async def test_the_documentation_names_what_a_virtual_sensor_follows(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    from custom_components.enocean_eltako.documentation import collect
+
+    (gateway_doc,) = collect(hass)["gateways"]
+    follows = {d["name"]: d["follows"] for d in gateway_doc["devices"]}
+    assert follows == {
+        "Fenster HA": ["binary_sensor.window"],
+        "Temperatur HA": ["sensor.room"],
+        "Taster HA": [],  # a rocker sends what Home Assistant presses: no source
+    }
+    # every device that Home Assistant sends from is of the category virtual; only a virtual
+    # sensor (not the rocker) follows an entity and has no telegrams of its own
+    assert {d["category"] for d in gateway_doc["devices"]} == {"virtual"}
+    assert {d["name"]: d["signal"] is None for d in gateway_doc["devices"]} == {
+        "Fenster HA": True,
+        "Temperatur HA": True,
+        "Taster HA": False,
+    }

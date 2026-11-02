@@ -4,6 +4,48 @@ All notable changes to this project are documented here, in English and German: 
 has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
+### [Unreleased]
+
+**English**
+
+#### Added
+
+- **Room controller with several IDs** (FUTH55ED, FUTH65D): one device for the four IDs a FUTH sends from, entered with its lowest ID (ending in `00`). Controller (`+01`: climate, setpoint, temperature, night setback), pump (`+10`), operating mode (`+11`) and hygrostat (`+12`: humidity, also on the climate entity). Read only. The Devices view lists every ID, the documentation each with its profile. The offsets are those of the old integration's table; the telegrams of a FUTH55ED confirm the controller and the hygrostat, pump and mode are read from the rocker codes `0x70/0x50` and `0x70/0x50/0x30/0x10`.
+
+#### Changed
+
+- The **+** of an unknown sender (Devices view and telegram details) opens a menu: **Set up as device** as before, or **Only write down**, which adds an entry tagged *only written down* (Installation → Devices → Radio) with the ID filled in and puts the cursor in its name field. Nothing is created in Home Assistant and nothing is learned into an actuator; an ID already written down is not added twice.
+- The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
+- **Installation view redesigned.** Four tabs (Devices, Sender IDs, Links, Log); the Overview, Senders and Bus tabs are gone, their tables live in the views of the **Devices** tab: **All devices**, **Bus**, **Radio** and **Virtual**, switched at the top. Every row names its **kind** (Eltako bus, radio sensor, radio button, radio actuator, virtual, power supply) as a tag that opens the view of that kind, and a device with sender IDs from the pool carries **Sender 1, 2**, which jumps to its rows in the Sender IDs tab (the device names there jump back).
+  - **All devices**: the **place** is three fields that look like one (cabinet, row, slot, stored as "cabinet · row · slot"; older free text is split at the comma); kind chips, filters for a missing place or fuse (with counts), grouping by area or place, a **Next without a place** button and a **Columns** menu. Virtual devices have no place and do not count in the progress; power supplies and entries written down by hand do.
+  - **Bus**: grouped by **power supply**. A supply is a header row with type, watts and the bus addresses it feeds, edited right there, with a load bar and an overload warning; addresses no supply feeds sit in a group of their own; tiles show duplicate addresses, used and free addresses, total power and the state of the supplies. Supplies also appear in **All devices** with place, circuit, fuse and note.
+  - **Radio**: radio devices and entries written down by hand in one table (place, sender ID, what it sends, **supply**, part of, **signal**: a dot for when it was last heard with strength and "via repeater only", and the **link**: what it controls, what controls it). **Write down a device** (name, ID, kind, function) replaces the editor of the Other devices; such an entry carries *only written down* and also shows in **All devices**.
+  - **Virtual**: pool number, sender ID, the entities a virtual device follows and the actuators it was taught into.
+  - Devices of the Eltako series 14 (FSR14, FUD14, FSB14 ...) count as **Eltako bus** even without an address and wait in the group *No bus address yet* of the Bus view; a room controller is a radio sensor, not an actuator, so the Links tab does not ask who switches it.
+  - **Sender IDs**: the table of the gateway senders with the sender ID pool, as before, one row per sender.
+  - **Links**: a card per actuator, per sender or a **matrix**; every link names the other end, the role and its origin (assigned, declared, entered), the learn position and the state. An actuator without a link is marked; tiles and filters show what is open; **Test senders**, **+ Link**, **+ Actuator**, a **+** in the matrix and **Write down as device** for a wall switch ID without a device. The table of the former Buttons tab (left and right rocker) is this tab grouped by sender.
+- Storage and documentation: the notes store is now **version 5**. A power supply of the bus has a place, circuit, fuse and note, and an entry written down by hand has a kind, place and supply (older entries are migrated, the new fields start empty). The documentation tells for every device when it was last heard, the best signal and whether it is heard only via a repeater, and for a virtual sensor the entities it follows.
+
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Raumregler mit mehreren IDs** (FUTH55ED, FUTH65D): ein Gerät für die vier IDs, von denen ein FUTH sendet, eingetragen mit seiner niedrigsten ID (endet auf `00`). Regler (`+01`: Klima, Sollwert, Temperatur, Nachtabsenkung), Pumpe (`+10`), Betriebsart (`+11`) und Hygrostat (`+12`: Luftfeuchte, auch an der Klima-Entität). Nur lesend. Die Geräteansicht listet jede ID, die Dokumentation jede mit ihrem Profil. Die Offsets stammen aus der Tabelle der alten Integration; die Telegramme eines FUTH55ED bestätigen Regler und Hygrostat, Pumpe und Betriebsart werden aus den Wippen-Codes `0x70/0x50` und `0x70/0x50/0x30/0x10` gelesen.
+
+#### Geändert
+
+- Das **+** eines unbekannten Senders (Geräteansicht und Telegramm-Details) öffnet ein Menü: **Als Gerät anlegen** wie bisher oder **Nur dokumentieren**; das legt einen Eintrag mit dem Kennzeichen *nur dokumentiert* (Anlage → Geräte → Funk) mit ausgefüllter ID an und setzt den Cursor ins Feld Name. In Home Assistant entsteht nichts, und in keinen Aktor wird etwas eingelernt; eine schon notierte ID wird nicht doppelt angelegt.
+- Der Katalogeintrag **Wippentaster** (EnOcean) und die Geräte-Dokumentation nennen jetzt die **EnOcean-Tastermodule PTM 210/215** (F6-02-01), die in vielen Tastern stecken.
+- **Anlage-Ansicht neu gestaltet.** Vier Reiter (Geräte, Sender-IDs, Verbindungen, Protokoll); die Reiter Übersicht, Sender und Bus entfallen, ihre Tabellen stehen in den Ansichten des Reiters **Geräte**: **Alle Geräte**, **Bus**, **Funk** und **Virtuell**, oben umgeschaltet. Jede Zeile nennt ihre **Art** (Eltako-Bus, Funk Sensor, Funk Taster, Funk Aktor, Virtuell, Netzteil) als Kennzeichen, das die Ansicht dieser Art öffnet, und ein Gerät mit Sender-IDs aus dem Pool trägt **Sender 1, 2**, das zu seinen Zeilen im Reiter Sender-IDs springt (die Gerätenamen dort springen zurück).
+  - **Alle Geräte**: der **Ort** sind drei Felder, die wie eines aussehen (Schrank, Reihe, Platz, gespeichert als „Schrank · Reihe · Platz“; älterer Freitext wird am Komma geteilt); Art-Chips, Filter für fehlenden Ort oder fehlende Sicherung (mit Zähler), Gruppieren nach Bereich oder Ort, ein Knopf **Nächstes ohne Ort** und ein Menü **Spalten**. Virtuelle Geräte haben keinen Ort und zählen beim Fortschritt nicht mit; Netzteile und von Hand notierte Einträge zählen mit.
+  - **Bus**: gruppiert nach **Netzteil**. Ein Netzteil ist eine Kopfzeile mit Typ, Watt und den Bus-Adressen, die es versorgt, direkt bearbeitbar, mit Auslastungsbalken und Überlastwarnung; Adressen, die kein Netzteil versorgt, stehen in einer eigenen Gruppe; Kacheln zeigen doppelte Adressen, belegte und freie Adressen, die Gesamtleistung und den Zustand der Netzteile. Netzteile erscheinen auch in **Alle Geräte** mit Ort, Stromkreis, Sicherung und Notiz.
+  - **Funk**: Funk-Geräte und von Hand notierte Einträge in einer Tabelle (Ort, Sender-ID, Sendet, **Versorgung**, Gehört zu, **Signal**: ein Punkt für das letzte Hören mit Stärke und „nur über Repeater“, und die **Verbindung**: was es steuert, was es steuert). **Gerät dokumentieren** (Name, ID, Art, Funktion) ersetzt den Editor der Weiteren Geräte; ein solcher Eintrag trägt *nur dokumentiert* und steht auch in **Alle Geräte**.
+  - **Virtuell**: Pool-Nummer, Sender-ID, die Entitäten, denen ein virtuelles Gerät folgt, und die Aktoren, in die es eingelernt ist.
+  - Geräte der Eltako-Baureihe 14 (FSR14, FUD14, FSB14 …) zählen als **Eltako-Bus**, auch ohne Adresse, und warten in der Gruppe *Noch keine Bus-Adresse* der Bus-Ansicht; ein Raumregler ist ein Funk-Sensor und kein Aktor, deshalb fragt der Reiter Verbindungen nicht, wer ihn schaltet.
+  - **Sender-IDs**: die Tabelle der Gateway-Sender mit dem Sender-ID-Pool, wie bisher, eine Zeile je Sender.
+  - **Verbindungen**: eine Karte je Aktor, je Sender oder eine **Matrix**; jede Verbindung nennt das andere Ende, die Rolle und die Herkunft (vergeben, angegeben, eingetragen), die Lernposition und den Stand. Ein Aktor ohne Verbindung ist markiert; Kacheln und Filter zeigen, was offen ist; **Sender testen**, **+ Verbindung**, **+ Aktor**, ein **+** in der Matrix und **Als Gerät notieren** für eine Wandschalter-ID ohne Gerät. Die Tabelle des früheren Reiters Taster (linke und rechte Wippe) ist dieser Reiter nach Sender gruppiert.
+- Speicher und Dokumentation: der Notizspeicher hat jetzt **Version 5**. Ein Netzteil des Busses hat Ort, Stromkreis, Sicherung und Notiz, ein von Hand notierter Eintrag eine Art, einen Ort und eine Versorgung (ältere Einträge werden migriert, die neuen Felder sind leer). Die Dokumentation nennt zu jedem Gerät, wann es zuletzt gehört wurde, das beste Signal und ob es nur über einen Repeater ankommt, und zu einem virtuellen Sensor die Entitäten, denen er folgt.
+
 ### [1.5.0] - 2026-11-02
 
 **English**
