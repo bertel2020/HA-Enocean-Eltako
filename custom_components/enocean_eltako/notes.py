@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 4
+STORAGE_VERSION = 5
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -49,7 +49,11 @@ MANUAL_FIELDS = {
     "bus_address": 3,
     "feedback_id": 16,
     "bus_power": 8,
+    "kind": 10,  # what it is on radio, one of MANUAL_KINDS; empty counts as a button
+    "location": FIELDS["location"],
+    "power": FIELDS["power"],  # mains, battery type ...
 }
+MANUAL_KINDS = ("taster", "sensor", "aktor")
 # a power supply of the bus: what it is, what it delivers, the bus addresses it feeds (optional)
 # and, as for a device, where it sits and which circuit and fuse feed it
 SUPPLY_FIELDS = {
@@ -85,7 +89,8 @@ def device_key(subentry: ConfigSubentry) -> str:
 class _NotesStore(Store[dict[str, Any]]):
     """Version 1 kept a device's note as a string; version 2 keeps a dict of typed fields;
     version 3 keeps the power supplies of the bus as a list (version 2 had at most one); version 4
-    gives each supply a place, circuit, fuse and note like a device has."""
+    gives each supply a place, circuit, fuse and note like a device has; version 5 gives an entry
+    made by hand a kind, a place and a supply (battery type or mains)."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -106,6 +111,12 @@ class _NotesStore(Store[dict[str, Any]]):
             old_data["supplies"] = [
                 {**{k: "" for k in SUPPLY_FIELDS}, **e}
                 for e in old_data.get("supplies", [])
+                if isinstance(e, dict)
+            ]
+        if old_major_version < 5:
+            old_data["manual"] = [
+                {**{k: "" for k in MANUAL_FIELDS}, **e}
+                for e in old_data.get("manual", [])
                 if isinstance(e, dict)
             ]
         return old_data
@@ -152,7 +163,10 @@ class Notes:
             if isinstance(v, dict)
         }
         self.tests = {str(k): dict(v) for k, v in stored.get("tests", {}).items()}
-        self.manual = [{k: str(v) for k, v in e.items()} for e in stored.get("manual", [])]
+        self.manual = [
+            {**{k: "" for k in MANUAL_FIELDS}, **{k: str(v) for k, v in e.items()}}
+            for e in stored.get("manual", [])
+        ]
         self.log = [{k: str(v) for k, v in e.items()} for e in stored.get("log", [])]
         self.known = {str(k): dict(v) for k, v in stored.get("known", {}).items()}
         self.links = [{k: str(v) for k, v in e.items()} for e in stored.get("links", [])]
@@ -408,6 +422,8 @@ class Notes:
                 entry["bus_power"] = ""  # not a number of watts
             if entry["bus_address"] and not valid_bus_address(entry["bus_address"]):
                 entry["bus_address"] = ""  # not an address of the bus
+            if entry["kind"] not in MANUAL_KINDS:
+                entry["kind"] = ""  # not a kind: it counts as a button
         self._save()
 
     def set_links(self, entries: list[dict[str, str]]) -> None:
