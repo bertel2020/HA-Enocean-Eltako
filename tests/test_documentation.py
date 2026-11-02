@@ -129,7 +129,7 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 4, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
         "supplies": [],
@@ -311,6 +311,89 @@ async def test_version_2_notes_with_one_supply_are_migrated(
         ("FSNT14-12V", "12", "", "")
     ]
     assert notes.supplies[0]["id"]
+    # version 4: the supply has a place, circuit, fuse and note too, empty until written down
+    assert [notes.supplies[0][k] for k in ("location", "circuit", "fuse", "note")] == [
+        "",
+        "",
+        "",
+        "",
+    ]
+
+
+async def test_version_3_supplies_get_the_fields_of_version_4(
+    hass: HomeAssistant,
+    hass_storage,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass_storage[f"enocean_eltako.notes.{entry.entry_id}"] = {
+        "version": 3,
+        "key": f"enocean_eltako.notes.{entry.entry_id}",
+        "data": {
+            "gateway": "",
+            "devices": {},
+            "supplies": [
+                {"id": "s1", "name": "FSNT14-12V", "watts": "24", "first": "1", "last": "20"}
+            ],
+        },
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    (supply,) = notes.supplies
+    assert (supply["id"], supply["name"], supply["watts"], supply["first"], supply["last"]) == (
+        "s1",
+        "FSNT14-12V",
+        "24",
+        "1",
+        "20",
+    )
+    assert [supply[k] for k in ("location", "circuit", "fuse", "note")] == ["", "", "", ""]
+    await notes.async_flush()
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 4
+
+
+async def test_a_supply_keeps_its_place_circuit_fuse_and_note(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    client = await hass_ws_client(hass)
+
+    ids = iter(range(1, 10))
+
+    async def call(supplies):
+        await client.send_json(
+            {
+                "id": next(ids),
+                "type": "enocean_eltako/set_supplies",
+                "entry_id": entry.entry_id,
+                "supplies": supplies,
+            }
+        )
+        return await client.receive_json()
+
+    placed = {
+        "id": "a",
+        "name": "FSNT14-12V",
+        "watts": "24",
+        "location": "Schrank 1 · Reihe 1 · 1",
+        "circuit": "K1",
+        "fuse": "B10",
+        "note": "neben dem FAM14",
+    }
+    assert (await call([placed]))["success"]
+    (shown,) = collect(hass)["gateways"]
+    assert {k: shown["supplies"][0][k] for k in placed} == placed
+    # an entry with only a place is not empty; one too long changes nothing
+    assert (await call([{"location": "Schrank 2"}]))["success"]
+    assert [s["location"] for s in notes.supplies] == ["Schrank 2"]
+    reply = await call([{"location": "x" * 121}])
+    assert reply["success"] is False or reply["error"]["code"] == "invalid_format"
+    assert [s["location"] for s in notes.supplies] == ["Schrank 2"]
 
 
 @pytest.mark.parametrize(
@@ -592,7 +675,7 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     assert notes.device("05-00-00-12")["location"] == ""
     # a stored version 2 is read as it is
     await notes.async_flush()
-    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 3
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 4
 
 
 @pytest.mark.parametrize(
@@ -745,7 +828,7 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     assert notes.heard["00-21-63-43"]["rorg"] == "F6"
     await hass.config_entries.async_unload(entry.entry_id)
     assert notes._signal_timer is None
-    stored = await Store(hass, 3, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 4, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
     assert stored["heard"]["00-21-63-43"]["dbm"] == -71
 
