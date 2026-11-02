@@ -16,6 +16,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 - The **+** of an unknown sender (Devices view and telegram details) opens a menu: **Set up as device** as before, or **Only write down**, which adds an entry under **Other devices** (Installation → Senders → Radio senders) with the ID filled in and puts the cursor in its name field. Nothing is created in Home Assistant and nothing is learned into an actuator; an ID already written down is not added twice.
 - The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
+- A **power supply of the bus** can carry a place, circuit, fuse and note like a device. The notes store is now version 4 (supplies of version 3 are migrated, the new fields start empty). This prepares the Installation view that lists the supplies with the devices.
 
 **Deutsch**
 
@@ -27,6 +28,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 - Das **+** eines unbekannten Senders (Geräteansicht und Telegramm-Details) öffnet ein Menü: **Als Gerät anlegen** wie bisher oder **Nur dokumentieren**; das legt einen Eintrag unter **Weitere Geräte** (Anlage → Sender → Funk-Sender) mit ausgefüllter ID an und setzt den Cursor ins Feld Name. In Home Assistant entsteht nichts, und in keinen Aktor wird etwas eingelernt; eine schon notierte ID wird nicht doppelt angelegt.
 - Der Katalogeintrag **Wippentaster** (EnOcean) und die Geräte-Dokumentation nennen jetzt die **EnOcean-Tastermodule PTM 210/215** (F6-02-01), die in vielen Tastern stecken.
+- Ein **Netzteil des Busses** kann wie ein Gerät einen Ort, Stromkreis, eine Sicherung und eine Notiz tragen. Der Notizspeicher hat jetzt Version 4 (Netzteile der Version 3 werden migriert, die neuen Felder sind leer). Das bereitet die Anlage-Ansicht vor, die die Netzteile zusammen mit den Geräten auflistet.
 
 ### [1.5.0] - 2026-11-02
 
