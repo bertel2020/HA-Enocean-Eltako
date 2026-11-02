@@ -29,6 +29,19 @@ function compare(a, b, path) {
 }
 compare(TEXT.en, TEXT.de, "");
 
+// the look: every scheme has every token in light and dark, a stored choice is made valid, the sizes give the factors
+const { SCHEMES, SIZES, cleanPrefs, tokens } = await import(new URL("theme.js?v=check", frontend).href);
+const schemeKeys = Object.keys(SCHEMES.ocean).sort().join();
+for (const [name, scheme] of Object.entries(SCHEMES)) {
+  if (Object.keys(scheme).sort().join() !== schemeKeys) errors.push(`theme.js: scheme ${name} has other tokens than ocean`);
+  for (const [token, pair] of Object.entries(scheme)) if (!pair.every((c) => /^#[0-9a-f]{6}$/.test(c))) errors.push(`theme.js: ${name}.${token} is no #rrggbb pair`);
+}
+const clean = cleanPrefs({ scheme: "pink", mode: "x", size: "huge" });
+if (clean.scheme !== "ocean" || clean.mode !== "auto" || clean.size !== "normal") errors.push("theme.js: cleanPrefs keeps unknown values");
+if (tokens({ scheme: "forest", mode: "light", size: "small" }, false)["--fs"] !== "0.857" || tokens({ scheme: "forest", mode: "light", size: "large" }, true)["--fs"] !== "1.143") errors.push("theme.js: size factors differ from 12/14/16 px");
+if (tokens({ scheme: "graphite", mode: "dark", size: "normal" }, true)["--accent"] !== "#d4dae2") errors.push("theme.js: graphite dark accent differs");
+if (SIZES.normal !== 14) errors.push("theme.js: the normal size is not 14 px");
+
 // a device report replaces IDs, gateway and times and keeps data, status and signal
 const { anonymisedCapture } = await import(new URL("shared.js?v=check", frontend).href);
 const keys = ["time", "gateway", "dir", "rorg", "data", "sender", "status", "destination", "dbm", "duplicate"];

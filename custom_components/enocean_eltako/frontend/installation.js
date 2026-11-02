@@ -61,44 +61,44 @@ export const INSTALLATION_STYLE = `
   .installation .itop .tabs { display: flex; gap: 6px; flex: 1 1 340px; flex-wrap: wrap; }
   .installation .itools { display: flex; gap: 6px; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; }
   .installation .ibody { padding: 12px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .installation h3 { margin: 0 0 8px; font-size: 14px; font-weight: 500; }
-  .installation .isub { color: var(--muted); font-size: 12px; }
+  .installation h3 { margin: 0 0 8px; font-size: calc(14px * var(--fs)); font-weight: 500; }
+  .installation .isub { color: var(--muted); font-size: calc(12px * var(--fs)); }
   .installation .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
   .installation .gcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
   .installation .gcard b { font-weight: 500; }
-  .installation .gcard ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
-  .installation .gcard .open { font-size: 12px; color: var(--warn); }
+  .installation .gcard ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: calc(13px * var(--fs)); }
+  .installation .gcard .open { font-size: calc(12px * var(--fs)); color: var(--warn); }
   .installation .tablewrap { overflow-x: auto; }
-  .installation table.itable { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .installation .itable th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .installation table.itable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
+  .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .installation .itable td.name { min-width: 160px; }
-  .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
+  .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
   .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
   .installation .itable input.cell[data-in-field="group"] { min-width: 170px; }
   .installation .itable input.cell[data-in-field="bus_address"] { min-width: 70px; }
   .installation .itable input.cell[data-in-field="feedback_id"] { min-width: 100px; }
   .installation .itable input.cell[data-in-field="bus_power"] { min-width: 72px; max-width: 96px; text-align: right; }
-  .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"] { font-family: ui-monospace, monospace; font-size: 12px; }
+  .installation .itable input.cell[data-in-field="bus_address"], .installation .itable input.cell[data-in-field="feedback_id"] { font-family: ui-monospace, monospace; font-size: calc(12px * var(--fs)); }
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
-  .installation input.isearch { width: 100%; max-width: 320px; box-sizing: border-box; font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+  .installation input.isearch { width: 100%; max-width: 320px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .installation .bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
-  .installation .bulk input, .installation .bulk select { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
-  .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: 12px ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+  .installation .bulk input, .installation .bulk select { font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+  .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: calc(12px * var(--fs)) ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
   .installation .log td.kind { white-space: nowrap; }
   .installation .none { color: var(--muted); padding: 8px 0; }
   .installation .itop { padding-bottom: 0; align-items: flex-end; }
-  .installation .itop .itab { font-size: 15px; padding: 10px 14px 12px; }
+  .installation .itop .itab { font-size: calc(15px * var(--fs)); padding: 10px 14px 12px; }
   .installation .itop .itools { padding-bottom: 8px; }
   .installation .itop .groups { display: flex; gap: 4px; flex: 1 1 340px; flex-wrap: wrap; }
-  .installation .itab { font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
+  .installation .itab { font: inherit; font-size: calc(14px * var(--fs)); font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
   .installation .itab:hover { color: var(--text); }
   .installation .itab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
   .installation .itab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
   .installation .isubtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 16px 0; }
-  .installation .isubtabs .itab { font-size: 13px; font-weight: 400; padding: 5px 12px; margin: 0; border: 0; border-radius: 14px; }
+  .installation .isubtabs .itab { font-size: calc(13px * var(--fs)); font-weight: 400; padding: 5px 12px; margin: 0; border: 0; border-radius: 14px; }
   .installation .isubtabs .itab[aria-selected="true"] { background: var(--accent-soft); font-weight: 500; }
   .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
   .installation .gwhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -108,33 +108,33 @@ export const INSTALLATION_STYLE = `
   .installation .gcard { grid-template-columns: minmax(0, 1fr); }
   .installation .gcard li { white-space: normal; overflow-wrap: anywhere; }
   .installation .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-  .installation .seg button { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
+  .installation .seg button { font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
   .installation .seg button + button { border-left: 1px solid var(--line); }
   .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-  .installation .gwempty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: 13px; }
+  .installation .gwempty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: calc(13px * var(--fs)); }
   .installation .gwempty p { margin: 0; max-width: 60ch; }
   .installation details.poolbox { border-bottom: 1px solid var(--line); }
-  .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: calc(14px * var(--fs)); font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .installation details.poolbox > summary .isub { font-weight: 400; }
   .installation details.imenu { position: relative; }
   .installation details.imenu summary { list-style: none; cursor: pointer; }
   .installation details.imenu summary::-webkit-details-marker { display: none; }
   .installation .imenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 220px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-  .installation .imenu .items button { text-align: left; font: inherit; font-size: 13px; color: inherit; background: none; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+  .installation .imenu .items button { text-align: left; font: inherit; font-size: calc(13px * var(--fs)); color: inherit; background: none; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
   .installation .imenu .items button:hover { background: var(--soft); }
   .installation .imenu .items hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
   .installation .itable td.num, .installation .itable th.num { text-align: right; white-space: nowrap; }
-  .installation .itable tr.free td { color: var(--muted); background: var(--soft); font-size: 12px; padding: 3px 8px 3px 0; }
-  .installation .itable td.mono, .installation .mono { font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
+  .installation .itable tr.free td { color: var(--muted); background: var(--soft); font-size: calc(12px * var(--fs)); padding: 3px 8px 3px 0; }
+  .installation .itable td.mono, .installation .mono { font-family: ui-monospace, monospace; font-size: calc(12px * var(--fs)); white-space: nowrap; }
   .installation .itable tr.outside td { font-weight: 500; color: var(--muted); border-top: 1px solid var(--line); }
-  .installation .progress { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .installation .progress { display: flex; align-items: center; gap: 10px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .installation .progress .barbg { flex: 1; max-width: 260px; height: 6px; border-radius: 3px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
   .installation .progress .barbg i { display: block; height: 100%; background: var(--ok); }
-  .installation .cerr { font-size: 11px; color: var(--warn); padding: 2px 8px; }
-  .installation .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+  .installation .cerr { font-size: calc(11px * var(--fs)); color: var(--warn); padding: 2px 8px; }
+  .installation .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: calc(11px * var(--fs)); background: var(--soft); color: var(--muted); white-space: nowrap; }
   .installation .tag.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: inherit; }
   .installation .tag.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: inherit; }
-  .installation .load { display: grid; grid-template-columns: minmax(120px, 220px) minmax(80px, 1fr) minmax(120px, 200px); gap: 10px; align-items: center; font-size: 13px; }
+  .installation .load { display: grid; grid-template-columns: minmax(120px, 220px) minmax(80px, 1fr) minmax(120px, 200px); gap: 10px; align-items: center; font-size: calc(13px * var(--fs)); }
   .installation .load .barbg { height: 8px; border-radius: 4px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
   .installation .load .barbg i { display: block; height: 100%; background: var(--accent); }
   .installation .load .barbg i.hot { background: var(--warn); }

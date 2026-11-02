@@ -45,58 +45,58 @@ export const takeoverState = () => ({
 export const TAKEOVER_STYLE = `
   .takeover { padding-bottom: 8px; }
   .takeover .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
-  .takeover .step { display: flex; gap: 10px; align-items: flex-start; text-align: left; font: inherit; font-size: 12px; color: var(--muted);
+  .takeover .step { display: flex; gap: 10px; align-items: flex-start; text-align: left; font: inherit; font-size: calc(12px * var(--fs)); color: var(--muted);
     background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 14px 10px; cursor: pointer; }
   .takeover .step:hover:not(:disabled) b { color: var(--accent); }
   .takeover .step:disabled { cursor: default; opacity: .55; }
   .takeover .step.cur { border-bottom-color: var(--accent); }
-  .takeover .step b { display: block; font-weight: 500; font-size: 13px; color: var(--text); }
-  .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .takeover .step b { display: block; font-weight: 500; font-size: calc(13px * var(--fs)); color: var(--text); }
+  .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: calc(12px * var(--fs)); }
   .takeover .step.cur .num { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .takeover .step.done .num { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
   .takeover .step.warn .num { border-color: var(--warn); color: var(--warn); }
   .takeover .topbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .takeover .topbar b { flex: 1; font-size: 15px; font-weight: 500; }
+  .takeover .topbar b { flex: 1; font-size: calc(15px * var(--fs)); font-weight: 500; }
   .takeover .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .takeover .toolbar .grow { flex: 1; }
   .takeover .search { flex: 1; min-width: 140px; height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface);
-    color: var(--text); font: inherit; font-size: 14px; padding: 0 12px; }
-  .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; background: color-mix(in srgb, var(--warn) 18%, transparent); }
+    color: var(--text); font: inherit; font-size: calc(14px * var(--fs)); padding: 0 12px; }
+  .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: calc(12px * var(--fs)); background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
   .takeover .counts { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
-  .takeover .group { display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-top: 1px solid var(--line); background: var(--soft); font-size: 12px; }
+  .takeover .group { display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-top: 1px solid var(--line); background: var(--soft); font-size: calc(12px * var(--fs)); }
   .takeover .group .sub { margin-left: auto; }
   .takeover .fold { font: inherit; font-weight: 500; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
-  .takeover .pickrow { display: flex; gap: 10px; align-items: center; padding: 7px 16px 7px 40px; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+  .takeover .pickrow { display: flex; gap: 10px; align-items: center; padding: 7px 16px 7px 40px; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); cursor: pointer; }
   .takeover .pick-name { flex: 1; min-width: 0; }
-  .takeover .sub { color: var(--muted); font-size: 12px; }
-  .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px 6px 40px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+  .takeover .sub { color: var(--muted); font-size: calc(12px * var(--fs)); }
+  .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px 6px 40px; font-size: calc(13px * var(--fs)); color: var(--muted); border-top: 1px solid var(--line); }
   .takeover .stepbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; padding: 10px 16px;
     border-top: 1px solid var(--line); background: var(--soft); position: sticky; bottom: 0; }
-  .takeover .stepbar .left { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 13px; }
+  .takeover .stepbar .left { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: calc(13px * var(--fs)); }
   .takeover .section { padding: 14px 16px; border-top: 1px solid var(--line); }
   .takeover .section:first-child { border-top: 0; }
-  .takeover .section h3 { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
+  .takeover .section h3 { margin: 0 0 4px; font-size: calc(14px * var(--fs)); font-weight: 500; }
   .takeover .section h3 .sub { font-weight: 400; }
-  .takeover .section .lead { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  .takeover .section .lead { margin: 0 0 10px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .takeover .optcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
-  .takeover .optcard { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border: 1px solid var(--input-line); border-radius: 10px; cursor: pointer; font-size: 13px; }
+  .takeover .optcard { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border: 1px solid var(--input-line); border-radius: 10px; cursor: pointer; font-size: calc(13px * var(--fs)); }
   .takeover .optcard b { display: block; font-weight: 500; }
   .takeover .optcard .sub { display: block; overflow-wrap: anywhere; }
   .takeover .optcard:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
   .takeover .optcard.off { cursor: default; opacity: .55; }
   .takeover .optcard input { margin-top: 2px; }
-  .takeover .note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  .takeover .note { margin: 8px 0 0; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .takeover .stratcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .takeover .stratcard { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--input-line); border-radius: 12px; cursor: pointer; font-size: 13px; }
-  .takeover .stratcard b { display: block; font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+  .takeover .stratcard { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--input-line); border-radius: 12px; cursor: pointer; font-size: calc(13px * var(--fs)); }
+  .takeover .stratcard b { display: block; font-weight: 500; font-size: calc(14px * var(--fs)); margin-bottom: 2px; }
   .takeover .stratcard .sub { display: block; margin-bottom: 8px; }
   .takeover .stratcard:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
   .takeover .stratcard input { margin-top: 3px; }
   .takeover .link { font: inherit; font-weight: 500; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
   .takeover .link:hover { color: var(--accent-hover); text-decoration: underline; }
   .takeover .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: 20px; overflow: hidden; }
-  .takeover .seg button { height: 32px; padding: 0 14px; font: inherit; font-size: 13px; color: var(--muted); background: var(--surface); border: 0; cursor: pointer; }
+  .takeover .seg button { height: 32px; padding: 0 14px; font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: var(--surface); border: 0; cursor: pointer; }
   .takeover .seg button[aria-pressed="true"] { color: var(--accent-hover); background: var(--accent-soft); font-weight: 500; }
   .takeover .skel { padding: 16px; display: grid; gap: 12px; }
   .takeover .skel i { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--soft) 25%, color-mix(in srgb, var(--line) 70%, var(--soft)) 50%, var(--soft) 75%);
@@ -106,41 +106,41 @@ export const TAKEOVER_STYLE = `
   .takeover .skel i:nth-child(3n) { width: 55%; }
   @keyframes tkshimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
   .takeover .devblock { border-top: 1px solid var(--line); }
-  .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; font-size: 13px; }
+  .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; font-size: calc(13px * var(--fs)); }
   .takeover .devhead[data-tk-open], .takeover .devhead[data-tk-open-run] { cursor: pointer; }
   .takeover .devhead[data-tk-open]:hover, .takeover .devhead[data-tk-open-run]:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .takeover .devhead b { font-weight: 500; }
   .takeover .devchips { display: flex; flex-wrap: wrap; }
   .takeover .devstate { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .takeover .ents { padding: 0 16px 8px 34px; }
-  .takeover .ent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; padding: 6px 0; border-top: 1px dashed var(--line); font-size: 12px; overflow-wrap: anywhere; }
-  .takeover .olddl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 6px; padding: 8px 12px; border-radius: 8px; background: var(--soft); font-size: 12px; }
+  .takeover .ent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; padding: 6px 0; border-top: 1px dashed var(--line); font-size: calc(12px * var(--fs)); overflow-wrap: anywhere; }
+  .takeover .olddl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 6px; padding: 8px 12px; border-radius: 8px; background: var(--soft); font-size: calc(12px * var(--fs)); }
   .takeover .olddl dt { color: var(--muted); }
   .takeover .olddl dd { margin: 0; overflow-wrap: anywhere; }
   .takeover .olddl .title { grid-column: 1 / -1; font-weight: 500; color: var(--text); }
-  .takeover .chip-s { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--soft); color: var(--text); }
+  .takeover .chip-s { display: inline-block; font-size: calc(11px * var(--fs)); padding: 1px 7px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--soft); color: var(--text); }
   .takeover .chip-s.used { background: color-mix(in srgb, var(--warn) 25%, transparent); }
   .takeover .chip-s.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
   .takeover .chip-s.val { background: var(--accent-soft); color: var(--accent-hover); }
   .takeover .chip-s.off { background: none; color: var(--muted); border: 1px dashed var(--line); }
   .takeover .chip-s.avail { color: var(--muted); border: 1px dashed var(--line); background: none; }
-  .takeover button.chip-s { font: inherit; font-size: 11px; border: 0; cursor: pointer; text-align: left; }
+  .takeover button.chip-s { font: inherit; font-size: calc(11px * var(--fs)); border: 0; cursor: pointer; text-align: left; }
   .takeover button.chip-s:hover { text-decoration: underline; }
   .takeover .mono.old, .takeover .old { color: var(--muted); }
-  .takeover .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; }
+  .takeover .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); }
   .takeover .check.wait { opacity: .6; }
   .takeover .check > span:nth-child(2) { flex: 1; min-width: 0; }
   .takeover .check b { display: block; font-weight: 500; }
-  .takeover .check .warnnote { display: block; margin-top: 4px; font-size: 12px; color: var(--text); }
-  .takeover .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+  .takeover .check .warnnote { display: block; margin-top: 4px; font-size: calc(12px * var(--fs)); color: var(--text); }
+  .takeover .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .takeover .mark.ok { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
   .takeover .mark.warn { border-color: var(--warn); color: var(--warn); }
   .takeover .runcard { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
   .takeover .runcard:first-of-type { border-top: 0; }
-  .takeover .runmain { flex: 1; min-width: 220px; display: grid; gap: 3px; font-size: 13px; }
-  .takeover .runmain b { font-weight: 500; font-size: 14px; }
+  .takeover .runmain { flex: 1; min-width: 220px; display: grid; gap: 3px; font-size: calc(13px * var(--fs)); }
+  .takeover .runmain b { font-weight: 500; font-size: calc(14px * var(--fs)); }
   .takeover .runact { display: flex; gap: 8px; align-items: center; }
-  .takeover .confirm { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; border-radius: 8px; font-size: 12px;
+  .takeover .confirm { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; border-radius: 8px; font-size: calc(12px * var(--fs));
     background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .takeover .confirm span { flex: 1; min-width: 200px; }
   @media (max-width: 760px) {
