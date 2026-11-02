@@ -169,6 +169,7 @@
         "fbh": "Motion and brightness sensor (FBH65 …)",
         "co2": "CO2 sensor (FCO2TF65)",
         "room_controller": "Room controller (FUTH, FTR65HS …)",
+        "futh": "Room controller with several IDs (FUTH55ED, FUTH65D)",
         "weather": "Weather station (FWS61, FWG14MS)",
         "psc": "Permundo PSC132 / PSC234 plug",
         "rocker_contact": "Contact via rocker telegrams (FTS14EM, garage door …)",
@@ -497,6 +498,7 @@
             "model_fbh": "Motion and brightness sensor",
             "model_co2": "CO2 sensor",
             "model_room_controller": "Room controller",
+            "model_futh": "Room controller, several IDs",
             "model_weather": "Weather station",
             "model_psc": "Permundo PSC132 / PSC234 plug",
             "model_rocker_contact": "Contact via rocker telegrams",
@@ -537,6 +539,7 @@
             "model_fbh": "FBH65",
             "model_co2": "FCO2TF65",
             "model_room_controller": "FUTH, FTR65HS",
+            "model_futh": "FUTH55ED, FUTH65D: the lowest of its four IDs (ending in 00)",
             "model_weather": "FWS61, FWG14MS",
             "model_rocker_contact": "FTS14EM, garage door",
             "model_heating_actuator": "FHK14, FAE14",
@@ -932,6 +935,9 @@
       "night_setback": {
         "name": "Night setback"
       },
+      "hygrostat_temperature": {
+        "name": "Hygrostat temperature"
+      },
       "dawn": {
         "name": "Dawn"
       },
@@ -1109,6 +1115,9 @@
           "on": "Wet",
           "off": "Dry"
         }
+      },
+      "pump": {
+        "name": "Pump"
       },
       "gateway_connection": {
         "name": "Connection",

@@ -210,7 +210,7 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["ha_device"] = ha_device_id(device)
                     data["profile"] = profile
                     return data
-            elif device.device_id == telegram.sender:
+            elif device.owns(telegram.sender):
                 data["device"] = device.subentry.title
                 data["device_key"] = device.subentry.subentry_id
                 data["ha_device"] = ha_device_id(device)
@@ -218,8 +218,8 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["model"] = label
                 elif device.model.example_list:
                     data["models"] = list(device.model.example_list)  # which of these is unknown
-                for ref in (device.model.receive, *device.model.receive_extra):
-                    if ref is not None and (values := decode_telegram(ref, telegram)):
+                for ref in device.receive_refs(telegram.sender):
+                    if values := decode_telegram(ref, telegram):
                         data["eep"] = str(ref)
                         data["values"] = {k: _json_value(v) for k, v in values.items()}
                         data["fields"] = readable_fields(
@@ -312,35 +312,39 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
             (DOMAIN, device.unique_prefix), device.entry.entry_id
         )
         area = ar.async_get(hass).async_get_area(entry.area_id) if entry and entry.area_id else None
-        rows.append(
-            {
-                "id": format_id(device.device_id),
-                "device": device.subentry.title,
-                "last_seen": device.stats.last_seen,
-                "silent": device.silent,
-                "eep": str(device.model.receive) if device.model.receive else None,
-                "model": device._model_label,
-                "models": [] if device._model_label else list(device.model.example_list),
-                "category": device.model.category,
-                "area": area.name if area else None,
-                "entities": (
-                    len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
-                ),
-                "ha_device": entry.id if entry else None,
-                "labels": sorted(entry.labels) if entry else [],
-                "disabled": bool(entry and entry.disabled),
-                # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
-                "key": device.subentry.subentry_id,
-                "teach": [
-                    {
-                        "profile": profile,
-                        "id": format_id(sender),
-                        "ute": not device.model.sender_profile(profile).teach_in,
-                    }
-                    for profile, sender in device.senders.items()
-                ],
-            }
-        )
+        row = {
+            "id": format_id(device.radio_ids[0]),
+            "device": device.subentry.title,
+            "last_seen": device.stats.last_seen,
+            "silent": device.silent,
+            "eep": str(device.model.receive) if device.model.receive else None,
+            "model": device._model_label,
+            "models": [] if device._model_label else list(device.model.example_list),
+            "category": device.model.category,
+            "area": area.name if area else None,
+            "entities": (
+                len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
+            ),
+            "ha_device": entry.id if entry else None,
+            "labels": sorted(entry.labels) if entry else [],
+            "disabled": bool(entry and entry.disabled),
+            # the panel's "teach in": the device's sender IDs; a UTE profile waits for the query
+            "key": device.subentry.subentry_id,
+            "teach": [
+                {
+                    "profile": profile,
+                    "id": format_id(sender),
+                    "ute": not device.model.sender_profile(profile).teach_in,
+                }
+                for profile, sender in device.senders.items()
+            ],
+        }
+        rows.append(row)
+        # a device with several IDs (FUTH): one line per ID, the entities counted once
+        rows += [
+            {**row, "id": format_id(radio_id), "entities": 0, "teach": []}
+            for radio_id in device.radio_ids[1:]
+        ]
     return rows
 
 
@@ -1023,7 +1027,7 @@ async def ws_hide_sender(
         connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
         return
     runtime = entry.runtime_data
-    if any(device.device_id == sender for device in runtime.devices.values()):
+    if any(device.owns(sender) for device in runtime.devices.values()):
         connection.send_error(msg["id"], "known_device", "this sender is a set-up device")
         return
     hidden = runtime.hub.hidden.get(entry.entry_id, set())

@@ -16,7 +16,7 @@ from homeassistant.const import Platform
 from .const import CONF_CUSTOM, CONF_EEP, CONF_MODEL
 from .custom_devices import DEFINITIONS, CustomDevice
 from .protocol.eep import EEPRef, virtual, vld
-from .protocol.eep.eltako import heating, shutter, switching
+from .protocol.eep.eltako import futh, heating, shutter, switching
 from .protocol.eep.eltako import virtual as eltako_virtual
 from .protocol.eep.model import Field, encode
 from .protocol.eep.std.profiles import PROFILES
@@ -153,6 +153,15 @@ CUSTOM = "custom"  # I8: model id of a device of the user's definitions
 
 
 @dataclass(frozen=True, slots=True)
+class LinkedId:
+    """One of the IDs a device sends from: the device ID plus offset, and what it means."""
+
+    offset: int
+    role: str  # protocol.eep.eltako.futh: controller, pump, mode, hygrostat
+    eep: EEPRef
+
+
+@dataclass(frozen=True, slots=True)
 class DeviceModel:
     id: str
     receive: EEPRef | None
@@ -163,6 +172,7 @@ class DeviceModel:
     senders: tuple[SenderProfile, ...] = ()  # first is the primary (required) profile
     any_sender: bool = False  # every profile commands alone: none required, at least one
     receive_extra: tuple[EEPRef, ...] = ()  # further profiles sent under the same ID
+    linked: tuple[LinkedId, ...] = ()  # a device sending from several IDs: the ID is its base
     interval: int | None = None  # expected seconds between telegrams; None = only on change
     manufacturer: str = "Eltako"
     options: tuple[str, ...] = ()
@@ -426,6 +436,22 @@ CATALOG: dict[str, DeviceModel] = {
             interval=1800,
             examples="FUTH, FTR65HS, FTAF55D",
             models=("FUTH", "FTR65HS", "FTAF55D"),
+        ),
+        DeviceModel(
+            "futh",
+            _ref("A5-10-06:eltako"),
+            (Platform.CLIMATE, Platform.SENSOR, Platform.BINARY_SENSOR),
+            category="climate",
+            base="room_controller",
+            linked=(
+                LinkedId(0x01, futh.CONTROLLER, _ref("A5-10-06:eltako")),
+                LinkedId(0x10, futh.PUMP, _ref("F6-02-01:eltako")),
+                LinkedId(0x11, futh.MODE, _ref("F6-02-01:eltako")),
+                LinkedId(0x12, futh.HYGROSTAT, _ref("A5-10-12:std")),
+            ),
+            interval=1800,
+            examples="FUTH55ED, FUTH65D",
+            models=("FUTH55ED", "FUTH65D"),
         ),
         DeviceModel(
             "weather",

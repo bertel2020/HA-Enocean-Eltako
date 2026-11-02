@@ -8,12 +8,20 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 **English**
 
+#### Added
+
+- **Room controller with several IDs** (FUTH55ED, FUTH65D): one device for the four IDs a FUTH sends from, entered with its lowest ID (ending in `00`). Controller (`+01`: climate, setpoint, temperature, night setback), pump (`+10`), operating mode (`+11`) and hygrostat (`+12`: humidity, also on the climate entity). Read only. The Devices view lists every ID, the documentation each with its profile. The offsets are those of the old integration's table; the telegrams of a FUTH55ED confirm the controller and the hygrostat, pump and mode are read from the rocker codes `0x70/0x50` and `0x70/0x50/0x30/0x10`.
+
 #### Changed
 
 - The **+** of an unknown sender (Devices view and telegram details) opens a menu: **Set up as device** as before, or **Only write down**, which adds an entry under **Other devices** (Installation → Senders → Radio senders) with the ID filled in and puts the cursor in its name field. Nothing is created in Home Assistant and nothing is learned into an actuator; an ID already written down is not added twice.
 - The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
 
 **Deutsch**
+
+#### Hinzugefügt
+
+- **Raumregler mit mehreren IDs** (FUTH55ED, FUTH65D): ein Gerät für die vier IDs, von denen ein FUTH sendet, eingetragen mit seiner niedrigsten ID (endet auf `00`). Regler (`+01`: Klima, Sollwert, Temperatur, Nachtabsenkung), Pumpe (`+10`), Betriebsart (`+11`) und Hygrostat (`+12`: Luftfeuchte, auch an der Klima-Entität). Nur lesend. Die Geräteansicht listet jede ID, die Dokumentation jede mit ihrem Profil. Die Offsets stammen aus der Tabelle der alten Integration; die Telegramme eines FUTH55ED bestätigen Regler und Hygrostat, Pumpe und Betriebsart werden aus den Wippen-Codes `0x70/0x50` und `0x70/0x50/0x30/0x10` gelesen.
 
 #### Geändert
 

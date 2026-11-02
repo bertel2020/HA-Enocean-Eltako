@@ -931,7 +931,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             **({} if virtual else {vol.Required(CONF_DEVICE_ID): TextSelector()}),
             **self._fields(self._device_model, {}, new=True),
         }
-        if user_input is None and self._learned is not None:
+        # a device with several IDs takes its lowest ID: the one heard is not that
+        if user_input is None and self._learned is not None and not self._device_model.linked:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
         form: SubentryFlowResult = await self._form("device", schema, user_input, errors)
         return form

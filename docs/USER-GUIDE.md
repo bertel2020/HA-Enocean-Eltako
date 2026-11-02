@@ -194,6 +194,13 @@ skipped; imported ones are only replaced with `overwrite: true`.
   swapped), matching how the ID was taught into the actuator.
 - **Two-channel actuators** with one ID (for example FSR71NP-2x): each channel is a device of
   its own; channel 2 reports 0x30/0x10.
+- **FUTH room controllers** (FUTH55ED, FUTH65D) send from four consecutive IDs, and **Room
+  controller with several IDs** makes them one device: enter the lowest ID, the one ending in
+  `00`. The controller at `+01` gives the climate entity (setpoint, temperature) and night
+  setback, the pump at `+10` a binary sensor, the operating mode at `+11` (normal, night
+  setback, setback, off) a sensor, and the hygrostat at `+12` humidity, which the climate entity
+  shows too. All read only: the FUTH is operated on site. Each of its IDs shows in the Devices
+  view, and the documentation lists them with their profiles.
 - **Heating actuators** controlled by Home Assistant get the setpoint; a room temperature
   entity can be added.
 - **Rockers** report short, long and double presses per button, which blueprints and device

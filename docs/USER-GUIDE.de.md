@@ -202,6 +202,13 @@ Die Definitionen stehen sofort unter **Gerät hinzufügen → Eigene Definition*
   vertauscht), passend dazu, wie die ID im Aktor eingelernt ist.
 - **Zweikanal-Aktoren** mit einer ID (z. B. FSR71NP-2x): jeder Kanal ist ein eigenes Gerät;
   Kanal 2 meldet 0x30/0x10.
+- **FUTH-Raumregler** (FUTH55ED, FUTH65D) senden von vier aufeinanderfolgenden IDs, und
+  **Raumregler mit mehreren IDs** macht daraus ein Gerät: Trage die niedrigste ID ein, die auf
+  `00` endet. Der Regler bei `+01` liefert die Klima-Entität (Sollwert, Temperatur) und die
+  Nachtabsenkung, die Pumpe bei `+10` einen Binärsensor, die Betriebsart bei `+11` (Normal,
+  Nachtabsenkung, Absenkung, Aus) einen Sensor und der Hygrostat bei `+12` die Luftfeuchte, die
+  auch die Klima-Entität zeigt. Alles nur lesend: Der FUTH wird vor Ort bedient. Jede seiner IDs
+  erscheint in der Geräteansicht, und die Dokumentation führt sie mit ihren Profilen auf.
 - **Heizungsaktoren**, die Home Assistant regelt, bekommen den Sollwert; eine
   Raumtemperatur-Entität lässt sich ergänzen.
 - **Taster** melden je Taste kurzes, langes und doppeltes Drücken, die Blueprints und

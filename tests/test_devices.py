@@ -16,8 +16,10 @@ from custom_components.enocean_eltako.config_flow import EnOceanEltakoConfigFlow
 from custom_components.enocean_eltako.const import DOMAIN, SUBENTRY_SCHEMA
 from custom_components.enocean_eltako.protocol import esp2
 from custom_components.enocean_eltako.protocol.eep.teach_in import encode_teach_in_4bs
+from custom_components.enocean_eltako.protocol.ids import format_id
 from custom_components.enocean_eltako.protocol.models import Protocol
 from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
+from custom_components.enocean_eltako.websocket import radio_devices
 
 from .fake_gateway import FakeGateway
 
@@ -949,6 +951,84 @@ async def test_room_controller_climate_is_read_only(hass: HomeAssistant, gateway
             {"entity_id": state.entity_id, "temperature": 23},
             blocking=True,
         )
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("futh", "FF-80-1C-00", "FUTH Bad")]],
+    indirect=True,
+)
+async def test_futh_is_one_device_with_four_ids(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    runtime = entry.runtime_data
+    assert [format_id(i) for i in runtime.devices[next(iter(runtime.devices))].radio_ids] == [
+        "FF-80-1C-01",
+        "FF-80-1C-10",
+        "FF-80-1C-11",
+        "FF-80-1C-12",
+    ]
+    dispatcher = runtime.hub.dispatcher
+    assert [dispatcher.is_known(0xFF801C00 + o) for o in (0, 1, 0x10, 0x11, 0x12, 0x13)] == [
+        False,
+        True,
+        True,
+        True,
+        True,
+        False,
+    ]
+    # the telegrams of a FUTH55ED
+    _push(server, 0x07, bytes.fromhex("008C700F"), 0xFF801C01)
+    _push(server, 0x05, b"\x50", 0xFF801C10, 0x30)
+    _push(server, 0x05, b"\x50", 0xFF801C11, 0x30)
+    _push(server, 0x07, bytes.fromhex("7F648B08"), 0xFF801C12)
+    await _settle(hass)
+    prefix = f"{BASE}_FF-80-1C-00_1"
+    climate = hass.states.get(_entity(hass, "climate", f"{prefix}_climate"))
+    assert climate.attributes["temperature"] == pytest.approx(22.0, abs=0.1)
+    assert climate.attributes["current_temperature"] == pytest.approx(22.4, abs=0.1)
+    assert climate.attributes["current_humidity"] == pytest.approx(40.0)
+    assert hass.states.get(_entity(hass, "sensor", f"{prefix}_humidity")).state == "40.0"
+    assert (
+        hass.states.get(_entity(hass, "sensor", f"{prefix}_heating_mode")).state == "night_setback"
+    )
+    assert hass.states.get(_entity(hass, "binary_sensor", f"{prefix}_pump")).state == "off"
+    # the pump runs, the mode changes: only its own entities follow
+    _push(server, 0x05, b"\x70", 0xFF801C10, 0x30)
+    _push(server, 0x05, b"\x70", 0xFF801C11, 0x30)
+    await _settle(hass)
+    assert hass.states.get(_entity(hass, "binary_sensor", f"{prefix}_pump")).state == "on"
+    assert hass.states.get(_entity(hass, "sensor", f"{prefix}_heating_mode")).state == "normal"
+    assert hass.states.get(climate.entity_id).attributes["temperature"] == pytest.approx(
+        22.0, abs=0.1
+    )
+    # one line per ID in the panel's list of set-up devices, the entities counted once
+    rows = radio_devices(runtime)
+    assert [(r["id"], r["device"]) for r in rows] == [
+        (f"FF-80-1C-{o:02X}", "FUTH Bad") for o in (1, 0x10, 0x11, 0x12)
+    ]
+    assert rows[0]["entities"] > 0 and {r["entities"] for r in rows[1:]} == {0}
+
+
+async def test_add_futh_by_its_base_id(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "futh")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"name": "FUTH Flur", "device_id": "FF-80-1C-00"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    _push(server, 0x07, bytes.fromhex("7F648B08"), 0xFF801C12)
+    await _settle(hass)
+    assert (
+        hass.states.get(_entity(hass, "sensor", f"{BASE}_FF-80-1C-00_1_humidity")).state == "40.0"
+    )
 
 
 @pytest.fixture
@@ -2577,3 +2657,23 @@ async def test_sender_test_of_a_dimmer_repeats_its_brightness(hass: HomeAssistan
     _push(server, 0x07, bytes.fromhex("02000008"), 0x05000031)  # off
     await _settle(hass)
     assert dimmer.sender_test_error() is None  # off needs no brightness
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("futh", "FF-80-1C-00", "FUTH Bad")]],
+    indirect=True,
+)
+async def test_the_monitor_names_the_futh_for_each_of_its_ids(hass: HomeAssistant, gateway) -> None:
+    from custom_components.enocean_eltako.protocol.monitor import MonitorEntry
+    from custom_components.enocean_eltako.websocket import describe
+
+    entry, _server = gateway
+    for sender, rorg, data, eep in (
+        (0xFF801C01, Rorg.BS4, "008C700F", "A5-10-06:eltako"),
+        (0xFF801C12, Rorg.BS4, "7F648B08", "A5-10-12:std"),
+        (0xFF801C10, Rorg.RPS, "50", "F6-02-01:eltako"),
+    ):
+        telegram = RadioTelegram(rorg, bytes.fromhex(data), sender, 0x30 if rorg == Rorg.RPS else 0)
+        shown = describe(hass, MonitorEntry(0.0, entry.entry_id, "rx", telegram))
+        assert shown["device"] == "FUTH Bad" and shown["eep"] == eep, sender
