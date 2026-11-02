@@ -2440,19 +2440,14 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("pager").hidden = total <= PAGE_SIZES[0] && this._offset === 0; // a short list needs no pages
   }
 
-  _manualEditor(gw, part = "manual") {
-    // part "manual": devices Home Assistant cannot see (buttons taught in directly ...); part "supply": the
-    // power supplies of the bus; both for the documentation
+  _manualEditor(gw) {
+    // devices Home Assistant cannot see (buttons taught in directly ...), for the documentation
     const t = this._t.doc;
     const field = (e, key, label, max) => `<input class="note" data-manual-field="${key}"${key === "bus_power" ? ' inputmode="decimal"' : key === "bus_address" ? ' inputmode="numeric"' : ""} value="${esc(e[key])}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
     const rows = (gw.manual ?? []).map((e, i) => `<div class="mrow" data-manual-row="${i}">${field(e, "name", t.manualName, 80)}${field(e, "address", t.manualAddress, 40)}${field(e, "function", t.manualFunction, 200)}${field(e, "bus_address", t.manualBusAddress, 3)}${field(e, "feedback_id", t.manualFeedback, 16)}${field(e, "bus_power", t.manualWatts, 8)}<button class="icon-btn" data-manual-del="${i}" title="${esc(t.manualRemove)}" aria-label="${esc(t.manualRemove)}">${svg(ICON.close)}</button></div>`).join("");
-    const supply = (e, key, label, max) => `<input class="note" data-supply-field="${key}"${key === "watts" ? ' inputmode="decimal"' : key === "first" || key === "last" ? ' inputmode="numeric"' : ""} value="${esc(e[key] ?? "")}" maxlength="${max}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`;
-    const supplyHead = (gw.supplies ?? []).length ? `<div class="srow mhead" aria-hidden="true"><span>${esc(t.supplyName)}</span><span>${esc(t.supplyWatts)}</span><span></span><span>${esc(t.supplyFirstHead)}</span><span>${esc(t.supplyLastHead)}</span><span></span></div>` : "";
-    const power = supplyHead + (gw.supplies ?? []).map((e, i) => `<div class="srow" data-supply-row="${i}">${supply(e, "name", t.supplyName, 60)}${supply(e, "watts", t.supplyWatts, 8)}<span class="sub">W</span>${supply(e, "first", t.supplyFirst, 3)}${supply(e, "last", t.supplyLast, 3)}<button class="icon-btn" data-supply-del="${i}" title="${esc(t.supplyRemove)}" aria-label="${esc(t.supplyRemove)}">${svg(ICON.close)}</button></div>`).join("");
     const head = (gw.manual ?? []).length ? `<div class="mrow mhead" aria-hidden="true"><span>${esc(t.manualName)}</span><span>${esc(t.manualAddress)}</span><span>${esc(t.manualFunctionHead)}</span><span>${esc(t.manualBusAddress)}</span><span>${esc(t.manualFeedback)}</span><span>${esc(t.manualWatts)}</span><span></span></div>` : "";
-    const supplies = `<div class="sub" title="${esc(t.supplyHint)}">${esc(t.supplyTitle)}</div>${power}<div><button class="chip text" data-supply-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.supplyAdd)}</button></div>`;
     const manual = `<div class="sub" title="${esc(t.manualHint)}">${esc(t.manualTitle)}</div>${head}${rows}<div><button class="chip text" data-manual-add="${esc(gw.entry_id)}">${svg(ICON.plus)}${esc(t.manualAdd)}</button></div>`;
-    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}">${part === "supply" ? supplies : manual}</div>`;
+    return `<div class="manual" data-entry-of="${esc(gw.entry_id)}">${manual}</div>`;
   }
 
   async _importDocumentation(file) {
@@ -2499,20 +2494,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
   }
 
-  async _saveSupplies(gateway) {
-    try {
-      await this._hass.callWS({ type: "enocean_eltako/set_supplies", entry_id: gateway.entry_id, supplies: gateway.supplies });
-    } catch (err) {
-      this._notice(this._t.doc.noteFailed);
-    }
-  }
-
   _manualEdit(e) {
     // typing in an entry, adding one, removing one: the gateway keeps the list, the server gets all of it
     const holder = e.target.closest?.("[data-entry-of]");
     const gateway = holder && this._gateways.find((g) => g.entry_id === holder.dataset.entryOf);
     if (!gateway) return false;
-    const supply = e.target.closest("[data-supply-field]");
     // a number of watts, 1,2 or 1.2: anything else is marked and not sent
     const badWatts = (input) => {
       const bad = input.value.trim() !== "" && !/^\d{1,4}([.,]\d{1,3})?$/.test(input.value.trim());
@@ -2526,22 +2512,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       input.setAttribute("aria-invalid", String(bad));
       return bad;
     };
-    if (e.type === "input" && supply) {
-      const row = gateway.supplies[Number(supply.closest("[data-supply-row]").dataset.supplyRow)];
-      row[supply.dataset.supplyField] = supply.value;
-      const check = { watts: badWatts, first: badAddress, last: badAddress }[supply.dataset.supplyField];
-      check?.(supply);
-      // first after last: both are marked
-      const order = Number(row.first) > Number(row.last) && row.first !== "" && row.last !== "";
-      supply.closest("[data-supply-row]").querySelectorAll('[data-supply-field="first"], [data-supply-field="last"]').forEach((input) => {
-        if (order) input.setAttribute("aria-invalid", "true");
-        else if (check === badAddress || !input.value.trim()) check?.(input);
-      });
-      clearTimeout(gateway._supplySaving);
-      // nothing goes to the server while any supply field is marked, in this row or another
-      if (!holder.querySelector('[data-supply-field][aria-invalid="true"]')) gateway._supplySaving = setTimeout(() => this._saveSupplies(gateway), 600);
-      return true;
-    }
     const field = e.target.closest("[data-manual-field]");
     if (e.type === "input" && field) {
       const entry = gateway.manual[Number(field.closest("[data-manual-row]").dataset.manualRow)];
@@ -2552,17 +2522,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       return true;
     }
     if (e.type !== "click") return false;
-    const addSupply = e.target.closest("[data-supply-add]");
-    const delSupply = e.target.closest("[data-supply-del]");
-    if (addSupply || delSupply) {
-      gateway.supplies = addSupply
-        ? [...(gateway.supplies ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", watts: "", first: "", last: "" }]
-        : gateway.supplies.filter((_, i) => i !== Number(delSupply.dataset.supplyDel));
-      this._renderCards();
-      if (this._view === "installation") this._renderInstallation();
-      if (delSupply) this._saveSupplies(gateway);
-      return true;
-    }
     const add = e.target.closest("[data-manual-add]");
     const del = e.target.closest("[data-manual-del]");
     if (add) gateway.manual = [...(gateway.manual ?? []), { id: Math.random().toString(36).slice(2, 10), name: "", address: "", function: "", bus_address: "", feedback_id: "", bus_power: "" }];

@@ -18,7 +18,11 @@ const VIEW_OF = { bus: "bus", psu: "bus", sensor: "funk", taster: "funk", aktor:
 const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
 // the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
 // by what it is: a button, a sensor or an actuator on radio
-const kindOf = (d) => (d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+const kindOf = (d) => (d.psu ? "psu" : d.virtual ? "virt" : /^\d+$/.test(d.bus_address ?? "") ? "bus" : d.category === "buttons" ? "taster" : d.category === "sensors" || d.category === "meters" ? "sensor" : "aktor");
+const SUPPLY_BLANK = { name: "", watts: "", first: "", last: "", location: "", circuit: "", fuse: "", note: "" };
+const wnum = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
+const anum = (text) => (/^\d+$/.test(text ?? "") ? Number(text) : null);
+const round2 = (n) => Math.round(n * 100) / 100;
 // a place is written "cabinet · row · slot"; older notes held free text, split at a comma
 const placeParts = (text) => {
   const value = String(text ?? "");
@@ -150,6 +154,18 @@ export const INSTALLATION_STYLE = `
   .installation .load .r { text-align: right; color: var(--muted); }
   .installation .notes p { margin: 2px 0; }
   .installation .gbar { flex-wrap: wrap; }
+  .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+  .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
+  .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
+  .installation .tile.bad { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .itable tr.psu td { background: var(--soft); padding: 8px; }
+  .installation .itable tr.psu.bad td { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .itable tr.dup td { background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .installation .psurow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .installation .psurow input.cell { border-color: var(--line); background: var(--surface); }
+  .installation .psurow .barbg { width: 90px; height: 6px; border-radius: 3px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+  .installation .psurow .barbg i { display: block; height: 100%; background: var(--accent); }
+  .installation .psurow .barbg i.hot { background: var(--warn); }
   .installation .seg button .isub { margin-left: 4px; }
   .installation .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .installation .chips .isub.lead { min-width: 40px; }
@@ -226,6 +242,7 @@ export const installation = {
     const state = this._in;
     try {
       state.doc = await this._hass.callWS({ type: "enocean_eltako/documentation" });
+      for (const gw of state.doc.gateways) gw.supplies = (gw.supplies ?? []).map((x) => ({ ...SUPPLY_BLANK, ...x }));
       state.error = false;
     } catch (err) {
       state.error = true;
@@ -328,36 +345,77 @@ export const installation = {
 
   _instBus() {
     const t = this._t;
-    const T = t.doc.tbl;
-    const lang = this._hass?.language || "en";
-    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
-    return `<p class="isub">${esc(T.busIntro.replace(" (*)", ""))} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw) => {
-      const bus = docBus(gw, t, this._in.doc.bus_info);
-      if (!bus.rows.length) return `<div class="none">${esc(T.busEmpty)}</div>`;
-      const power = (r) => (r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : `${esc(num(r.power))}${r.from === "table" ? ` <span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : ""}`);
-      const rows = bus.items.map((r) => (r.free
-        ? `<tr class="free"><td class="mono">${r.from === r.to ? r.from : `${r.from} – ${r.to}`}</td><td colspan="5">${esc(T.free)}</td></tr>`
-        : `<tr><td class="mono">${r.address}</td><td>${esc(r.type)}</td><td>${esc(r.device)}</td><td>${esc([r.name, r.group && r.group !== r.name ? r.group : ""].filter(Boolean).join(", "))}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td class="num">${r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${this._instCell(gw, r.key, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : ""}</span>` : power(r)}</td></tr>`)).join("");
-      const sum = `<tr><td colspan="5"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td class="num"><b>${esc(num(bus.sum))}</b></td></tr>`;
-      const load = (name, capacity, percent, text) => `<div class="load"><span>${esc(name)}</span><div class="barbg"><i class="${percent >= 80 ? "hot" : ""}" style="width:${Math.min(percent ?? 0, 100)}%"></i></div><span class="r">${esc(text)}${percent >= 80 ? ` <span class="tag warn">${esc(T.busWarn)}</span>` : ""}</span></div>`;
-      const range = (x) => (x.first !== null || x.last !== null ? `, ${T.supplyRange(x.first ?? 1, x.last ?? 126)}` : "");
-      const bars = bus.supplies.filter((x) => x.percent !== null).map((x) => load(`${x.name || T.supplyNoName}, ${num(x.capacity ?? 0)}${range(x)}`, x.capacity, x.percent, `${num(x.load)} · ${x.percent} %`)).join("");
-      const total = bus.capacity !== null && (bus.supplies.length > 1 || bus.supplies.some((x) => x.percent === null)) ? load(T.supplyTotal, bus.capacity, bus.percent, `${num(bus.sum)} ${t.inst.of} ${num(bus.capacity)} · ${bus.percent} %`) : "";
-      const notes = [
-        bus.rows.length - bus.counted ? T.busMissing(bus.rows.length - bus.counted) : "",
-        bus.fromTable ? T.busFromTable(bus.source).replace(/^\* /, "") : "",
-        bus.dups.length ? T.busDup(bus.dups.join(", ")) : "",
-        bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
-        bus.unfed.length ? T.busUnfed(bus.unfed.join(", ")) : "",
-      ].filter(Boolean).map((n) => `<p class="isub">${esc(n)}</p>`).join("");
-      return this._instTable([T.busAddress, T.type, T.device, T.description, T.feedbackId, T.power], rows + sum) + `<div style="display:grid;gap:6px;margin-top:12px">${bars}${total}</div><div class="notes" style="margin-top:8px">${notes}</div>`;
-    });
+    return `<p class="isub">${esc(t.doc.tbl.busIntro.replace(" (*)", ""))} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw) => this._instBusOf(gw));
   },
 
-  _instSupplies() {
+  _instKindTag(d) {
+    const kind = kindOf(d);
+    return `<button class="tag${kind === "bus" ? " bus" : ""}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+  },
+
+  _instBusOf(gw) {
+    // the Eltako bus of one gateway: addresses grouped by the power supply that feeds them
     const t = this._t;
-    const gw = this._gateways.filter((g) => g.loaded);
-    return `<p class="isub">${esc(t.doc.supplyHint)}</p>` + (gw.map((g) => `<section class="gw">${this._instGwHead(g)}${this._manualEditor(g, "supply")}</section>`).join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
+    const T = t.doc.tbl;
+    const B = t.inst.bus;
+    const lang = this._hass?.language || "en";
+    const num = (n) => `${n.toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
+    const bus = docBus(gw, t, this._in.doc.bus_info);
+    const own = gw.supplies ?? [];
+    const addButton = `<div><button class="chip" data-in-supply-add="${esc(gw.entry_id)}">${esc(t.doc.supplyAdd)}</button></div>`;
+    if (!bus.rows.length && !own.length) return `<div class="none">${esc(T.busEmpty)}</div>${addButton}`;
+    // a supply feeds the addresses in its range; a lone supply without a range feeds them all
+    const supplies = own.map((s) => ({ s, first: anum(s.first), last: anum(s.last), capacity: wnum(s.watts) }));
+    const ranged = (x) => x.first !== null || x.last !== null;
+    const inRange = (x, r) => r.address >= (x.first ?? 1) && r.address <= (x.last ?? 126);
+    const lone = supplies.length === 1 && !ranged(supplies[0]);
+    const rowsOf = supplies.map(() => []);
+    const without = [];
+    for (const r of bus.rows) {
+      const i = own.length ? (lone ? 0 : supplies.findIndex((x) => ranged(x) && inRange(x, r))) : -1;
+      if (i >= 0) rowsOf[i].push(r);
+      else without.push(r);
+    }
+    const load = (rows) => round2(rows.reduce((n, r) => n + (r.power ?? 0), 0));
+    const dups = new Set(bus.dups);
+    const cell = (r, field, value, label, placeholder) => this._instCell(gw, r.key, field, value, label, placeholder);
+    const row = (r) => {
+      const d = r.key ? gw.devices.find((x) => x.key === r.key) : null;
+      const name = d ? `${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${this._instKindTag(d)}</div>` : `${esc(r.device)}<div class="isub">${esc(r.name)}</div>`;
+      const tag = r.from === "table" ? `<span class="tag" title="${esc(bus.source)}">${esc(T.busSourceTableShort)}</span>` : r.from === "group" ? `<span class="isub">${esc(T.busGroupLine)}</span>` : r.power === null ? `<span class="tag warn">${esc(T.noValue)}</span>` : "";
+      const power = r.key ? `<span style="display:inline-flex;gap:6px;align-items:center;justify-content:flex-end">${cell(r, "bus_power", r.raw, `${T.power} (W)`, r.table !== null ? String(r.table).replace(".", ",") : "W")}${tag}</span>` : r.power === null ? tag : esc(num(r.power));
+      return `<tr${dups.has(r.address) ? ' class="dup"' : ""}><td class="name">${name}</td><td class="mono">${r.key ? cell(r, "bus_address", String(r.address), T.busAddress, "1–126") : r.address}</td><td>${r.key ? cell(r, "feedback_id", r.feedback, T.feedbackId, "00000081") : esc(r.feedback)}</td><td class="num">${power}</td><td>${r.key ? cell(r, "group", r.group, T.partOf) : esc(r.group)}</td></tr>`;
+    };
+    const sfield = (x, field, ph, width) => `<input class="cell" data-in-sfield="${field}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(x.s.id)}" value="${esc(x.s[field] ?? "")}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" style="width:${width}px;min-width:0" autocomplete="off"${field === "watts" ? ' inputmode="decimal"' : field === "name" ? "" : ' inputmode="numeric"'}>`;
+    const usage = (capacity, rows) => {
+      const l = load(rows);
+      const pct = capacity ? Math.round((l / capacity) * 100) : null;
+      return { l, pct, over: capacity !== null && l > capacity };
+    };
+    const bar = (u) => (u.pct === null ? "" : `<span class="barbg"><i class="${u.pct >= 80 ? "hot" : ""}" style="width:${Math.min(u.pct, 100)}%"></i></span>`);
+    const groups = supplies.map((x, i) => {
+      const u = usage(x.capacity, rowsOf[i]);
+      const text = x.capacity !== null ? `${num(u.l)} ${t.inst.of} ${num(x.capacity)}${u.over ? ` · ${B.overloaded}` : ""}` : num(u.l);
+      const place = [x.s.location, x.s.circuit, x.s.fuse].filter(Boolean).join(", ");
+      return { u, html: `<tr class="psu${u.over ? " bad" : ""}"><td colspan="5"><div class="psurow">${sfield(x, "name", t.doc.supplyName, 150)}${sfield(x, "watts", t.doc.supplyWatts, 64)}<span class="isub">W</span><span class="isub">${esc(T.busAddress)}</span>${sfield(x, "first", t.doc.supplyFirst, 56)}<span>–</span>${sfield(x, "last", t.doc.supplyLast, 56)}${bar(u)}<span class="isub">${esc(text)}</span>${place ? `<span class="isub">· ${esc(place)}</span>` : ""}<button class="icon-btn" data-in-supply-del="${esc(x.s.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.supplyRemove)}" aria-label="${esc(t.doc.supplyRemove)}">${svg(ICON.close)}</button></div></td></tr>${rowsOf[i].map(row).join("")}` };
+    });
+    let body = groups.map((g) => g.html).join("");
+    if (!own.length) {
+      const standard = bus.supplies[0];
+      body += `<tr class="psu"><td colspan="5"><div class="psurow"><b>${esc(standard.name)}</b><span class="isub">${esc(num(standard.capacity ?? 0))}${standard.percent !== null ? ` · ${standard.percent} %` : ""}</span><span class="isub">${esc(B.standardNote)}</span></div></td></tr>`;
+    }
+    if (without.length) body += `${own.length ? `<tr class="psu bad"><td colspan="5"><b>${esc(B.noSupply)}</b> <span class="isub">${without.length}</span></td></tr>` : ""}${without.map(row).join("")}`;
+    const sum = `<tr><td colspan="3"><b>${esc(T.busSum(bus.counted, bus.rows.length))}</b></td><td class="num"><b>${esc(num(bus.sum))}</b></td><td></td></tr>`;
+    const overCount = groups.filter((g) => g.u.over).length;
+    const runs = bus.items.filter((r) => r.free).map((r) => (r.from === r.to ? `${r.from}` : `${r.from}–${r.to}`));
+    const missing = bus.rows.length - bus.counted;
+    const tile = (title, value, bad = false) => `<div class="tile${bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const tiles = `<div class="tiles">${tile(B.duplicates, esc(bus.dups.length ? B.dupText(bus.dups.join(", ")) : B.none), bus.dups.length > 0)}${tile(B.used, esc(B.usedOf(new Set(bus.rows.map((r) => r.address)).size)))}${tile(B.free, esc(runs.slice(0, 6).join(", ") + (runs.length > 6 ? " …" : "")))}${tile(B.power, `${esc(num(bus.sum))}${missing ? ` <span class="isub">${esc(B.withoutValue(missing))}</span>` : ""}`)}${tile(B.supplies, esc(overCount ? B.supplyOver(overCount) : without.length && own.length ? B.supplyWithout(without.length) : B.supplyOk), overCount > 0 || (own.length > 0 && without.length > 0))}</div>`;
+    const notes = [
+      bus.fromTable ? T.busFromTable(bus.source).replace(/^\* /, "") : "",
+      bus.multi.length ? T.busMulti(bus.multi.join(", ")) : "",
+    ].filter(Boolean).map((n) => `<p class="isub">${esc(n)}</p>`).join("");
+    return `${tiles}${this._instTable([t.inst.device, T.busAddress, T.feedbackId, T.power, T.partOf], body + sum)}${addButton}<div class="notes">${notes}</div>`;
   },
 
   _instDevicesTab() {
@@ -367,7 +425,7 @@ export const installation = {
     const all = gateways(state.doc).flatMap((gw) => gw.devices);
     const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
-    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus() + this._instSupplies(), funk: () => this._instButtons() + this._instRadio() }[state.view]();
+    const body = { all: () => this._instDevices(), virt: () => this._instDevices(), bus: () => this._instBus(), funk: () => this._instButtons() + this._instRadio() }[state.view]();
     return `<div class="gbar"><div class="seg" role="group">${seg}</div></div>${body}`;
   },
 
@@ -375,13 +433,14 @@ export const installation = {
     // the place as three fields that look like one: cabinet, row, slot
     const parts = placeParts(d.location);
     const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
-    return `<div class="place${d.location ? "" : " empty"}" data-in-place data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}">${inputs}</div>`;
+    const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : `data-in-key="${esc(d.key)}"`;
+    return `<div class="place${d.location ? "" : " empty"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs}</div>`;
   },
 
   _instProgress() {
     // how many devices have a place; virtual devices have none to give
     const t = this._t.inst;
-    const all = gateways(this._in.doc).flatMap((gw) => gw.devices).filter((d) => !d.virtual);
+    const all = gateways(this._in.doc).flatMap((gw) => [...gw.devices.filter((d) => !d.virtual), ...(gw.supplies ?? [])]);
     const placed = all.filter((d) => d.location).length;
     if (!all.length) return "";
     const pct = Math.round((placed / all.length) * 100);
@@ -396,28 +455,30 @@ export const installation = {
     const columns = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
     const showArea = state.columns.has("place");
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
-    const applies = (d, f) => (d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const applies = (d, f) => (d.psu ? ["location", "circuit", "fuse", "note"].includes(f) : d.virtual ? f === "note" : ["circuit", "fuse"].includes(f) ? FUSE_KINDS.has(kindOf(d)) : true);
+    const psus = (gw) => (gw.supplies ?? []).map((x) => ({ psu: true, sid: x.id, key: `psu|${x.id}`, name: x.name || t.doc.tbl.supplyNoName, id: "", area: "", virtual: false, bus_address: "", location: x.location, circuit: x.circuit, fuse: x.fuse, note: x.note, model: x.watts ? `${x.watts} W` : "" }));
     const pass = (d) => matches(d, state.q)
       && (!kinds || kinds.includes(kindOf(d)))
       && (state.art === "all" || kindOf(d) === state.art)
       && (!state.miss.loc || (!d.virtual && !d.location))
       && (!state.miss.fuse || (FUSE_KINDS.has(kindOf(d)) && !d.fuse));
-    const kindTag = (d) => `<button class="tag${kindOf(d) === "bus" ? " bus" : ""}" data-in-kind="${kindOf(d)}" title="${esc(I.kindHint)}">${esc(I.kinds[kindOf(d)])}${kindOf(d) === "bus" ? ` · ${esc(d.bus_address)}` : ""}</button>`;
     const span = columns.length + (showArea ? 1 : 0) + 2;
     const row = (gw, d) => {
       const cells = columns
         .map((f) => {
           if (!applies(d, f)) return `<td><span class="dash">–</span></td>`;
           if (f === "location") return `<td>${this._instPlace(gw, d)}</td>`;
+          if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
           return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
         })
         .join("");
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
-      return `<tr><td><input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}"></td><td class="name">${esc(d.name)}<div class="isub">${esc(d.id)}</div><div>${kindTag(d)}</div></td>${area}${cells}</tr>`;
+      const pick = d.psu ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
+      return `<tr><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
-      const devices = gw.devices.filter(pass);
+      const devices = [...gw.devices, ...psus(gw)].filter(pass);
       let rows;
       if (state.group && devices.length) {
         const groups = new Map();
@@ -444,8 +505,8 @@ export const installation = {
       : "";
     const paste = `<details><summary>${esc(I.pasteTitle)}</summary><div style="display:grid;gap:8px;margin-top:8px"><span class="isub">${esc(I.pasteHint)}</span><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div><button class="chip" data-in-act="paste">${esc(I.apply)}</button> <button class="chip" data-in-act="copy-table">${esc(I.copyTable)}</button> <span class="isub">${esc(state.pasteResult)}</span></div></div></details>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}</div></details>`;
-    const present = gateways(state.doc).flatMap((gw) => gw.devices);
-    const kindList = (kinds ?? ["bus", "sensor", "taster", "aktor", "virt"]).filter((k) => k !== "psu");
+    const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
+    const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
     const artChips = kindList.length > 1
       ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
@@ -567,6 +628,24 @@ export const installation = {
       this._renderInstallation();
       return;
     }
+    const supplyAdd = e.target.closest("[data-in-supply-add]");
+    if (supplyAdd) {
+      const gw = gateways(state.doc).find((g) => g.entry_id === supplyAdd.dataset.inSupplyAdd);
+      if (!gw) return;
+      gw.supplies = [...gw.supplies, { ...SUPPLY_BLANK, id: Math.random().toString(36).slice(2, 10) }];
+      this._renderInstallation();
+      [...this.shadowRoot.querySelectorAll('#installation [data-in-sfield="name"]')].pop()?.focus();
+      return;
+    }
+    const supplyDel = e.target.closest("[data-in-supply-del]");
+    if (supplyDel) {
+      const gw = gateways(state.doc).find((g) => g.entry_id === supplyDel.dataset.inGw);
+      if (!gw) return;
+      gw.supplies = gw.supplies.filter((x) => x.id !== supplyDel.dataset.inSupplyDel);
+      this._renderInstallation();
+      this._instSaveSupplies(gw);
+      return;
+    }
     const fold = e.target.closest("[data-in-fold]");
     if (fold) {
       const id = fold.dataset.inFold;
@@ -675,6 +754,11 @@ export const installation = {
       }, 250);
       return;
     }
+    const sfield = e.target.closest("[data-in-sfield]");
+    if (sfield) {
+      this._instSupplyInput(sfield);
+      return;
+    }
     const part = e.target.closest("[data-in-part]");
     if (part) {
       const box = part.closest("[data-in-place]");
@@ -736,9 +820,21 @@ export const installation = {
 
   async _instSavePlace(box) {
     // the three parts of a place go to the server as one text, "cabinet · row · slot"
-    const { inGw: entryId, inKey: key } = box.dataset;
-    const device = this._instDevice(entryId, key);
+    const { inGw: entryId, inKey: key, inSid: sid } = box.dataset;
     const value = joinPlace([...box.querySelectorAll("input")].map((i) => i.value));
+    if (sid) {
+      // a power supply keeps its place in its own list
+      const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+      const supply = gw?.supplies.find((x) => x.id === sid);
+      if (!supply || supply.location === value) return;
+      supply.location = value;
+      if (await this._instSaveSupplies(gw)) {
+        const bar = this.shadowRoot.querySelector("#installation .progress");
+        if (bar) bar.outerHTML = this._instProgress();
+      } else box.classList.add("bad");
+      return;
+    }
+    const device = this._instDevice(entryId, key);
     if (!device || (device.location ?? "") === value) return;
     const reply = await this._instSend(entryId, [{ device: key, values: { location: value } }]);
     if (!reply?.saved) {
@@ -750,6 +846,50 @@ export const installation = {
     // the progress follows; the rows stay as they are, so the cursor stays where it is
     const bar = this.shadowRoot.querySelector("#installation .progress");
     if (bar) bar.outerHTML = this._instProgress();
+  },
+
+  _instSupplyInput(input) {
+    // a field of a power supply: checked while typing, the whole list goes to the server after a pause
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === input.dataset.inGw);
+    const supply = gw?.supplies.find((x) => x.id === input.dataset.inSid);
+    if (!supply) return;
+    const field = input.dataset.inSfield;
+    supply[field] = input.value;
+    const text = input.value.trim();
+    const badAddress = (v) => v !== "" && !(/^\d{1,3}$/.test(v) && Number(v) >= 1 && Number(v) <= 126);
+    const bad = (field === "watts" && text !== "" && !/^\d{1,4}([.,]\d{1,3})?$/.test(text)) || (["first", "last"].includes(field) && badAddress(text));
+    input.classList.toggle("bad", bad);
+    // first after last: both are marked
+    const row = input.closest(".psurow");
+    if (row && ["first", "last"].includes(field)) {
+      const order = supply.first !== "" && supply.last !== "" && Number(supply.first) > Number(supply.last);
+      row.querySelectorAll('[data-in-sfield="first"], [data-in-sfield="last"]').forEach((i) => i.classList.toggle("bad", order || badAddress(i.value.trim())));
+    }
+    clearTimeout(gw._supplySaving);
+    if (!this.shadowRoot.querySelector("#installation [data-in-sfield].bad")) gw._supplySaving = setTimeout(() => this._instSaveSupplies(gw, input), SAVE_DELAY);
+  },
+
+  async _instSaveSupplies(gw, input = null) {
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/set_supplies", entry_id: gw.entry_id, supplies: gw.supplies });
+    } catch (err) {
+      this._notice(this._t.doc.noteFailed);
+      input?.classList.add("bad");
+      return false;
+    }
+    const status = this._gateways.find((g) => g.entry_id === gw.entry_id);
+    if (status) status.supplies = gw.supplies.map((x) => ({ ...x }));
+    if (input && ["watts", "first", "last"].includes(input.dataset.inSfield)) {
+      // the load bars follow; the cursor stays in the field
+      const selector = `[data-in-sfield="${input.dataset.inSfield}"][data-in-sid="${CSS.escape(input.dataset.inSid)}"]`;
+      this._renderInstallation();
+      const again = this.shadowRoot.querySelector(`#installation ${selector}`);
+      if (again) {
+        again.focus();
+        again.setSelectionRange(again.value.length, again.value.length);
+      }
+    }
+    return true;
   },
 
   async _instSend(entryId, items) {
