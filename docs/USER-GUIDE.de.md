@@ -398,8 +398,9 @@ noch leer ist, wird gefüllt. Felder, weitere Geräte, eingetragene Verbindungen
 kommen mit, die Geräte selbst nie. Hat ein Gateway eine andere Base-ID, bietet das Panel an, das
 eine Gateway der Datei ohne Treffer in das eine hier eingerichtete Gateway ohne Treffer zu
 importieren.
-**Telegramme** öffnet die Telegramme dieses Geräts, **Gerät hinzufügen** richtet einen
-unbekannten Sender ein, und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
+**Telegramme** öffnet die Telegramme dieses Geräts, das **+** eines unbekannten Senders fragt, ob du ihn
+**Als Gerät anlegen** oder **Nur dokumentieren** willst (ein Eintrag unter **Weitere Geräte** mit
+ausgefüllter ID, für die Dokumentation; Home Assistant legt nichts an), und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
 
 **Einlernen** (Doktorhut-Symbol, bei Geräten mit eigener Sender-ID) lernt das Gerät in seinen
 Aktor ein, ohne dafür die Geräteseite zu öffnen: Aktor in den Lernmodus bringen (bei Eltako
