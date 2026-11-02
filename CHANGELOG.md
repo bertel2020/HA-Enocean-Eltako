@@ -25,6 +25,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- The panel tells why a gateway behind the proxy app shows no status: **proxy status not reachable** (request failed) or **does not list this gateway** (the app's status has no gateway on our port). The diagnostics carry the status URL (host masked) and the last error, and the first failure is logged on debug.
 - **Devices** table: a progress line (devices with a place), columns in groups to show or hide (place and fuse, bus and radio, upkeep; remembered per browser), and a wrong bus address or watts value is named under the field and not sent.
 - **Sender IDs** is no longer a tab of its own: it is the **Sender ID pool** above the table under Installation → Senders → Gateway senders, always shown and foldable (pool map, who uses which ID, release of blocked IDs, also from a blocked row of the table). `?view=senders` and a saved Sender IDs view open it there.
 - The tabs of the Installation view are real tabs (underlined) in two levels; the switch between table and ID management is gone. The first group is now **Devices** (Overview, Table); the grouping by area or place is a segmented switch, each gateway is a card with its device count, and a gateway without devices offers a button to the integration.
@@ -57,6 +58,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- Das Panel nennt den Grund, wenn ein Gateway hinter der Proxy-App keinen Status zeigt: **Proxy-Status nicht erreichbar** (Abfrage fehlgeschlagen) oder **listet dieses Gateway nicht** (der Status der App hat kein Gateway auf unserem Port). Die Diagnose enthält die Status-URL (Host maskiert) und den letzten Fehler, der erste Fehlschlag steht im Debug-Log.
 - Die Reiter der Ansicht Anlage sind echte Reiter (unterstrichen) in zwei Ebenen, der Umschalter zwischen Tabelle und ID-Verwaltung entfällt. Die erste Gruppe heißt jetzt **Geräte** (Übersicht, Tabelle); die Gruppierung nach Bereich oder Ort ist ein Segment-Schalter, jedes Gateway ist eine Karte mit Gerätezahl, und ein Gateway ohne Geräte bietet einen Button zur Integration.
 - Tabelle **Geräte**: eine Fortschrittszeile (Geräte mit Ort), Spalten in Gruppen zum Ein- und Ausblenden (Ort und Sicherung, Bus und Funk, Wartung; pro Browser gemerkt), und eine falsche Bus-Adresse oder Wattzahl wird unter dem Feld genannt und nicht gesendet.
 - **Sender-IDs** ist kein eigener Reiter mehr, sondern der **Sender-ID-Pool** über der Tabelle unter Anlage → Sender → Gateway-Sender, immer sichtbar und einklappbar (Pool-Karte, wer welche ID nutzt, Freigabe gesperrter IDs, auch aus einer gesperrten Zeile der Tabelle). `?view=senders` und eine gespeicherte Ansicht Sender-IDs öffnen sie dort.

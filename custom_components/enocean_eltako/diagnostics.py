@@ -9,8 +9,10 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
 from . import EnOceanEltakoConfigEntry
+from .const import CONF_PROXY_REPLAY
 from .protocol.ids import format_id
 from .protocol.transport import TcpConnection
+from .proxy_status import CONF_PROXY_STATUS_PORT, DEFAULT_STATUS_PORT
 
 TELEGRAMS = 100
 # the network address of a LAN gateway; IDs, serial port and counters are what an issue needs
@@ -42,6 +44,16 @@ async def async_get_config_entry_diagnostics(
             "ignored_packets": dict(runtime.gateway.ignored),
             "on_demand": runtime.on_demand,
         },
+        "proxy": (
+            {
+                "status_url": f"http://{REDACTED}:"
+                f"{entry.data.get(CONF_PROXY_STATUS_PORT, DEFAULT_STATUS_PORT)}/api/status",
+                "status": runtime.proxy,
+                "last_error": runtime.proxy_error,
+            }
+            if entry.options.get(CONF_PROXY_REPLAY)
+            else None
+        ),
         "bus_group": runtime.bus.group.as_dict() if runtime.bus else None,
         "bus_sender_pool": runtime.bus.senders.pool.as_dict() if runtime.bus else None,
         "dispatcher": runtime.hub.dispatcher.stats.as_dict(),
