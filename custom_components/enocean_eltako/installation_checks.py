@@ -29,9 +29,12 @@ from .installation_data import (
 
 RESERVE_LIMIT = 2 / 3  # above this share of its rated power a supply should get company
 NOT_CONSUMERS = ("master", "supply", "foreign", "accessory")
-# from about half of 12 W, supplies and dimmers side by side want half a TE of air between them
-# (DS14 spacer or the long bridges); assumption (A) of the concept, section 2.3
-SPACING_WATTS = 6.0
+# ventilation of the FSNT14 (manual FAM14 30014000-7 and operating manual series 14, 10/2026,
+# "mounting in the distribution panel"): with a load of the power supply above 4 W half a TE of
+# air on its left side to the neighbouring devices, above 6 W in addition half a TE between the
+# FSNT14 and the FAM14 (spacer DS14)
+AIR_LEFT_WATTS = 4.0
+AIR_FAM14_WATTS = 6.0
 
 
 def _item(level: str, code: str, targets: list[dict[str, str]], **args: Any) -> dict[str, Any]:
@@ -378,52 +381,61 @@ def _bus_checks(
     }
 
 
-def _warm(module: dict[str, Any]) -> bool:
-    """A module that gets warm: a power supply, the master with its supply, a dimmer (FUD14)."""
-    return role(module) in ("master", "supply") or str(module.get("type", "")).upper().startswith(
-        "FUD14"
-    )
-
-
 def _rail_checks(
     data: dict[str, Any], modules: list[dict[str, Any]], loads: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    """What the rail says: air between warm modules, the FUD14's spacer, the terminating
+    """What the rail says: air around a loaded power supply, the FUD14's spacer, the terminating
     resistor at the end of the bus, and how a row hands the bus on to the next."""
     items: list[dict[str, Any]] = []
     order = [m for m in bus_order(data, modules) if role(m) not in ("foreign", "accessory")]
     if not order:
         return items
     rows = rows_by_id(data)
-    # the load the neighbours share: their section's (by place), else the whole bus's
-    section_load = {}
-    for supply in loads["supplies"]:
-        for module_id in [*supply["members"], *supply.get("modules", []), supply["module"]]:
-            if module_id:
-                section_load[module_id] = supply["load"]
-    total = round(sum(s["load"] for s in loads["supplies"]), 2)
     placed = bus_order(data, modules)
-    crowded, no_air = [], []
-    for left, right in zip(placed, placed[1:], strict=False):
-        if left["row"] != right["row"]:
+    no_air: list[dict[str, str]] = []
+    # the load of each power supply: its section's (by place) or its address range's
+    load_of = {}
+    for supply in loads["supplies"]:
+        for module_id in [*supply.get("modules", []), supply["module"]]:
+            if module_id:
+                load_of[module_id] = supply["load"]
+
+    def air(left: dict[str, Any], right: dict[str, Any]) -> float:
+        """Free TE between two neighbours in a row (a spacer of the right one counts)."""
+        return float(right["slot"]) - _span(left)[1]
+
+    for i, module in enumerate(placed):
+        if role(module) != "supply" or (load := load_of.get(module["id"])) is None:
             continue
-        gap = _span(right)[0] - _span(left)[1]
-        touching = gap < 0.5 and not right["spacer_before"]
-        if touching and _warm(left) and _warm(right):
-            load = section_load.get(right["id"], total) if loads["mode"] == "place" else total
-            if load > SPACING_WATTS:
-                crowded.append((left, right, load))
-    for left, right, load in crowded:
-        items.append(
-            _item(
-                "warning",
-                "spacing",
-                [_module(left), _module(right)],
-                load=load,
-                watts=SPACING_WATTS,
-                assumed=True,
-            )
+        left = placed[i - 1] if i and placed[i - 1]["row"] == module["row"] else None
+        right = (
+            placed[i + 1] if i + 1 < len(placed) and placed[i + 1]["row"] == module["row"] else None
         )
+        if load > AIR_LEFT_WATTS and left is not None and air(left, module) < 0.5:
+            items.append(
+                _item(
+                    "warning",
+                    "supply_air_left",
+                    [_module(module), _module(left)],
+                    load=load,
+                    watts=AIR_LEFT_WATTS,
+                )
+            )
+        if load > AIR_FAM14_WATTS:
+            for a, b in ((left, module), (module, right)):
+                if a is None or b is None:
+                    continue
+                fam = a if a is not module else b
+                if role(fam) == "master" and air(a, b) < 0.5:
+                    items.append(
+                        _item(
+                            "warning",
+                            "supply_air_fam14",
+                            [_module(module), _module(fam)],
+                            load=load,
+                            watts=AIR_FAM14_WATTS,
+                        )
+                    )
     for module in placed:
         if not str(module.get("type", "")).upper().startswith("FUD14"):
             continue
