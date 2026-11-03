@@ -567,6 +567,7 @@ const STYLE = `
   .values .maybe { flex: 1 0 100%; min-width: 0; }
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   /* the state of a device: the text always names it, the color only backs it up */
+  .statusrow .chip .n { margin-left: 6px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: .75; }
   .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; white-space: nowrap; background: var(--tag-bg); color: var(--tag-text); }
   .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .pill.active { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
@@ -3075,13 +3076,18 @@ class EnOceanEltakoPanel extends HTMLElement {
     return String(eep || "").replace(/:(std|eltako)$/, "");
   }
 
+  _inStatus(d, status) {
+    if (status === "known") return !d.unknown;
+    if (status === "unknown") return d.unknown && !d.hidden;
+    if (status === "silent") return !!d.silent;
+    if (status === "weak") return d.dbm != null && d.dbm < WEAK_DBM;
+    return true;
+  }
+
   _devMatches(d) {
     const f = this._filter;
     if (f.area && d.area !== f.area) return false;
-    if (f.devStatus === "known" && d.unknown) return false;
-    if (f.devStatus === "unknown" && (!d.unknown || d.hidden)) return false;
-    if (f.devStatus === "silent" && !d.silent) return false;
-    if (f.devStatus === "weak" && !(d.dbm != null && d.dbm < WEAK_DBM)) return false;
+    if (!this._inStatus(d, f.devStatus)) return false;
     const text = f.text.toLowerCase();
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
@@ -3148,6 +3154,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._options(areaSelect, [["", t.allAreas], ...areas.map((a) => [a, a])], this._filter.area);
     this.shadowRoot.getElementById("devAreaRow").hidden = !areas.length && !this._filter.area;
     this._syncFilterBtn();
+    // each status chip says how many devices it would show (of the gateway chosen, whatever else is filtered)
+    for (const button of this.shadowRoot.getElementById("devStatus").querySelectorAll("button")) {
+      const status = button.dataset.status;
+      const n = all.filter((d) => this._inStatus(d, status)).length;
+      const html = `${esc(t.devStatus[status])}<span class="n">${n}</span>`;
+      if (button.innerHTML !== html) button.innerHTML = html;
+    }
     // senders at the edge of the range, at a glance: a click shows only them, weakest first
     const weak = all.filter((d) => d.dbm != null && d.dbm < WEAK_DBM).length;
     const weakHint = this.shadowRoot.getElementById("weakHint");
