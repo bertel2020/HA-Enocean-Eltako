@@ -160,7 +160,7 @@ export const BUS_STYLE = `
   .installation .bv-form label.wide { grid-column: 1 / -1; }
   .installation .bv-form label.check { display: flex; align-items: center; gap: 6px; color: var(--text); }
   .installation .bv-form input, .installation .bv-form select, .installation .bv-rowedit input, .installation .bv-rowedit select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--input-line); border-radius: 6px; background: var(--surface); color: var(--text); min-width: 0; width: 100%; box-sizing: border-box; }
-  .installation .bv-form label.check input { width: auto; }
+  .installation .bv-form label.check input { width: auto; padding: 0; border: 0; border-radius: 0; background: none; accent-color: var(--accent); }
   .installation .bv-form input:focus, .installation .bv-form select:focus, .installation .bv-rowedit input:focus, .installation .bv-rowedit select:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--accent); }
   .installation .bv-err { color: var(--bad); font-size: calc(12px * var(--fs)); }
   .installation .bv-chlist { display: grid; gap: 6px; }
@@ -1041,7 +1041,7 @@ export const busView = {
     const gws = [...v.gws.values()];
     const access = gws.map((gw) => {
       const on = bus.access.some((a) => a.entry_id === gw.entry_id);
-      return `<label class="check"><input type="checkbox" data-bvb-access="${esc(gw.entry_id)}"${on ? " checked" : ""}>${esc(gw.title)} <span class="isub">${esc(gw.model_name ?? "")}</span></label>`;
+      return `<label class="check"><input type="checkbox" data-bvb-access="${esc(gw.entry_id)}"${on ? " checked" : ""}>${esc(gw.title)}${gw.model_name && gw.model_name !== gw.title ? ` <span class="isub">${esc(gw.model_name)}</span>` : ""}</label>`;
     }).join("");
     const crumbs = this._bvCrumbs([[isNew ? B.newBus : this._bvBusName(v, bus)]]);
     return this._bvDHead(crumbs, esc(isNew ? B.newBus : this._bvBusName(v, bus)), "") + `<div class="bv-dbody"><div class="bv-box edit" data-bv-busform="${esc(bus.id)}"><div class="bv-form">
