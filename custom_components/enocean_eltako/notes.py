@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 8
+STORAGE_VERSION = 9
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -98,7 +98,8 @@ class _NotesStore(Store[dict[str, Any]]):
     made by hand a kind, a place and a supply (battery type or mains); version 6 adds its circuit,
     fuse, date of installation and type; version 7 keeps the last telegram of each sender;
     version 8 says whether the bus fields were taken over into the installation store (they
-    stay here as a readable copy that the store keeps up to date)."""
+    stay here as a readable copy that the store keeps up to date); version 9 says whether the
+    place of each channel's device was taken from its module (the store is where it is edited)."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -137,6 +138,8 @@ class _NotesStore(Store[dict[str, Any]]):
             old_data.setdefault("last", {})
         if old_major_version < 8:
             old_data["migrated_to_installation"] = False
+        if old_major_version < 9:
+            old_data["places_synced"] = False
         return old_data
 
 
@@ -173,6 +176,7 @@ class Notes:
         # the bus fields, supplies and bus entries by hand were taken over into the installation
         # store (installation.py); from then on the store keeps them, this is their copy
         self.migrated = False
+        self.places_synced = False  # the places of the bus devices were taken from the store
 
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
@@ -204,6 +208,7 @@ class Notes:
             str(k): dict(v) for k, v in stored.get("last", {}).items() if isinstance(v, dict)
         }
         self.migrated = bool(stored.get("migrated_to_installation", False))
+        self.places_synced = bool(stored.get("places_synced", False))
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -220,6 +225,7 @@ class Notes:
             "heard": self.heard,
             "last": self.last,
             "migrated_to_installation": self.migrated,
+            "places_synced": self.places_synced,
         }
 
     def _save(self) -> None:
@@ -267,6 +273,11 @@ class Notes:
     def set_migrated(self) -> None:
         if not self.migrated:
             self.migrated = True
+            self._save()
+
+    def set_places_synced(self) -> None:
+        if not self.places_synced:
+            self.places_synced = True
             self._save()
 
     def set_gateway(self, text: str) -> None:

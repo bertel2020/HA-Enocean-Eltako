@@ -331,6 +331,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     entry.async_on_unload(notes.async_flush)  # what waits for its delayed save is written now
     installation = await async_get_installation(hass)
     installation.absorb_entry(entry, notes)  # the bus fields of notes version 7, taken over once
+    installation.sync_places(entry, notes)  # notes version 9: places of bus devices from the store
     entry.async_on_unload(installation.async_flush)
     entry.async_on_unload(async_setup_discovery(hass, entry))
     if (stop_proxy_status := async_setup_proxy_status(hass, entry)) is not None:

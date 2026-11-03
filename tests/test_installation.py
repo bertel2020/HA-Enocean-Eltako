@@ -240,11 +240,13 @@ def test_the_notes_keep_a_copy_of_the_bus_fields() -> None:
         "bus_address": "1",
         "feedback_id": "00000081",
         "bus_power": "0,8",  # the module's power on its first channel only
+        "location": "Keller-Verteiler · Reihe 1 · 3",  # the module's place
     }
     assert values[("gw1", "05-10-A2-B6")] == {
         "bus_address": "3",
         "feedback_id": "",
         "bus_power": "",
+        "location": "Keller-Verteiler · Reihe 1 · 3",
     }
     assert manual_values(data)[("gw1", "m3")]["bus_address"] == "12"
     s2 = supply_values(data)[("gw1", "s2")]
@@ -442,7 +444,7 @@ async def test_notes_of_version_7_are_taken_over_when_the_gateway_loads(
     assert notes.device("05-10-A2-B5")["feedback_id"] == "82" and len(notes.supplies) == 1
     await notes.async_flush()
     await installation.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 8
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 9
     assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["data"][
         "migrated_to_installation"
     ]
@@ -947,3 +949,54 @@ def test_a_loaded_power_supply_wants_air_as_the_fam14_manual_says() -> None:
     fud["power"] = "7"
     master["row"], master["slot"] = "r2", 3.0
     assert "supply_air_left" not in codes() and "supply_air_fam14" not in codes()
+
+
+@pytest.mark.parametrize("gateway", [BUS_DEVICES], indirect=True)
+async def test_the_place_is_the_same_in_the_devices_tab_and_the_bus_tab(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    installation = get_installation(hass)
+    installation.set_cabinet({"name": "UV", "rows": [{"name": "R1", "te": 12}]})
+    row = installation.data["cabinets"][0]["rows"][0]["id"]
+    module = _by_type(installation.data, "FSR14-4x")[0]
+    key = module["channels"][0]["device_key"]
+    client = await hass_ws_client(hass)
+
+    async def fields(msg_id: int, location: str) -> None:
+        await client.send_json(
+            {
+                "id": msg_id,
+                "type": "enocean_eltako/set_fields",
+                "entry_id": entry.entry_id,
+                "items": [{"device": _key(entry, key), "values": {"location": location}}],
+            }
+        )
+        assert (await client.receive_json())["result"]["saved"] == 1
+
+    # the devices tab writes the place: the module goes there
+    await fields(1, "UV · R1 · 4")
+    placed = next(m for m in installation.data["modules"] if m["id"] == module["id"])
+    assert (placed["row"], placed["slot"]) == (row, 4.0)
+    # the bus tab moves the module: the devices tab follows
+    installation.set_module({**placed, "slot": 6})
+    assert notes.device(key)["location"] == "UV · R1 · 6"
+    # cleared in the devices tab (✕): the module has no place any more
+    await fields(2, "")
+    placed = next(m for m in installation.data["modules"] if m["id"] == module["id"])
+    assert placed["row"] is None and notes.device(key)["location"] == ""
+    # a free text that is no place of a cabinet stays as text on both sides
+    await fields(3, "Flur EG")
+    placed = next(m for m in installation.data["modules"] if m["id"] == module["id"])
+    assert placed["row"] is None and placed["legacy_location"] == "Flur EG"
+    assert notes.device(key)["location"] == "Flur EG"
+    # once at load (notes version 9): the notes take the module's place
+    installation.set_module({**placed, "row": row, "slot": 2})
+    notes.set_fields(key, {"location": "anderswo"})
+    notes.places_synced = False
+    assert installation.sync_places(entry, notes) == 1
+    assert notes.device(key)["location"] == "UV · R1 · 2" and notes.places_synced
+    assert installation.sync_places(entry, notes) == 0
