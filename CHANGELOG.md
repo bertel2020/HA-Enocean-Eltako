@@ -37,6 +37,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Telegram log**: the direction is the one marker of a row: a green arrow for received, a blue one for sent. The blue bar and tint on sent rows are gone; a bar now marks only a warning: a sent command without an answer within 3 s gets an amber bar and a tag.
 - **Takeover**: after taking devices over, the view always lands on step 3 (retire the old integration). When the old integration has no entities left for them, step 3 says so instead of the view falling back to step 1.
 
 **Deutsch**
@@ -70,6 +71,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Telegrammprotokoll**: Die Richtung ist das eine Kennzeichen einer Zeile: grüner Pfeil für empfangen, blauer für gesendet. Der blaue Balken und die Tönung bei gesendeten Zeilen entfallen; ein Balken markiert nur noch eine Warnung: ein gesendeter Befehl ohne Antwort innerhalb von 3 s bekommt einen gelben Balken und ein Tag.
 - **Übernahme**: Nach der Übernahme landet die Ansicht immer bei Schritt 3 (Alte Integration ablösen). Hat die alte Integration für die Geräte keine Entitäten mehr, sagt Schritt 3 das, statt dass die Ansicht auf Schritt 1 zurückfällt.
 
 ### [1.5.0] - 2026-11-02
