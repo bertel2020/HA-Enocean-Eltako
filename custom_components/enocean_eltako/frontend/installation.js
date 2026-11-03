@@ -1268,7 +1268,11 @@ export const installation = {
     }
     const goto = e.target.closest("[data-in-goto]");
     if (goto) {
-      // a link's device: the All devices view with its row marked
+      // a link's device opens in the Devices view; without a row there, the table of the Installation marks it
+      if (this._inPanel(goto.dataset.inGoto)) {
+        this._showDevice(goto.dataset.inGoto);
+        return;
+      }
       state.tab = "devices";
       state.view = "all";
       state.art = "all";
