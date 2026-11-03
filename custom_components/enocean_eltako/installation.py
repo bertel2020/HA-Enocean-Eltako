@@ -36,6 +36,7 @@ from .installation_data import (
     empty,
     ensure_master,
     manual_values,
+    move_module,
     normalize,
     remove_module,
     supply_values,
@@ -232,6 +233,14 @@ class Installation:
             self.data["modules"].append(module)
         self._commit(before)
         return module, ""
+
+    def move_module(self, module_id: str, direction: int) -> str:
+        """Arrange on the rail (swap with the neighbour, or half a TE at the end of the row)."""
+        before = copy.deepcopy(self.data)
+        if reason := move_module(self.data, module_id, direction):
+            return reason
+        self._commit(before)
+        return ""
 
     def remove_module(self, module_id: str) -> bool:
         before = copy.deepcopy(self.data)

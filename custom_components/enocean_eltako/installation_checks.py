@@ -17,6 +17,7 @@ from typing import Any
 
 from .bus_devices import ADDRESSES
 from .installation_data import (
+    _span,
     address_count,
     channel_address,
     legacy_range,
@@ -28,6 +29,9 @@ from .installation_data import (
 
 RESERVE_LIMIT = 2 / 3  # above this share of its rated power a supply should get company
 NOT_CONSUMERS = ("master", "supply", "foreign")
+# from about half of 12 W, supplies and dimmers side by side want half a TE of air between them
+# (DS14 spacer or the long bridges); assumption (A) of the concept, section 2.3
+SPACING_WATTS = 6.0
 
 
 def _item(level: str, code: str, targets: list[dict[str, str]], **args: Any) -> dict[str, Any]:
@@ -159,6 +163,8 @@ def _by_place(data: dict[str, Any], modules: list[dict[str, Any]]) -> dict[str, 
         for m in modules
         if m["id"] not in placed and role(m) not in NOT_CONSUMERS and m["first_address"]
     ]
+    for i, section in enumerate(result):
+        section["section"] = chr(65 + i) if i < 26 else str(i + 1)
     return {"mode": "place", "supplies": result, "unfed": unfed}
 
 
@@ -284,6 +290,7 @@ def _bus_checks(
                 documented.append(_channel(module, channel["n"]))
     if missing:
         items.append(_item("warning", "ha_missing", missing, count=len(missing)))
+    items += _rail_checks(data, modules, loads)
     used = sorted(by_address)
     if used:
         gaps = sorted(set(range(1, used[-1] + 1)) - set(used))
@@ -308,3 +315,86 @@ def _bus_checks(
         "used": len(used),
         "duplicates": [a for a, u in sorted(by_address.items()) if len(u) > 1],
     }
+
+
+def _warm(module: dict[str, Any]) -> bool:
+    """A module that gets warm: a power supply, the master with its supply, a dimmer (FUD14)."""
+    return role(module) in ("master", "supply") or str(module.get("type", "")).upper().startswith(
+        "FUD14"
+    )
+
+
+def _rail_checks(
+    data: dict[str, Any], modules: list[dict[str, Any]], loads: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """What the rail says: air between warm modules, the FUD14's spacer, the terminating
+    resistor at the end of the bus, and how a row hands the bus on to the next."""
+    items: list[dict[str, Any]] = []
+    order = [m for m in bus_order(data, modules) if role(m) != "foreign"]
+    if not order:
+        return items
+    rows = rows_by_id(data)
+    # the load the neighbours share: their section's (by place), else the whole bus's
+    section_load = {}
+    for supply in loads["supplies"]:
+        for module_id in [*supply["members"], *supply.get("modules", []), supply["module"]]:
+            if module_id:
+                section_load[module_id] = supply["load"]
+    total = round(sum(s["load"] for s in loads["supplies"]), 2)
+    placed = bus_order(data, modules)
+    crowded, no_air = [], []
+    for left, right in zip(placed, placed[1:], strict=False):
+        if left["row"] != right["row"]:
+            continue
+        gap = _span(right)[0] - _span(left)[1]
+        touching = gap < 0.5 and not right["spacer_before"]
+        if touching and _warm(left) and _warm(right):
+            load = section_load.get(right["id"], total) if loads["mode"] == "place" else total
+            if load > SPACING_WATTS:
+                crowded.append((left, right, load))
+    for left, right, load in crowded:
+        items.append(
+            _item(
+                "warning",
+                "spacing",
+                [_module(left), _module(right)],
+                load=load,
+                watts=SPACING_WATTS,
+                assumed=True,
+            )
+        )
+    for module in placed:
+        if not str(module.get("type", "")).upper().startswith("FUD14"):
+            continue
+        before = [m for m in placed if m["row"] == module["row"] and m["slot"] < module["slot"]]
+        gap = _span(module)[0] - max((_span(m)[1] for m in before), default=1.0)
+        if not module["spacer_before"] and gap < 0.5 and before:
+            no_air.append(_module(module))
+    if no_air:
+        items.append(_item("info", "fud14_spacer", no_air, count=len(no_air)))
+    terminators = [m for m in modules if m["terminator"]]
+    if not terminators:
+        items.append(_item("warning", "terminator_missing", [_module(order[-1])]))
+    elif len(terminators) > 1:
+        items.append(_item("warning", "terminator_twice", [_module(m) for m in terminators]))
+    elif terminators[0]["id"] != order[-1]["id"]:
+        items.append(
+            _item("warning", "terminator_not_last", [_module(terminators[0]), _module(order[-1])])
+        )
+    used_rows: list[str] = []
+    for module in order:
+        if module["row"] not in used_rows:
+            used_rows.append(module["row"])
+    for row_id in used_rows[:-1]:
+        cabinet, row = rows[row_id]
+        if not (row.get("next") or {}).get("kind"):
+            items.append(
+                _item(
+                    "warning",
+                    "row_link_missing",
+                    [{"type": "row", "id": row_id}],
+                    cabinet=cabinet["name"],
+                    row=row["name"],
+                )
+            )
+    return items
