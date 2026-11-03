@@ -505,9 +505,9 @@ class EnOceanDevice:
             elif profile.switch_fn is not None:
                 result = await self._test_telegram(profile, sender_id, profile.switch_fn(state))
             elif profile_id == ROCKER.id and self.options.get(
-                OPT_ROCKER_ON, "a0"
+                OPT_ROCKER_ON, self.model.rocker_buttons[0]
             ) != self.options.get(
-                OPT_ROCKER_OFF, "a1"
+                OPT_ROCKER_OFF, self.model.rocker_buttons[1]
             ):  # a rocker that toggles would change the state
                 result = await self._test_telegram(
                     profile, sender_id, self.rocker_button(state), ROCKER_STATUS_PRESSED
@@ -549,8 +549,10 @@ class EnOceanDevice:
     def rocker_button(self, on: bool) -> bytes:
         """The rocker sender's press for on / up or off / down (the chosen buttons)."""
         if on:
-            return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_ON, "a0")]])
-        return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_OFF, "a1")]])
+            return bytes(
+                [ROCKER_CODES[self.options.get(OPT_ROCKER_ON, self.model.rocker_buttons[0])]]
+            )
+        return bytes([ROCKER_CODES[self.options.get(OPT_ROCKER_OFF, self.model.rocker_buttons[1])]])
 
     def _log_result(self, result: SendResult, started: float) -> None:
         if result == SendResult.CONFIRMED:
