@@ -465,7 +465,7 @@ export const busView = {
       : "";
     const seg = `<div class="seg" role="group"><button data-bv-mode="place" aria-pressed="${state.bus.mode === "place"}">${esc(B.byPlace)}</button><button data-bv-mode="address" aria-pressed="${state.bus.mode === "address"}">${esc(B.byAddress)}</button></div>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(B.search)}" aria-label="${esc(B.search)}">`;
-    return `<div class="bv-bar">${seg}${search}</div>${assign}<div class="tablewrap"><table class="itable bv-list"><thead>${head}</thead><tbody>${body || `<tr><td colspan="8" class="none">${esc(B.nothing)}</td></tr>`}</tbody></table></div><p class="bv-note">${esc(B.listNote)}</p>`;
+    return `<div class="bv-bar">${seg}${search}</div>${assign}<div class="tablewrap"><table class="itable bv-list"><thead>${head.replace("</tr>", '<th class="rmenu"></th></tr>')}</thead><tbody>${body ? body.replace(/<\/tr>/g, '<td class="rmenu"></td></tr>') : `<tr><td colspan="9" class="none">${esc(B.nothing)}</td></tr>`}</tbody></table></div><p class="bv-note">${esc(B.listNote)}</p>`;
   },
 
   // ---- the address plan -----------------------------------------------------------------------

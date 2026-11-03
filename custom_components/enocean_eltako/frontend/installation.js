@@ -23,7 +23,6 @@ const FIELD_KINDS = {
   bus_address: ["bus"], feedback_id: ["bus"], bus_power: ["bus"], power: ["taster", "sensor", "aktor"],
 };
 // the fields every kind has: the table of all kinds shows only these; the others appear when a kind is chosen
-const COMMON_FIELDS = new Set(["location", "circuit", "fuse", "installed", "note"]);
 const FUSE_KINDS = new Set(["bus", "aktor", "psu"]); // the kinds that hang on a circuit and a fuse
 // the kind of a device: virtual (Home Assistant sends), on the Eltako bus (it has a bus address), else
 // by what it is: a button, a sensor or an actuator on radio
@@ -73,11 +72,14 @@ const joinPlace = (parts) => parts.map((p) => p.trim()).join(" · ").replace(/(\
 const SAVE_DELAY = 600; // ms after the last key
 // the columns of the device table in groups that are shown or hidden
 const COLUMN_GROUPS = {
-  place: ["location", "circuit", "fuse"],
+  place: ["area", "location", "circuit", "fuse"],
   bus: ["group", "bus_address", "feedback_id", "bus_power"],
   upkeep: ["installed", "revision", "power", "note"],
 };
-const COLUMNS_KEY = "enocean_eltako_installation_columns"; // the groups shown, per browser
+const COLUMNS_KEY = "enocean_eltako_installation_columns"; // before: the groups shown, per browser
+const FIELDS_KEY = "enocean_eltako_installation_fields"; // the single columns shown, per browser
+const GROUP_KEY = "enocean_eltako_installation_group"; // how the devices table is grouped, per browser
+const GROUPS = ["", "area", "location", "gateway"];
 const POOL_KEY = "enocean_eltako_installation_pool_closed"; // the sender ID pool is folded, per browser
 const loadPoolOpen = () => {
   try {
@@ -93,19 +95,46 @@ const savePoolOpen = (open) => {
     // not saved: shown for this visit
   }
 };
+const ALL_COLUMNS = Object.values(COLUMN_GROUPS).flat();
 const loadColumns = () => {
+  // the single columns; a choice of groups from before becomes the columns of those groups
   try {
-    const saved = JSON.parse(localStorage.getItem(COLUMNS_KEY));
-    if (Array.isArray(saved)) return new Set(saved.filter((g) => g in COLUMN_GROUPS));
+    const fields = JSON.parse(localStorage.getItem(FIELDS_KEY));
+    if (Array.isArray(fields)) return new Set(fields.filter((f) => ALL_COLUMNS.includes(f)));
+    const groups = JSON.parse(localStorage.getItem(COLUMNS_KEY));
+    if (Array.isArray(groups)) return new Set(groups.filter((g) => g in COLUMN_GROUPS).flatMap((g) => COLUMN_GROUPS[g]));
   } catch (err) {
     // no storage: the default
   }
-  return new Set(["place"]);
+  return new Set(COLUMN_GROUPS.place);
+};
+const saveColumns = (columns) => {
+  try {
+    localStorage.setItem(FIELDS_KEY, JSON.stringify([...columns]));
+  } catch (err) {
+    // not saved: shown for this visit
+  }
+};
+const loadGroup = () => {
+  try {
+    const saved = localStorage.getItem(GROUP_KEY);
+    if (saved !== null && GROUPS.includes(saved)) return saved;
+  } catch (err) {
+    // no storage: the default
+  }
+  return "location"; // by cabinet and row
+};
+const saveGroup = (group) => {
+  try {
+    localStorage.setItem(GROUP_KEY, group);
+  } catch (err) {
+    // not saved: shown for this visit
+  }
 };
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "", bus: busState(),
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: loadGroup(), placeText: new Set(), linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "", bus: busState(),
 });
 
 export const INSTALLATION_STYLE = `
@@ -135,6 +164,29 @@ export const INSTALLATION_STYLE = `
   .installation details.kindmenu, .installation details.rowmenu { display: inline-block; }
   .installation details.kindmenu .items, .installation details.rowmenu .items { left: 0; right: auto; min-width: 0; z-index: 6; }
   .installation details.rowmenu .items { left: auto; right: 0; white-space: nowrap; }
+  /* the narrow last column of every table: the row menu (⋮) at the same place in each row */
+  .installation .itable th.rmenu, .installation .itable td.rmenu { width: 1%; padding: 2px 6px 2px 0; text-align: right; white-space: nowrap; }
+  .installation details.colmenu .items, .installation details.rowmenu .items { max-width: calc(100vw - 32px); }
+  .installation .colgroup { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+  .installation .colgroup:first-child { margin-top: 0; }
+  .installation .colgroup b { font-weight: 500; flex: 1; }
+  .installation .colgroup .tag { cursor: pointer; border: 0; font: inherit; font-size: calc(11px * var(--fs)); }
+  /* the counters of the devices view: text, not boxes */
+  .installation .stiles.quiet { gap: 4px 14px; }
+  .installation .stiles.quiet .stile { background: none; padding: 2px 4px; border-radius: 8px; }
+  .installation .stiles.quiet .stile b { font-size: calc(15px * var(--fs)); }
+  .installation .stiles.quiet .stile[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; }
+  /* an empty place: a quiet dash that turns into "+ add place" on hover or focus */
+  .installation .placeadd.empty { min-width: 90px; color: color-mix(in srgb, var(--muted) 70%, transparent); }
+  .installation .placeadd.empty .hv { display: none; }
+  .installation .placeadd.empty:hover .ph, .installation .placeadd.empty:focus-visible .ph { display: none; }
+  .installation .placeadd.empty:hover .hv, .installation .placeadd.empty:focus-visible .hv { display: inline; }
+  .installation .place select { flex: 1.5 1 0; min-width: 0; font: inherit; font-size: calc(12px * var(--fs)); padding: 4px 4px; border: 0; background: transparent; color: inherit; }
+  .installation .place .placeclr { flex: none; all: unset; cursor: pointer; color: var(--muted); padding: 0 8px; font-size: calc(12px * var(--fs)); }
+  .installation .place .placeclr:hover, .installation .place .placeclr:focus-visible { color: var(--bad); }
+  /* one quiet dash for an empty field, a field that does not apply and an empty place */
+  .installation .itable input.cell::placeholder, .installation .itable td .dash { color: color-mix(in srgb, var(--muted) 70%, transparent); opacity: 1; }
+  .installation .itable input.cell:focus::placeholder { opacity: 0; }
   .installation details.kindmenu .items button, .installation details.rowmenu .items button { all: unset; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
   .installation details.kindmenu .items button:hover, .installation details.rowmenu .items button:hover { background: var(--soft); }
   .installation .namelink { all: unset; cursor: pointer; color: inherit; }
@@ -285,6 +337,13 @@ export const INSTALLATION_STYLE = `
   .installation .psurow .barbg i.hot { background: var(--warn); }
   .installation .seg button .isub { margin-left: 4px; }
   .installation .gbar .seg { max-width: 100%; overflow-x: auto; }
+  /* the filter bar of the devices tab: views and kinds in one line, alike in look */
+  .installation .fbar { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 2px; scrollbar-width: thin; }
+  .installation .fbar .seg { flex: none; overflow: visible; }
+  .installation .fbar .chips { flex-wrap: nowrap; flex: none; gap: 4px; }
+  .installation .fbar .chips .chip { min-height: 30px; padding: 0 12px; border-radius: 16px; white-space: nowrap; font-weight: 400; }
+  .installation .fbar .chips .chip b { font-weight: 500; margin-left: 2px; }
+  .installation .fbar .fsep { flex: none; width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
   .installation .gbar .seg button { white-space: nowrap; }
   .installation .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .installation .chips .isub.lead { min-width: 40px; }
@@ -424,6 +483,8 @@ export const INSTALLATION_STYLE = `
   .installation .tag.ev-import { --e: var(--k-psu); }${BUS_STYLE}`;
 
 const gateways = (doc) => doc?.gateways ?? [];
+// the last, narrow column of a table row: its menu (⋮), or an empty cell so all rows line up
+const withMenu = (rows, menu = () => "") => rows.replace(/<\/tr>/g, () => `<td class="rmenu">${menu()}</td></tr>`);
 const label = (t, field) => t.inst.fields[field];
 const open = (device) => !device.location; // a device without a place is still to be written down
 
@@ -595,9 +656,9 @@ export const installation = {
       v.pg = Math.min(v.pg, pages - 1);
       const page = rows.slice(v.pg * v.ps, (v.pg + 1) * v.ps);
       const th = (col, label) => `<th class="sortable" data-in-sids="${key}|${col}"${v.sort === col ? ` aria-sort="${v.dir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(label)}</span><i class="sarrow">${v.sort === col && v.dir < 0 ? "↓" : "↑"}</i></th>`;
-      const head = `<tr>${th("nr", S.nr)}<th>${esc(T.senderId)}</th>${th("name", S.device)}${th("fn", T.function)}${th("use", S.role)}<th>${esc(T.busAddress)}</th><th>${esc(T.feedbackId)}</th>${th("st", S.status)}</tr>`;
+      const head = `<tr>${th("nr", S.nr)}<th>${esc(T.senderId)}</th>${th("name", S.device)}${th("fn", T.function)}${th("use", S.role)}<th>${esc(T.busAddress)}</th><th>${esc(T.feedbackId)}</th>${th("st", S.status)}<th class="rmenu"></th></tr>`;
       const tag = (st) => `<span class="stag ${st}">${esc(S.state[st])}</span>`;
-      const body = page.map((r) => {
+      const body = withMenu(page.map((r) => {
         const base = `<tr class="s-${r.st}"${r.st === "u" ? ` data-in-row="snd|${key}|${r.nr}"` : ""}><td class="mono snr">${r.nr ?? "–"}</td><td class="mono">${esc(r.id)}${r.second ? `<div class="isub">+ ${esc(r.second)}</div>` : ""}</td>`;
         if (r.st === "f") return `${base}<td colspan="5" class="isub">${esc(T.free)}</td><td>${tag("f")}</td></tr>`;
         if (r.st === "g") return `${base}<td colspan="5">${esc(T.gateway)}</td><td>${tag("g")}</td></tr>`;
@@ -605,12 +666,12 @@ export const installation = {
         if (r.st === "x") return `${base}<td>${esc(r.name)}<div class="isub">${esc(r.device)}</div></td><td></td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td></td><td></td><td>${tag("x")}</td></tr>`;
         const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ");
         return `${base}<td>${name}${r.device ? `<div class="isub">${esc(r.device)}</div>` : ""}</td><td>${r.fn ? `<span class="tag kind k-${hue(r.fn)}">${esc(r.fn)}</span>` : ""}</td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td>${tag("u")}</td></tr>`;
-      }).join("");
+      }).join(""));
       const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
       const from = rows.length ? v.pg * v.ps + 1 : 0;
       const pager = `<div class="spager"><span>${esc(S.range(from, from + page.length - (rows.length ? 1 : 0), rows.length))}</span><div><label>${esc(S.perPage)} <select data-in-sidps="${key}" aria-label="${esc(S.perPage)}">${sizes}</select></label><button class="chip" data-in-sidpg="${key}|-1" aria-label="${esc(S.prev)}"${v.pg === 0 ? " disabled" : ""}>‹</button><span>${esc(S.page(v.pg + 1, pages))}</span><button class="chip" data-in-sidpg="${key}|1" aria-label="${esc(S.next2)}"${v.pg >= pages - 1 ? " disabled" : ""}>›</button></div></div>`;
       const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(S.search)}" aria-label="${esc(S.search)}">`;
-      return `${tiles}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="8" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
+      return `${tiles}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="9" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
     });
     return `<p class="isub sintro">${esc(S.intro)} <span class="info" title="${esc(`${T.sendersIntro} ${t.inst.editHint}`)}">ⓘ</span></p>${html}`;
   },
@@ -651,15 +712,15 @@ export const installation = {
     const tiles = `<div class="tiles">${tile(V.tileDevices, esc(I.funk.devicesN(all.length)))}${tile(V.tileLinked, `${all.filter((x) => taught(x).length).length} ${esc(I.of)} ${all.length}`)}${tile(V.tileNoSource, String(sensors.filter(({ d }) => !d.follows?.length).length), sensors.some(({ d }) => !d.follows?.length))}</div>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     const sections = gateways(state.doc).map((gw) => {
-      const rows = gw.devices.filter((d) => isVirtual(d) && matches(d, state.q)).map((d) => {
+      const rows = withMenu(gw.devices.filter((d) => isVirtual(d) && matches(d, state.q)).map((d) => {
         const numbers = gw.numbers?.get(d.note_key) ?? [];
         const nr = numbers.length ? numbers.map((n) => `<a data-in-snd="${esc(gw.entry_id)}|${n}">${n}</a>`).join(", ") : "–";
         const follows = d.follows?.length ? d.follows.map((e) => `<span class="mono">${esc(e)}</span>`).join("<br>") : `<span class="isub">${esc(d.virtual ? V.noSource : V.sendsPress)}</span>`;
         const into = taught({ gw, d }).map((l) => (l.to_key && gw.devices.some((x) => x.note_key === l.to_key) ? `<a data-in-goto="${esc(gw.devices.find((x) => x.note_key === l.to_key).key)}">${esc(l.to_name)}</a>` : esc(l.to_name)) + (l.role ? ` <span class="isub">${esc(l.role)}</span>` : "") + (l.learn ? ` <span class="isub">· ${esc(l.learn)}</span>` : ""));
         return `<tr data-in-row="${esc(d.key)}" data-k="virt"><td class="name">${esc(d.name)}<div class="isub">${esc(d.model ?? "")}</div><div>${this._instKindTag(d)}</div></td><td class="mono">${nr}</td><td class="mono">${esc(d.id)}</td><td>${follows}</td><td class="lk">${into.length ? into.join("<br>") : `<span class="isub">${esc(V.noLink)}</span>`}</td></tr>`;
-      }).join("");
+      }).join(""));
       const head = [I.device, V.cols.nr, V.cols.id, V.cols.follows, V.cols.taught].map((h) => `<th>${esc(h)}</th>`).join("");
-      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr>${head}</tr></thead><tbody>${rows || `<tr><td colspan="5" class="none">${esc(V.none)}</td></tr>`}</tbody></table></div></section>`;
+      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr>${head}<th class="rmenu"></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="none">${esc(V.none)}</td></tr>`}</tbody></table></div></section>`;
     });
     return `${tiles}<div class="itools" style="align-items:center">${search}</div>${sections.join("")}<p class="isub">${esc(V.hint)}</p>`;
   },
@@ -712,11 +773,11 @@ export const installation = {
       const rows = radio(gw).map((d) => {
         const name = d.manual ? this._instManualName(gw, d) : esc(d.name);
         const sub = d.manual ? "" : `<div class="isub">${esc([d.model, d.eep].filter(Boolean).join(" · "))}</div>`;
-        const delete_ = d.manual ? `<td>${this._instManualMenu(gw, d)}</td>` : "<td></td>";
+        const delete_ = `<td class="rmenu">${d.manual ? this._instManualMenu(gw, d) : ""}</td>`;
         return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td class="name">${name}${sub}${d.manual ? this._instManualTags(gw, d) : `<div>${this._instKindTag(d)}${this._instSendTag(gw, d)}</div>`}</td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
       }).join("");
       const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
-      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
+      return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th class="rmenu"></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
     });
     this._artChips = artChips;
     return `${tiles}${tools}${form}${sections.join("")}<p class="isub">${esc(F.hint)}</p>`;
@@ -784,6 +845,14 @@ export const installation = {
     const items = kinds.map((k) => `<button data-in-mkind="${esc(gw.entry_id)}|${esc(d.mid)}|${k}">${esc(I.kinds[k])}</button>`).join("");
     const kind = `<details class="colmenu kindmenu"><summary class="tag kind k-${kindOf(d)}" title="${esc(I.art)}">${esc(I.kinds[kindOf(d)])} ⌄</summary><div class="items">${items}</div></details>`;
     return `<div class="isub mono">${esc([d.id, d.model].filter(Boolean).join(" · "))}</div><div>${kind} <span class="tag doc" title="${esc(I.funk.documentedHint)}">${esc(I.funk.documented)}</span></div>`;
+  },
+
+  _instRowMenu(gw, d) {
+    // the more menu of a row of the devices table: an entry by hand, or a power supply
+    const t = this._t;
+    if (d.manual) return this._instManualMenu(gw, d);
+    if (!d.psu) return "";
+    return `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items"><button data-in-supply-del="${esc(d.sid)}" data-in-gw="${esc(gw.entry_id)}">${esc(t.doc.supplyRemove)}</button></div></details>`;
   },
 
   _instManualMenu(gw, d) {
@@ -879,25 +948,70 @@ export const installation = {
     const t = this._t.inst;
     const state = this._in;
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
-    // the bus counts its documented devices (modules) once the server keeps them
-    const busDevices = (state.doc.installation?.modules ?? []).filter((m) => !["master", "supply", "foreign", "accessory"].includes(m.role || state.doc.bus_types?.[String(m.type).replace(/\s+/g, "").toUpperCase()]?.role || "other"));
-    const count = (view) => (view === "bus" && state.doc.installation ? busDevices.length : all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length);
+    // each view counts the rows of the devices table it stands for, as the kind chips do
+    const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
     this._artChips = "";
     const body = { all: () => this._instDevices(), virt: () => this._instVirt(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
-    // the views and the kinds of one view share a line
-    return `<div class="gbar"><div class="seg" role="group">${seg}</div>${this._artChips}</div>${body}`;
+    // one filter bar: the views, then the kinds of the view
+    return `<div class="gbar fbar"><div class="seg" role="group" aria-label="${esc(t.views.label)}">${seg}</div>${this._artChips ? `<span class="fsep" aria-hidden="true"></span>${this._artChips}` : ""}</div>${body}`;
   },
 
   _instPlace(gw, d) {
-    // the place as three fields that look like one: cabinet, row, slot
+    // the place: cabinet and row from the documented cabinets, the slot as a number, ✕ clears it;
+    // a place that names no documented cabinet stays as three free fields (nothing is lost)
+    const I = this._t.inst;
+    const state = this._in;
     const parts = placeParts(d.location);
-    const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
     const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : d.manual ? `data-in-mid="${esc(d.mid)}"` : `data-in-key="${esc(d.key)}"`;
     const id = d.psu ? d.sid : d.manual ? d.mid : d.key;
-    if (!d.location && this._in.placeEdit !== id) return `<button class="placeadd" data-in-placeedit="${esc(id)}">+ ${esc(this._t.inst.placeAdd)}</button>`;
-    const focus = this._in.placeEdit === id ? " data-in-focus" : "";
-    return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs.replace("<input ", `<input${focus} `)}</div>`;
+    if (!d.location && state.placeEdit !== id) return `<button class="placeadd empty" data-in-placeedit="${esc(id)}" aria-label="${esc(I.placeAdd)}: ${esc(d.name)}" title="${esc(I.placeAdd)}"><span class="ph">–</span><span class="hv">+ ${esc(I.placeAdd)}</span></button>`;
+    const focus = state.placeEdit === id ? " data-in-focus" : "";
+    const clear = `<button class="placeclr" data-in-placeclear title="${esc(I.placeClear)}" aria-label="${esc(I.placeClear)}: ${esc(d.name)}">✕</button>`;
+    const rows = (state.doc?.installation?.cabinets ?? []).flatMap((c) => c.rows.map((r) => `${c.name} · ${r.name}`));
+    const current = parts.slice(0, 2).filter(Boolean).join(" · ");
+    const free = state.placeText.has(id) || (current && !rows.includes(current)) || !state.doc?.installation;
+    if (free) {
+      const inputs = I.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
+      return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs.replace("<input ", `<input${focus} `)}${clear}</div>`;
+    }
+    const options = [`<option value="">${esc(I.placeChoose)}</option>`, ...rows.map((r) => `<option value="${esc(r)}"${r === current ? " selected" : ""}>${esc(r)}</option>`), `<option value="__new">${esc(I.placeNewCabinet)}</option>`, `<option value="__text">${esc(I.placeFreeText)}</option>`].join("");
+    const select = `<select data-in-prow${focus} aria-label="${esc(I.placeParts[0])} · ${esc(I.placeParts[1])}: ${esc(d.name)}">${options}</select>`;
+    const slot = `<input data-in-part="2" value="${esc(parts[2])}" placeholder="${esc(I.placeParts[2])}" aria-label="${esc(I.placeParts[2])}: ${esc(d.name)}" inputmode="decimal" autocomplete="off">`;
+    return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${select}<i>·</i>${slot}${clear}</div>`;
+  },
+
+  _instPlaceValue(box) {
+    // the place a cell holds, as the notes write it: "cabinet · row · slot"
+    const select = box.querySelector("[data-in-prow]");
+    if (!select) return joinPlace([...box.querySelectorAll("input")].map((i) => i.value));
+    const [cabinet = "", row = ""] = select.value.startsWith("__") ? [] : select.value.split(" · ");
+    return joinPlace([cabinet, row, box.querySelector('[data-in-part="2"]')?.value ?? ""]);
+  },
+
+  async _instPlaceCabinet(box) {
+    // "add cabinet" in a place cell: a cabinet with one row (12 TE), then the place goes there
+    const I = this._t.inst;
+    const select = box.querySelector("[data-in-prow]");
+    const name = (globalThis.prompt?.(I.placeCabinetPrompt, I.busv.cabinetDefault((this._in.doc.installation?.cabinets.length ?? 0) + 1)) ?? "").trim();
+    if (!name) {
+      select.value = "";
+      return;
+    }
+    const row = I.busv.rowDefault(1);
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/installation/set", kind: "cabinet", item: { name, note: "", rows: [{ name: row, te: 12 }] } });
+    } catch (err) {
+      box.classList.add("bad");
+      return;
+    }
+    this._in.doc.installation.cabinets.push({ id: "", name, note: "", rows: [{ id: "", name: row, te: 12 }] });
+    const option = document.createElement("option");
+    option.value = `${name} · ${row}`;
+    option.textContent = option.value;
+    select.insertBefore(option, select.querySelector('option[value="__new"]'));
+    select.value = option.value;
+    await this._instSavePlace(box);
   },
 
   _instProgress() {
@@ -916,9 +1030,9 @@ export const installation = {
     const state = this._in;
     const kinds = VIEW_KINDS[state.view];
     // the fields the column menu has on; a table shows those that some of its rows can use
-    const enabled = INSTALLATION_FIELDS.filter((f) => Object.entries(COLUMN_GROUPS).some(([g, fields]) => state.columns.has(g) && fields.includes(f)));
-    const short = (f) => I.shortField[f] || label(t, f);
-    const showArea = state.columns.has("place");
+    const enabled = INSTALLATION_FIELDS.filter((f) => state.columns.has(f));
+    const showArea = state.columns.has("area");
+    const multi = gateways(state.doc).length > 1;
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
     const applies = (d, f) => {
       if (d.psu) return ["location", "circuit", "fuse", "note"].includes(f);
@@ -937,54 +1051,57 @@ export const installation = {
         .map((f) => {
           if (!applies(d, f)) return `<td><span class="dash">–</span></td>`;
           if (f === "location") return `<td>${this._instPlace(gw, d)}</td>`;
-          if (d.manual) return `<td><input class="cell" data-in-mfield="${MANUAL_FIELD[f]}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
-          if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
-          return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="${esc(short(f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          // an empty field shows the same quiet dash as a field that does not apply; the label is its name
+          if (d.manual) return `<td><input class="cell" data-in-mfield="${MANUAL_FIELD[f]}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d[f] ?? "")}" placeholder="–" title="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          if (d.psu) return `<td><input class="cell" data-in-sfield="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-sid="${esc(d.sid)}" value="${esc(d[f] ?? "")}" placeholder="–" title="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
+          return `<td><input class="cell" ${f === "installed" ? 'type="date"' : ""} data-in-field="${f}" data-in-gw="${esc(gw.entry_id)}" data-in-key="${esc(d.key)}" value="${esc(d[f] ?? "")}" placeholder="–" title="${esc(label(t, f))}" aria-label="${esc(label(t, f))}: ${esc(d.name)}" autocomplete="off"></td>`;
         })
         .join("");
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
       const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${d.manual ? this._instManualName(gw, d) : d.key && !d.psu && this._inPanel(d.key) ? `<button class="namelink" data-in-device="${esc(d.key)}" title="${esc(t.inPanelHint)}">${esc(d.name)}</button>` : esc(d.name)}${d.manual ? this._instManualTags(gw, d) : `<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu ? "" : this._instSendTag(gw, d)}</div>`}</td>${area}${cells}</tr>`;
+      const gwTag = multi && state.group !== "gateway" ? ` <span class="tag" title="${esc(t.gateway)}">${esc(gw.title)}</span>` : "";
+      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${d.manual ? this._instManualName(gw, d) : d.key && !d.psu && this._inPanel(d.key) ? `<button class="namelink" data-in-device="${esc(d.key)}" title="${esc(t.inPanelHint)}">${esc(d.name)}</button>` : esc(d.name)}${d.manual ? this._instManualTags(gw, d) : `<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu ? "" : this._instSendTag(gw, d)}${gwTag}</div>`}</td>${area}${cells}<td class="rmenu">${this._instRowMenu(gw, d)}</td></tr>`;
     };
-    const sections = gateways(state.doc).map((gw) => {
-      const found = [...gw.devices, ...psus(gw)].filter(pass);
-      const columns = enabled.filter((f) => (state.art !== "all" || COMMON_FIELDS.has(f)) && found.some((d) => applies(d, f)));
-      const sortValue = (d) => String(state.devSort === "name" ? d.name : state.devSort === "area" ? d.area : d[state.devSort] ?? "");
-      found.sort((a, b) => {
-        const x = sortValue(a);
-        const y = sortValue(b);
-        return (!x - !y || x.localeCompare(y, undefined, { numeric: true }) * state.devDir) || a.name.localeCompare(b.name);
-      });
-      const pages = Math.max(1, Math.ceil(found.length / state.devPs));
-      const pg = Math.min(state.devPg[gw.entry_id] ?? 0, pages - 1);
-      state.devPg[gw.entry_id] = pg;
-      const devices = found.slice(pg * state.devPs, (pg + 1) * state.devPs);
-      const span = columns.length + (showArea ? 1 : 0) + 2;
-      let rows;
-      if (state.group && devices.length) {
-        const groups = new Map();
-        for (const d of devices) {
-          const name = isVirtual(d) && state.group === "location" ? I.virtualNoPlace : (state.group === "area" ? d.area : placeParts(d.location)[0]) || (state.group === "area" ? I.noGroup : I.noPlace);
-          groups.set(name, [...(groups.get(name) ?? []), d]);
-        }
-        const rank = (n) => (n === I.virtualNoPlace ? 2 : n === I.noGroup || n === I.noPlace ? 1 : 0);
-        rows = [...groups.entries()]
-          .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
-          .map(([name, list]) => {
-            const id = `${gw.entry_id}|${name}`;
-            const closed = state.folded.has(id);
-            return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="isub">${list.length}</span></td></tr>${closed ? "" : list.map((d) => row(gw, d, columns)).join("")}`;
-          })
-          .join("");
-      } else rows = devices.map((d) => row(gw, d, columns)).join("");
-      const th = (f, text) => `<th class="sortable" data-in-devsort="${f}"${state.devSort === f ? ` aria-sort="${state.devDir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(text)}</span><i class="sarrow">${state.devSort === f && state.devDir < 0 ? "↓" : "↑"}</i></th>`;
-      const head = columns.map((f) => th(f, label(t, f))).join("");
-      const sizes = [25, 50, 100].map((n) => `<option${state.devPs === n ? " selected" : ""}>${n}</option>`).join("");
-      const from = found.length ? pg * state.devPs + 1 : 0;
-      const pager = found.length > 25 || state.devPs !== 25 ? `<div class="spager"><span>${esc(I.sid.range(from, from + devices.length - (found.length ? 1 : 0), found.length))}</span><div><label>${esc(I.sid.perPage)} <select data-in-devps aria-label="${esc(I.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-devpg="${esc(gw.entry_id)}|-1"${pg === 0 ? " disabled" : ""} aria-label="${esc(I.sid.prev)}">‹</button><span>${esc(I.sid.page(pg + 1, pages))}</span><button class="chip" data-in-devpg="${esc(gw.entry_id)}|1"${pg >= pages - 1 ? " disabled" : ""} aria-label="${esc(I.sid.next2)}">›</button></div></div>` : "";
-      return `<section class="gw">${this._instGwHead(gw, found.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th>${th("name", I.device)}${showArea ? th("area", I.area) : ""}${head}</tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div>${pager}</section>`;
+    // one table for all gateways; the gateway is a tag, or the group
+    const found = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)].filter(pass).map((d) => ({ gw, d })));
+    const columns = enabled.filter((f) => found.some(({ d }) => applies(d, f)));
+    const sortValue = (d) => String(state.devSort === "name" ? d.name : state.devSort === "area" ? d.area : d[state.devSort] ?? "");
+    found.sort((a, b) => {
+      const x = sortValue(a.d);
+      const y = sortValue(b.d);
+      return (!x - !y || x.localeCompare(y, undefined, { numeric: true }) * state.devDir) || a.d.name.localeCompare(b.d.name);
     });
+    const pages = Math.max(1, Math.ceil(found.length / state.devPs));
+    const pg = Math.min(state.devPg.all ?? 0, pages - 1);
+    state.devPg.all = pg;
+    const devices = found.slice(pg * state.devPs, (pg + 1) * state.devPs);
+    const span = columns.length + (showArea ? 1 : 0) + 3;
+    let rows;
+    if (state.group && devices.length) {
+      const groups = new Map();
+      const place = (d) => placeParts(d.location).slice(0, 2).filter(Boolean).join(" · ");
+      for (const item of devices) {
+        const { gw, d } = item;
+        const name = state.group === "gateway" ? gw.title : isVirtual(d) && state.group === "location" ? I.virtualNoPlace : (state.group === "area" ? d.area : place(d)) || (state.group === "area" ? I.noGroup : I.noPlace);
+        groups.set(name, [...(groups.get(name) ?? []), item]);
+      }
+      const rank = (n) => (n === I.virtualNoPlace ? 2 : n === I.noGroup || n === I.noPlace ? 1 : 0);
+      rows = [...groups.entries()]
+        .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b, undefined, { numeric: true }))
+        .map(([name, list]) => {
+          const id = `${state.group}|${name}`;
+          const closed = state.folded.has(id);
+          return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="tag">${list.length}</span></td></tr>${closed ? "" : list.map(({ gw, d }) => row(gw, d, columns)).join("")}`;
+        })
+        .join("");
+    } else rows = devices.map(({ gw, d }) => row(gw, d, columns)).join("");
+    const th = (f, text) => `<th class="sortable" data-in-devsort="${f}"${state.devSort === f ? ` aria-sort="${state.devDir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(text)}</span><i class="sarrow">${state.devSort === f && state.devDir < 0 ? "↓" : "↑"}</i></th>`;
+    const head = columns.map((f) => th(f, label(t, f))).join("");
+    const sizes = [25, 50, 100].map((n) => `<option${state.devPs === n ? " selected" : ""}>${n}</option>`).join("");
+    const from = found.length ? pg * state.devPs + 1 : 0;
+    const pager = found.length > 25 || state.devPs !== 25 ? `<div class="spager"><span>${esc(I.sid.range(from, from + devices.length - (found.length ? 1 : 0), found.length))}</span><div><label>${esc(I.sid.perPage)} <select data-in-devps aria-label="${esc(I.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-devpg="all|-1"${pg === 0 ? " disabled" : ""} aria-label="${esc(I.sid.prev)}">‹</button><span>${esc(I.sid.page(pg + 1, pages))}</span><button class="chip" data-in-devpg="all|1"${pg >= pages - 1 ? " disabled" : ""} aria-label="${esc(I.sid.next2)}">›</button></div></div>` : "";
+    const sections = [`<section class="gw"><header class="gwhead"><h3>${esc(I.views.all)}</h3><span class="isub">${esc(I.deviceCount(found.length))}</span></header><div class="tablewrap"><table class="itable"><thead><tr><th></th>${th("name", I.device)}${showArea ? th("area", I.area) : ""}${head}<th class="rmenu"></th></tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div>${pager}</section>`];
     const picked = state.selected.size;
     const bulk = picked
       ? `<div class="bulk"><b>${esc(I.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(I.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(I.value)}" aria-label="${esc(I.value)}"><button class="chip" data-in-act="bulk">${esc(I.apply)}</button><button class="chip" data-in-act="unpick">${esc(I.clearSelection)}</button></div>`
@@ -995,7 +1112,8 @@ export const installation = {
         <li><b>2</b><div>${esc(I.sheetEdit)}</div></li>
         <li><b>3</b><div><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div class="sheetrun"><button class="chip" data-in-act="paste">${esc(I.sheetApply)}</button> <span class="isub" data-in-paste-info>${esc(state.pasteResult || this._instPasteSeen())}</span></div></div></li>
       </ol></div>`;
-    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}<span class="isub">${esc(I.columnsHint)}</span></div></details>`;
+    const colName = (f) => (f === "area" ? I.area : label(t, f));
+    const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.entries(COLUMN_GROUPS).map(([g, fields]) => `<div class="colgroup"><b>${esc(I.columnGroups[g])}</b><button class="tag" data-in-colgroup="${g}|all">${esc(I.colAll)}</button><button class="tag" data-in-colgroup="${g}|none">${esc(I.colNone)}</button></div>${fields.map((f) => `<label><input type="checkbox" data-in-col="${f}" ${state.columns.has(f) ? "checked" : ""}>${esc(colName(f))}</label>`).join("")}`).join("")}<span class="isub">${esc(I.columnsHint)}</span></div></details>`;
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
     const artChips = kindList.length > 1
@@ -1008,10 +1126,10 @@ export const installation = {
       return `<button class="stile ${miss ? "w" : "f"}" data-in-miss="${name}" aria-pressed="${state.miss[name]}"><b>${miss ? miss : "✓"}</b><span>${esc(text)}</span><small class="isub">${esc(I.recorded(list.length - miss, list.length))}</small></button>`;
     };
     const missChips = state.view === "all"
-      ? `<div class="stiles">${missTile("loc", placeable, "location", I.missPlace)}${missTile("fuse", fusable, "fuse", I.missFuse)}${placeable.some((d) => !d.location) ? `<button class="chip" data-in-act="next-open" style="align-self:center">${esc(I.nextOpen)}</button>` : ""}</div>`
+      ? `<div class="stiles quiet">${missTile("loc", placeable, "location", I.missPlace)}${missTile("fuse", fusable, "fuse", I.missFuse)}${placeable.some((d) => !d.location) ? `<button class="chip text" data-in-act="next-open" style="align-self:center">${esc(I.nextOpen)}</button>` : ""}</div>`
       : "";
     const group = state.view === "all"
-      ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
+      ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option><option value="gateway" ${state.group === "gateway" ? "selected" : ""}>${esc(I.byGateway)}</option></select></label>`
       : "";
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     this._artChips = artChips;
@@ -1522,18 +1640,36 @@ export const installation = {
       this._renderInstallation();
       return;
     }
-    const columns = e.target.closest("[data-in-columns]");
-    if (columns) {
-      const name = columns.dataset.inColumns;
+    const column = e.target.closest("[data-in-col], [data-in-colgroup]");
+    if (column) {
+      // a single column, or all / none of a group
       state.colMenu = true;
-      if (state.columns.has(name)) state.columns.delete(name);
-      else state.columns.add(name);
-      try {
-        localStorage.setItem(COLUMNS_KEY, JSON.stringify([...state.columns]));
-      } catch (err) {
-        // not saved: shown for this visit
+      if (column.dataset.inCol) {
+        const name = column.dataset.inCol;
+        if (state.columns.has(name)) state.columns.delete(name);
+        else state.columns.add(name);
+      } else {
+        const [group, how] = column.dataset.inColgroup.split("|");
+        for (const f of COLUMN_GROUPS[group] ?? []) {
+          if (how === "all") state.columns.add(f);
+          else state.columns.delete(f);
+        }
       }
+      saveColumns(state.columns);
       this._renderInstallation();
+      return;
+    }
+    const clear = e.target.closest("[data-in-placeclear]");
+    if (clear) {
+      // ✕ in a place cell: cabinet, row and slot are cleared and saved
+      const box = clear.closest("[data-in-place]");
+      box.querySelectorAll("input").forEach((i) => (i.value = ""));
+      const select = box.querySelector("[data-in-prow]");
+      if (select) select.value = "";
+      state.placeEdit = "";
+      state.placeText.delete(box.dataset.inKey || box.dataset.inSid || box.dataset.inMid);
+      this.shadowRoot.activeElement?.blur?.(); // the cell is drawn anew: nothing in it keeps the focus
+      this._instSavePlace(box).then(() => this._renderInstallation());
       return;
     }
     const act = e.target.closest("[data-in-act]")?.dataset.inAct;
@@ -1629,9 +1765,24 @@ export const installation = {
       this._renderInstallation();
       return;
     }
+    const prow = e.target.closest("select[data-in-prow]");
+    if (prow) {
+      const box = prow.closest("[data-in-place]");
+      const id = box.dataset.inKey || box.dataset.inSid || box.dataset.inMid;
+      if (prow.value === "__text") {
+        // free text for a place that is no documented cabinet
+        this._in.placeText.add(id);
+        this._in.placeEdit = id;
+        this._renderInstallation();
+        this.shadowRoot.querySelector("#installation [data-in-focus]")?.focus();
+      } else if (prow.value === "__new") this._instPlaceCabinet(box);
+      else this._instSavePlace(box);
+      return;
+    }
     const groupsel = e.target.closest("[data-in-groupsel]");
     if (groupsel) {
       this._in.group = groupsel.value;
+      saveGroup(groupsel.value);
       this._renderInstallation();
       return;
     }
@@ -1737,7 +1888,7 @@ export const installation = {
   async _instSavePlace(box) {
     // the three parts of a place go to the server as one text, "cabinet · row · slot"
     const { inGw: entryId, inKey: key, inSid: sid, inMid: mid } = box.dataset;
-    const value = joinPlace([...box.querySelectorAll("input")].map((i) => i.value));
+    const value = this._instPlaceValue(box);
     if (mid) {
       // an entry written by hand keeps its place in its own list
       const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
