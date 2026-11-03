@@ -14,6 +14,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_BASE_ID, DOMAIN
+from .hub import async_get_hub
 from .protocol.ids import format_id, parse_id
 from .takeover import (
     CARRY_OPTIONS,
@@ -26,6 +27,7 @@ from .takeover import (
     carried_from,
     carry_details,
     find_gateway,
+    heard_psc,
     label_names,
     missing_carried,
     new_entity,
@@ -80,7 +82,8 @@ async def _plan(hass: HomeAssistant, entry: Any) -> tuple[list[Any] | None, str 
     if (gateway := find_gateway(config, base_id)) is None:
         return None, "no_gateway"
     existing = {s.unique_id for s in entry.subentries.values()}
-    devices = plan(gateway)
+    history = async_get_hub(hass).monitor.history(entry.entry_id)
+    devices = plan(gateway, heard_psc(e.telegram for e in history if e.direction == "rx"))
     for device in devices:
         if device.model is not None and format_id(device.target_id) in existing:
             device.model, device.reason = None, "takeover_exists"

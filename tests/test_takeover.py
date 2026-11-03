@@ -13,9 +13,11 @@ from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.const import SUBENTRY_SCHEMA
+from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
 from custom_components.enocean_eltako.takeover import (
     async_predicted_ids,
     find_gateway,
+    heard_psc,
     old_entities,
     plan,
     registered_device,
@@ -193,6 +195,43 @@ def test_plan_buttons_on_one_sender() -> None:
     assert first.model == "virtual_rocker"
     assert (second.model, second.reason) == (None, "takeover_duplicate")
     assert (third.model, third.reason) == ("virtual_rocker", None)
+
+
+def _old_plug() -> dict:
+    return {
+        "devices": {
+            "switch": [
+                {
+                    "id": "01-90-8C-14",
+                    "eep": "M5-38-08",
+                    "name": "Zwischenstecker",
+                    "sender": {"id": "FF-B7-44-B2", "eep": "A5-38-08"},
+                }
+            ]
+        }
+    }
+
+
+def test_plan_plug_heard_sending_d2_01_09_is_a_permundo() -> None:
+    # the old integration lists a Permundo plug as an Eltako switch: only its telegrams tell
+    heard = heard_psc(
+        [
+            RadioTelegram(Rorg.VLD, bytes.fromhex("07600000000A"), 0x01908C14),
+            RadioTelegram(Rorg.BS4, bytes.fromhex("0000130C"), 0x01908C14),
+            RadioTelegram(Rorg.VLD, bytes.fromhex("0460E400"), 0x0510A2B3),
+        ]
+    )
+    assert heard == {0x01908C14, 0x0510A2B3}
+    plug = plan(_old_plug(), heard)[0]
+    assert (plug.model, plug.senders) == ("psc", {"controller": 0xFFB744B2})
+    assert plan(_old_plug())[0].model == "switch"  # nothing heard: as before
+
+
+def test_plan_plug_without_a_central_sender_cannot_be_a_permundo() -> None:
+    old = _old_plug()
+    old["devices"]["switch"][0]["sender"]["eep"] = "F6-02-01"
+    plug = plan(old, {0x01908C14})[0]
+    assert (plug.model, plug.reason) == (None, "takeover_bad_sender")
 
 
 def test_plan_button_without_usable_sender() -> None:
