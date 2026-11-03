@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Devices view**: every device shows one **state pill** (active, silent, not heard, disabled, unknown) instead of a mix of tags; the first that applies counts, so a disabled device is not judged by its silence. The text names the state, the color only backs it up.
 - The **+** of an unknown sender (Devices view and telegram details) opens a menu: **Set up as device** as before, or **Only write down**, which adds an entry tagged *only written down* (Installation → Devices → Radio) with the ID filled in and puts the cursor in its name field. Nothing is created in Home Assistant and nothing is learned into an actuator; an ID already written down is not added twice.
 - The catalog entry **Rocker switch** (EnOcean) and the device documentation now name the **EnOcean PTM 210/215** pushbutton modules (F6-02-01), found in many switches.
 - **Installation view redesigned.** Four tabs (Devices, Sender IDs, Links, Log); the Overview, Senders and Bus tabs are gone, their tables live in the views of the **Devices** tab: **All devices**, **Bus**, **Radio** and **Virtual**, switched at the top. Every row names its **kind** (Eltako bus, radio sensor, radio button, radio actuator, virtual, power supply) as a tag that opens the view of that kind, and a device with sender IDs from the pool carries **Sender 1, 2**, which jumps to its rows in the Sender IDs tab (the device names there jump back).
@@ -57,6 +58,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Geräteansicht**: Jedes Gerät zeigt eine **Statuspille** (aktiv, still, nicht gehört, deaktiviert, unbekannt) statt einer Mischung aus Tags; es zählt der erste Zustand, der zutrifft, ein deaktiviertes Gerät wird also nicht nach seiner Stille beurteilt. Der Text nennt den Zustand, die Farbe unterstützt ihn nur.
 - Das **+** eines unbekannten Senders (Geräteansicht und Telegramm-Details) öffnet ein Menü: **Als Gerät anlegen** wie bisher oder **Nur dokumentieren**; das legt einen Eintrag mit dem Kennzeichen *nur dokumentiert* (Anlage → Geräte → Funk) mit ausgefüllter ID an und setzt den Cursor ins Feld Name. In Home Assistant entsteht nichts, und in keinen Aktor wird etwas eingelernt; eine schon notierte ID wird nicht doppelt angelegt.
 - Der Katalogeintrag **Wippentaster** (EnOcean) und die Geräte-Dokumentation nennen jetzt die **EnOcean-Tastermodule PTM 210/215** (F6-02-01), die in vielen Tastern stecken.
 - **Anlage-Ansicht neu gestaltet.** Vier Reiter (Geräte, Sender-IDs, Verbindungen, Protokoll); die Reiter Übersicht, Sender und Bus entfallen, ihre Tabellen stehen in den Ansichten des Reiters **Geräte**: **Alle Geräte**, **Bus**, **Funk** und **Virtuell**, oben umgeschaltet. Jede Zeile nennt ihre **Art** (Eltako-Bus, Funk Sensor, Funk Taster, Funk Aktor, Virtuell, Netzteil) als Kennzeichen, das die Ansicht dieser Art öffnet, und ein Gerät mit Sender-IDs aus dem Pool trägt **Sender 1, 2**, das zu seinen Zeilen im Reiter Sender-IDs springt (die Gerätenamen dort springen zurück).

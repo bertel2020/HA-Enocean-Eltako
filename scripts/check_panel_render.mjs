@@ -292,6 +292,11 @@ for (const lang of ["en", "de"]) {
     expect("log rows", root.querySelectorAll("#installation .log tbody tr:not(.logday)").length, 3);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 5);
+    const state = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name))?.querySelector(".pill")?.className.replace("pill ", "");
+    expect("a heard device is active", state("Licht Diele"), "active");
+    expect("a device past its interval is silent", state("Temperatur Bad"), "silent");
+    expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
+    expect("a sender that is not set up is unknown", state("01-99-88-77"), "unknown");
     // a set-up device opens in place, with what the server knows of it, and closes again
     root.querySelector('.dev[data-dev="sub1"]').click();
     await settle();
