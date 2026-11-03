@@ -52,7 +52,7 @@ from .notes import (
 )
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
-from .protocol.eep.codecs import decode_telegram
+from .protocol.eep.codecs import decode_command, decode_telegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
@@ -64,6 +64,13 @@ from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
 MAX_CANDIDATES = 4
+COMMAND_UNITS = {
+    "dim": "%",
+    "setpoint": "°C",
+    "temperature": "°C",
+    "night_setback": "K",
+    "run_time": "s",
+}
 MAX_BULK = 500  # devices in one table edit
 MAX_IMPORT_GATEWAYS = 20
 # telegram types the panel may send, with the data lengths in bytes
@@ -209,6 +216,13 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                     data["device_key"] = device.subentry.subentry_id
                     data["ha_device"] = ha_device_id(device)
                     data["profile"] = profile
+                    sender = next((p for p in device.model.senders if p.id == profile), None)
+                    if sender is not None and (values := decode_command(sender.eep, telegram)):
+                        data["eep"] = str(sender.eep)
+                        data["fields"] = [
+                            {"label": k, "value": _json_value(v), "unit": COMMAND_UNITS.get(k)}
+                            for k, v in values.items()
+                        ]
                     return data
             elif device.owns(telegram.sender):
                 data["device"] = device.subentry.title

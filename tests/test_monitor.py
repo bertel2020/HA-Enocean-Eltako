@@ -212,6 +212,18 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     event = (await client.receive_json())["event"]
     assert (event["dir"], event["device"], event["profile"]) == ("tx", "Licht Diele", "central")
     assert event["device_key"] == light.subentry_id  # the answer pairs with this command
+    assert "fields" not in event  # four zero bytes are no command of the central sender
+
+    # a command we sent is read like the telegram it was built as
+    await entry.runtime_data.queue.submit(
+        RadioTelegram(Rorg.BS4, bytes.fromhex("02320009"), 0xFFB74481)
+    )
+    event = (await client.receive_json())["event"]
+    assert event["eep"] == "A5-38-08:eltako"
+    assert event["fields"] == [
+        {"label": "on", "value": True, "unit": None},
+        {"label": "dim", "value": 50, "unit": "%"},
+    ]
 
     await client.send_json({"id": 2, "type": "enocean_eltako/gateways"})
     (status,) = (await client.receive_json())["result"]
