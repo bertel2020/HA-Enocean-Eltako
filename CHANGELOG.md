@@ -19,6 +19,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 #### Changed
 
 - **Devices view**: every device shows one **state pill** (active, silent, not heard, disabled, unknown) instead of a mix of tags; the first that applies counts, so a disabled device is not judged by its silence. The text names the state, the color only backs it up.
+- **Devices view**: the table keeps its widths: the action column has a fixed width, the *Last heard* header sits over its right-aligned values, every row is at least one height, and a device never heard no longer says so twice (the state pill does). On phones the kind tile is smaller.
 - **Devices view**: a device with no telegram in the monitor's buffer (after a restart, or one that rarely sends) shows what its entities hold, up to two values, instead of an empty column; unavailable and unknown values are left out, diagnostics and settings never count.
 - **Devices view**: the status chips (All devices, Set up, Unknown, Silent, Weak signal) show **how many devices** each would list, for the gateway chosen.
 - **Devices view**: every device has a **tile** for its kind (light, cover, climate, button, sensor, meter, virtual), a question mark for an unknown sender; the tooltip names the kind. A device whose model is not fixed (one EEP, several devices, such as the FUD14, FUD61 and FD62) lists the candidates under its name instead of nothing.
@@ -62,6 +63,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Geräteansicht**: Die Tabelle behält ihre Breiten: die Aktionsspalte hat eine feste Breite, die Überschrift *Zuletzt gehört* steht über den rechtsbündigen Werten, jede Zeile ist mindestens eine Höhe hoch, und ein nie gehörtes Gerät sagt das nicht mehr doppelt (die Statuspille tut es). Auf dem Handy ist die Kachel der Art kleiner.
 - **Geräteansicht**: Ein Gerät ohne Telegramm im Puffer des Monitors (nach einem Neustart oder weil es selten sendet) zeigt, was seine Entitäten halten, bis zu zwei Werte, statt einer leeren Spalte; nicht verfügbare und unbekannte Werte entfallen, Diagnose und Einstellungen zählen nie.
 - **Geräteansicht**: Die Statuschips (Alle Geräte, Eingerichtet, Unbekannt, Still, Schwaches Signal) zeigen, **wie viele Geräte** sie jeweils anzeigen würden, für das gewählte Gateway.
 - **Geräteansicht**: Jedes Gerät hat eine **Kachel** für seine Art (Licht, Rollladen, Klima, Taster, Sensor, Zähler, virtuell), ein Fragezeichen für einen unbekannten Sender; der Tooltip nennt die Art. Ein Gerät, dessen Modell nicht feststeht (ein EEP, mehrere Geräte, etwa FUD14, FUD61 und FD62), nennt die Kandidaten unter dem Namen statt nichts.
