@@ -286,9 +286,60 @@ for (const lang of ["en", "de"]) {
     expect("the channels below their module", root.querySelectorAll("#installation table.bv-list tr.bv-ch").length, 12);
     expect("a duplicate address is marked", root.querySelectorAll("#installation table.bv-list tr.dup").length, 2);
     expect("a channel of Home Assistant links to its device", !!root.querySelector('#installation table.bv-list [data-in-goto="sub1"]'), true);
-    root.querySelector('#installation [data-bv-mode="address"]').click();
+    // one table, sorted by address: the address first, modules keep their channels, gaps shown
+    const list = () => root.querySelector("#installation table.bv-list");
+    const heads = () => [...list().querySelectorAll("thead th")];
+    const bvClick = async (sel) => {
+      root.querySelector(`#installation ${sel}`).click();
+      await settle();
+    };
+    expect("no switch between place and address any more", root.querySelector("#installation [data-bv-mode]"), null);
+    expect("the address is the first column, sorted upwards", heads()[0].dataset.bvSort === "address" && heads()[0].getAttribute("aria-sort") === "ascending", true);
+    expect("free ranges between the modules", list().querySelectorAll("tr.free").length > 2, true);
+    const firsts = () => [...list().querySelectorAll("tr.bv-mod")].map((r) => parseInt(r.firstElementChild.textContent, 10));
+    const ordered = (xs, dir) => {
+      const known = xs.filter((x) => !Number.isNaN(x));
+      return known.every((x, i) => i === 0 || (x - known[i - 1]) * dir >= 0) && xs.slice(0, known.length).every((x) => !Number.isNaN(x));
+    };
+    expect("modules by first address, those without at the end", ordered(firsts(), 1), true);
+    expect("a channel row follows its module", list().querySelector("tbody tr.bv-ch").previousElementSibling.matches("tr.bv-mod, tr.bv-ch"), true);
+    await bvClick('table.bv-list th[data-bv-sort="address"]');
+    expect("a second click sorts downwards, without gaps", heads()[0].getAttribute("aria-sort") === "descending" && list().querySelectorAll("tr.free").length === 0 && ordered(firsts(), -1), true);
+    expect("the sorting is kept per browser", JSON.parse(localStorage.getItem("enocean_eltako_bus_list")).dir, -1);
+    await bvClick('table.bv-list th[data-bv-sort="place"]');
+    expect("sorted by place", list().querySelector('th[data-bv-sort="place"]').getAttribute("aria-sort"), "ascending");
+    await bvClick('table.bv-list [data-bv-sort="type"]');
+    const types = [...list().querySelectorAll("tr.bv-mod td:nth-child(2) b")].map((b) => b.textContent.toLowerCase());
+    expect("sorted by type", types.join() === [...types].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).join(), true);
+    await bvClick('table.bv-list th[data-bv-sort="address"]');
+    // the filters: chips, a role, the reset
+    await bvClick('[data-bv-lf="dup"]');
+    expect("only twice: the two channels with their modules", list().querySelectorAll("tr.bv-ch").length === 2 && list().querySelectorAll("tr.bv-ch.dup").length === 2 && list().querySelectorAll("tr.free").length === 0, true);
+    expect("the filter is kept per browser", JSON.parse(localStorage.getItem("enocean_eltako_bus_list")).f, "dup");
+    await bvClick('[data-bv-lf="ha"]');
+    expect("only in Home Assistant: every channel has its device link", [...list().querySelectorAll("tr.bv-ch")].every((r) => r.querySelector("[data-in-goto]")), true);
+    await bvClick('[data-bv-lf="ha"]');
+    expect("a chip clicked again shows all", list().querySelectorAll("tr.bv-mod").length, 10);
+    const role = root.querySelector("#installation select[data-bv-lrole]");
+    role.value = "supply";
+    role.dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
-    expect("by address: free ranges between the channels", root.querySelectorAll("#installation table.bv-list tr.free").length > 2, true);
+    expect("filtered by role", [...list().querySelectorAll("tr.bv-mod")].every((r) => r.dataset.r === "supply") && list().querySelectorAll("tr.bv-mod").length > 0, true);
+    await bvClick("[data-bv-lreset]");
+    expect("reset: all again", list().querySelectorAll("tr.bv-mod").length === 10 && !root.querySelector("#installation [data-bv-lreset]"), true);
+    // the columns, one by one; address and device stay
+    const cols = heads().length;
+    expect("address and device cannot be switched off", root.querySelector('#installation input[data-bv-lcol="address"]').disabled && root.querySelector('#installation input[data-bv-lcol="device"]').disabled, true);
+    await bvClick('input[data-bv-lcol="senders"]');
+    expect("a column switched off", heads().length === cols - 1 && !!root.querySelector("#installation details.bv-colmenu[open]"), true);
+    expect("the columns are kept per browser", JSON.parse(localStorage.getItem("enocean_eltako_bus_columns")).includes("senders"), false);
+    await bvClick('[data-bv-lcols="none"]');
+    expect("none: address, device and the menu", heads().length, 3);
+    expect("free rows span the columns shown", list().querySelector("tr.free td").getAttribute("colspan"), "2");
+    await bvClick('[data-bv-lcols="all"]');
+    expect("all columns again", heads().length, cols);
+    await bvClick(".bv-note");
+    expect("a click outside closes the column menu", root.querySelector("#installation details.bv-colmenu[open]"), null);
     root.querySelector('#installation [data-bv-go="module|m_fsr"]').click();
     await settle();
     const drawer = () => root.querySelector("#installation aside.bv-drawer");

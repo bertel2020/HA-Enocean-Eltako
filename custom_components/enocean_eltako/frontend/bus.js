@@ -20,7 +20,46 @@ const typeKey = (type) => String(type ?? "").replace(/\s+/g, "").toUpperCase();
 const fmtNum = (n) => String(n).replace(".", ",");
 const watts = (text) => (/^\d{1,4}([.,]\d{1,3})?$/.test(String(text ?? "").trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 
-export const busState = () => ({ id: "", sub: "list", mode: "place", drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
+const LIST_KEY = "enocean_eltako_bus_list"; // sorting and filters of the bus list, per browser
+const LIST_DEFAULT = { sort: "address", dir: 1, f: "", role: "", place: "" };
+const loadList = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LIST_KEY));
+    if (saved && typeof saved === "object") return { ...LIST_DEFAULT, ...saved, dir: saved.dir === -1 ? -1 : 1 };
+  } catch (err) {
+    // no storage: the default
+  }
+  return { ...LIST_DEFAULT };
+};
+const saveList = (list) => {
+  try {
+    localStorage.setItem(LIST_KEY, JSON.stringify(list));
+  } catch (err) {
+    // not saved: shown for this visit
+  }
+};
+
+const COLS_KEY = "enocean_eltako_bus_columns"; // the columns of the bus list, per browser
+const LIST_COLUMNS = ["address", "device", "place", "ha", "senders", "feedback", "power", "supply"];
+const LIST_FIXED = ["address", "device"];
+const loadCols = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COLS_KEY));
+    if (Array.isArray(saved)) return new Set(saved.filter((c) => LIST_COLUMNS.includes(c)));
+  } catch (err) {
+    // no storage: all columns
+  }
+  return new Set(LIST_COLUMNS);
+};
+const saveCols = (cols) => {
+  try {
+    localStorage.setItem(COLS_KEY, JSON.stringify([...cols]));
+  } catch (err) {
+    // not saved: shown for this visit
+  }
+};
+
+export const busState = () => ({ id: "", sub: "list", list: loadList(), cols: loadCols(), drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
 
 // the DIN rail drawn to scale in TE (one grid column is half a TE): in the panel and in the print
 export const RAIL_CSS = `
@@ -179,6 +218,13 @@ export const BUS_STYLE = `
   .installation .bv-rowuse { font-size: calc(12px * var(--fs)); color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; grid-column: 1 / -1; padding: 0 2px 6px; }
   .installation details.bv-legacy > summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
   .installation .bv-err.top { margin: 0; }
+  .installation .bv-list td.bv-a { white-space: nowrap; }
+  .installation .bv-list tr.bv-ch td.bv-a { padding-left: 12px; }
+  .installation .bv-bar select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; max-width: 100%; }
+  .installation .bv-lchips { margin: -4px 0 0; }
+  .installation .bv-bar .bv-grow { flex: 1; }
+  .installation .bv-list td.bv-place { min-width: 150px; }
+  .installation details.bv-colmenu label:has(input:disabled) { opacity: .6; cursor: default; }
   .installation label.bv-optin { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); }
   .installation label.bv-optin input { width: auto; margin: 0; }
   .installation details.bv-cabedit > summary { cursor: pointer; font-weight: 500; padding: 4px 0; }
@@ -414,50 +460,102 @@ export const busView = {
   // ---- list: module, then its channels ----------------------------------------------------------
 
   _bvList(v) {
+    // one table: address first, then device and channel, place, Home Assistant, senders ...;
+    // sorted by a click on a column head, filtered by the search and the chips; a module stays
+    // together with its channels, free address ranges show between modules when sorted by address
     const t = this._t;
     const B = t.inst.busv;
     const state = this._in;
+    const L = state.bus.list;
     const q = state.q.trim().toLowerCase();
     const dups = new Set(v.checks.duplicates ?? []);
-    const match = (m, c) => !q || [m.type, m.name, this._bvPlace(v, m), this._bvRange(v, m), ...(c ? [this._bvChannel(v, m, c).name, c.feedback_id, c.function, this._bvAddr(m, c)] : [])].some((x) => String(x ?? "").toLowerCase().includes(q));
-    const chRow = (m, c, lead) => {
+    const info = (m, c) => this._bvChannel(v, m, c);
+    const text = (m, c) => [m.type, m.name, this._bvPlace(v, m), this._bvRange(v, m), ...(c ? [info(m, c).name, c.feedback_id, c.function, this._bvAddr(m, c)] : [])].join(" ").toLowerCase();
+    // the filters: one of the chips, a role, a cabinet or row
+    const chanPass = (m, c) => {
       const a = this._bvAddr(m, c);
-      const info = this._bvChannel(v, m, c);
-      const senders = info.ha ? this._bvLinks(v, c.entry_id, c.device_key).map((l) => `<button class="tag" data-bv-go="sender|${esc(l.from_id || l.from_name)}">${esc(l.from_name || (l.source === "assigned" ? this._profile(l.role) : l.from_id))}</button>`).join("") : "";
-      const ha = info.ha ? this._bvHaLink(v, info.ha) : c.unused ? "" : info.missing ? `<span class="tag warn">${esc(B.haMissing)}</span>` : `<span class="tag doc">${esc(info.hand ? B.byHand : B.documented)}</span>`;
-      return `<tr class="bv-ch${c.unused ? " bv-unused" : ""}${a != null && dups.has(a) ? " dup" : ""}" data-r="${this._bvRole(v, m)}"><td class="isub">${lead}</td><td>${c.unused ? esc(B.free) : this._bvL("channel", `${m.id}:${c.n}`, esc(info.name))}${info.ha ? `<div class="isub mono">${esc(info.ha.d.id)}</div>` : ""}</td><td class="mono">${a ?? `<span class="tag warn">${esc(B.none)}</span>`}${a != null && dups.has(a) ? ` <span class="tag bad">${esc(B.twice)}</span>` : ""}</td><td>${ha}</td><td class="bv-hide-s"><div class="chips">${senders}</div></td><td class="mono bv-hide-s">${esc(c.feedback_id || "–")}</td><td></td><td class="bv-hide-s"></td></tr>`;
+      if (L.f === "dup" && !(a != null && dups.has(a))) return false;
+      if (L.f === "noaddr" && a != null) return false;
+      if (L.f === "ha" && !c.device_key) return false;
+      if (L.f === "doc" && (c.device_key || c.unused)) return false;
+      return !q || text(m, c).includes(q);
+    };
+    const modPass = (m) => {
+      if (L.role && this._bvRole(v, m) !== L.role) return false;
+      if (L.place) {
+        const found = m.row ? v.rows.get(m.row) : null;
+        if (L.place === "none" ? found : !found || (L.place.startsWith("c:") ? found.cab.id !== L.place.slice(2) : found.row.id !== L.place.slice(2))) return false;
+      }
+      return true;
+    };
+    const channelFilter = ["dup", "ha", "doc"].includes(L.f);
+    const shown = [];
+    for (const m of v.modules) {
+      if (!modPass(m)) continue;
+      const head = !q || text(m).includes(q);
+      const headOk = L.f === "noaddr" ? this._bvCount(v, m) > 0 && m.first_address == null : !channelFilter;
+      const chs = m.channels.filter((c) => chanPass(m, c) || (head && headOk && !channelFilter && L.f !== "noaddr"));
+      if ((head && headOk) || chs.length) shown.push({ m, chs: L.f === "noaddr" && head && headOk ? m.channels : chs });
+    }
+    // the order: address (none last), place (bus order), type, name; asc or desc
+    const order = new Map(this._bvOrder(v, v.modules).map((m, i) => [m.id, i]));
+    const key = {
+      address: (m) => (m.first_address == null ? null : m.first_address),
+      place: (m) => (m.row ? order.get(m.id) : null),
+      type: (m) => (m.type ? m.type.toLowerCase() : null),
+      name: (m) => (m.name || info(m, m.channels[0] ?? { n: 1 }).name || "").toLowerCase() || null,
+    }[L.sort] ?? ((m) => m.first_address);
+    shown.sort((x, y) => {
+      const a = key(x.m);
+      const b = key(y.m);
+      if (a == null || b == null) return (a == null) - (b == null) || this._bvTitle(v, x.m).localeCompare(this._bvTitle(v, y.m));
+      return (typeof a === "number" ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true })) * L.dir || this._bvTitle(v, x.m).localeCompare(this._bvTitle(v, y.m));
+    });
+    // the columns: address and device always, the others as chosen in the column menu
+    const shownCols = LIST_COLUMNS.filter((c) => LIST_FIXED.includes(c) || state.bus.cols.has(c));
+    const cls = { address: "bv-a mono", place: "bv-place", senders: "bv-hide-s", feedback: "mono bv-hide-s", power: "num", supply: "bv-hide-s" };
+    const cells = (row) => shownCols.map((c) => `<td${cls[c] ? ` class="${cls[c]}"` : ""}>${row[c] ?? ""}</td>`).join("");
+    const chRow = (m, c) => {
+      const a = this._bvAddr(m, c);
+      const x = info(m, c);
+      const senders = x.ha ? this._bvLinks(v, c.entry_id, c.device_key).map((l) => `<button class="tag" data-bv-go="sender|${esc(l.from_id || l.from_name)}">${esc(l.from_name || (l.source === "assigned" ? this._profile(l.role) : l.from_id))}</button>`).join("") : "";
+      const ha = x.ha ? this._bvHaLink(v, x.ha) : c.unused ? "" : x.missing ? `<span class="tag warn">${esc(B.haMissing)}</span>` : `<span class="tag doc">${esc(x.hand ? B.byHand : B.documented)}</span>`;
+      const addr = a != null ? `<span class="mono">${a}</span>${dups.has(a) ? ` <span class="tag bad">${esc(B.twice)}</span>` : ""}` : `<span class="tag warn">${esc(B.none)}</span>`;
+      return `<tr class="bv-ch${c.unused ? " bv-unused" : ""}${a != null && dups.has(a) ? " dup" : ""}" data-r="${this._bvRole(v, m)}">${cells({ address: addr, device: `<span class="isub">${esc(B.channelShort(c.n))}</span> ${c.unused ? esc(B.free) : this._bvL("channel", `${m.id}:${c.n}`, esc(x.name))}${x.ha ? `<div class="isub mono">${esc(x.ha.d.id)}</div>` : ""}`, ha, senders: `<div class="chips">${senders}</div>`, feedback: esc(c.feedback_id || "–") })}</tr>`;
     };
     const modRow = (m) => {
       const p = this._bvPower(v, m);
-      const s = this._bvSupplyOf(v, m);
+      const sup = this._bvSupplyOf(v, m);
       const role = this._bvRole(v, m);
       const place = this._bvPlace(v, m);
       const power = OFF.includes(role) ? '<span class="isub">–</span>' : role === "master" ? `<span class="isub">${esc(this._bvMasterText(v, m))}</span>` : role === "supply" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
       const range = this._bvRange(v, m) ?? (this._bvCount(v, m) ? `<span class="tag warn">${esc(B.none)}</span>` : "–");
       const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : OFF.includes(role) ? `<span class="tag doc">${esc(B.roles[role])}</span>` : ""].join("");
-      return `<tr class="bv-mod" data-r="${role}" data-in-row="bv|${esc(m.id)}"><td>${place ? this._bvL("place", m.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`}</td><td>${this._bvL("module", m.id, `<b>${esc(m.type || B.unknownType)}</b>`)} ${m.name ? esc(m.name) : ""} ${tags}<div class="isub">${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.legacy_location ? ` · ${esc(B.before)} „${esc(m.legacy_location)}“` : ""}</div></td><td class="mono">${range}</td><td></td><td class="bv-hide-s"></td><td class="bv-hide-s"></td><td class="num">${power}</td><td class="bv-hide-s">${s ? this._bvL("supply", s.module ?? "", esc(this._bvSupplyName(v, s))) : '<span class="isub">–</span>'}</td></tr>`;
+      return `<tr class="bv-mod" data-r="${role}" data-in-row="bv|${esc(m.id)}">${cells({ address: `<b>${range}</b>`, device: `${this._bvL("module", m.id, `<b>${esc(m.type || B.unknownType)}</b>`)} ${m.name ? esc(m.name) : ""} ${tags}<div class="isub">${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.legacy_location ? ` · ${esc(B.before)} „${esc(m.legacy_location)}“` : ""}</div>`, place: place ? this._bvL("place", m.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`, power, supply: sup ? this._bvL("supply", sup.module ?? "", esc(this._bvSupplyName(v, sup))) : '<span class="isub">–</span>' })}</tr>`;
     };
+    // free address ranges between modules: sorted by address, upwards, without a filter
+    const gaps = L.sort === "address" && L.dir > 0 && !q && !L.f && !L.role && !L.place;
+    const free = (from, to) => `<tr class="free"><td colspan="${shownCols.length}">${esc(B.freeRange(from === to ? `${from}` : `${from}–${to}`))}</td></tr>`;
     let body = "";
-    if (state.bus.mode === "place") {
-      for (const m of this._bvOrder(v, v.modules)) {
-        const chs = m.channels.filter((c) => match(m, c));
-        if (!match(m) && !chs.length) continue;
-        body += modRow(m) + chs.map((c) => chRow(m, c, esc(B.channelN(c.n)))).join("");
+    let prev = 0;
+    let unaddressed = false;
+    for (const { m, chs } of shown) {
+      const first = m.first_address;
+      if (gaps && first != null && first > prev + 1) body += free(prev + 1, first - 1);
+      if (gaps && first == null && !unaddressed && this._bvCount(v, m)) {
+        if (prev < ADDRESSES) body += free(prev + 1, ADDRESSES);
+        body += `<tr class="free"><td colspan="${shownCols.length}"><b>${esc(B.withoutAddress)}</b></td></tr>`;
+        unaddressed = true;
+        prev = ADDRESSES;
       }
-    } else {
-      const list = this._bvChannels(v).filter((x) => x.a != null && match(x.m, x.c)).sort((a, b) => a.a - b.a || a.m.id.localeCompare(b.m.id));
-      let prev = 0;
-      const free = (from, to) => `<tr class="free"><td colspan="8">${esc(B.freeRange(from === to ? `${from}` : `${from}–${to}`))}</td></tr>`;
-      for (const x of list) {
-        if (!q && x.a > prev + 1) body += free(prev + 1, x.a - 1);
-        body += chRow(x.m, x.c, `${this._bvL("module", x.m.id, esc(x.m.type || B.unknownType))}<div class="isub">${esc(B.channelShort(x.c.n))}</div>`);
-        prev = Math.max(prev, x.a);
-      }
-      if (!q && prev < ADDRESSES) body += free(prev + 1, ADDRESSES);
-      const without = this._bvChannels(v).filter((x) => x.a == null && match(x.m, x.c));
-      if (without.length) body += `<tr class="free"><td colspan="8"><b>${esc(B.withoutAddress)}</b></td></tr>${without.map((x) => chRow(x.m, x.c, `${this._bvL("module", x.m.id, esc(x.m.type || B.unknownType))}<div class="isub">${esc(B.channelShort(x.c.n))}</div>`)).join("")}`;
+      body += modRow(m) + chs.map((c) => chRow(m, c)).join("");
+      if (first != null) prev = Math.max(prev, first + this._bvCount(v, m) - 1);
     }
-    const head = `<tr><th>${esc(state.bus.mode === "place" ? B.cols.place : B.cols.module)}</th><th>${esc(B.cols.device)}</th><th>${esc(B.cols.address)}</th><th>${esc(B.cols.ha)}</th><th class="bv-hide-s">${esc(B.cols.senders)}</th><th class="bv-hide-s">${esc(B.cols.feedback)}</th><th class="num">${esc(B.cols.power)}</th><th class="bv-hide-s">${esc(B.cols.supply)}</th></tr>`;
+    if (gaps && !unaddressed && prev < ADDRESSES) body += free(prev + 1, ADDRESSES);
+    const th = (col, label, cls = "") => `<th class="sortable${cls ? ` ${cls}` : ""}" data-bv-sort="${col}"${L.sort === col ? ` aria-sort="${L.dir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(label)}</span><i class="sarrow">${L.sort === col && L.dir < 0 ? "↓" : "↑"}</i></th>`;
+    const heads = { address: th("address", B.cols.address), device: th("name", B.cols.device).replace("</th>", ` <button class="tag bv-sorttype" data-bv-sort="type"${L.sort === "type" ? ' aria-pressed="true"' : ""}>${esc(B.sortType)} ${L.sort === "type" && L.dir < 0 ? "↓" : "↑"}</button></th>`), place: th("place", B.cols.place), type: "", ha: `<th>${esc(B.cols.ha)}</th>`, senders: `<th class="bv-hide-s">${esc(B.cols.senders)}</th>`, feedback: `<th class="bv-hide-s">${esc(B.cols.feedback)}</th>`, power: `<th class="num">${esc(B.cols.power)}</th>`, supply: `<th class="bv-hide-s">${esc(B.cols.supply)}</th>` };
+    const head = `<tr>${shownCols.map((c) => heads[c]).join("")}<th class="rmenu"></th></tr>`;
+    const colMenu = `<details class="colmenu bv-colmenu" ${this._in.colMenu ? "open" : ""}><summary class="chip">${esc(this._t.inst.columns)}</summary><div class="items"><div class="colgroup"><button class="tag" data-bv-lcols="all">${esc(this._t.inst.colAll)}</button><button class="tag" data-bv-lcols="none">${esc(this._t.inst.colNone)}</button></div>${LIST_COLUMNS.map((c) => `<label><input type="checkbox" data-bv-lcol="${c}" ${LIST_FIXED.includes(c) ? "checked disabled" : state.bus.cols.has(c) ? "checked" : ""}>${esc(B.cols[c])}</label>`).join("")}<span class="isub">${esc(B.colsHint)}</span></div></details>`;
     const unassigned = (this._in.doc.installation_checks?.unassigned ?? []).filter((u) => v.bus.access.some((a) => a.entry_id === u.entry_id));
     const assign = unassigned.length
       ? `<div class="bv-box"><div class="bv-bar"><b>${esc(B.unassignedTitle(unassigned.length))}</b><span class="isub">${esc(B.unassignedHint)}</span></div><div class="chips">${unassigned.map((u) => {
@@ -465,9 +563,23 @@ export const busView = {
           return `<button class="chip small" data-bv-assign="${esc(u.entry_id)}|${esc(u.device_key)}">+ ${esc(found ? `${found.d.name}${found.d.model ? ` (${found.d.model})` : ""}` : u.device_key)}</button>`;
         }).join("")}</div></div>`
       : "";
-    const seg = `<div class="seg" role="group"><button data-bv-mode="place" aria-pressed="${state.bus.mode === "place"}">${esc(B.byPlace)}</button><button data-bv-mode="address" aria-pressed="${state.bus.mode === "address"}">${esc(B.byAddress)}</button></div>`;
+    // the filter chips count what they would leave
+    const all = v.modules.flatMap((m) => m.channels.map((c) => [m, c]));
+    const counts = {
+      "": v.modules.length,
+      dup: all.filter(([m, c]) => !c.unused && this._bvAddr(m, c) != null && dups.has(this._bvAddr(m, c))).length,
+      noaddr: v.modules.filter((m) => this._bvCount(v, m) && m.first_address == null).length,
+      ha: all.filter(([, c]) => c.device_key).length,
+      doc: all.filter(([, c]) => !c.device_key && !c.unused).length,
+    };
+    const chip = (f) => `<button class="chip" data-bv-lf="${f}" aria-pressed="${L.f === f}">${esc(B.listFilters[f || "all"])} <b>${counts[f]}</b></button>`;
+    const roles = [...new Set(v.modules.map((m) => this._bvRole(v, m)))];
+    const roleSel = `<select data-bv-lrole aria-label="${esc(B.role)}"><option value="">${esc(B.role)}: ${esc(B.listFilters.all)}</option>${roles.map((r) => `<option value="${r}"${L.role === r ? " selected" : ""}>${esc(B.roles[r] ?? r)}</option>`).join("")}</select>`;
+    const places = v.data.cabinets.flatMap((c) => [[`c:${c.id}`, c.name], ...c.rows.map((r) => [`r:${r.id}`, `${c.name} · ${r.name}`])]);
+    const placeSel = `<select data-bv-lplace aria-label="${esc(B.cols.place)}"><option value="">${esc(B.cols.place)}: ${esc(B.listFilters.all)}</option>${places.map(([id, n]) => `<option value="${esc(id)}"${L.place === id ? " selected" : ""}>${esc(n)}</option>`).join("")}<option value="none"${L.place === "none" ? " selected" : ""}>${esc(B.noPlace)}</option></select>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(B.search)}" aria-label="${esc(B.search)}">`;
-    return `<div class="bv-bar">${seg}${search}</div>${assign}<div class="tablewrap"><table class="itable bv-list"><thead>${head.replace("</tr>", '<th class="rmenu"></th></tr>')}</thead><tbody>${body ? body.replace(/<\/tr>/g, '<td class="rmenu"></td></tr>') : `<tr><td colspan="9" class="none">${esc(B.nothing)}</td></tr>`}</tbody></table></div><p class="bv-note">${esc(B.listNote)}</p>`;
+    const filtered = L.f || L.role || L.place || q;
+    return `<div class="bv-bar">${search}${roleSel}${placeSel}${filtered ? `<button class="chip text" data-bv-lreset>${esc(B.listReset)}</button>` : ""}<span class="bv-grow"></span>${colMenu}</div><div class="chips bv-lchips">${["", "dup", "noaddr", "ha", "doc"].map(chip).join("")}</div>${assign}<div class="tablewrap"><table class="itable bv-list"><thead>${head}</thead><tbody>${body ? body.replace(/<\/tr>/g, '<td class="rmenu"></td></tr>') : `<tr><td colspan="${shownCols.length + 1}" class="none">${esc(B.nothing)}</td></tr>`}</tbody></table></div><p class="bv-note">${esc(B.listNote)}</p>`;
   },
 
   // ---- the address plan -----------------------------------------------------------------------
@@ -1115,8 +1227,12 @@ export const busView = {
   _busClick(e) {
     // true when the click was the bus view's
     const state = this._in.bus;
+    if (this._in.colMenu && !e.target.closest(".colmenu")) {
+      this._in.colMenu = false;
+      this.shadowRoot.querySelector("#installation details.bv-colmenu")?.removeAttribute("open");
+    }
     if (e.target.closest("[data-in-goto], [data-in-snd]") && state.drawer) Object.assign(state, { drawer: null, history: [], draft: null });
-    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-mode], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel], [data-bv-move], [data-bv-cabsel], [data-bv-feedback], [data-bv-takebase], [data-bv-adddev], [data-bv-docaddr], [data-bv-optin]");
+    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel], [data-bv-move], [data-bv-cabsel], [data-bv-feedback], [data-bv-takebase], [data-bv-adddev], [data-bv-docaddr], [data-bv-optin], [data-bv-sort], [data-bv-lf], [data-bv-lreset], [data-bv-lcol], [data-bv-lcols]");
     if (!el || !this.shadowRoot.getElementById("installation")?.contains(el)) {
       const legacy = e.target.closest("details.bv-legacy > summary");
       if (legacy) state.legacyOpen = !legacy.parentElement.open;
@@ -1133,8 +1249,23 @@ export const busView = {
     else if (d.bvBus) {
       Object.assign(state, { id: d.bvBus, drawer: null, history: [] });
       this._renderInstallation();
-    } else if (d.bvMode) {
-      state.mode = d.bvMode;
+    } else if (d.bvLcol || d.bvLcols) {
+      // the column menu stays open while columns are switched
+      this._in.colMenu = true;
+      if (d.bvLcols) state.cols = new Set(d.bvLcols === "all" ? LIST_COLUMNS : LIST_FIXED);
+      else if (!LIST_FIXED.includes(d.bvLcol)) state.cols.has(d.bvLcol) ? state.cols.delete(d.bvLcol) : state.cols.add(d.bvLcol);
+      saveCols(state.cols);
+      this._renderInstallation();
+    } else if (d.bvSort || "bvLf" in d || "bvLreset" in d) {
+      // the list: a column head sorts (again: the other way), a chip filters, reset clears
+      const L = state.list;
+      if (d.bvSort) Object.assign(L, L.sort === d.bvSort ? { dir: -L.dir } : { sort: d.bvSort, dir: 1 });
+      else if ("bvLf" in d) L.f = L.f === d.bvLf ? "" : d.bvLf;
+      else {
+        Object.assign(L, { f: "", role: "", place: "" });
+        this._in.q = "";
+      }
+      saveList(L);
       this._renderInstallation();
     } else if (d.bvAssign) this._bvAssign(d.bvAssign);
     else if ("bvOptin" in d) {
@@ -1197,6 +1328,15 @@ export const busView = {
   },
 
   _busInput(e) {
+    const filter = e.target.closest?.("select[data-bv-lrole], select[data-bv-lplace]");
+    if (filter) {
+      const L = this._in.bus.list;
+      if (filter.matches("[data-bv-lrole]")) L.role = filter.value;
+      else L.place = filter.value;
+      saveList(L);
+      this._renderInstallation();
+      return true;
+    }
     const seconds = e.target.closest?.("[data-bv-seconds]");
     if (seconds) {
       this._in.bus.seconds = Number(seconds.value);
