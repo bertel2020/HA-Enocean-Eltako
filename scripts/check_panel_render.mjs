@@ -294,9 +294,17 @@ for (const lang of ["en", "de"]) {
     expect("device rows", root.querySelectorAll(".dev").length, 5);
     const state = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name))?.querySelector(".pill")?.className.replace("pill ", "");
     expect("a heard device is active", state("Licht Diele"), "active");
+    expect("the pill names its state", [...root.querySelectorAll(".dev .pill")].every((p) => p.textContent.trim().length > 0), true);
     expect("a device past its interval is silent", state("Temperatur Bad"), "silent");
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
     expect("a sender that is not set up is unknown", state("01-99-88-77"), "unknown");
+    const row = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name));
+    expect("rows with something to offer have a more-menu button", root.querySelectorAll(".dev .acts .rowmore").length, 4);
+    expect("no loose icon buttons beside the menu", root.querySelectorAll(".dev .acts .icon-btn:not(.rowmore):not(.expand)").length, 0);
+    row("Licht Diele").querySelector(".rowmore").click();
+    expect("the more menu lists teach in, open device and telegrams", root.querySelectorAll(".addmenu [data-addact]").length, 3);
+    row("Licht Diele").querySelector(".rowmore").click();
+    expect("the more button closes its menu again", root.querySelector(".addmenu"), null);
     // a set-up device opens in place, with what the server knows of it, and closes again
     root.querySelector('.dev[data-dev="sub1"]').click();
     await settle();
@@ -334,7 +342,8 @@ for (const lang of ["en", "de"]) {
     expect("weak status chip pressed", root.querySelector('#devStatus [data-status="weak"]').getAttribute("aria-pressed"), "true");
     root.querySelector('#devStatus [data-status=""]').click();
     await settle();
-    root.querySelector("[data-teach]").click();
+    root.querySelector('.dev[data-dev="sub1"] .rowmore').click();
+    root.querySelector('.addmenu [data-addact="teach"]').click();
     await settle();
     expect("teach-in form open", root.getElementById("teachForm").hidden, false);
     root.getElementById("teachForm").requestSubmit();
