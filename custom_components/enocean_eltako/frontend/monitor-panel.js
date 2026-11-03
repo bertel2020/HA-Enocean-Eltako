@@ -522,13 +522,13 @@ const STYLE = `
   .devices .dev .ident { min-width: 0; display: flex; align-items: center; gap: 12px; }
   .devices .dev .idtext { min-width: 0; flex: 1; }
   /* the kind of device as a tile: the tooltip names it, the color only groups */
-  .tile { flex: none; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--tag-bg); color: var(--tag-text); }
-  .tile svg { width: 20px; height: 20px; }
-  .tile.lighting, .tile.meters { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
-  .tile.covers { background: var(--accent-soft); color: var(--accent); }
-  .tile.climate { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
-  .tile.sensors { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
-  .tile.unknown { background: none; border: 1px dashed var(--line); color: var(--muted); }
+  .devices .tile { flex: none; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--tag-bg); color: var(--tag-text); }
+  .devices .tile svg { width: 20px; height: 20px; }
+  .devices .tile.lighting, .devices .tile.meters { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .devices .tile.covers { background: var(--accent-soft); color: var(--accent); }
+  .devices .tile.climate { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  .devices .tile.sensors { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .devices .tile.unknown { background: none; border: 1px dashed var(--line); color: var(--muted); }
   .devices .dev .c-area, .devices .dev .c-ent { font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
   .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
   .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
@@ -586,8 +586,8 @@ const STYLE = `
     .devices .dev .c-type, .devices .dev .c-area, .devices .dev .c-ent { display: none; }
     .devices .dev .msub { display: block; }
     .devices .dev .ident { gap: 10px; }
-    .tile { width: 30px; height: 30px; border-radius: 8px; }
-    .tile svg { width: 17px; height: 17px; }
+    .devices .tile { width: 30px; height: 30px; border-radius: 8px; }
+    .devices .tile svg { width: 17px; height: 17px; }
     .devices .dev .sub { overflow-wrap: break-word; }
     .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
