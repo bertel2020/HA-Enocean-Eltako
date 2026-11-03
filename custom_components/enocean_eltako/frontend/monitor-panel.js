@@ -1216,6 +1216,20 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
     $("installation").addEventListener("click", (e) => this._installationClick(e));
     $("installation").addEventListener("focusout", (e) => this._instNameDone(e));
+    // a datalist lists only what matches the typed text: clear the type while it has focus so all types show
+    $("installation").addEventListener("focusin", (e) => {
+      const type = e.target.closest?.('[data-bvf="type"]');
+      if (!type || type.dataset.prev !== undefined) return;
+      type.dataset.prev = type.value;
+      type.placeholder = type.value || type.placeholder;
+      type.value = "";
+    });
+    $("installation").addEventListener("focusout", (e) => {
+      const type = e.target.closest?.('[data-bvf="type"]');
+      if (!type || type.dataset.prev === undefined) return;
+      if (!type.value) type.value = type.dataset.prev;
+      delete type.dataset.prev;
+    });
     $("installation").addEventListener("change", (e) => this._installationChange(e));
     $("installation").addEventListener("input", (e) => this._installationInput(e));
     $("installation").addEventListener("keydown", (e) => this._busKey(e)); // Esc closes the bus view's drawer

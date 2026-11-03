@@ -159,11 +159,13 @@ export const BUS_STYLE = `
   .installation .bv-form label { display: grid; gap: 3px; font-size: calc(12px * var(--fs)); color: var(--muted); min-width: 0; }
   .installation .bv-form label.wide { grid-column: 1 / -1; }
   .installation .bv-form label.check { display: flex; align-items: center; gap: 6px; color: var(--text); }
-  .installation .bv-form input, .installation .bv-form select, .installation .bv-rowedit input, .installation .bv-rowedit select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--input-line); border-radius: 6px; background: var(--surface); color: var(--text); min-width: 0; width: 100%; box-sizing: border-box; }
+  .installation .bv-form input, .installation .bv-form select, .installation .bv-rowedit input, .installation .bv-rowedit select, .installation .bv-chedit input, .installation .bv-chedit select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--input-line); border-radius: 6px; background: var(--surface); color: var(--text); min-width: 0; width: 100%; box-sizing: border-box; }
   .installation .bv-form label.check input { width: auto; padding: 0; border: 0; border-radius: 0; background: none; accent-color: var(--accent); }
-  .installation .bv-form input:focus, .installation .bv-form select:focus, .installation .bv-rowedit input:focus, .installation .bv-rowedit select:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--accent); }
+  .installation .bv-form input:focus, .installation .bv-form select:focus, .installation .bv-rowedit input:focus, .installation .bv-rowedit select:focus, .installation .bv-chedit input:focus, .installation .bv-chedit select:focus { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--accent); }
   .installation .bv-err { color: var(--bad); font-size: calc(12px * var(--fs)); }
   .installation .bv-chlist { display: grid; gap: 6px; }
+  .installation .bv-list th:first-child, .installation .bv-list td:first-child { min-width: 150px; }
+  .installation .bv-list th:nth-child(2), .installation .bv-list td:nth-child(2) { min-width: 170px; }
   .installation .bv-chrow { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--soft); cursor: pointer; text-align: left; color: var(--text); width: 100%; font: inherit; }
   .installation .bv-chrow:hover { border-color: var(--accent); }
   .installation .bv-chrow .no { font-family: ui-monospace, monospace; font-weight: 600; font-size: calc(12px * var(--fs)); text-align: center; padding: 2px 0; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
