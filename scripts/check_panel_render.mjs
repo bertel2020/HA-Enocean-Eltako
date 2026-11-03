@@ -294,6 +294,8 @@ for (const lang of ["en", "de"]) {
     expect("device rows", root.querySelectorAll(".dev").length, 5);
     const state = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name))?.querySelector(".pill")?.className.replace("pill ", "");
     expect("a heard device is active", state("Licht Diele"), "active");
+    const chipCount = (status) => root.querySelector(`#devStatus [data-status="${status}"] .n`)?.textContent;
+    expect("the status chips count the devices", ["", "known", "unknown", "silent", "weak"].map(chipCount).join(","), "5,4,1,1,1");
     expect("the pill names its state", [...root.querySelectorAll(".dev .pill")].every((p) => p.textContent.trim().length > 0), true);
     expect("a device past its interval is silent", state("Temperatur Bad"), "silent");
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
