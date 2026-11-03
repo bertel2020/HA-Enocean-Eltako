@@ -1,6 +1,6 @@
 # Konzept: Ansicht „Eltako-Bus“ (Installationsdokumentation)
 
-Stand: 2026-11-03 · Status: Phase 1 und 2 umgesetzt (siehe „Entscheidungen bei der Umsetzung“) · Mockup: [eltako-bus-ansicht.html](eltako-bus-ansicht.html)
+Stand: 2026-11-03 · Status: Phase 1 und 2 umgesetzt, Phase 3 teilweise (nur Mithören, experimentell) (siehe „Entscheidungen bei der Umsetzung“) · Mockup: [eltako-bus-ansicht.html](eltako-bus-ansicht.html)
 
 Ziel: Die Ansicht *Installation → Geräte → Bus* bildet die Reiheneinbaugeräte der Eltako-Baureihe 14
 am RS485-Bus so ab, wie sie wirklich verbaut sind: **Bus-Master FAM14 → Schrank → Reihe (Hutschiene) →
@@ -414,3 +414,20 @@ Grundsatzfragen, die das Konzept offen ließ, entschieden nach CLAUDE.md:
 | Reihenverbindung | Hinweis für jede Reihe mit Bus-Geräten, auf die in Bus-Reihenfolge noch eine folgt, ohne `next.kind`. |
 | Fremdgeräte | Rolle `foreign`: Block mit Name und TE, ohne Adresse, Leistung und Kanäle; zählt nicht in Abschnitten und Prüfungen, aber in der Belegung der Reihe. |
 | Druck | Eigene Druckseite der Bus-Ansicht (A4 quer): Schienen in Seitenbreite, Kanalliste nach Einbauort, offene Prüfungen (ohne Info), Etikettenstreifen maßstäblich 18 mm je TE (Reihen breiter als die Seite brechen um). Der bisherige Gesamtdruck bleibt unverändert. |
+
+## Phase 3: Quellenlage und Umsetzung
+
+### Was Eltako veröffentlicht (geprüft 2026-11-03)
+- **Inhalte der Eltako-Funktelegramme** (eltako.com, Technische Daten), Abschnitt „Bestätigungs-Telegramme der Baureihe 14“: Hat ein BR14-Aktor eine Geräteadresse, fragt der FAM14 seine Bestätigungstelegramme ab und **funkt sie mit der Base-ID des TCM300 im FAM14 plus Geräteadresse**; mehrkanalige Aktoren haben fortlaufende Adressen; eine Abfragerunde dauert bis zu etwa 10 s. Inhalte je Typ: FSR14/FTN14 u. a. RPS 0x70 (ein) / 0x50 (aus), FSB14 0x70/0x50 Endlage, 0x01/0x02 Start, ORG 7 mit Fahrzeit; FUD14 RPS oder 4BS mit Dimmwert; F3Z14D, DSZ14DRS ebenfalls „Base-ID des FAM14 + Geräteadresse“. FSU14 belegt 8 Adressen (8 Kanäle), FMSR14 5.
+- **Bedienungsanleitung FAM14** (30014000-7, 32/2023): Drehschalter BA 1 Adressvergabe, 2 Bus-Scan + Scanliste, Bestätigungstelegramme zyklisch abfragen und funken; 3 wie 2 ohne Funken; 4/7 zusätzlich Statustelegramme; 5/6 nach PCT14-Geräteliste; 10 Betrieb mit PCT14. Base-ID lesen und Geräteliste erstellen **nur mit PCT14**. Belastung > 4 W: ½ TE links; > 6 W zusätzlich ½ TE zwischen FSNT14 und FAM14 (DS14).
+- **Bedienungsanleitung FGW14** (30014017-1): Bus14 ↔ RS232 mit 9600 Baud (BR12-Format) oder 58K Baud (BR14-Format); „die Antworten der BR14-Aktoren belegen den ID-Bereich von 1-254“.
+- **Betriebsanleitung Baureihe 14 RS485** (Planungshilfe): Adressvergabe 1–126, Mehrkanal fortlaufend; PCT14 liest/ändert/sichert Geräte.
+
+### Was nicht veröffentlicht ist (Lücken)
+- Das **PCT14-Protokoll** (Geräteliste/Scanliste lesen, Gerätespeicher lesen, Typ eines Geräts, Base-ID des FAM14 auslesen) und das Format der **PCT14-Sicherung**. Gefunden wurden nur Drittprojekte, die das Protokoll nachgebaut haben (u. a. eltako14bus); sie sind laut CLAUDE.md ausgeschlossen und keine Herstellerdokumentation.
+- Welche ID ein Bestätigungstelegramm **auf dem Draht** trägt (FGW14-USB, FAM14 am USB): nur der Hinweis „ID-Bereich 1-254“; dass es die reine Geräteadresse ist, ist eine Annahme.
+
+### Entscheidung
+- **Gebaut (read-only, sendet nichts):** `protocol/bus/observe.py` wertet Telegramme aus, die ohnehin ankommen: Adressen = gehörte ID − Base-ID (Funk) bzw. ID (Draht, Annahme), Art des Telegramms, Vorschlag einer Base-ID (Block von 128 IDs mit den meisten gehörten Adressen, ohne die eigenen Gateways), Rückmelde-ID = Base-ID + Adresse. Websocket `installation/listen`: nur nach Opt-in, höchstens 120 s, Abbruch durch Abmelden, nimmt die letzten Telegramme je Sender (Notizen) und den Puffer des Monitors dazu. Nichts geht in die Sendewarteschlange. Prüfungen „gehört, nicht dokumentiert“, „dokumentiert, nicht gehört“ (erst ab 30 s Mithören), „Base-ID vorschlagen“, alle mit `assumed`.
+- **Nicht gebaut:** aktives Scannen, Typ lesen, Base-ID aus dem FAM14 lesen, PCT14-Import. Ohne veröffentlichte Protokollbasis wäre das Vermutung; außerdem müsste dafür an den FAM14 gesendet werden.
+- **Nicht mit Hardware geprüft:** alles in Phase 3. Typische Fehlerquellen: FAM14 in Pos. 3/6 funkt keine Bestätigungen; ein anderer Sender im selben ID-Block verfälscht den Base-ID-Vorschlag.

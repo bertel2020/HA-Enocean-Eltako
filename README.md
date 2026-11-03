@@ -36,7 +36,7 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 - **Teach-in, discovery and a live telegram monitor** in the **EnOcean** sidebar panel, plus capture and diagnostics for bug reports. Three colour schemes (light/dark) and three font sizes are selectable.
 - **Device Proxy app:** shares one gateway between Home Assistant and other programs, replays the telegrams missed during a restart and is set up from its announcement.
 - **Takeover** of the devices of the old `eltako` integration without teaching the actuators in again.
-- **Installation documentation** in the panel: places, circuits, fuses, sender IDs and links, and the **Eltako bus** by its master (FAM14) with each DIN rail device and its channels, cabinets drawn as DIN rails to scale with label strips to print, the address plan 1–126, the load of the power supplies and checks (duplicate addresses, missing ones, devices not in Home Assistant).
+- **Installation documentation** in the panel: places, circuits, fuses, sender IDs and links, and the **Eltako bus** by its master (FAM14) with each DIN rail device and its channels, cabinets drawn as DIN rails to scale with label strips to print, the address plan 1–126, the load of the power supplies and checks (duplicate addresses, missing ones, devices not in Home Assistant); an experimental reading of the bus by listening compares the addresses that answer with the documentation.
 - **Safety stays in the actuator:** wind, rain, frost and lock-out protection are never replaced.
 
 ## Screenshots
