@@ -467,7 +467,7 @@ async def test_the_panel_edits_the_bus_and_the_notes_follow(
 
     # the bus devices were taken over at the first load (two FSR14-4x without an address)
     first = (await call("installation"))["result"]
-    assert set(first) == {"installation", "checks", "types"}
+    assert set(first) == {"installation", "checks", "types", "observed"}
     (bus,) = first["installation"]["buses"]
     assert bus["access"] == [{"entry_id": entry.entry_id, "via": "radio"}]
     assert len(_by_type(first["installation"], "FSR14-4x")) == 2
@@ -795,3 +795,113 @@ async def test_the_panel_moves_a_module(hass: HomeAssistant, gateway, hass_ws_cl
         {"id": 2, "type": "enocean_eltako/installation/move", "module_id": b["id"], "direction": -1}
     )
     assert (await client.receive_json())["error"]["code"] == "row_full"
+
+
+def test_what_was_heard_is_compared_with_the_documentation() -> None:
+    data, bus, master, supply, fud, fsb = _rail()  # FUD14 at address 1, FSB14 at 5
+    fsb["channels"] = [
+        {"n": 1, "entry_id": None, "device_key": None, "manual_id": None, "name": "Rollladen"}
+        | {"function": "", "feedback_id": "", "unused": False}
+    ]
+    seen = {
+        "seconds": 60,
+        "base_id": "FF-9A-1C-80",
+        "candidates": [],
+        "answers": {"1": {"sender": "FF-9A-1C-81"}, "7": {"sender": "FF-9A-1C-87"}},
+    }
+    items = run_checks(data, {}, set(), {bus: seen})["buses"][bus]["items"]
+    found = {i["code"]: i for i in items}
+    assert found["heard_undocumented"]["targets"] == [{"type": "heard", "id": "7"}]
+    assert found["heard_undocumented"]["args"]["assumed"] is True
+    # the FSB14's channel did not answer within 60 s
+    assert found["documented_silent"]["targets"] == [{"type": "channel", "id": f"{fsb['id']}:1"}]
+    assert "base_id_candidate" not in found
+    # a short session says nothing about silence; without a base ID a candidate is named
+    short = {**seen, "seconds": 0, "base_id": None, "candidates": [["FF-9A-1C-80", 2]]}
+    codes = {i["code"]: i for i in run_checks(data, {}, set(), {bus: short})["buses"][bus]["items"]}
+    assert "documented_silent" not in codes
+    assert codes["base_id_candidate"]["args"]["base_id"] == "FF-9A-1C-80"
+
+
+@pytest.mark.parametrize("gateway", [BUS_DEVICES], indirect=True)
+async def test_the_bus_is_read_by_listening_only(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    installation = get_installation(hass)
+    bus = installation.data["buses"][0]["id"]
+    installation.set_bus({**installation.data["buses"][0], "base_id": "FF-9A-1C-80"})
+    # confirmation telegrams the FAM14 sent by radio earlier: addresses 1 and 2
+    notes.remember_last("FF-9A-1C-81", entry.entry_id, 0xF6, b"\x70", 0x30, -60, 100.0)
+    notes.remember_last("FF-9A-1C-82", entry.entry_id, 0xF6, b"\x50", 0x30, -61, 101.0)
+    sent_before = len(entry.runtime_data.queue)
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "enocean_eltako/installation/listen", "bus_id": bus, "seconds": 0}
+    )
+    assert (await client.receive_json())["success"] is False  # no opt-in: refused
+    await client.send_json(
+        {
+            "id": 2,
+            "type": "enocean_eltako/installation/listen",
+            "bus_id": bus,
+            "seconds": 0,
+            "opt_in": True,
+        }
+    )
+    assert (await client.receive_json())["success"]
+    done = await client.receive_json()
+    assert done["event"]["type"] == "done"
+    seen = done["event"]["observed"][bus]
+    assert sorted(seen["answers"]) == ["1", "2"]
+    assert seen["answers"]["1"]["kind"] == "on" and seen["answers"]["2"]["kind"] == "off"
+    codes = {i["code"] for i in done["event"]["checks"]["buses"][bus]["items"]}
+    assert "heard_undocumented" in codes  # the FSR14-4x modules have no address yet
+    assert len(entry.runtime_data.queue) == sent_before  # nothing was sent
+    await client.send_json(
+        {
+            "id": 3,
+            "type": "enocean_eltako/installation/listen",
+            "bus_id": "nope",
+            "seconds": 0,
+            "opt_in": True,
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+
+
+@pytest.mark.parametrize("gateway", [BUS_DEVICES], indirect=True)
+async def test_listening_hears_live_telegrams_and_can_be_stopped(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    from .test_devices import _push, _settle
+
+    entry, server = gateway
+    installation = get_installation(hass)
+    bus = installation.data["buses"][0]
+    installation.set_bus({**bus, "base_id": "FF-9A-1C-80"})
+    listeners = len(entry.runtime_data.hub.dispatcher._listeners.get(None, ()))
+    client = await hass_ws_client(hass)
+    msg = {"type": "enocean_eltako/installation/listen", "bus_id": bus["id"], "opt_in": True}
+    await client.send_json({"id": 1, **msg, "seconds": 1})
+    assert (await client.receive_json())["success"]
+    _push(server, 0x05, b"\x70", 0xFF9A1C83, 0x30)  # the FAM14 radios address 3: on
+    await _settle(hass)
+    progress = await client.receive_json()
+    assert progress["event"]["type"] == "progress" and progress["event"]["left"] == 0
+    done = await client.receive_json()
+    assert done["event"]["observed"][bus["id"]]["answers"]["3"]["kind"] == "on"
+    assert len(entry.runtime_data.hub.dispatcher._listeners.get(None, ())) == listeners
+    # a long session stopped by the panel: its listener goes
+    await client.send_json({"id": 2, **msg, "seconds": 120})
+    assert (await client.receive_json())["success"]
+    assert len(entry.runtime_data.hub.dispatcher._listeners.get(None, ())) == listeners + 1
+    await client.send_json({"id": 3, "type": "unsubscribe_events", "subscription": 2})
+    assert (await client.receive_json())["success"]
+    await _settle(hass)
+    assert len(entry.runtime_data.hub.dispatcher._listeners.get(None, ())) == listeners

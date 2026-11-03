@@ -8,6 +8,7 @@ that fit its telegram.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import Any
 
@@ -51,6 +52,7 @@ from .notes import (
     SUPPLY_FIELDS,
     device_key,
 )
+from .protocol.bus.observe import Heard
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_command, decode_telegram
@@ -106,6 +108,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_installation_set)
     websocket_api.async_register_command(hass, ws_installation_remove)
     websocket_api.async_register_command(hass, ws_installation_move)
+    websocket_api.async_register_command(hass, ws_installation_listen)
     async_setup_takeover_websocket(hass)
 
 
@@ -1324,3 +1327,83 @@ async def ws_installation_move(
         connection.send_error(msg["id"], reason, f"the module was not moved: {reason}")
         return
     connection.send_result(msg["id"], installation.payload())
+
+
+MAX_LISTEN = 120  # seconds a listening session may last
+LISTEN_PROGRESS = 5  # seconds between progress events
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/installation/listen",
+        vol.Required("bus_id"): vol.All(str, vol.Length(min=1, max=32)),
+        vol.Required("seconds"): vol.All(int, vol.Range(min=0, max=MAX_LISTEN)),
+        # experimental: the panel asks for an explicit yes before it reads the bus
+        vol.Required("opt_in"): True,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_installation_listen(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Read the bus on demand, only by listening (experimental, not checked with a FAM14).
+
+    Nothing is sent: the FAM14 itself queries the confirmation telegrams of the actuators and
+    sends them with its base ID plus the device address. The session takes what the gateways of
+    the bus heard before and listens for the given seconds more; it ends by itself (events
+    "progress", then "done" with the comparison) or when the panel unsubscribes.
+    """
+    installation = await async_get_installation(hass)
+    access = installation.access(msg["bus_id"])
+    if access is None:
+        connection.send_error(msg["id"], "not_found", "no such bus")
+        return
+    heard = installation.heard_before(msg["bus_id"])
+    hub = async_get_hub(hass)
+
+    @callback
+    def collect(received: ReceivedTelegram) -> None:
+        if received.gateway in access:
+            t = received.telegram
+            heard.append(
+                Heard(
+                    t.sender,
+                    received.gateway,
+                    access[received.gateway],
+                    t.rorg,
+                    t.data,
+                    received.timestamp,
+                )
+            )
+
+    remove = hub.dispatcher.add_listener(None, collect)
+
+    async def run() -> None:
+        try:
+            left = msg["seconds"]
+            while left > 0:
+                step = min(LISTEN_PROGRESS, left)
+                await asyncio.sleep(step)
+                left -= step
+                connection.send_message(
+                    websocket_api.event_message(
+                        msg["id"], {"type": "progress", "left": left, "heard": len(heard)}
+                    )
+                )
+        finally:
+            remove()
+        installation.observe(msg["bus_id"], heard, msg["seconds"])
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"type": "done", **installation.payload()})
+        )
+
+    # the result first: the task may finish at once (no seconds to listen) and send "done"
+    connection.send_result(msg["id"])
+    task = hass.async_create_task(run(), "enocean_eltako bus listening")
+
+    @callback
+    def stop() -> None:
+        task.cancel()  # the listener goes in run's finally
+
+    connection.subscriptions[msg["id"]] = stop

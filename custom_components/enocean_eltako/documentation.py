@@ -265,6 +265,8 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
         "installation": installation.data if installation else empty(),
         # what the panel shows with it: the checks and the catalog of the series 14
         "installation_checks": installation.checks() if installation else None,
+        # what the bus view heard when asked to read the bus (experimental, not exported data)
+        "installation_observed": installation.observed if installation else {},
         "bus_types": TYPES,
         "version": VERSION,
         "generated": dt_util.utcnow().isoformat(timespec="seconds"),

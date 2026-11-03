@@ -23,7 +23,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
 from .bus_devices import BUS_TYPES, is_bus_model
-from .const import CONF_BUS_GROUP, CONF_MODEL, DOMAIN
+from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, DOMAIN
 from .installation_checks import run_checks
 from .installation_data import (
     BUS_FIELDS,
@@ -44,6 +44,8 @@ from .installation_data import (
     sync_supplies,
 )
 from .notes import SAVE_DELAY, Notes, device_key
+from .protocol.bus.observe import Heard, answers, base_candidates
+from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 
 STORAGE_VERSION = 1
@@ -85,6 +87,8 @@ class Installation:
         self._hass = hass
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self.data: dict[str, Any] = empty()
+        # per bus what was heard on demand (not stored: it is read again when asked for)
+        self.observed: dict[str, dict[str, Any]] = {}
 
     async def async_load(self) -> None:
         self.data = normalize(await self._store.async_load())
@@ -360,11 +364,88 @@ class Installation:
 
     def checks(self) -> dict[str, Any]:
         devices, loaded = self.ha_devices()
-        return run_checks(self.data, devices, loaded)
+        return run_checks(self.data, devices, loaded, self.observed)
 
     def payload(self) -> dict[str, Any]:
         """The store, its checks and the catalog: what the panel's bus view is drawn from."""
-        return {"installation": self.data, "checks": self.checks(), "types": TYPES}
+        return {
+            "installation": self.data,
+            "checks": self.checks(),
+            "types": TYPES,
+            "observed": self.observed,
+        }
+
+    # ---- reading the bus: only listening, never sending ---------------------------------------
+
+    def access(self, bus_id: str) -> dict[str, bool] | None:
+        """The gateways that reach a bus: entry ID -> on the bus (wired)."""
+        bus = next((b for b in self.data["buses"] if b["id"] == bus_id), None)
+        return None if bus is None else {a["entry_id"]: a["via"] == "wired" for a in bus["access"]}
+
+    def heard_before(self, bus_id: str) -> list[Heard]:
+        """What the gateways of a bus heard already: the last telegram of each sender (kept
+        across restarts) and the telegram monitor's buffer."""
+        access = self.access(bus_id) or {}
+        heard: list[Heard] = []
+        for entry_id, wired in access.items():
+            entry = self._hass.config_entries.async_get_entry(entry_id)
+            runtime = getattr(entry, "runtime_data", None) if entry else None
+            if runtime is None:
+                continue
+            notes = runtime.hub.notes.get(entry_id)
+            for sender, last in (notes.last if notes else {}).items():
+                try:
+                    heard.append(
+                        Heard(
+                            parse_id(sender),
+                            entry_id,
+                            wired,
+                            int(last["rorg"], 16),
+                            bytes.fromhex(last["data"]),
+                            float(last["time"]),
+                        )
+                    )
+                except (KeyError, TypeError, ValueError):
+                    continue
+            for item in runtime.hub.monitor.history(entry_id):
+                if item.direction == "rx":
+                    t = item.telegram
+                    heard.append(Heard(t.sender, entry_id, wired, t.rorg, t.data, item.timestamp))
+        return heard
+
+    def observe(self, bus_id: str, heard: list[Heard], seconds: int) -> dict[str, Any] | None:
+        """Compare what was heard with the documentation of a bus; kept until the next time."""
+        bus = next((b for b in self.data["buses"] if b["id"] == bus_id), None)
+        if bus is None:
+            return None
+        own = []
+        for entry in self._hass.config_entries.async_loaded_entries(DOMAIN):
+            try:
+                own.append(parse_id(entry.data.get(CONF_BASE_ID, "")))
+            except ValueError:
+                continue
+        candidates = base_candidates(heard, own)
+        base = parse_id(bus["base_id"]) if bus["base_id"] else None
+        found = answers(heard, base)
+        self.observed[bus_id] = {
+            "seconds": seconds,
+            "heard": len({h.sender for h in heard}),
+            "base_id": bus["base_id"] or None,
+            "candidates": [[format_id(b), n] for b, n in candidates[:3]],
+            "answers": {
+                str(a.address): {
+                    "sender": format_id(a.sender),
+                    "gateway": a.gateway,
+                    "wired": a.wired,
+                    "rorg": f"{a.rorg:02X}",
+                    "data": a.data.hex().upper(),
+                    "time": a.time,
+                    "kind": a.kind,
+                }
+                for a in sorted(found.values(), key=lambda x: x.address)
+            },
+        }
+        return self.observed[bus_id]
 
 
 async def async_get_installation(hass: HomeAssistant) -> Installation:
