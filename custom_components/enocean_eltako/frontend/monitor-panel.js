@@ -1969,9 +1969,15 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._popupMenu(
       button,
       d.rowmore,
-      (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : ""),
+      (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : "") + (d.mRemove ? item("remove", ICON.clear, t.selRemove) : ""),
       (act) => {
         if (act === "teach") this._openTeach(d.mTeach);
+        else if (act === "remove") {
+          // the row's own device goes through the same confirmation as a ticked selection
+          this._sel = new Set([d.mRemove]);
+          this._pick = null;
+          this._openPick("remove");
+        }
         else if (act === "page") this._navigate(`/config/devices/device/${d.mPage}`);
         else {
           this._setText(d.mOnly);
@@ -3539,8 +3545,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const menuTeach = d.senders.length ? d.devKey : "";
     const menuOnly = d.quiet && d.time == null ? "" : only;
     const more =
-      menuTeach || d.page || menuOnly
-        ? `<button class="icon-btn rowmore" data-rowmore="${esc(d.devKey || d.key)}" data-m-teach="${esc(menuTeach)}" data-m-page="${esc(d.page || "")}" data-m-only="${esc(menuOnly)}" aria-haspopup="menu" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</button>`
+      menuTeach || d.page || menuOnly || d.devKey
+        ? `<button class="icon-btn rowmore" data-rowmore="${esc(d.devKey || d.key)}" data-m-remove="${esc(d.devKey || "")}" data-m-teach="${esc(menuTeach)}" data-m-page="${esc(d.page || "")}" data-m-only="${esc(menuOnly)}" aria-haspopup="menu" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</button>`
         : "";
     const acts = add + more;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
