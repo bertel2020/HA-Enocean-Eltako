@@ -221,6 +221,56 @@ async def test_reconfigure_drops_central_command(hass: HomeAssistant, gateway) -
         [
             _subentry(
                 "switch",
+                "01-90-8C-14",
+                "Zwischenstecker",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-82"}],
+                platform="switch",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_reconfigure_changes_the_device_type(hass: HomeAssistant, gateway) -> None:
+    """A plug taken over as an Eltako switch becomes a Permundo PSC and keeps its sender ID."""
+    entry, _ = gateway
+    pool = entry.runtime_data.senders.pool
+    pool.assign(0xFFB74482, "device:01-90-8C-14:central")
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    assert "model" in {str(k) for k in result["data_schema"].schema}
+    # choosing another type shows its form first: nothing is saved yet
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"name": "Zwischenstecker", "model": "psc", "platform": "switch"}
+    )
+    assert result["type"] == "form" and result["step_id"] == "reconfigure"
+    assert entry.subentries[subentry_id].data["model"] == "switch"
+    sender_key = next(k for k in result["data_schema"].schema if k == "sender_controller")
+    assert "sender_central" not in {str(k) for k in result["data_schema"].schema}
+    assert sender_key.description["suggested_value"] == "FF-B7-44-82"  # the ID carries over
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Zwischenstecker",
+            "model": "psc",
+            "sender_controller": "FF-B7-44-82",
+            "platform": "switch",
+        },
+    )
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+    data = entry.subentries[subentry_id].data
+    assert data["model"] == "psc"
+    assert data["senders"] == [{"profile": "controller", "sender_id": "FF-B7-44-82"}]
+    allocation = entry.runtime_data.senders.pool.get(0xFFB74482)
+    assert (allocation.state, allocation.owner) == ("assigned", "device:01-90-8C-14:controller")
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
                 "05-10-A2-B6",
                 "Licht Bad",
                 senders=[{"profile": "rocker", "sender_id": "FF-B7-44-8E"}],

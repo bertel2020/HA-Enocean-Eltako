@@ -736,7 +736,8 @@
             "weather_rain": "Rain",
             "weather_brightness": "Brightness",
             "run_time_tenths": "Run times in 100 ms",
-            "model_name": "Model (optional)"
+            "model_name": "Model (optional)",
+            "model": "Device type"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -764,7 +765,8 @@
             "rain_hold": "Minutes “Rain recently” stays on after the last rain.",
             "run_time_tenths": "Send controller run times in tenths of a second, precise for short moves and slats. Only for actuators that know this form (newer firmware); otherwise whole seconds, as the old eltako integration sent them.",
             "invert": "Contacts: on means closed. Window handles: closed and tilted trade places (handle fitted the other way up). Switching actuators with reversed relay logic: commands and state are swapped.",
-            "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model."
+            "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model.",
+            "model": "Changing the type keeps the sender ID of the first sender; the actuator may have to learn it again. Its entities are rebuilt for the new type."
           },
           "sections": {
             "rocker_buttons": {
