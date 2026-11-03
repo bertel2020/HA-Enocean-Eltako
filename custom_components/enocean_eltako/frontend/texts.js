@@ -73,6 +73,16 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     viewInstallation: "Installation",
     inst: {
+      sid: {
+        used: "In use", blocked: "Blocked", free: "Free", all: "All", nr: "No.", device: "Device", role: "Role", status: "Status",
+        state: { u: "in use", w: "blocked", f: "free", g: "gateway", x: "outside" },
+        next: "Next free ID:", copy: "Copy ID", full: "No free sender ID left in this pool.",
+        intro: "Every sender ID is the gateway's base ID plus a number from 1 to 127. Home Assistant sends with them to the actuators.",
+        search: "Search device, place or ID", none: "No sender IDs found. Reset the filter or the search.",
+        perPage: "Per page", prev: "Previous page", next2: "Next page",
+        range: (a, b, n) => `${a}–${b} of ${n}`, page: (p, n) => `Page ${p} of ${n}`,
+        barLabel: (u, w, f) => `${u} in use, ${w} blocked, ${f} free`,
+      },
       tabNames: { devices: "Devices", gwsenders: "Sender IDs", links: "Links", log: "Log" },
       views: { all: "All devices", bus: "Bus", funk: "Radio", virt: "Virtual" },
       kinds: { bus: "Eltako bus", sensor: "Radio sensor", taster: "Radio button", aktor: "Radio actuator", virt: "Virtual", psu: "Power supply" },
@@ -470,6 +480,16 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
     viewInstallation: "Anlage",
     inst: {
+      sid: {
+        used: "In Gebrauch", blocked: "Gesperrt", free: "Frei", all: "Alle", nr: "Nr.", device: "Gerät", role: "Rolle", status: "Status",
+        state: { u: "belegt", w: "gesperrt", f: "frei", g: "Gateway", x: "extern" },
+        next: "Nächste freie ID:", copy: "ID kopieren", full: "Keine freie Sender-ID mehr in diesem Pool.",
+        intro: "Jede Sender-ID ist die Basis-ID des Gateways plus eine Nummer von 1 bis 127. Home Assistant sendet damit an die Aktoren.",
+        search: "Gerät, Ort oder ID suchen", none: "Keine Sender-IDs gefunden. Setze Filter oder Suche zurück.",
+        perPage: "Pro Seite", prev: "Vorherige Seite", next2: "Nächste Seite",
+        range: (a, b, n) => `${a}–${b} von ${n}`, page: (p, n) => `Seite ${p} von ${n}`,
+        barLabel: (u, w, f) => `${u} belegt, ${w} gesperrt, ${f} frei`,
+      },
       tabNames: { devices: "Geräte", gwsenders: "Sender-IDs", links: "Verbindungen", log: "Protokoll" },
       views: { all: "Alle Geräte", bus: "Bus", funk: "Funk", virt: "Virtuell" },
       kinds: { bus: "Eltako-Bus", sensor: "Funk Sensor", taster: "Funk Taster", aktor: "Funk Aktor", virt: "Virtuell", psu: "Netzteil" },
