@@ -35,6 +35,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Links tab**: one sentence of intro (the long text is a tooltip); the tiles (actuators, without link, no answer, not tested, answered) filter the list, the source is three toggle chips, search and sorting (name, status, number) are new, the learn position shows on request, and the actuators are **paged (25 by default)**.
 - **All devices**: the **Missing** chips and the progress line are two tiles (without a place, without a fuse) with the count and "x of y recorded" that filter the table, next to **Next without a place**; an empty place is one **+ Add place** button that opens the three fields only when clicked; the table is **sortable** (column headers) and **paged (25 by default)**; placeholders are written out (Circuit, Address, Fuse) and the *Group by* select is styled.
 
+#### Fixed
+
+- **Takeover**: after taking devices over, the view always lands on step 3 (retire the old integration). When the old integration has no entities left for them, step 3 says so instead of the view falling back to step 1.
+
 **Deutsch**
 
 #### Hinzugefügt
@@ -63,6 +67,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Tab Protokoll**: Ereignisse lesen sich als Sätze (das Gerät ist ein Link zu seiner Zeile, Ergebnisse des Sendertests sind Tags: bestätigt, nicht bestätigt, fehlgeschlagen), nach Tag gruppiert und mit relativer Zeit, filterbar nach Art und Zeitraum (heute, 7 Tage, alle), durchsuchbar, sortierbar, **seitenweise (standardmäßig 25)** und als CSV ladbar.
 - **Tab Verbindungen**: ein Einleitungssatz (der lange Text steht im Tooltip); die Kacheln (Aktoren, ohne Verbindung, keine Antwort, nicht getestet, Antwort) filtern die Liste, die Quelle sind drei Schalter-Chips, Suche und Sortierung (Name, Status, Anzahl) sind neu, die Lernposition erscheint auf Wunsch, und die Aktoren werden **seitenweise (standardmäßig 25)** gezeigt.
 - **Alle Geräte**: die Chips **Fehlt** und die Fortschrittszeile sind zwei Kacheln (ohne Ort, ohne Sicherung) mit Anzahl und "x von y erfasst", die die Tabelle filtern, daneben **Nächstes ohne Ort**; ein leerer Ort ist ein Knopf **+ Ort eintragen**, der die drei Felder erst beim Klick öffnet; die Tabelle ist **sortierbar** (Spaltenköpfe) und **seitenweise (standardmäßig 25)**; Platzhalter sind ausgeschrieben (Stromkreis, Adresse, Sicherung) und das Auswahlfeld *Gruppieren nach* ist gestaltet.
+
+#### Behoben
+
+- **Übernahme**: Nach der Übernahme landet die Ansicht immer bei Schritt 3 (Alte Integration ablösen). Hat die alte Integration für die Geräte keine Entitäten mehr, sagt Schritt 3 das, statt dass die Ansicht auf Schritt 1 zurückfällt.
 
 ### [1.5.0] - 2026-11-02
 
