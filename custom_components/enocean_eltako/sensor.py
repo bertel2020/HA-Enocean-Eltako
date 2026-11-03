@@ -203,6 +203,18 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
         EnOceanSensorDescription(key="temperature", **TEMPERATURE, value_fn=_field("TMP")),
         EnOceanSensorDescription(key="humidity", **HUMIDITY, value_fn=_field("HUM")),
     ),
+    "temp_humidity_solar": (
+        EnOceanSensorDescription(key="temperature", **TEMPERATURE, value_fn=_field("TMP")),
+        EnOceanSensorDescription(key="humidity", **HUMIDITY, value_fn=_field("HUM")),
+        EnOceanSensorDescription(
+            key="voltage",
+            device_class=SensorDeviceClass.VOLTAGE,
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            state_class=SensorStateClass.MEASUREMENT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            value_fn=_field("supply_voltage", 2),
+        ),
+    ),
     "fbh": (
         EnOceanSensorDescription(key="illuminance", **ILLUMINANCE, value_fn=_field("ILL", 0)),
         EnOceanSensorDescription(

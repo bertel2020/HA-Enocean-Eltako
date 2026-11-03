@@ -69,6 +69,23 @@ def test_eltako_fbh_drops_temperature_and_occupancy() -> None:
     assert "TMP" in std
 
 
+def test_eltako_solar_sensor_adds_the_supply_voltage() -> None:
+    values = decode_telegram(EEPRef("A5-04-02", "eltako"), tg(Rorg.BS4, "80B14A08"))
+    assert values["supply_voltage"] == pytest.approx(3.2)  # DB3 x 0.025 V
+    assert values["HUM"] == pytest.approx(70.8, abs=0.1) and values["TMP"] == pytest.approx(
+        3.7, abs=0.1
+    )
+    assert "LRNB" not in values
+    # no voltage in DB3: none reported; a teach-in telegram is not data
+    assert (
+        decode_telegram(EEPRef("A5-04-02", "eltako"), tg(Rorg.BS4, "00B14A08"))["supply_voltage"]
+        is None
+    )
+    assert decode_telegram(EEPRef("A5-04-02", "eltako"), tg(Rorg.BS4, "80B14A00")) is None
+    std = decode_telegram(EEPRef("A5-04-02", "std"), tg(Rorg.BS4, "80B14A08"))
+    assert "supply_voltage" not in std
+
+
 def test_room_controller() -> None:
     values = decode_telegram(EEPRef("A5-10-06", "eltako"), tg(Rorg.BS4, "137F8009"))
     assert values["night_setback"] == 3

@@ -43,7 +43,8 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 | Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor | - |
 | Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor | - |
 | Buttons and contacts | Four digital inputs and temperature (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor | - |
-| Sensors | Temperature and humidity (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
+| Sensors | Temperature and humidity (FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
+| Sensors | Temperature, humidity and supply voltage (FAFT60 solar sensor) | Eltako | `A5-04-02:eltako` | - | sensor | - |
 | Sensors | Motion and brightness sensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor | - |
 | Sensors | VOC sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor | - |
 | Sensors | TVOC sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor | - |

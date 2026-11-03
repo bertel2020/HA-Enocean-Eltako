@@ -43,7 +43,8 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 | Taster und Kontakte | Kontakt über Tastertelegramme (FTS14EM, Garagentor …) | Eltako | `F6-02-01:std` | - | binary_sensor | - |
 | Taster und Kontakte | Digitaleingang (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor | - |
 | Taster und Kontakte | Vier Digitaleingänge und Temperatur (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor | - |
-| Sensoren | Temperatur und Feuchte (FAFT60, FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
+| Sensoren | Temperatur und Feuchte (FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
+| Sensoren | Temperatur, Feuchte und Versorgungsspannung (FAFT60 Solarsensor) | Eltako | `A5-04-02:eltako` | - | sensor | - |
 | Sensoren | Bewegungs- und Helligkeitssensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor | - |
 | Sensoren | VOC-Sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor | - |
 | Sensoren | TVOC-Sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor | - |

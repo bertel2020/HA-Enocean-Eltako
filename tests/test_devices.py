@@ -444,6 +444,7 @@ async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
     [
         [
             _subentry("temp_humidity", "01-82-0A-11", "FAFT Aussen"),
+            _subentry("temp_humidity_solar", "01-8A-EF-CF", "FAFT Solar"),
             _subentry("window_handle", "00-21-63-43", "Fenstergriff"),
             _subentry("contact", "01-00-00-07", "Haustuer", device_class="door", invert=False),
             _subentry("meter", "05-00-00-12", "Waschmaschine"),
@@ -463,6 +464,7 @@ async def test_flow_rejects_bad_ids(hass: HomeAssistant, gateway) -> None:
 async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     _push(server, 0x07, bytes.fromhex("007D7D08"), 0x01820A11)  # 50 %, 20 degC
+    _push(server, 0x07, bytes.fromhex("80B14A08"), 0x018AEFCF)  # 3.2 V, 70.8 %, 3.7 degC
     _push(server, 0x05, b"\xd0", 0x00216343, 0x20)  # handle tilted
     _push(server, 0x06, b"\x08", 0x01000007)  # contact open
     _push(server, 0x07, bytes.fromhex("0003E80C"), 0x05000012)  # 1000 W
@@ -476,6 +478,10 @@ async def test_sensor_devices(hass: HomeAssistant, gateway) -> None:
 
     assert float(state("sensor", "01-82-0A-11", "temperature")) == 20.0
     assert float(state("sensor", "01-82-0A-11", "humidity")) == 50.0
+    # the solar sensor also reports the voltage of its energy storage (a diagnostic entity)
+    assert float(state("sensor", "01-8A-EF-CF", "voltage")) == pytest.approx(3.2)
+    assert float(state("sensor", "01-8A-EF-CF", "humidity")) == pytest.approx(70.8)
+    assert float(state("sensor", "01-8A-EF-CF", "temperature")) == pytest.approx(3.7)
     assert state("sensor", "00-21-63-43", "handle") == "tilted"
     assert state("binary_sensor", "00-21-63-43", "window") == "on"
     assert state("binary_sensor", "01-00-00-07", "contact") == "on"  # open
@@ -1908,12 +1914,34 @@ async def test_learn_first_single_fit_skips_the_choice(hass: HomeAssistant, gate
     configure = hass.config_entries.subentries.async_configure
     result = await _init_flow(hass, entry)
     result = await configure(result["flow_id"], {"next_step_id": "learn"})
-    # 4BS teach-in A5-04-02 from Eltako: only the temperature/humidity entry decodes it
-    _push(server, 0x07, encode_teach_in_4bs("A5-04-02"), 0x01820A11)
+    # 4BS teach-in A5-08-01 from Eltako: only the motion and brightness entry decodes it
+    _push(server, 0x07, encode_teach_in_4bs("A5-08-01"), 0x01820A11)
     await _settle(hass)
     result = await configure(result["flow_id"])
     assert result["step_id"] == "device"
-    assert "A5-04-02:std" in result["description_placeholders"]["receive"]
+    assert "A5-08-01:eltako" in result["description_placeholders"]["receive"]
+
+
+async def test_learn_first_a5_04_02_offers_both_temperature_kinds(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "learn"})
+    _push(server, 0x07, encode_teach_in_4bs("A5-04-02"), 0x01820A11)
+    await _settle(hass)
+    result = await configure(result["flow_id"])
+    # the plain sensor and the solar sensor with its supply voltage: the first is preselected
+    assert result["step_id"] == "learned"
+    (key,) = result["data_schema"].schema
+    assert key.default() == "temp_humidity"
+    selector = result["data_schema"].schema[key]
+    assert set(selector.config["options"]) >= {"temp_humidity", "temp_humidity_solar"}
+    result = await configure(result["flow_id"], {"model": "temp_humidity_solar"})
+    assert result["step_id"] == "device"
+    assert "A5-04-02:eltako" in result["description_placeholders"]["receive"]
 
 
 async def test_add_generic_device_by_eep(hass: HomeAssistant, gateway) -> None:

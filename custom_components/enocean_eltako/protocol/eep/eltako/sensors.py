@@ -1,5 +1,10 @@
 """Eltako sensor variants of standard profiles.
 
+A5-04-02:eltako (FAFT60, solar-powered outdoor sensor): as official, plus DB3 = supply voltage of
+    its energy storage, 0.025 V per step (0 ... 6.375 V; official: DB3 unused). The scale is taken
+    from a FAFT60 in use, whose storage reads 2.8 ... 3.5 V, rising by day and falling by night;
+    a data byte of 0 means no voltage was sent.
+
 A5-08-01:eltako (FBH65, FBH65S, FABH65S, FBH65TF): as official, but DB1 carries no
     temperature (official 0...51 degC) and the occupancy button bit is always "released";
     both are left out.
@@ -31,6 +36,15 @@ def decode_fbh(data: bytes) -> dict[str, Any] | None:
         return None
     values = decode(PROFILES["A5-08-01"], data)
     return {k: v for k, v in values.items() if k not in ("TMP", "OCC", "LRNB")}
+
+
+def decode_solar_temp_humidity(data: bytes) -> dict[str, Any] | None:
+    if len(data) != 4 or not data[3] & 0x08:
+        return None
+    values = decode(PROFILES["A5-04-02"], data)
+    values.pop("LRNB", None)
+    values["supply_voltage"] = round(data[0] * 0.025, 3) if data[0] else None
+    return values
 
 
 def decode_room_controller(data: bytes) -> dict[str, Any] | None:
