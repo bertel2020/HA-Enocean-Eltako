@@ -27,6 +27,7 @@ from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, DOMAIN
 from .installation_checks import run_checks
 from .installation_data import (
     BUS_FIELDS,
+    MIRROR_FIELDS,
     absorb,
     apply_device,
     channel_values,
@@ -129,6 +130,28 @@ class Installation:
             self._save()
         return added
 
+    def sync_places(self, entry: ConfigEntry, notes: Notes) -> int:
+        """Once (notes version 9): the place of a channel's device in the notes becomes that of
+        its module where the module has one, so the devices tab and the bus tab agree. Free
+        text of a module without a place stays as it is. How many devices changed."""
+        if notes.places_synced or not notes.migrated:
+            return 0
+        changed = 0
+        for (entry_id, key), want in channel_values(self.data).items():
+            if entry_id != entry.entry_id or not want["location"]:
+                continue
+            module = next(
+                m
+                for m in self.data["modules"]
+                for c in m["channels"]
+                if c["entry_id"] == entry_id and c["device_key"] == key
+            )
+            if module.get("row") and notes.device(key)["location"] != want["location"]:
+                notes.set_fields(key, {"location": want["location"]})
+                changed += 1
+        notes.set_places_synced()
+        return changed
+
     def reconcile_entry(self, entry: ConfigEntry, notes: Notes) -> int:
         """After an import into the notes: what they hold now is taken over (the same way as
         the first time); how many modules were added."""
@@ -148,7 +171,7 @@ class Installation:
     def legacy_device(self, entry: ConfigEntry, device: Any, values: dict[str, str]) -> None:
         """Bus fields of a device written in an older view: its channel follows."""
         notes = self._notes(entry.entry_id)
-        values = {f: v for f, v in values.items() if f in BUS_FIELDS}
+        values = {f: v for f, v in values.items() if f in MIRROR_FIELDS}
         if notes is None or not values:
             return
         before = copy.deepcopy(self.data)
@@ -175,6 +198,7 @@ class Installation:
         self._save()
 
     def _mirror(self, before: dict[str, Any], *, delete_manual: bool) -> None:
+        # a device that is no channel any more loses its bus fields, but keeps its place
         blank = dict.fromkeys(BUS_FIELDS, "")
         old, new = channel_values(before), channel_values(self.data)
         for entry_id, key in old.keys() | new.keys():
@@ -182,7 +206,7 @@ class Installation:
             if old.get((entry_id, key)) == want or (notes := self._notes(entry_id)) is None:
                 continue
             have = notes.device(key)
-            if changed := {f: want[f] for f in BUS_FIELDS if have[f] != want[f]}:
+            if changed := {f: want[f] for f in MIRROR_FIELDS if f in want and have[f] != want[f]}:
                 notes.set_fields(key, changed)
         old_manual, new_manual = manual_values(before), manual_values(self.data)
         for entry_id in {e for e, _ in old_manual.keys() | new_manual.keys()}:

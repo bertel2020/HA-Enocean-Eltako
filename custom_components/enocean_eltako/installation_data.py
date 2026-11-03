@@ -37,6 +37,8 @@ _ID = re.compile(r"[0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){3}")
 _RANGE = re.compile(r"(\d{1,3})-(\d{1,3})")
 _SLOT = re.compile(r"(?:[^\d]*\s)?(\d{1,2})(?:\s*[.,]\s*(0|5))?")
 BUS_FIELDS = ("bus_address", "feedback_id", "bus_power")
+# what the notes of a channel's device keep as a copy of the store: the bus fields and the place
+MIRROR_FIELDS = (*BUS_FIELDS, "location")
 
 
 def new_id() -> str:
@@ -695,8 +697,26 @@ def channel_values(data: dict[str, Any]) -> dict[tuple[str, str], dict[str, str]
                 "bus_address": "" if address is None else str(address),
                 "feedback_id": channel["feedback_id"],
                 "bus_power": module["power"] if channel["n"] == first else "",
+                "location": location_of(data, module),
             }
     return values
+
+
+def location_of(data: dict[str, Any], module: dict[str, Any]) -> str:
+    """The place of a module as the notes write it: cabinet · row · slot, else the old text."""
+    return place_text(data, module) or module.get("legacy_location", "")
+
+
+def set_location(data: dict[str, Any], module: dict[str, Any], text: str) -> None:
+    """A place written as text (an older field, a paste): the module goes there if it fits."""
+    text = str(text or "").strip()
+    if text == location_of(data, module):
+        return
+    module["row"], module["slot"] = None, None
+    if text:
+        place_from_text(data, module, text)
+    else:
+        module["legacy_location"] = ""
 
 
 def manual_values(data: dict[str, Any]) -> dict[tuple[str, str], dict[str, str]]:
@@ -717,6 +737,7 @@ def manual_values(data: dict[str, Any]) -> dict[tuple[str, str], dict[str, str]]
                 "circuit": module["circuit"],
                 "fuse": module["fuse"],
                 "installed": module["installed"],
+                "location": location_of(data, module),
             }
     return values
 
@@ -806,6 +827,8 @@ def apply_device(
         channel["feedback_id"] = _text(values["feedback_id"], 16)
     if "bus_power" in values:
         _set_power(module, channel["n"], str(values["bus_power"]))
+    if "location" in values:
+        set_location(data, module, str(values["location"]))
     return repr(data) != before
 
 
@@ -871,6 +894,7 @@ def sync_manual(
                 module[field] = _text(entry.get(field), TEXT[field])
             installed = _text(entry.get("installed"), 10)
             module["installed"] = installed if _DATE.fullmatch(installed) else ""
+            set_location(data, module, str(entry.get("location") or ""))
     absorb(data, {**gateway, "devices": [], "supplies": [], "manual": entries})
     return repr(data) != before
 
