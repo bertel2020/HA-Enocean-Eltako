@@ -299,6 +299,10 @@ for (const lang of ["en", "de"]) {
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
     expect("a sender that is not set up is unknown", state("01-99-88-77"), "unknown");
     const row = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name));
+    expect("every row has a kind tile", root.querySelectorAll(".dev .ident .tile").length, 5);
+    expect("a light gets the light tile", !!row("Licht Diele").querySelector(".tile.lighting"), true);
+    expect("a sender that is not set up gets the question mark tile", !!row("01-99-88-77").querySelector(".tile.unknown"), true);
+    expect("a model that is not fixed names its candidates", row("Dimmer Flur").textContent.includes("FUD14 / FUD61 / FD62"), true);
     expect("rows with something to offer have a more-menu button", root.querySelectorAll(".dev .acts .rowmore").length, 4);
     expect("no loose icon buttons beside the menu", root.querySelectorAll(".dev .acts .icon-btn:not(.rowmore):not(.expand)").length, 0);
     row("Licht Diele").querySelector(".rowmore").click();

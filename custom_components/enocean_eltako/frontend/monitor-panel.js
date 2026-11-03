@@ -517,7 +517,16 @@ const STYLE = `
   .devices .dev .acts .chip.add:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
   .devices .dev .acts .chip.add .lbl { display: none; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
-  .devices .dev .ident { min-width: 0; }
+  .devices .dev .ident { min-width: 0; display: flex; align-items: center; gap: 12px; }
+  .devices .dev .idtext { min-width: 0; flex: 1; }
+  /* the kind of device as a tile: the tooltip names it, the color only groups */
+  .tile { flex: none; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--tag-bg); color: var(--tag-text); }
+  .tile svg { width: 20px; height: 20px; }
+  .tile.lighting, .tile.meters { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .tile.covers { background: var(--accent-soft); color: var(--accent); }
+  .tile.climate { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  .tile.sensors { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .tile.unknown { background: none; border: 1px dashed var(--line); color: var(--muted); }
   .devices .dev .c-area, .devices .dev .c-ent { font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
   .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
   .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
@@ -716,6 +725,8 @@ const DEV_SORTERS = {
   busy: (a, b) => a.count - b.count || byName(a, b),
 };
 const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
+// ICON is bound after the parts have loaded, so the table is built when it is first needed
+const categoryIcon = (category) => ({ lighting: ICON.bulb, covers: ICON.slats, climate: ICON.thermometer, buttons: ICON.button, sensors: ICON.thermometer, meters: ICON.flash, virtual: ICON.cloud })[category];
 const DEV_STATUS = ["", "known", "unknown", "silent", "weak"];
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
@@ -3041,7 +3052,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
         hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
-        eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
+        category: info?.category || "", models: info?.models || [], eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null, labels: info?.labels || [], disabled: !!info?.disabled,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
         dbm: r.dbm, trend: d.dbm, fields: d.fields, data: r.data, teach: d.teach, candidates: d.candidates, rorg: r.rorg,
@@ -3051,7 +3062,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
         key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
-        eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
+        category: d.category || "", models: d.models || [], eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
       });
@@ -3448,7 +3459,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(d.name)}</span>`;
     const none = `<span class="none">${esc(t.noValue)}</span>`;
-    const sub = [`<span class="mono">${esc(d.id)}</span>`, d.model ? esc(d.model) : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    // a model that is not fixed (one EEP, several devices) names the candidates instead of nothing
+    const model = d.model || (d.models.length ? d.models.join(" / ") : "");
+    const sub = [`<span class="mono">${esc(d.id)}</span>`, model ? esc(model) : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    const kind = d.unknown ? "unknown" : categoryIcon(d.category) ? d.category : "other";
+    const kindName = kind === "unknown" ? t.unknownDevice : t.doc.tbl.categories[kind] || "";
+    const tile = `<span class="tile ${kind}" title="${esc(kindName)}" aria-hidden="true">${svg(kind === "unknown" ? ICON.help : categoryIcon(kind) || ICON.tower)}</span>`;
     // phones have no columns: type, area and entities go below the ID
     const msub = [d.eep ? `<span class="mono">${esc(d.eep)}</span>` : "", d.area ? esc(d.area) : "", d.entities != null ? esc(t.entitiesN(d.entities)) : ""].filter(Boolean).join(" · ");
     const values = d.fields && d.fields.length
@@ -3493,7 +3509,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const labels = this._labelNames(d);
     return `<div class="dev${d.quiet ? " quiet" : ""}${open ? " open" : ""}${picked ? " picked" : ""}${d.devKey ? " expandable" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}"${d.devKey ? ` data-dev="${esc(d.devKey)}" data-gateway="${esc(d.gateway)}"` : ""}>
       <div class="c-sel">${box}</div>
-      <div class="ident"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div>
+      <div class="ident">${tile}<div class="idtext"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div></div>
       <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
       <div class="c-area">${d.area ? esc(d.area) : none}</div>
       <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>
