@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Eltako bus view**: a power supply loaded above two thirds of its rated power (8 W of 12 W for the FSNT14-12V/12W, the cautious value of Eltako's manuals) shows **another supply recommended** and a highlighted bar; above the rated power it still shows overloaded.
 - **Eltako bus view**: **Add power supply** offers the 12 V supplies of Eltako with their rated power (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) and a custom supply to fill in yourself.
 - **Devices view (table)**: the device name opens the device in the Devices view.
 - **Room controller with several IDs** (FUTH55ED, FUTH65D): one device for the four IDs a FUTH sends from, entered with its lowest ID (ending in `00`). Controller (`+01`: climate, setpoint, temperature, night setback), pump (`+10`), operating mode (`+11`) and hygrostat (`+12`: humidity, also on the climate entity). Read only. The Devices view lists every ID, the documentation each with its profile. The offsets are those of the old integration's table; the telegrams of a FUTH55ED confirm the controller and the hygrostat, pump and mode are read from the rocker codes `0x70/0x50` and `0x70/0x50/0x30/0x10`.
@@ -65,6 +66,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Eltako-Bus-Ansicht**: Ein Netzteil, das über zwei Drittel seiner Nennleistung belastet ist (8 W von 12 W beim FSNT14-12V/12W, der vorsichtige Wert aus Eltakos Handbüchern), zeigt **weiteres Netzteil empfohlen** und einen hervorgehobenen Balken; über der Nennleistung bleibt es überlastet.
 - **Eltako-Bus-Ansicht**: **Netzteil hinzufügen** bietet die 12-V-Netzteile von Eltako mit ihrer Nennleistung an (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) und ein eigenes Netzteil zum selbst Ausfüllen.
 - **Geräteansicht (Tabelle)**: Der Gerätename öffnet das Gerät in der Ansicht Geräte.
 - **Raumregler mit mehreren IDs** (FUTH55ED, FUTH65D): ein Gerät für die vier IDs, von denen ein FUTH sendet, eingetragen mit seiner niedrigsten ID (endet auf `00`). Regler (`+01`: Klima, Sollwert, Temperatur, Nachtabsenkung), Pumpe (`+10`), Betriebsart (`+11`) und Hygrostat (`+12`: Luftfeuchte, auch an der Klima-Entität). Nur lesend. Die Geräteansicht listet jede ID, die Dokumentation jede mit ihrem Profil. Die Offsets stammen aus der Tabelle der alten Integration; die Telegramme eines FUTH55ED bestätigen Regler und Hygrostat, Pumpe und Betriebsart werden aus den Wippen-Codes `0x70/0x50` und `0x70/0x50/0x30/0x10` gelesen.

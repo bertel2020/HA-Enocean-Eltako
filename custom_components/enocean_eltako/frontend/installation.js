@@ -57,6 +57,7 @@ const SUPPLY_PRESETS = [
   { name: "SNT15-12VDC/15W", watts: "15" },
   { name: "WNT15-12VDC/24W", watts: "24" },
 ];
+const RESERVE_LIMIT = 2 / 3; // from this share of its rated power a supply gets the advice to plan another one
 const SUPPLY_BLANK = { name: "", watts: "", first: "", last: "", location: "", circuit: "", fuse: "", note: "" };
 const wnum = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 const anum = (text) => (/^\d+$/.test(text ?? "") ? Number(text) : null);
@@ -760,12 +761,13 @@ export const installation = {
     const usage = (capacity, rows) => {
       const l = load(rows);
       const pct = capacity ? Math.round((l / capacity) * 100) : null;
-      return { l, pct, over: capacity !== null && l > capacity };
+      // Eltako's manuals name 8 to 12 W for the FSNT14-12V/12W; a third of reserve (8 W of 12 W) is the cautious one
+      return { l, pct, over: capacity !== null && l > capacity, advise: capacity !== null && l > capacity * RESERVE_LIMIT && l <= capacity };
     };
-    const bar = (u) => (u.pct === null ? "" : `<span class="barbg"><i class="${u.pct >= 80 ? "hot" : ""}" style="width:${Math.min(u.pct, 100)}%"></i></span>`);
+    const bar = (u) => (u.pct === null ? "" : `<span class="barbg"><i class="${u.advise || u.over ? "hot" : ""}" style="width:${Math.min(u.pct, 100)}%"></i></span>`);
     const groups = supplies.map((x, i) => {
       const u = usage(x.capacity, rowsOf[i]);
-      const text = x.capacity !== null ? `${num(u.l)} ${t.inst.of} ${num(x.capacity)}${u.over ? ` · ${B.overloaded}` : ""}` : num(u.l);
+      const text = x.capacity !== null ? `${num(u.l)} ${t.inst.of} ${num(x.capacity)}${u.over ? ` · ${B.overloaded}` : u.advise ? ` · ${B.supplyAdvice}` : ""}` : num(u.l);
       const place = [x.s.location, x.s.circuit, x.s.fuse].filter(Boolean).join(", ");
       return { u, html: `<tr class="psu${u.over ? " bad" : ""}" data-k="psu"><td colspan="5"><div class="psurow">${sfield(x, "name", t.doc.supplyName, 150)}${sfield(x, "watts", t.doc.supplyWatts, 64)}<span class="isub">W</span><span class="isub">${esc(T.busAddress)}</span>${sfield(x, "first", t.doc.supplyFirst, 96)}<span>–</span>${sfield(x, "last", t.doc.supplyLast, 96)}${bar(u)}<span class="isub">${esc(text)}</span>${place ? `<span class="isub">· ${esc(place)}</span>` : ""}<button class="icon-btn" data-in-supply-del="${esc(x.s.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.supplyRemove)}" aria-label="${esc(t.doc.supplyRemove)}">${svg(ICON.close)}</button></div></td></tr>${rowsOf[i].map(row).join("")}` };
     });
