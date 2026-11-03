@@ -9,7 +9,8 @@
 const VERSION = new URL(import.meta.url).search;
 const { esc, svg, ICON } = await import(`./shared.js${VERSION}`);
 
-const SUBS = ["list", "addresses", "supplies", "checks", "cabinets"];
+const SUBS = ["list", "addresses", "supplies", "checks", "cabinets", "read"];
+const LISTEN = [0, 30, 60, 120]; // seconds a reading of the bus may listen
 const ADDRESSES = 126;
 const RESERVE = 2 / 3; // the mark of the load bar: from here another supply is advised
 const NEXT = ["", "bbv14", "fba14", "cable"];
@@ -18,7 +19,7 @@ const typeKey = (type) => String(type ?? "").replace(/\s+/g, "").toUpperCase();
 const fmtNum = (n) => String(n).replace(".", ",");
 const watts = (text) => (/^\d{1,4}([.,]\d{1,3})?$/.test(String(text ?? "").trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 
-export const busState = () => ({ id: "", sub: "list", mode: "place", drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false });
+export const busState = () => ({ id: "", sub: "list", mode: "place", drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
 
 // the DIN rail drawn to scale in TE (one grid column is half a TE): in the panel and in the print
 export const RAIL_CSS = `
@@ -175,6 +176,8 @@ export const BUS_STYLE = `
   .installation .bv-rowuse { font-size: calc(12px * var(--fs)); color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; grid-column: 1 / -1; padding: 0 2px 6px; }
   .installation details.bv-legacy > summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
   .installation .bv-err.top { margin: 0; }
+  .installation label.bv-optin { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); }
+  .installation label.bv-optin input { width: auto; margin: 0; }
   .installation details.bv-cabedit > summary { cursor: pointer; font-weight: 500; padding: 4px 0; }
   .installation .bv-cab .bv-cabhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
   .installation .bv-cab .bv-cabhead h3 { margin: 0; }
@@ -342,7 +345,7 @@ export const busView = {
     const errors = items.filter((i) => i.level === "error").length;
     const warnings = items.filter((i) => i.level === "warning").length;
     const subs = SUBS.map((s) => `<button data-bv-sub="${s}" aria-pressed="${state.sub === s}">${esc(B.subs[s])}${s === "checks" && (errors || warnings) ? `<span class="bv-cnt${errors ? "" : " warn"}">${errors || warnings}</span>` : ""}</button>`).join("");
-    const body = { list: () => this._bvList(v), addresses: () => this._bvAddresses(v), supplies: () => this._bvSupplies(v), checks: () => this._bvChecksView(v), cabinets: () => this._bvCabinets(v) }[state.sub]();
+    const body = { list: () => this._bvList(v), addresses: () => this._bvAddresses(v), supplies: () => this._bvSupplies(v), checks: () => this._bvChecksView(v), cabinets: () => this._bvCabinets(v), read: () => this._bvRead(v) }[state.sub]();
     return `${chips}${this._bvHead(v)}${this._bvTiles(v)}<div class="bv-bar"><div class="seg" role="group" aria-label="${esc(B.views)}">${subs}</div><span class="grow"></span><button class="chip" data-bv-act="module-new">${esc(B.addModule)}</button><button class="chip" data-bv-act="bus-edit" data-bv-id="${esc(v.bus.id)}">${esc(B.editBus)}</button><button class="chip" data-bv-act="print">${svg(ICON.print)}${esc(B.print)}</button></div>${body}${this._bvDrawer(v)}`;
   },
 
@@ -364,7 +367,7 @@ export const busView = {
     const access = v.bus.access.map((a) => {
       const gw = v.gws.get(a.entry_id);
       const name = gw ? gw.title : B.gatewayGone;
-      return `<div><b>${esc(name)}</b> <span class="mono isub">${esc(gw?.base_id ?? "")}</span> <span class="tag">${esc(a.via === "wired" ? B.wired : B.radio)}</span></div>`;
+      return `<div><b>${esc(name)}</b> <span class="isub">${esc(gw?.model_name ?? "")}</span> <span class="mono isub">${esc(gw?.base_id ?? "")}</span> <span class="tag">${esc(a.via === "wired" ? B.wired : B.radio)}</span></div>`;
     }).join("");
     const wiredOnly = v.bus.access.some((a) => a.via === "wired");
     return `<div class="bv-head"><div class="bv-card master"><span class="bv-role">${esc(B.master)}</span>${masterCard}</div><div class="bv-card access"><span class="bv-role">${esc(B.access)}</span>${access || `<div class="isub">${esc(B.noAccess)}</div>`}<div class="isub">${esc(wiredOnly ? B.wiredPath : B.radioPath)}</div></div></div>`;
@@ -518,6 +521,7 @@ export const busView = {
       const found = v.devices.get(`${entryId}|${key}`);
       return `<button class="chip small" data-bv-assign="${esc(target.id)}">+ ${esc(found?.d.name ?? key)}</button>`;
     }
+    if (target.type === "heard") return `<button class="chip small" data-bv-sub="read">${esc(B.addressN(target.id))}</button>`;
     if (target.type === "row") {
       const found = v.rows.get(target.id);
       return found ? `<button class="chip small" data-bv-go="row|${esc(target.id)}">${esc(`${found.cab.name} · ${found.row.name}`)}</button>` : "";
@@ -880,7 +884,7 @@ export const busView = {
       <dt>${esc(B.module)}</dt><dd>${this._bvL("module", m.id, esc(this._bvTitle(v, m)))} · ${esc(B.channelOf(c.n, this._bvCount(v, m)))}</dd>
       <dt>${esc(B.place)}</dt><dd>${m.row ? this._bvL("place", m.id, esc(this._bvPlace(v, m))) : `<span class="tag warn">${esc(B.noPlace)}</span>`}</dd>
       <dt>${esc(B.address)}</dt><dd class="mono">${a ?? esc(B.none)}${others.length ? ` · ${esc(B.alsoAt)} ${others.map(({ x, y }) => this._bvL("channel", `${x.id}:${y.n}`, esc(this._bvChannel(v, x, y).name))).join(", ")}` : ""}</dd>
-      <dt>${esc(B.feedback)}</dt><dd class="mono">${esc(c.feedback_id || "–")}</dd>
+      <dt>${esc(B.feedback)}</dt><dd class="mono">${esc(c.feedback_id || "–")}${this._bvFeedbackHint(v, m, c)}</dd>
       <dt>${esc(B.inHa)}</dt><dd>${info.ha ? `${this._bvHaLink(v, info.ha)} <span class="isub">${esc(info.ha.d.area ?? "")}</span>` : `<span class="tag doc">${esc(B.notInHa)}</span>`}</dd>
       ${info.ha ? `<dt>${esc(B.radioId)}</dt><dd class="mono">${esc(info.ha.d.id)} <span class="isub">${esc(B.belongsTo(info.ha.gw.title))}</span></dd>` : ""}
       ${c.function ? `<dt>${esc(B.functionField)}</dt><dd>${esc(c.function)}</dd>` : ""}
@@ -911,6 +915,96 @@ export const busView = {
     const numbers = ha ? this._bvSenderNumber(links[0].gw, first.from_id) : null;
     const crumbs = this._bvCrumbs([[v.bus ? this._bvBusName(v, v.bus) : B.bus, "view", "list"], [B.sender], [name]]);
     return this._bvDHead(crumbs, esc(name), `<span class="tag">${esc(ha ? B.haSender : B.radioSender)}</span><span class="mono">${esc(first.from_id)}</span>`) + `<div class="bv-dbody"><dl class="bv-kv"><dt>ID</dt><dd class="mono">${esc(first.from_id || "–")}</dd>${numbers != null ? `<dt>${esc(B.pool)}</dt><dd>${esc(links[0].gw.title)} · ${esc(B.number(numbers))} <button class="bv-lnk" data-in-snd="${esc(links[0].gw.entry_id)}|${numbers}">${esc(B.toSenderTab)}</button></dd>` : ""}</dl><div class="bv-box"><div class="bv-bar"><h3>${esc(B.taughtInto)}</h3><span class="isub">${esc(B.channelsCount(links.length))}</span></div><div class="bv-chlist">${rows}</div></div></div>`;
+  },
+
+  _bvSuggestFeedback(v, m, c) {
+    // the FAM14 radios a channel's confirmation with its base ID plus the address (Eltako): a suggestion only
+    const bus = v.buses.find((b) => b.id === m.bus);
+    const a = this._bvAddr(m, c);
+    if (!bus?.base_id || a == null || a < 1 || a > ADDRESSES) return null;
+    const n = parseInt(bus.base_id.replace(/-/g, ""), 16) + a;
+    return n.toString(16).toUpperCase().padStart(8, "0").replace(/(..)(?=.)/g, "$1-");
+  },
+
+  _bvFeedbackHint(v, m, c) {
+    const B = this._t.inst.busv;
+    const hint = this._bvSuggestFeedback(v, m, c);
+    if (!hint) return "";
+    const same = c.feedback_id && c.feedback_id.replace(/[-: ]/g, "").toUpperCase() === hint.replace(/-/g, "");
+    return same ? ` <span class="tag ok">${esc(B.feedbackMatches)}</span>` : `<div class="isub">${esc(B.feedbackSuggest(hint))} <button class="chip small" data-bv-feedback="${esc(m.id)}:${c.n}|${esc(hint)}">${esc(B.take)}</button></div>`;
+  },
+
+  // ---- reading the bus (experimental): only listening, the server sends nothing -------------------
+
+  _bvRead(v) {
+    const B = this._t.inst.busv;
+    const state = this._in.bus;
+    const seen = this._in.doc.installation_observed?.[v.bus.id];
+    const running = Boolean(state.listening);
+    const options = LISTEN.map((n) => `<option value="${n}"${state.seconds === n ? " selected" : ""}>${esc(B.listenFor(n))}</option>`).join("");
+    const control = `<div class="bv-box edit"><div class="bv-bar"><span class="tag warn">${esc(B.experimental)}</span><b>${esc(B.readTitle)}</b></div><p class="bv-note">${esc(B.readNote)}</p>
+      <label class="bv-optin"><input type="checkbox" data-bv-optin${state.optIn ? " checked" : ""}${running ? " disabled" : ""}>${esc(B.optIn)}</label>
+      <div class="bv-bar"><label class="isub">${esc(B.duration)} <select data-bv-seconds${running ? " disabled" : ""}>${options}</select></label>${running ? `<button class="chip" data-bv-act="listen-stop">${esc(B.listenStop)}</button><span class="isub" role="status">${esc(B.listening(state.left, state.heard ?? 0))}</span>` : `<button class="chip primary" data-bv-act="listen"${state.optIn ? "" : " disabled"}>${esc(B.listen)}</button>`}</div>${state.error && state.sub === "read" ? `<div class="bv-err" role="alert">${esc(state.error)}</div>` : ""}</div>`;
+    if (!seen) return `${control}<p class="bv-note">${esc(B.notReadYet)}</p>`;
+    const documented = new Map();
+    for (const m of v.modules) for (const c of m.channels) if (!c.unused && this._bvAddr(m, c) != null) documented.set(this._bvAddr(m, c), [...(documented.get(this._bvAddr(m, c)) ?? []), { m, c }]);
+    const known = new Set((this._in.doc.gateways ?? []).flatMap((g) => g.devices.flatMap((d) => [d.id, ...(d.ids ?? []).map((x) => x.id)])));
+    const ago = (t) => this._t.ago(Math.max(0, Math.round(this._now() / 1000 - t)));
+    const rows = Object.entries(seen.answers).map(([a, x]) => {
+      const docs = documented.get(Number(a)) ?? [];
+      const as = docs.length ? docs.map(({ m, c }) => this._bvL("channel", `${m.id}:${c.n}`, esc(`${m.type} ${B.channelShort(c.n)} · ${this._bvChannel(v, m, c).name}`))).join("<br>") : `<span class="tag warn">${esc(B.notDocumented)}</span> <button class="chip small" data-bv-docaddr="${esc(a)}">${esc(B.document)}</button>`;
+      const inHa = known.has(x.sender) || docs.some(({ c }) => c.device_key);
+      const add = inHa ? `<span class="tag ok">${esc(B.inHaShort)}</span>` : `<button class="chip small" data-bv-adddev="${esc(x.sender)}">${esc(this._t.addAsDevice)}</button>`;
+      return `<tr><td class="mono">${esc(a)}</td><td class="mono">${esc(x.sender)}</td><td class="bv-hide-s">${esc(x.wired ? B.viaWire : B.viaRadio)}</td><td>${esc(B.kinds[x.kind] ?? x.kind)}</td><td class="isub">${esc(ago(x.time))}</td><td>${as}</td><td>${add}</td></tr>`;
+    }).join("");
+    const base = v.bus.base_id
+      ? `<div class="isub">${esc(B.baseUsed(v.bus.base_id))}</div>`
+      : seen.candidates.length
+        ? `<div class="bv-bar"><span>${esc(B.baseCandidate(seen.candidates[0][0], seen.candidates[0][1]))}</span><button class="chip small" data-bv-takebase="${esc(seen.candidates[0][0])}">${esc(B.take)}</button></div>`
+        : `<div class="isub">${esc(B.noBase)}</div>`;
+    return `${control}<div class="bv-box"><div class="bv-bar"><b>${esc(B.readResult(Object.keys(seen.answers).length, seen.heard))}</b><span class="isub">${esc(B.listenFor(seen.seconds))}</span></div>${base}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(B.cols.address)}</th><th>ID</th><th class="bv-hide-s">${esc(B.heardVia)}</th><th>${esc(B.lastTelegram)}</th><th>${esc(B.when)}</th><th>${esc(B.documentedAs)}</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="7" class="none">${esc(B.nothingHeard)}</td></tr>`}</tbody></table></div></div><p class="bv-note">${esc(B.readSources)}</p>`;
+  },
+
+  async _bvListen() {
+    const state = this._in.bus;
+    const bus = this._bv().bus;
+    if (!bus || !state.optIn || state.listening) return;
+    Object.assign(state, { left: state.seconds, heard: 0, error: "" });
+    const msg = { type: "enocean_eltako/installation/listen", bus_id: bus.id, seconds: state.seconds, opt_in: true };
+    const done = (event) => {
+      if (event.type === "progress") {
+        Object.assign(state, { left: event.left, heard: event.heard });
+        this._renderInstallation();
+        return;
+      }
+      const doc = this._in.doc;
+      Object.assign(doc, { installation: event.installation, installation_checks: event.checks, installation_observed: event.observed });
+      this._bvStopListen();
+    };
+    try {
+      state.listening = this._hass.connection.subscribeMessage(done, msg);
+      this._renderInstallation();
+      await state.listening;
+    } catch (err) {
+      state.listening = null;
+      state.error = this._t.inst.busv.errors[err?.code] ?? this._t.inst.busv.errors.other;
+      this._renderInstallation();
+    }
+  },
+
+  async _bvStopListen() {
+    const state = this._in.bus;
+    const pending = state.listening;
+    state.listening = null;
+    this._renderInstallation();
+    if (pending) {
+      try {
+        const unsubscribe = await pending;
+        await unsubscribe?.();
+      } catch (err) {
+        // the session ended already
+      }
+    }
   },
 
   _bvSenderNumber(gw, id) {
@@ -999,7 +1093,7 @@ export const busView = {
     // true when the click was the bus view's
     const state = this._in.bus;
     if (e.target.closest("[data-in-goto], [data-in-snd]") && state.drawer) Object.assign(state, { drawer: null, history: [], draft: null });
-    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-mode], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel], [data-bv-move], [data-bv-cabsel]");
+    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-mode], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel], [data-bv-move], [data-bv-cabsel], [data-bv-feedback], [data-bv-takebase], [data-bv-adddev], [data-bv-docaddr], [data-bv-optin]");
     if (!el || !this.shadowRoot.getElementById("installation")?.contains(el)) {
       const legacy = e.target.closest("details.bv-legacy > summary");
       if (legacy) state.legacyOpen = !legacy.parentElement.open;
@@ -1020,7 +1114,19 @@ export const busView = {
       state.mode = d.bvMode;
       this._renderInstallation();
     } else if (d.bvAssign) this._bvAssign(d.bvAssign);
-    else if (d.bvRowadd) this._bvRowAdd(d.bvRowadd);
+    else if ("bvOptin" in d) {
+      state.optIn = el.checked;
+      this._renderInstallation();
+    } else if (d.bvFeedback) this._bvTakeFeedback(d.bvFeedback);
+    else if (d.bvTakebase) {
+      const v = this._bv();
+      this._bvCall({ type: "enocean_eltako/installation/set", kind: "bus", item: { ...v.bus, base_id: d.bvTakebase } }).then((r) => r && this._bvReload());
+    } else if (d.bvAdddev) this._addDevice(d.bvAdddev);
+    else if (d.bvDocaddr) {
+      this._bvAct("module-new", el);
+      state.draft.module.first_address = Number(d.bvDocaddr);
+      this._renderInstallation();
+    } else if (d.bvRowadd) this._bvRowAdd(d.bvRowadd);
     else if (d.bvMove) {
       const [id, dir] = d.bvMove.split("|");
       this._bvMove(id, Number(dir));
@@ -1058,6 +1164,8 @@ export const busView = {
     else if (act === "bus-save") this._bvSaveBus();
     else if (act === "bus-remove") this._bvRemove("bus", state.drawer?.id);
     else if (act === "print") this._bvPrint();
+    else if (act === "listen") this._bvListen();
+    else if (act === "listen-stop") this._bvStopListen();
     else if (act === "arrange") {
       Object.assign(state, { arrange: !state.arrange, error: "" });
       this._renderInstallation();
@@ -1066,6 +1174,11 @@ export const busView = {
   },
 
   _busInput(e) {
+    const seconds = e.target.closest?.("[data-bv-seconds]");
+    if (seconds) {
+      this._in.bus.seconds = Number(seconds.value);
+      return true;
+    }
     // the type of a new module decides its channels and fields: redraw the form with what was typed
     const input = e.target.closest("[data-bv-form] [data-bvf]");
     if (!input || !["type", "role"].includes(input.dataset.bvf) || e.type !== "change") return false;
@@ -1241,6 +1354,17 @@ export const busView = {
         this.shadowRoot.querySelectorAll("#installation .bvr-tile.hl").forEach((el) => el.classList.remove("hl"));
       }
     }, 1600);
+  },
+
+  async _bvTakeFeedback(ref) {
+    // the suggested feedback ID (FAM14 base ID + address) written into the channel
+    const [where, hint] = ref.split("|");
+    const [mid, n] = where.split(":");
+    const m = this._bv().byId.get(mid);
+    if (!m) return;
+    const channels = m.channels.map((c) => (String(c.n) === n ? { ...c, feedback_id: hint } : c));
+    const result = await this._bvCall({ type: "enocean_eltako/installation/set", kind: "module", item: { ...m, channels } });
+    if (result) await this._bvReload();
   },
 
   _bvNewForeign(v) {
