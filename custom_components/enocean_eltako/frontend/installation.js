@@ -880,7 +880,7 @@ export const installation = {
     const state = this._in;
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
     // the bus counts its documented devices (modules) once the server keeps them
-    const busDevices = (state.doc.installation?.modules ?? []).filter((m) => !["master", "supply", "foreign"].includes(m.role || state.doc.bus_types?.[String(m.type).replace(/\s+/g, "").toUpperCase()]?.role || "other"));
+    const busDevices = (state.doc.installation?.modules ?? []).filter((m) => !["master", "supply", "foreign", "accessory"].includes(m.role || state.doc.bus_types?.[String(m.type).replace(/\s+/g, "").toUpperCase()]?.role || "other"));
     const count = (view) => (view === "bus" && state.doc.installation ? busDevices.length : all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length);
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
     this._artChips = "";

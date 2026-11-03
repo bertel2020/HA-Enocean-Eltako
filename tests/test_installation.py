@@ -98,11 +98,19 @@ def test_the_catalog_knows_width_addresses_power_and_role() -> None:
     assert (fsr.te, fsr.addresses, fsr.power, fsr.role) == (1, 4, 0.7, "actuator")
     fam = bus_type("FAM14")
     assert (fam.te, fam.addresses, fam.supply, fam.role) == (2, 0, 12.0, "master")
-    assert bus_type("F3Z14D").addresses == 3 and bus_power("F3Z14D") is None
+    assert bus_type("F3Z14D").addresses == 3 and bus_power("F3Z14D") == 0.1
+    assert bus_type("FSU14").addresses == 8 and bus_type("FMSR14").addresses == 5
+    assert bus_type("FTS14TG").te == 2.5 and bus_type("FUD14/800W").te == 2
+    assert bus_type("DS14").role == "accessory" and bus_type("DS14").te == 0.5
     assert bus_type("FSNT14-12V/12W").role == "supply"
     assert bus_type("FSR14") is None and bus_type(None) is None
-    assert all(t.role in ("master", "supply", "actuator", "meter", "input", "gateway", "other")
-               for t in BUS_TYPES.values())  # fmt: skip
+    from custom_components.enocean_eltako.bus_devices import ROLES
+
+    assert all(t.role in ROLES for t in BUS_TYPES.values())
+    assert len(BUS_TYPES) == 52
+    from custom_components.enocean_eltako.bus_devices import is_bus_model
+
+    assert is_bus_model("FSR14M-2x") and is_bus_model("BGW14") and not is_bus_model("GBA14")
 
 
 def test_notes_of_version_7_become_buses_modules_and_channels() -> None:
@@ -350,8 +358,8 @@ def test_supplies_feed_by_address_range_or_by_place() -> None:
     s1, s2 = loads["supplies"]
     assert (s1["range"], s2["range"]) == ("1-8", "9-126")
     assert s1["load"] == 0.7  # the FSR14-4x, once
-    assert s2["load"] == 0.42  # FSB14 9; the F3Z14D at 12 has no value
-    assert len(s2["without_value"]) == 1
+    assert s2["load"] == 0.52  # FSB14 at 9 and F3Z14D at 12
+    assert s2["without_value"] == []
     # every supply placed (and the master): sections between separator bridges
     master = next(m for m in data["modules"] if m["id"] == data["buses"][0]["master"])
     s1_module = next(m for m in data["modules"] if m["supply_id"] == "s1")

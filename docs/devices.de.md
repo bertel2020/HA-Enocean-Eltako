@@ -73,44 +73,63 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 
 Was die Bus-Ansicht der Installationsdokumentation über einen Typ weiß: Breite in TE
 (je 18 mm), belegte Bus-Adressen (eine je Kanal), Leistung, die er vom Bus nimmt, und was er
-liefert (Watt; Quelle: Eltako Planungshilfe RS485-Bus Baureihe 14, 07/2014). Ein Strich: nicht bekannt. Mit * markierte Werte sind
+liefert (Watt; Quelle: Eltako operating manual series 14 RS485 bus 10/2026, main catalogue chapter 1). Ein Strich: in den Eltako-Unterlagen nicht angegeben. Mit * markierte Werte sind
 Annahmen, bis ein Datenblatt sie bestätigt.
 
 | Typ | Rolle | TE | Adressen | Nimmt (W) | Liefert (W) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| DSZ14DRS | Zähler | 4* | 1 | – | – |
-| F3Z14D | Zähler | 1* | 3 | – | – |
-| F4SR14-LED | Aktor | 1 | 4 | – | – |
-| FAE14LPR | Aktor | – | – | 0,42 | – |
-| FAE14SSR | Aktor | – | – | 0,4 | – |
+| BGW14 | Gateway | 1 | – | 0,3 | – |
+| DS14 | Zubehör (nicht am Bus) | 0,5 | 0 | – | – |
+| DSZ14DRS-3x80A | Zähler | 4 | – | – | – |
+| DSZ14WDRS-3x5A | Zähler | 4 | – | – | – |
+| F2L14 | Aktor | 1 | – | 0,14 | – |
+| F3Z14D | Zähler | 1 | 3 | 0,1 | – |
+| F4HK14 | Aktor | 1 | 4 | 0,7 | – |
+| F4SR14-LED | Aktor | 2 | 4 | 1 | – |
+| FAE14LPR | Aktor | 1 | 2 | 0,42 | – |
+| FAE14SSR | Aktor | 1 | 2 | 0,4 | – |
 | FAM14 | Bus-Master | 2 | 0 | 0,8 | 12 |
+| FBA14 | Zubehör (nicht am Bus) | 1 | 0 | – | – |
+| FD2G14 | Gateway | – | – | 0,5 | – |
+| FDG14 | Gateway | 2 | 16 | 0,4 | – |
 | FFR14 | Aktor | – | – | 0,63 | – |
-| FGSM14 | Sonstiges | – | – | 0,2 | – |
+| FGSM14 | Gateway | – | – | 0,2 | – |
 | FGW14 | Gateway | 1 | 1 | 0,5 | – |
-| FGW14-USB | Gateway | 1 | 1 | 0,5 | – |
-| FHK14 | Aktor | – | – | 0,42 | – |
-| FMS14 | Aktor | – | – | 0,63 | – |
-| FMSR14 | Eingänge | – | – | 0,1 | – |
-| FMZ14 | Aktor | – | – | 0,4 | – |
-| FRP14 | Sonstiges | – | – | 0,5 | – |
+| FGW14-USB | Gateway | 1 | 1 | 0,3 | – |
+| FHK14 | Aktor | 1 | – | 0,42 | – |
+| FLUD14 | Sonstiges | 1 | – | – | – |
+| FMS14 | Aktor | 1 | – | 0,63 | – |
+| FMSR14 | Eingänge | 1 | 5 | 0,1 | – |
+| FMZ14 | Aktor | 1 | 1 | 0,4 | – |
+| FPLG14 | Gateway | – | – | 0,4 | – |
+| FPLT14 | Gateway | – | – | 0,4 | – |
+| FRGBW14 | Aktor | – | – | 0,1 | – |
+| FRP14 | Sonstiges | 1 | – | 0,5 | – |
 | FSB14 | Aktor | 1 | 2 | 0,42 | – |
-| FSG14/1-10V | Aktor | – | – | 0,2 | – |
+| FSDG14 | Zähler | 1 | 2 | 0,4 | – |
+| FSG14/1-10V | Aktor | 1 | 1 | 0,2 | – |
+| FSM14-UC | Eingänge | 1 | – | 0,1 | – |
 | FSNT14-12V/12W | Netzteil | 1 | 0 | – | 12 |
 | FSR14-2x | Aktor | 1 | 2 | 0,14 | – |
 | FSR14-4x | Aktor | 1 | 4 | 0,7 | – |
-| FSR14SSR | Aktor | 1 | 2* | 0,4 | – |
-| FSU14 | Aktor | 1 | 1* | 0,14 | – |
-| FTD14 | Sonstiges | – | – | 0,53 | – |
+| FSR14M-2x | Aktor | – | 2* | 0,14 | – |
+| FSR14SSR | Aktor | 1 | 2 | 0,4 | – |
+| FSU14 | Aktor | 1 | 8 | 0,14 | – |
+| FTD14 | Sonstiges | 1 | – | 0,53 | – |
 | FTN14 | Aktor | 1 | 1 | 0,14 | – |
-| FTS14EM | Eingänge | 1 | – | 0,13 | – |
-| FTS14FA | Eingänge | – | – | 0,5 | – |
-| FTS14KS | Bus-Master | – | – | 0,36 | – |
-| FTS14TG | Eingänge | 1 | 1 | 0,42 | – |
+| FTS14EM | Eingänge | 2 | 0 | 0,13 | – |
+| FTS14FA | Eingänge | 1 | – | 0,5 | – |
+| FTS14GBZ | Eingänge | – | – | 0,1 | – |
+| FTS14KS | Bus-Master | 2 | 0 | 0,4 | 8 |
+| FTS14TG | Eingänge | 2,5 | 1 | 0,42 | – |
 | FUD14 | Aktor | 1 | 1 | 0,2 | – |
-| FUD14/800W | Aktor | 1 | 1 | 0,2 | – |
-| FWZ14 | Zähler | 1 | 1 | 0,1 | – |
-| FWZ14-65A | Zähler | 1 | 1 | 0,1 | – |
+| FUD14/800W | Aktor | 2 | 1 | 0,2 | – |
+| FWG14MS | Gateway | 1 | – | 0,3 | – |
+| FWZ14 | Zähler | 1 | 1* | 0,1 | – |
+| FWZ14-65A | Zähler | 1 | 1* | 0,1 | – |
 | FZK14 | Aktor | – | – | 0,14 | – |
+| GBA14 | Zubehör (nicht am Bus) | 1 | 0 | – | – |
+| STE14 | Zubehör (nicht am Bus) | 1 | 0 | – | – |
 
 ## Über den Katalog hinaus
 

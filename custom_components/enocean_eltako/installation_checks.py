@@ -28,7 +28,7 @@ from .installation_data import (
 )
 
 RESERVE_LIMIT = 2 / 3  # above this share of its rated power a supply should get company
-NOT_CONSUMERS = ("master", "supply", "foreign")
+NOT_CONSUMERS = ("master", "supply", "foreign", "accessory")
 # from about half of 12 W, supplies and dimmers side by side want half a TE of air between them
 # (DS14 spacer or the long bridges); assumption (A) of the concept, section 2.3
 SPACING_WATTS = 6.0
@@ -132,7 +132,7 @@ def _by_place(data: dict[str, Any], modules: list[dict[str, Any]]) -> dict[str, 
     sections: list[list[dict[str, Any]]] = []
     last_cabinet, cut = None, True
     for module in bus_order(data, modules):
-        if role(module) == "foreign":
+        if role(module) in ("foreign", "accessory"):
             continue
         cabinet = rows[module["row"]][0]["id"]
         if cut or cabinet != last_cabinet:
@@ -319,7 +319,7 @@ def _bus_checks(
                 count=len(loads["unfed"]),
             )
         )
-    consumers = [m for m in modules if role(m) not in ("master", "supply", "foreign")]
+    consumers = [m for m in modules if role(m) not in NOT_CONSUMERS]
     without_address = [_module(m) for m in consumers if m["first_address"] is None]
     if without_address:
         items.append(_item("warning", "no_address", without_address, count=len(without_address)))
@@ -391,7 +391,7 @@ def _rail_checks(
     """What the rail says: air between warm modules, the FUD14's spacer, the terminating
     resistor at the end of the bus, and how a row hands the bus on to the next."""
     items: list[dict[str, Any]] = []
-    order = [m for m in bus_order(data, modules) if role(m) != "foreign"]
+    order = [m for m in bus_order(data, modules) if role(m) not in ("foreign", "accessory")]
     if not order:
         return items
     rows = rows_by_id(data)

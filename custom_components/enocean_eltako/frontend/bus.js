@@ -15,6 +15,7 @@ const ADDRESSES = 126;
 const RESERVE = 2 / 3; // the mark of the load bar: from here another supply is advised
 const NEXT = ["", "bbv14", "fba14", "cable"];
 const LEVELS = ["error", "warning", "info"];
+const OFF = ["foreign", "accessory"]; // on the rail, not on the bus
 const typeKey = (type) => String(type ?? "").replace(/\s+/g, "").toUpperCase();
 const fmtNum = (n) => String(n).replace(".", ",");
 const watts = (text) => (/^\d{1,4}([.,]\d{1,3})?$/.test(String(text ?? "").trim()) ? Number(String(text).trim().replace(",", ".")) : null);
@@ -70,7 +71,7 @@ export const RAIL_CSS = `
   [data-r="actuator"] { --k: var(--k-aktor, #d77f1f); }
   [data-r="meter"] { --k: var(--k-sensor, #139a87); }
   [data-r="input"] { --k: var(--k-taster, #7b5cc9); }
-  [data-r="supply"], [data-r="foreign"], [data-r="other"] { --k: var(--k-psu, #6b7b8d); }`;
+  [data-r="supply"], [data-r="foreign"], [data-r="accessory"], [data-r="other"] { --k: var(--k-psu, #6b7b8d); }`;
 const SECTION_COLORS = ["var(--k-bus)", "var(--k-aktor)", "var(--k-sensor)", "var(--k-taster)"];
 
 export const BUS_STYLE = `
@@ -95,7 +96,7 @@ export const BUS_STYLE = `
   .installation [data-r="actuator"] { --k: var(--k-aktor); }
   .installation [data-r="meter"] { --k: var(--k-sensor); }
   .installation [data-r="input"] { --k: var(--k-taster); }
-  .installation [data-r="supply"], .installation [data-r="foreign"], .installation [data-r="other"] { --k: var(--k-psu); }
+  .installation [data-r="supply"], .installation [data-r="foreign"], .installation [data-r="accessory"], .installation [data-r="other"] { --k: var(--k-psu); }
   .installation .itable tr.bv-mod td { background: color-mix(in srgb, var(--k) 7%, var(--surface)); border-top: 1px solid var(--line); vertical-align: top; }
   .installation .itable tr.bv-mod > td:first-child { box-shadow: inset 3px 0 0 var(--k); }
   .installation .itable tr.bv-ch > td:first-child { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--k) 35%, transparent); }
@@ -232,7 +233,7 @@ export const busView = {
 
   _bvCount(v, m) {
     // how many addresses a module takes: the catalog's, at least its highest channel
-    if (["master", "supply", "foreign"].includes(this._bvRole(v, m))) return 0;
+    if (["master", "supply", "foreign", "accessory"].includes(this._bvRole(v, m))) return 0;
     const n = Math.max(this._bvType(v, m)?.addresses ?? 0, ...m.channels.map((c) => c.n), 0);
     return n || 1;
   },
@@ -375,7 +376,7 @@ export const busView = {
 
   _bvTiles(v) {
     const B = this._t.inst.busv;
-    const devices = v.modules.filter((m) => !["master", "supply", "foreign"].includes(this._bvRole(v, m)));
+    const devices = v.modules.filter((m) => !["master", "supply", "foreign", "accessory"].includes(this._bvRole(v, m)));
     const unplaced = devices.filter((m) => !m.row).length;
     const chs = this._bvChannels(v);
     const inHa = chs.filter((x) => x.c.device_key).length;
@@ -411,9 +412,9 @@ export const busView = {
       const s = this._bvSupplyOf(v, m);
       const role = this._bvRole(v, m);
       const place = this._bvPlace(v, m);
-      const power = role === "foreign" ? '<span class="isub">–</span>' : role === "supply" || role === "master" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
+      const power = OFF.includes(role) ? '<span class="isub">–</span>' : role === "supply" || role === "master" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
       const range = this._bvRange(v, m) ?? (this._bvCount(v, m) ? `<span class="tag warn">${esc(B.none)}</span>` : "–");
-      const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : role === "foreign" ? `<span class="tag doc">${esc(B.roles.foreign)}</span>` : ""].join("");
+      const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : OFF.includes(role) ? `<span class="tag doc">${esc(B.roles[role])}</span>` : ""].join("");
       return `<tr class="bv-mod" data-r="${role}" data-in-row="bv|${esc(m.id)}"><td>${place ? this._bvL("place", m.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`}</td><td>${this._bvL("module", m.id, `<b>${esc(m.type || B.unknownType)}</b>`)} ${m.name ? esc(m.name) : ""} ${tags}<div class="isub">${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.legacy_location ? ` · ${esc(B.before)} „${esc(m.legacy_location)}“` : ""}</div></td><td class="mono">${range}</td><td></td><td class="bv-hide-s"></td><td class="bv-hide-s"></td><td class="num">${power}</td><td class="bv-hide-s">${s ? this._bvL("supply", s.module ?? "", esc(this._bvSupplyName(v, s))) : '<span class="isub">–</span>'}</td></tr>`;
     };
     let body = "";
@@ -589,7 +590,7 @@ export const busView = {
       const moves = edit ? `<div class="bvr-moves" style="grid-column:${col} / span ${span}"><button data-bv-move="${esc(m.id)}|-1" title="${esc(B.moveLeft)}" aria-label="${esc(`${m.type} ${B.moveLeft}`)}">◀</button><button data-bv-move="${esc(m.id)}|1" title="${esc(B.moveRight)}" aria-label="${esc(`${m.type} ${B.moveRight}`)}">▶</button></div>` : "";
       const tag = print ? "div" : "button";
       const go = print ? "" : ` data-bv-go="module|${esc(m.id)}"`;
-      if (role === "foreign") {
+      if (OFF.includes(role)) {
         items.push(`<${tag} class="bvr-tile foreign wide" data-r="foreign"${go} data-hl="${esc(m.id)}" style="grid-column:${col} / span ${span}" title="${esc(title)}"><span class="bvr-type">${esc(m.name || m.type || B.roles.foreign)}</span><span class="bvr-lbl">${esc(B.notOnBusTe(fmtNum(te)))}</span></${tag}>${moves}`);
       } else {
         const count = this._bvCount(v, m);
@@ -618,7 +619,7 @@ export const busView = {
       items.push(`<${tag} class="bvr-band${s.state === "over" || s.state === "none" ? " bad" : ""}" style="--sec:${s.color};grid-column:${Math.max(a, 1)} / ${Math.min(b, cols + 1)}"${print ? "" : ` data-bv-sub="supplies"`} title="${esc(`${B.section(s.section)}: ${w(s.load)} / ${w(s.capacity)}`)}">${esc(text)}</${tag}>`);
     }
     const used = mods.reduce((n, m) => n + this._bvTe(v, m) + (m.spacer_before ? 0.5 : 0), 0);
-    const foreign = mods.filter((m) => this._bvRole(v, m) === "foreign").length;
+    const foreign = mods.filter((m) => OFF.includes(this._bvRole(v, m))).length;
     const next = row.next?.kind ? `<div class="bvr-foot">↳ ${esc(B.busOn(B.next[row.next.kind], row.next.length_m))}</div>` : "";
     return `<div class="bvr-row${this._in.bus.hl === row.id ? " hl" : ""}" data-bv-rail="${esc(row.id)}"><div class="bvr-label"><b>${esc(row.name)}</b><span class="isub">${esc(B.rowUse2(fmtNum(used), row.te, mods.length - foreign, foreign))}</span></div><div class="bvr-wrap"><div class="bvr-rail" style="--cols:${cols}">${items.join("")}</div></div>${next}</div>`;
   },
@@ -688,7 +689,7 @@ export const busView = {
         if (start > at) cells.push(`<div class="cell gap" style="width:${(start - at) * 18}mm"></div>`);
         if (m.spacer_before) cells.push(`<div class="cell gap" style="width:9mm"></div>`);
         const names = m.channels.filter((c) => !c.unused).map((c) => `${c.n} ${this._bvChannel(v, m, c).name}`);
-        cells.push(`<div class="cell" style="width:${this._bvTe(v, m) * 18}mm"><b>${esc(this._bvRole(v, m) === "foreign" ? m.name || m.type : m.type || "")}</b><span class="mono">${esc(this._bvRange(v, m) ?? "")}</span>${names.map((n) => `<span>${esc(n)}</span>`).join("")}</div>`);
+        cells.push(`<div class="cell" style="width:${this._bvTe(v, m) * 18}mm"><b>${esc(OFF.includes(this._bvRole(v, m)) ? m.name || m.type : m.type || "")}</b><span class="mono">${esc(this._bvRange(v, m) ?? "")}</span>${names.map((n) => `<span>${esc(n)}</span>`).join("")}</div>`);
         at = m.slot + this._bvTe(v, m);
       }
       return `<div class="strip"><div class="sub">${esc(`${c.name} · ${r.name}`)}</div><div class="cells">${cells.join("")}</div></div>`;
@@ -819,14 +820,14 @@ export const busView = {
     const check = (name, label, on) => `<label class="check"><input type="checkbox" data-bvf="${name}"${on ? " checked" : ""}>${esc(label)}</label>`;
     const rowOptions = `<option value="">${esc(B.noPlaceOption)}</option>${v.data.cabinets.flatMap((c) => c.rows.map((r) => `<option value="${esc(r.id)}"${r.id === m.row ? " selected" : ""}>${esc(`${c.name} · ${r.name} (${B.te(r.te)})`)}</option>`)).join("")}`;
     const types = Object.values(v.types).map((x) => `<option value="${esc(x.name)}"></option>`).join("");
-    const roles = ["", "master", "supply", "actuator", "meter", "input", "gateway", "other", "foreign"].map((r) => `<option value="${r}"${(m.role || "") === r ? " selected" : ""}>${esc(r ? B.roles[r] : B.roleAuto)}</option>`).join("");
+    const roles = ["", "master", "supply", "actuator", "meter", "input", "gateway", "other", "accessory", "foreign"].map((r) => `<option value="${r}"${(m.role || "") === r ? " selected" : ""}>${esc(r ? B.roles[r] : B.roleAuto)}</option>`).join("");
     const buses = v.buses.length > 1 ? `<label><span>${esc(B.bus)}</span><select data-bvf="bus">${v.buses.map((b) => `<option value="${esc(b.id)}"${b.id === m.bus ? " selected" : ""}>${esc(this._bvBusName(v, b))}</option>`).join("")}</select></label>` : "";
     const count = Math.max(this._bvCount(v, m), m.channels.length ? Math.max(...m.channels.map((c) => c.n)) : 0);
     // the devices of Home Assistant on the gateways of this bus that are not a channel elsewhere
     const bus = v.buses.find((b) => b.id === m.bus) ?? v.bus;
     const taken = new Set(v.data.modules.filter((x) => x.id !== m.id).flatMap((x) => x.channels.filter((c) => c.device_key).map((c) => `${c.entry_id}|${c.device_key}`)));
     const candidates = [...v.devices.entries()].filter(([k, x]) => !x.d.virtual && !taken.has(k) && (bus?.access ?? []).some((a) => a.entry_id === x.gw.entry_id)).sort((a, b) => a[1].d.name.localeCompare(b[1].d.name));
-    const channelRows = role === "master" || role === "supply" || role === "foreign" ? "" : Array.from({ length: Math.min(Math.max(count, 1), 16) }, (_, i) => {
+    const channelRows = role === "master" || role === "supply" || OFF.includes(role) ? "" : Array.from({ length: Math.min(Math.max(count, 1), 16) }, (_, i) => {
       const n = i + 1;
       const c = m.channels.find((x) => x.n === n) ?? { n, device_key: null, manual_id: null, entry_id: null, name: "", function: "", feedback_id: "", unused: false };
       const value = c.unused ? "unused" : c.device_key ? `ha|${c.entry_id}|${c.device_key}` : c.manual_id ? `manual|${c.entry_id}|${c.manual_id}` : c.name || c.function ? "doc" : "";
@@ -835,7 +836,7 @@ export const busView = {
       const options = `<option value=""${value === "" ? " selected" : ""}>${esc(B.chUnknown)}</option><option value="unused"${value === "unused" ? " selected" : ""}>${esc(B.free)}</option><option value="doc"${value === "doc" ? " selected" : ""}>${esc(B.chDocumented)}</option>${manualOpt}${own}${candidates.map(([k, x]) => `<option value="ha|${esc(k)}"${value === `ha|${k}` ? " selected" : ""}>${esc(`${x.d.name}${x.d.model ? ` (${x.d.model})` : ""}`)}</option>`).join("")}`;
       return `<div class="bv-chedit" data-bvch="${n}"><span class="no">${esc(B.channelShort(n))}</span><select data-bvc-f="link" aria-label="${esc(B.channelN(n))}">${options}</select><input data-bvc-f="name" value="${esc(c.name)}" placeholder="${esc(B.chName)}" aria-label="${esc(B.chName)}" autocomplete="off"><input data-bvc-f="feedback_id" class="mono" value="${esc(c.feedback_id)}" placeholder="${esc(B.feedback)}" aria-label="${esc(B.feedback)}" maxlength="16" autocomplete="off"></div>`;
     }).join("");
-    const supplyFields = role === "foreign" ? "" : role === "supply" || role === "master" ? `${field("supply_watts", B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
+    const supplyFields = OFF.includes(role) ? "" : role === "supply" || role === "master" ? `${field("supply_watts", B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
     const addr = this._bvCount(v, m) ? field("first_address", B.firstAddress, m.first_address ?? "", `type="number" min="1" max="${ADDRESSES}" placeholder="1–${ADDRESSES}"`) : "";
     const found = m.row ? v.rows.get(m.row) : null;
     return `<div class="bv-box edit" data-bv-form="${esc(isNew ? "new" : m.id)}"><h3>${esc(isNew ? B.newModule : B.edit)}</h3><div class="bv-form">
