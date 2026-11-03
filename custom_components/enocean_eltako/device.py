@@ -263,6 +263,16 @@ class EnOceanDevice:
             heard.rssi = received.telegram.dbm
         heard.last = received.timestamp
         if (notes := self.entry.runtime_data.hub.notes.get(self.entry.entry_id)) is not None:
+            telegram = received.telegram
+            notes.remember_last(
+                format_id(received.sender),
+                received.gateway,
+                telegram.rorg,
+                telegram.data,
+                telegram.status,
+                telegram.dbm,
+                received.timestamp,
+            )
             notes.touch_signal(
                 device_key(self.subentry),
                 received.gateway,

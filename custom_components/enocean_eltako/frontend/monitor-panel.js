@@ -947,6 +947,15 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
   }
 
+  _lastTelegram(l, now) {
+    // the last telegram of a sender as stored: when, what kind, the bytes and what they say; it survives a restart
+    const t = this._t;
+    const bytes = l.data.match(/../g)?.join(" ") ?? "";
+    const fields = (l.fields ?? []).map((f) => `${esc(f.label)} <b>${esc(this._value(f.value))}${f.unit ? ` ${esc(f.unit)}` : ""}</b>`).join(" · ");
+    const head = `${esc(t.ago(Math.max(0, Math.round(now / 1000 - l.time))))} · ${esc(RORG[l.rorg] || l.rorg)}${l.dbm != null ? ` · ${esc(l.dbm)} dBm` : ""}`;
+    return `${head}<div class="mono sub">${esc(bytes)} · ${esc(t.status)} ${esc(l.status.toString(16).toUpperCase().padStart(2, "0"))}</div>${fields ? `<div class="sub">${fields}</div>` : ""}`;
+  }
+
   _watchConnection() {
     // the websocket resubscribes by itself after a reconnect; the badge follows its state
     const conn = this._hass?.connection;
@@ -3457,6 +3466,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.heardBy, this._heardBy(x.heard_by)),
       item(t.telegramsSinceStart, esc(x.telegrams.toLocaleString())),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
+      ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now))),
     ]);
     const fields = d.fields && d.fields.length ? d.fields.map((f) => (f.label === "on" || f.label === "state" ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>` : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`)).join("") : "";
     const values = fields || d.data ? `<div class="vbox">${fields ? `<div class="values">${fields}</div>` : ""}${d.data ? `<div class="mono sub">${esc(d.data)}</div>` : ""}</div>` : "";

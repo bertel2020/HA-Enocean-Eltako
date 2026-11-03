@@ -581,6 +581,15 @@ async def test_websocket_device_details(hass: HomeAssistant, hass_ws_client) -> 
     assert details["commands"]["sent"] == 0  # an actuator: statistics, none yet
     assert details["settings"] == {"platform": "light", "invert": False}  # identity left out
     assert {e["entity_id"].split(".")[0] for e in details["entities"]} >= {"light"}
+    # the last telegram of the device: its bytes, status and when, kept by the notes
+    (last,) = details["last_telegrams"]
+    assert (last["sender"], last["rorg"], last["data"], last["status"]) == (
+        "05-10-A2-B3",
+        "F6",
+        "70",
+        0x30,
+    )
+    assert last["time"] > 0 and last["gateway"] == entry.entry_id
 
     for msg_id, fields, code in (
         (2, {"entry_id": "nope", "device": key}, "not_found"),

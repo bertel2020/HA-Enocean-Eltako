@@ -112,6 +112,7 @@ export function fakeHass(params = new URLSearchParams()) {
             key: msg.device, entry_id: msg.entry_id, gateway_name: "FAM-USB Keller", category: "lighting",
             model: actuator ? "FSR14-4x" : "", model_name: actuator ? "FSR14-4x" : "", models: ["FSR14-4x", "FSR61NP-230V", "FL62"],
             eep: actuator ? "M5-38-08:eltako" : "A5-38-08:eltako", eep_extra: [],
+            last_telegrams: [{ sender: "01-8A-EF-CF", gateway: msg.entry_id, rorg: "A5", data: "0080B40D", status: 0, dbm: -77, time: Date.now() / 1000 - 960, fields: [{ label: "Temperature", value: 3.7, unit: "°C" }, { label: "Humidity", value: 70.8, unit: "%" }] }],
             signal: { rssi: -62, min: -78, max: -55 }, repeat: 0,
             heard_by: actuator ? { gateways: [{ entry_id: msg.entry_id, name: "FAM-USB Keller", count: 900, direct: 880, rssi: -62, last: 0 }, { entry_id: "gw2", name: "MGW-ETH Dach", count: 384, direct: 0, rssi: -81, last: 0 }], best: msg.entry_id, repeater_only: false } : { gateways: [{ entry_id: msg.entry_id, name: "FAM-USB Keller", count: 12, direct: 0, rssi: -84, last: 0 }], best: null, repeater_only: true },
             sender_test: actuator, note: actuator ? (english ? "Cabinet 2, slot 4, fuse F3" : "Schrank 2, Platz 4, Sicherung F3") : "",

@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 6
+STORAGE_VERSION = 7
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -76,6 +76,7 @@ MAX_LINKS = 500  # links entered by hand per gateway
 # the fields of a link entered by hand and their longest text
 LINK_FIELDS = {"from_id": 40, "from_name": 80, "to_key": 64, "to_name": 80, "role": 60, "learn": 80}
 MAX_HEARD = 100  # unknown senders kept per gateway
+MAX_LAST = 300  # senders whose last telegram is kept per gateway
 SIGNAL_SAVE_DELAY = 60  # seconds: telegrams come all the time, the signal data is written rarely
 SAVE_DELAY = 2  # seconds: typing makes one write, not one per key
 
@@ -95,7 +96,7 @@ class _NotesStore(Store[dict[str, Any]]):
     version 3 keeps the power supplies of the bus as a list (version 2 had at most one); version 4
     gives each supply a place, circuit, fuse and note like a device has; version 5 gives an entry
     made by hand a kind, a place and a supply (battery type or mains); version 6 adds its circuit,
-    fuse, date of installation and type."""
+    fuse, date of installation and type; version 7 keeps the last telegram of each sender."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -130,6 +131,8 @@ class _NotesStore(Store[dict[str, Any]]):
                 for e in old_data.get("manual", [])
                 if isinstance(e, dict)
             ]
+        if old_major_version < 7:
+            old_data.setdefault("last", {})
         return old_data
 
 
@@ -158,6 +161,9 @@ class Notes:
         self.signal: dict[str, dict[str, dict[str, Any]]] = {}
         # unknown senders heard, kept across restarts: ID -> {rorg, dbm, last (epoch seconds)}
         self.heard: dict[str, dict[str, Any]] = {}
+        # the last telegram of each sender, kept across restarts, so a sensor that rarely sends has
+        # something to show: ID -> {gateway, rorg, data (hex), status, dbm, time (epoch seconds)}
+        self.last: dict[str, dict[str, Any]] = {}
         # the devices as they were at the last load, to tell what was added or removed since
         self.known: dict[str, dict[str, Any]] = {}
 
@@ -187,6 +193,9 @@ class Notes:
             for k, gws in stored.get("signal", {}).items()
         }
         self.heard = {str(k): dict(v) for k, v in stored.get("heard", {}).items()}
+        self.last = {
+            str(k): dict(v) for k, v in stored.get("last", {}).items() if isinstance(v, dict)
+        }
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -201,6 +210,7 @@ class Notes:
             "link_info": self.link_info,
             "signal": self.signal,
             "heard": self.heard,
+            "last": self.last,
         }
 
     def _save(self) -> None:
@@ -491,6 +501,30 @@ class Notes:
     def touch_signal(self, key: str, gateway: str, heard: dict[str, Any]) -> None:
         """How one gateway hears a device: the latest of count, direct, rssi and last."""
         self.signal.setdefault(key, {})[gateway] = heard
+        self._signal_dirty()
+
+    @callback
+    def remember_last(
+        self,
+        sender: str,
+        gateway: str,
+        rorg: int,
+        data: bytes,
+        status: int,
+        dbm: int | None,
+        time: float,
+    ) -> None:
+        """The newest telegram of a sender; the newest MAX_LAST senders stay."""
+        self.last[sender] = {
+            "gateway": gateway,
+            "rorg": f"{rorg:02X}",
+            "data": data.hex().upper(),
+            "status": status,
+            "dbm": dbm,
+            "time": time,
+        }
+        if len(self.last) > MAX_LAST:
+            del self.last[min(self.last, key=lambda s: self.last[s]["time"])]
         self._signal_dirty()
 
     @callback

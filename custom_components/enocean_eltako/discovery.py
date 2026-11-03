@@ -178,6 +178,15 @@ def async_setup_discovery(
         new = sender not in hub.discovered
         hub.discovered[sender] = received
         if (notes := hub.notes.get(entry.entry_id)) is not None:
+            notes.remember_last(
+                format_id(sender),
+                received.gateway,
+                received.telegram.rorg,
+                received.telegram.data,
+                received.telegram.status,
+                received.telegram.dbm,
+                received.timestamp,
+            )
             notes.remember_heard(
                 format_id(sender),
                 f"{received.telegram.rorg:02X}",
