@@ -34,7 +34,7 @@ class BusType:
     addresses: int | None = None  # bus addresses it takes (one per channel); None: not known
     power: float | None = None  # the most it takes from the bus, in watts (planning guide)
     supply: float | None = None  # what it delivers to the bus, in watts (master, power supply)
-    assumed: bool = False  # te or addresses are not confirmed by a data sheet
+    assumed: tuple[str, ...] = ()  # "te", "addresses": not confirmed by a data sheet yet
 
 
 _TYPES = (
@@ -43,17 +43,17 @@ _TYPES = (
     BusType("FSNT14-12V/12W", "supply", te=1, addresses=0, supply=12.0),
     BusType("FSR14-4x", "actuator", te=1, addresses=4, power=0.70),
     BusType("FSR14-2x", "actuator", te=1, addresses=2, power=0.14),
-    BusType("FSR14SSR", "actuator", te=1, addresses=2, power=0.40, assumed=True),
+    BusType("FSR14SSR", "actuator", te=1, addresses=2, power=0.40, assumed=("addresses",)),
     BusType("F4SR14-LED", "actuator", te=1, addresses=4),
     BusType("FSB14", "actuator", te=1, addresses=2, power=0.42),
     BusType("FUD14", "actuator", te=1, addresses=1, power=0.20),
     BusType("FUD14/800W", "actuator", te=1, addresses=1, power=0.20),
     BusType("FTN14", "actuator", te=1, addresses=1, power=0.14),
-    BusType("FSU14", "actuator", te=1, addresses=1, power=0.14, assumed=True),
+    BusType("FSU14", "actuator", te=1, addresses=1, power=0.14, assumed=("addresses",)),
     BusType("FWZ14", "meter", te=1, addresses=1, power=0.10),
     BusType("FWZ14-65A", "meter", te=1, addresses=1, power=0.10),
-    BusType("F3Z14D", "meter", te=1, addresses=3, assumed=True),
-    BusType("DSZ14DRS", "meter", te=4, addresses=1, assumed=True),
+    BusType("F3Z14D", "meter", te=1, addresses=3, assumed=("te",)),  # one per meter input
+    BusType("DSZ14DRS", "meter", te=4, addresses=1, assumed=("te",)),
     BusType("FTS14EM", "input", te=1, power=0.13),
     BusType("FTS14TG", "input", te=1, addresses=1, power=0.42),
     BusType("FGW14", "gateway", te=1, addresses=1, power=0.50),

@@ -50,7 +50,7 @@ STORAGE_KEY = f"{DOMAIN}.installation"
 DATA_INSTALLATION: HassKey[Installation] = HassKey(f"{DOMAIN}_installation")
 _LOCK: HassKey[asyncio.Lock] = HassKey(f"{DOMAIN}_installation_lock")
 # the catalog of the series 14 as the panel gets it
-TYPES = {key: asdict(found) for key, found in BUS_TYPES.items()}
+TYPES = {key: {**asdict(found), "assumed": list(found.assumed)} for key, found in BUS_TYPES.items()}
 
 
 def gateway_of(entry: ConfigEntry) -> dict[str, Any]:
