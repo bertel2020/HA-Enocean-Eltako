@@ -495,7 +495,7 @@ const STYLE = `
   }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 1.2fr) minmax(250px, 1.2fr) auto; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 1.2fr) minmax(250px, 1.2fr) 128px; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -507,7 +507,7 @@ const STYLE = `
   .devices .dev-head [aria-sort] { color: var(--text); }
   .devices .dev-head [aria-sort] svg { opacity: 1; }
   .devices .dev-head [aria-sort="ascending"] svg { transform: rotate(180deg); }
-  .devices .dev { border-top: 1px solid var(--line); cursor: pointer; }
+  .devices .dev { border-top: 1px solid var(--line); cursor: pointer; min-height: 64px; }
   .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px; }
   .devices .dev .acts .icon-btn { width: 36px; height: 36px; }
   .devices .dev .acts .icon-btn svg { width: 18px; height: 18px; }
@@ -530,6 +530,7 @@ const STYLE = `
   .devices .dev .c-area, .devices .dev .c-ent { font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
   .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
   .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
+  .devices .dev-head .h-heard { text-align: right; }
   .devices .dev .none { color: var(--muted); }
   .devices .dev .msub { display: none; }
   .devices .dev.quiet:not(.expandable) { cursor: default; }
@@ -582,6 +583,9 @@ const STYLE = `
     .devices .dev { grid-template-columns: subgrid; }
     .devices .dev .c-type, .devices .dev .c-area, .devices .dev .c-ent { display: none; }
     .devices .dev .msub { display: block; }
+    .devices .dev .ident { gap: 10px; }
+    .tile { width: 30px; height: 30px; border-radius: 8px; }
+    .tile svg { width: 17px; height: 17px; }
     .devices .dev .sub { overflow-wrap: break-word; }
     .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
@@ -3176,7 +3180,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     const now = this._now();
-    const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard]];
+    const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard, "h-heard"]];
     const listed = devices.filter((d) => d.devKey);
     const ticked = listed.filter((d) => this._sel.has(d.devKey)).length;
     const all_ = `<span class="c-sel">${listed.length ? `<input type="checkbox" class="selbox" data-sel-all${listed.length && ticked === listed.length ? " checked" : ""} aria-label="${esc(t.selAll)}">` : ""}</span>`;
@@ -3514,7 +3518,8 @@ class EnOceanEltakoPanel extends HTMLElement {
         : "");
     const maybe = d.unknown ? maybeTag(t, d.candidates) : "";
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
-    const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
+    // the state pill already says "not heard": the time column then stays empty
+    const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.noValue;
     const stats = d.quiet
       ? `<span${d.time == null ? ' class="quiet-note"' : ""} title="${esc(t.quietHint)}">${esc(heard)}</span>`
       : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
