@@ -36,7 +36,7 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 - **Anlernen, Discovery und ein Live-Telegramm-Monitor** im Seitenleisten-Panel **EnOcean**, dazu Mitschnitt und Diagnosedaten für Fehlerberichte. Drei Farbschemata (hell/dunkel) und drei Schriftgrößen sind wählbar.
 - **App Device Proxy:** teilt ein Gateway zwischen Home Assistant und anderen Programmen, liefert die beim Neustart verpassten Telegramme nach und wird anhand ihrer Meldung eingerichtet.
 - **Übernahme** der Geräte der alten Integration `eltako`, ohne die Aktoren neu einzulernen.
-- **Installationsdokumentation** im Panel: Einbauorte, Stromkreise, Sicherungen, Sender-IDs und Verbindungen, dazu der **Eltako-Bus** nach seinem Master (FAM14) mit jedem Reiheneinbaugerät und seinen Kanälen, Schränken und Reihen, dem Adressplan 1–126, der Last der Netzteile und Prüfungen (doppelte und fehlende Adressen, Geräte, die nicht in Home Assistant sind).
+- **Installationsdokumentation** im Panel: Einbauorte, Stromkreise, Sicherungen, Sender-IDs und Verbindungen, dazu der **Eltako-Bus** nach seinem Master (FAM14) mit jedem Reiheneinbaugerät und seinen Kanälen, Schränken als maßstäbliche Hutschienen mit Etikettenstreifen zum Drucken, dem Adressplan 1–126, der Last der Netzteile und Prüfungen (doppelte und fehlende Adressen, Geräte, die nicht in Home Assistant sind).
 - **Sicherheit bleibt im Aktor:** Wind-, Regen-, Frost- und Aussperrschutz werden nie ersetzt.
 
 ## Screenshots
