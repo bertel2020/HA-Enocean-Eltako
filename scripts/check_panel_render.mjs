@@ -112,67 +112,94 @@ for (const lang of ["en", "de"]) {
     // the Installation view: devices by area, a table with fields edited in place, the event log
     await view("installation");
     expect("four tabs: devices, sender IDs, links, log", root.querySelectorAll("#installation .groups .itab").length, 4);
-    expect("the views are a segmented control", root.querySelectorAll("#installation .seg button").length, 4);
-    expect("a gateway section names its device count", !!root.querySelector("#installation section.gw .gwhead .isub:last-child"), true);
+    expect("the devices table names its device count", !!root.querySelector("#installation section.gw .gwhead .isub:last-child"), true);
+    expect("views and kinds are one filter bar", root.querySelectorAll("#installation .fbar .seg button").length === 4 && root.querySelectorAll("#installation .fbar [data-in-art]").length > 1, true);
+    const artCount = (k) => Number(root.querySelector(`#installation .fbar [data-in-art="${k}"] b`)?.textContent);
+    const viewCount = (v) => Number(root.querySelector(`#installation .fbar [data-in-view="${v}"] .isub`)?.textContent);
+    expect("the counts agree: all devices = all kinds", viewCount("all") === artCount("all") && viewCount("bus") === artCount("bus") + artCount("psu"), true);
     expect("every row names its kind (10 devices, 2 power supplies; the 3 entries by hand have a kind menu)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 12);
     expect("an entry by hand has a kind menu and its own tag", root.querySelectorAll("#installation .itable tbody tr .kindmenu").length === 3 && root.querySelectorAll("#installation .itable tbody tr .tag.doc").length === 3, true);
     expect("the kind chips count the kinds", [...root.querySelectorAll("#installation [data-in-art]")].map((b) => b.textContent.replace(/\s+/g, " ").trim()).join("|").length > 0, true);
-    expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr").length, 15);
+    const deviceRows = () => root.querySelectorAll("#installation .itable tbody tr:not(.grp)");
+    expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", deviceRows().length, 15);
+    expect("the table is grouped by place (cabinet · row) at first", root.querySelectorAll("#installation .itable tr.grp").length > 0 && root.querySelector("#installation [data-in-groupsel] option[selected]")?.value, "location");
+    expect("every row ends in the menu column", [...deviceRows()].every((r) => r.lastElementChild.matches("td.rmenu")) && !!root.querySelector("#installation .itable thead th.rmenu:last-child"), true);
+    expect("entries by hand and power supplies have their menu there", root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length, 5);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
+    expect("an empty field shows the same quiet dash as one that does not apply", cell.placeholder, "–");
     cell.value = "F4 B10";
     cell.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     const edits = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields");
     expect("a cell is saved after typing", JSON.stringify(edits.map((m) => m.items)), '[[{"device":"sub2","values":{"fuse":"F4 B10"}}]]');
-    // a wrong value is named under the field and not sent; columns are shown in groups; the progress counts places
+    // the columns one by one, grouped, with all / none; a wrong value is named under the field and not sent
     const sentBefore = fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length;
     expect("the bus columns are hidden at first", root.querySelector('#installation [data-in-field="bus_address"]'), null);
-    root.querySelector('#installation [data-in-columns="bus"]').click();
+    expect("the column menu lists each column under its group", root.querySelectorAll("#installation [data-in-col]").length === 12 && root.querySelectorAll("#installation [data-in-colgroup]").length, 6);
+    root.querySelector('#installation [data-in-col="bus_address"]').click();
     await settle();
-    expect("the bus columns wait for a kind", root.querySelector('#installation [data-in-field="bus_address"]'), null);
-    root.querySelector('#installation [data-in-art="bus"]').click();
-    await settle();
-    expect("a kind shows only the columns it can use", root.querySelector('#installation [data-in-field="power"]'), null);
+    expect("a single column is shown, without choosing a kind", !!root.querySelector('#installation [data-in-field="bus_address"]') && !root.querySelector('#installation [data-in-field="feedback_id"]'), true);
+    expect("the choice of columns is kept per browser", JSON.parse(localStorage.getItem("enocean_eltako_installation_fields")).includes("bus_address"), true);
     const addrCell = root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"]');
     addrCell.value = "999";
     addrCell.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect("a wrong bus address is named under the field", !!root.querySelector('#installation [data-in-field="bus_address"][data-in-key="sub2"] + .cerr'), true);
     expect("a wrong bus address is not sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_fields").length, sentBefore);
-    root.querySelector('#installation [data-in-art="all"]').click();
+    root.querySelector('#installation [data-in-col="bus_address"]').click();
     await settle();
     expect("the upkeep columns are hidden at first", root.querySelector('#installation [data-in-field="installed"]'), null);
-    root.querySelector('#installation [data-in-columns="upkeep"]').click();
+    root.querySelector('#installation [data-in-colgroup="upkeep|all"]').click();
     await settle();
-    expect("the upkeep columns can be shown", !!root.querySelector('#installation [data-in-field="installed"]'), true);
-    expect("the tiles count the devices without a place", !!root.querySelector("#installation .stile[data-in-miss=\"loc\"]"), true);
-    root.querySelector('#installation [data-in-columns="upkeep"]').click();
+    expect("a group of columns can be shown at once", !!root.querySelector('#installation [data-in-field="installed"]') && !!root.querySelector('#installation [data-in-field="note"]'), true);
+    expect("the tiles count the devices without a place", !!root.querySelector("#installation .stiles.quiet .stile[data-in-miss=\"loc\"]"), true);
+    root.querySelector('#installation [data-in-colgroup="upkeep|none"]').click();
     await settle();
+    expect("and hidden at once", root.querySelector('#installation [data-in-field="installed"]'), null);
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').click();
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
     expect("bulk bar after a pick", !!root.querySelector("#installation .bulk"), true);
-    // the place is one field of three parts: cabinet, row, slot
+    // a place that names no documented cabinet stays three free fields: cabinet, row, slot
     const place = root.querySelector('#installation [data-in-place][data-in-key="sub2"]');
+    expect("a place of no documented cabinet keeps its free fields", place.querySelectorAll("input").length, 3);
     place.querySelectorAll("input")[0].value = "Schrank 3";
     place.querySelectorAll("input")[0].dispatchEvent(new Event("input", { bubbles: true }));
     place.querySelectorAll("input")[2].value = "7";
     place.querySelectorAll("input")[2].dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect("the three parts of a place are sent as one text", fake.sent.some((m) => m.type === "enocean_eltako/set_fields" && m.items.length === 1 && m.items[0].device === "sub2" && /^Schrank 3 · .+ · 7$/.test(m.items[0].values.location ?? "")), true);
-    // grouping by place and the filter for devices without one
-    const rowsAll = root.querySelectorAll("#installation .itable tbody tr").length;
+    // a device without a place: a quiet dash; then cabinet and row are picked from the cabinets, the slot typed
+    const empty = root.querySelector('#installation [data-in-placeedit="sub3"]');
+    expect("an empty place is a quiet dash", empty?.classList.contains("empty") && empty.querySelector(".ph").textContent, "–");
+    empty.click();
+    await settle();
+    const placePicker = root.querySelector('#installation [data-in-place][data-in-key="sub3"] select[data-in-prow]');
+    expect("the place offers the documented cabinets and rows", [...placePicker.options].map((o) => o.value).includes("Keller-Verteiler · Reihe 1"), true);
+    placePicker.value = "Keller-Verteiler · Reihe 1";
+    const slotBox = root.querySelector('#installation [data-in-place][data-in-key="sub3"] [data-in-part="2"]');
+    slotBox.value = "9";
+    placePicker.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle();
+    expect("a picked place is sent as cabinet · row · slot", fake.sent.some((m) => m.type === "enocean_eltako/set_fields" && m.items[0]?.device === "sub3" && m.items[0].values.location === "Keller-Verteiler · Reihe 1 · 9"), true);
+    root.querySelector('#installation [data-in-place][data-in-key="sub3"] [data-in-placeclear]').click();
+    await settle();
+    expect("✕ removes the place", fake.sent.filter((m) => m.type === "enocean_eltako/set_fields" && m.items[0]?.device === "sub3").pop().items[0].values.location, "");
+    // grouping: none, area, place, gateway; the choice is kept per browser; the filter for devices without a place
     const groupSelect = root.querySelector("#installation [data-in-groupsel]");
-    groupSelect.value = "location";
+    expect("grouping offers none, area, place and gateway", [...groupSelect.options].map((o) => o.value).join(), ",area,location,gateway");
+    groupSelect.value = "gateway";
     groupSelect.dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
-    expect("devices grouped by place have group rows", root.querySelectorAll("#installation .itable tr.grp").length > 0, true);
-    groupSelect.value = "";
+    expect("grouped by gateway: one group per gateway", root.querySelectorAll("#installation .itable tr.grp").length, 1);
+    expect("the grouping is kept per browser", localStorage.getItem("enocean_eltako_installation_group"), "gateway");
+    const rowsAll = deviceRows().length;
+    root.querySelector("#installation [data-in-groupsel]").value = "";
     root.querySelector("#installation [data-in-groupsel]").dispatchEvent(new Event("change", { bubbles: true }));
     await settle();
     root.querySelector('#installation [data-in-miss="loc"]').click();
     await settle();
-    expect("the filter for a missing place leaves fewer rows", root.querySelectorAll("#installation .itable tbody tr").length < rowsAll, true);
+    expect("the filter for a missing place leaves fewer rows", deviceRows().length < rowsAll, true);
     root.querySelector('#installation [data-in-miss="loc"]').click();
     await settle();
     // the tabs: sender IDs, links, log
@@ -181,6 +208,7 @@ for (const lang of ["en", "de"]) {
     await settle();
     expect("the sender ID pool sits above the table", root.querySelector("#poolBox").getBoundingClientRect !== undefined && root.querySelector("#poolBox").compareDocumentPosition(root.querySelector("#instBody")) & Node.DOCUMENT_POSITION_FOLLOWING, Node.DOCUMENT_POSITION_FOLLOWING);
     expect("gateway senders show 0 to 127 folded", root.querySelectorAll("#installation .itable tbody tr").length > 5, true);
+    expect("the sender table ends every row in the menu column", [...root.querySelectorAll("#installation .itable tbody tr")].every((r) => r.lastElementChild.matches("td.rmenu")), true);
     // fields are edited in the tables: a device with two senders has its bus address in two rows, and both follow
     const addr = root.querySelectorAll('#installation [data-in-field="bus_address"][data-in-key="sub1"]');
     expect("the bus address of a device with two senders is in two rows", addr.length, 2);
@@ -194,6 +222,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-view="funk"]').click();
     await settle();
     expect("the radio table lists devices and the entries by hand", root.querySelectorAll("#installation .itable tbody tr").length > 3, true);
+    expect("the radio table: every row ends in the menu column, the menus of the entries by hand sit there", [...root.querySelectorAll("#installation .itable tbody tr")].every((r) => r.lastElementChild.matches("td.rmenu")) && root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length >= 2, true);
     expect("the entries by hand without a bus address are rows with a name to click", root.querySelectorAll('#installation [data-in-nameedit]').length, 2);
     expect("the radio tiles count devices, entries written down, silent ones and repeater-only ones", root.querySelectorAll("#installation .tile").length, 4);
     root.querySelector('#installation [data-in-funkcol="grp"]').click();
@@ -223,6 +252,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-view="virt"]').click();
     await settle();
     expect("the virtual view lists the two virtual devices", root.querySelectorAll("#installation .itable tbody tr").length, 2);
+    expect("the virtual table ends every row in the menu column", [...root.querySelectorAll("#installation .itable tbody tr")].every((r) => r.lastElementChild.matches("td.rmenu")), true);
     expect("a virtual sensor names what it follows", root.querySelector("#installation .itable tbody").textContent.includes("binary_sensor.fenster_bad"), true);
     root.querySelector("#installation .itable [data-in-snd]").click();
     await settle();
@@ -236,6 +266,7 @@ for (const lang of ["en", "de"]) {
     expect("the bus head names the master and the radio gateway as access", !!root.querySelector("#installation .bv-card.master [data-bv-go='module|m_fam']") && root.querySelector("#installation .bv-card.access").textContent.includes("FAM-USB Keller"), true);
     expect("the bus tiles: devices, channels, addresses, supplies, checks", root.querySelectorAll("#installation button.tile[data-bv-sub]").length, 5);
     expect("one row per module of the bus", root.querySelectorAll("#installation table.bv-list tr.bv-mod").length, 10);
+    expect("the bus list ends every row in the menu column", [...root.querySelectorAll("#installation table.bv-list tbody tr")].every((r) => r.lastElementChild.matches("td.rmenu")), true);
     expect("the channels below their module", root.querySelectorAll("#installation table.bv-list tr.bv-ch").length, 12);
     expect("a duplicate address is marked", root.querySelectorAll("#installation table.bv-list tr.dup").length, 2);
     expect("a channel of Home Assistant links to its device", !!root.querySelector('#installation table.bv-list [data-in-goto="sub1"]'), true);

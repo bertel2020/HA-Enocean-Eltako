@@ -3660,7 +3660,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     // redraw, keeping the keyboard focus on the same button of the same row or card
     if (this._drawn.get(container) === html) return;
     this._drawn.set(container, html);
-    const active = this.shadowRoot.activeElement;
+    let active = null;
+    try {
+      active = this.shadowRoot.activeElement;
+    } catch (err) {
+      // the focused element was removed by the last redraw (happy-dom throws here)
+    }
     let focus = null;
     if (active && container.contains(active)) {
       const holder = active.closest("[data-key], [data-entry]");
