@@ -197,6 +197,13 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     assert "device" not in event
     assert event["teach_in"] == "A5-02-05"
 
+    # a known device whose model cannot read a telegram is told which models can
+    server.push(esp2.Esp2Frame(esp2.HSeq.RRT, 0xD2, bytes.fromhex("0460E400"), 0x0510A2B3).encode())
+    event = (await client.receive_json())["event"]
+    assert event["device"] == "Licht Diele" and "values" not in event
+    assert "Permundo PSC132, PSC234" in event["fits"]
+    assert not any("FSR61" in model for model in event["fits"])  # its own model is no hint
+
     # an unknown 1BS contact fits one profile; a 4BS data telegram fits too many to say
     server.push(
         esp2.Esp2Frame(esp2.HSeq.RRT, 0x06, bytes([0x09, 0, 0, 0]), 0x01A0B0C1, 0x00).encode()
@@ -234,8 +241,8 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
         "FF-B7-44-80",
     )
     assert status["loaded"] and status["connected"]
-    assert (status["telegrams"], status["devices"], status["queue"]) == (5, 2, 0)
-    assert status["per_minute"] == 5
+    assert (status["telegrams"], status["devices"], status["queue"]) == (6, 2, 0)
+    assert status["per_minute"] == 6
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 

@@ -199,6 +199,24 @@ def candidate_eeps(telegram: RadioTelegram) -> list[str]:
     return found if len(found) <= MAX_CANDIDATES else []
 
 
+def fitting_models(device: Any, telegram: RadioTelegram) -> list[str]:
+    """Other catalog models that read a telegram the device's own model cannot.
+
+    Said when it is few enough to mean something: a device saved under the wrong model
+    shows raw bytes, and this names the models that would decode them.
+    """
+    found = [
+        model.examples or model.id
+        for model in CATALOG.values()
+        if model.id != device.model.id
+        and any(
+            ref is not None and decode_telegram(ref, telegram)
+            for ref in (model.receive, *model.receive_extra)
+        )
+    ]
+    return found if len(found) <= MAX_CANDIDATES else []
+
+
 @callback
 def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
     """The monitor line plus gateway name, device, profile, decoded values, teach-in EEP."""
@@ -240,6 +258,9 @@ def describe(hass: HomeAssistant, entry: MonitorEntry) -> dict[str, Any]:
                             device, values, hass.data.get(LABELS, {}).get(hass.config.language, {})
                         )
                         break
+                if "values" not in data and not decode_teach_in_4bs(telegram.data):
+                    if fits := fitting_models(device, telegram):
+                        data["fits"] = fits
                 return data
     if telegram.rorg == Rorg.BS4 and (teach_in := decode_teach_in_4bs(telegram.data)):
         data["teach_in"] = teach_in.eep
