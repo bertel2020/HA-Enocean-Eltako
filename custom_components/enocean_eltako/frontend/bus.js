@@ -59,7 +59,7 @@ const saveCols = (cols) => {
   }
 };
 
-export const busState = () => ({ id: "", sub: "list", list: loadList(), cols: loadCols(), drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
+export const busState = () => ({ id: "", sub: "list", list: loadList(), cols: loadCols(), drawer: null, history: [], error: "", legacyOpen: false, draft: null, dirty: false, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
 
 // the DIN rail drawn to scale in TE (one grid column is half a TE): in the panel and in the print
 export const RAIL_CSS = `
@@ -172,6 +172,11 @@ export const BUS_STYLE = `
   .installation .bv-check b { font-weight: 500; }
   .installation .bv-check .chips { margin-top: 4px; }
   .installation .chip.small { min-height: 26px; padding: 0 10px; font-size: calc(12px * var(--fs)); }
+  .bv-ask-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 40; display: grid; place-items: center; padding: 16px; }
+  .bv-ask { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px var(--shadow-c); padding: 18px; width: min(420px, 100%); display: grid; gap: 12px; }
+  .bv-ask h2 { margin: 0; font-size: calc(16px * var(--fs)); font-weight: 600; overflow-wrap: anywhere; }
+  .bv-ask p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+  .bv-ask .bar { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
   .installation .bv-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .28); z-index: 20; }
   .installation aside.bv-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(540px, 100vw); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -8px 0 24px var(--shadow-c); z-index: 21; display: flex; flex-direction: column; color: var(--text); }
   .installation .bv-dhead { padding: 10px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
@@ -1171,9 +1176,11 @@ export const busView = {
 
   // ---- events ---------------------------------------------------------------------------------
 
-  _bvOpen(type, id) {
+  async _bvOpen(type, id) {
     const state = this._in.bus;
+    if (!(await this._bvGuard())) return;
     if (state.drawer) state.history.push(state.drawer);
+    state.dirty = false;
     state.drawer = { type, id };
     state.error = "";
     if (state.draft && state.draft.key !== id) state.draft = null;
@@ -1181,10 +1188,11 @@ export const busView = {
     this.shadowRoot.querySelector("#installation [data-bv-focus]")?.focus();
   },
 
-  _bvGo(type, id) {
+  async _bvGo(type, id) {
     const state = this._in.bus;
     if (["module", "channel", "sender", "bus"].includes(type)) return this._bvOpen(type, id);
     if (type === "supply") return id ? this._bvOpen("module", id) : this._bvSub("supplies");
+    if (!(await this._bvGuard())) return;
     const v = this._bv();
     if (type === "view") return this._bvSub(id);
     let hl = id;
@@ -1195,7 +1203,7 @@ export const busView = {
     }
     if (type === "row") cab = v.rows.get(id)?.cab.id ?? "";
     if (type === "cabinet" || type === "row" || type === "place") {
-      Object.assign(state, { drawer: null, history: [], sub: "cabinets", hl, cab: cab || state.cab });
+      Object.assign(state, { drawer: null, history: [], dirty: false, sub: "cabinets", hl, cab: cab || state.cab });
       this._renderInstallation();
       this.shadowRoot.querySelector(`#installation [data-hl="${CSS.escape(hl)}"], #installation [data-bv-rail="${CSS.escape(hl)}"], #installation [data-bv-cab="${CSS.escape(hl)}"]`)?.scrollIntoView?.({ block: "center", inline: "center" });
       setTimeout(() => {
@@ -1207,14 +1215,63 @@ export const busView = {
     }
   },
 
-  _bvSub(sub) {
-    Object.assign(this._in.bus, { sub, drawer: null, history: [] });
+  async _bvSub(sub) {
+    if (!(await this._bvGuard())) return;
+    Object.assign(this._in.bus, { sub, drawer: null, history: [], dirty: false });
     this._renderInstallation();
   },
 
-  _bvClose() {
-    Object.assign(this._in.bus, { drawer: null, history: [], error: "", draft: null });
+  async _bvClose() {
+    if (!(await this._bvGuard())) return;
+    Object.assign(this._in.bus, { drawer: null, history: [], error: "", draft: null, dirty: false });
     this._renderInstallation();
+  },
+
+  // unsaved input in the drawer: ask before it is thrown away; true when the caller may go on
+  async _bvGuard() {
+    const state = this._in.bus;
+    if (!state.dirty || !state.drawer) return true;
+    const B = this._t.inst.busv;
+    if (!(await this._bvAsk({ title: B.discardTitle, text: B.discardText, ok: B.discard, cancel: B.keepEditing }))) return false;
+    state.dirty = false;
+    return true;
+  },
+
+  // a small dialog of the panel in place of the browser's confirm(); resolves true on the main button
+  _bvAsk({ title, text = "", ok, cancel }) {
+    const root = this.shadowRoot;
+    const before = root.activeElement;
+    const host = document.createElement("div");
+    host.className = "installation";
+    host.innerHTML = `<div class="bv-ask-scrim"><div class="bv-ask" role="alertdialog" aria-modal="true" aria-label="${esc(title)}"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ""}<div class="bar"><button class="chip" data-ask="no">${esc(cancel)}</button><button class="chip primary" data-ask="yes">${esc(ok)}</button></div></div></div>`;
+    const app = [...root.children].filter((el) => el !== host);
+    app.forEach((el) => el.setAttribute?.("inert", ""));
+    root.appendChild(host);
+    const [no, yes] = host.querySelectorAll("button");
+    no.focus();
+    return new Promise((resolve) => {
+      const done = (answer) => {
+        host.remove();
+        app.forEach((el) => el.removeAttribute?.("inert"));
+        before?.focus?.();
+        resolve(answer);
+      };
+      host.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-ask]");
+        if (btn) done(btn.dataset.ask === "yes");
+        else if (e.target.classList.contains("bv-ask-scrim")) done(false);
+      });
+      host.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          done(false);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          (e.target === no ? yes : no).focus();
+        }
+      });
+    });
   },
 
   _busKey(e) {
@@ -1291,7 +1348,9 @@ export const busView = {
     else if (d.bvRowdel) el.closest("[data-bv-row]")?.remove();
     else if (d.bvCabsave) this._bvSaveCabinet(d.bvCabsave);
     else if (d.bvCabdel) {
-      if (confirm(this._t.inst.busv.removeCabinetConfirm)) this._bvRemove("cabinet", d.bvCabdel);
+      const B = this._t.inst.busv;
+      const name = this._bv().data.cabinets.find((c) => c.id === d.bvCabdel)?.name ?? B.cabinetName;
+      this._bvAsk({ title: name, text: B.removeCabinetConfirm, ok: B.remove, cancel: B.cancel }).then((yes) => yes && this._bvRemove("cabinet", d.bvCabdel));
     }
     else this._bvAct(d.bvAct, el);
     return true;
@@ -1302,17 +1361,26 @@ export const busView = {
     const v = this._bv();
     if (act === "close") this._bvClose();
     else if (act === "back") {
-      state.drawer = state.history.pop() ?? null;
-      state.error = "";
-      this._renderInstallation();
+      this._bvGuard().then((go) => {
+        if (!go) return;
+        state.drawer = state.history.pop() ?? null;
+        state.error = "";
+        state.dirty = false;
+        this._renderInstallation();
+      });
     } else if (act === "module-new") {
       const blank = { id: "", bus: v.bus?.id ?? "", type: "", role: "", name: "", row: null, slot: null, te: null, spacer_before: false, separator_after: false, terminator: false, first_address: null, supply_watts: "", legacy_range: "", legacy_location: "", placeholder: false, power: "", circuit: "", fuse: "", installed: "", revision: "", note: "", channels: [] };
-      state.draft = { key: "new", module: blank };
-      this._bvOpen("module", "new");
+      this._bvGuard().then((go) => {
+        if (!go) return;
+        state.draft = { key: "new", module: blank };
+        this._bvOpen("module", "new");
+      });
     } else if (act === "module-save") this._bvSaveModule();
     else if (act === "module-remove") {
       const id = state.drawer?.id;
-      if (id && confirm(this._t.inst.busv.removeConfirm)) this._bvRemove("module", id);
+      const B = this._t.inst.busv;
+      const m = v.byId.get(id);
+      if (id) this._bvAsk({ title: m?.name || m?.type || B.module, text: B.removeConfirm, ok: B.remove, cancel: B.cancel }).then((yes) => yes && this._bvRemove("module", id));
     } else if (act === "bus-new") this._bvOpen("bus", "new");
     else if (act === "bus-edit") this._bvOpen("bus", el.dataset.bvId);
     else if (act === "bus-save") this._bvSaveBus();
@@ -1343,6 +1411,7 @@ export const busView = {
       return true;
     }
     // the type of a new module decides its channels and fields: redraw the form with what was typed
+    if (e.target.closest?.("[data-bv-form], [data-bv-busform]")) this._in.bus.dirty = true;
     const input = e.target.closest("[data-bv-form] [data-bvf]");
     if (!input || !["type", "role"].includes(input.dataset.bvf) || e.type !== "change") return false;
     const state = this._in.bus;
@@ -1421,6 +1490,7 @@ export const busView = {
 
   async _bvReload() {
     // the notes follow the store (bus address, supplies): the whole documentation is read again
+    this._in.bus.dirty = false;
     await this._loadInstallation();
   },
 

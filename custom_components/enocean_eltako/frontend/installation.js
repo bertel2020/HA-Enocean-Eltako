@@ -1890,6 +1890,7 @@ export const installation = {
 
   _installationInput(e) {
     const state = this._in;
+    if (e.target.closest?.("[data-bv-form], [data-bv-busform]")) state.bus.dirty = true;
     if (e.target.matches("[data-in-paste]")) {
       state.paste = e.target.value;
       state.pasteResult = "";
