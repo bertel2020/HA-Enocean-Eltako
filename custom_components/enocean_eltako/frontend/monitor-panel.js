@@ -498,11 +498,11 @@ const STYLE = `
   .dev-detail .dsec h4 .sub { font-weight: 400; }
   /* values as small tiles, like the Device Proxy's statistics */
   /* one card grid for every section: the cards of a row are alike in height, wide content takes two columns */
-  .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0; }
-  .dev-detail .dgrid > div { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 14px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 4px; }
+  .dev-detail .dgrid { display: grid; grid-auto-flow: dense; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 0; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+  .dev-detail .dgrid > div { padding: 11px 16px 12px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 3px; box-shadow: 1px 0 0 var(--line-2), 0 1px 0 var(--line-2); }
   .dev-detail .dgrid > div.wide { grid-column: span 2; }
   .dev-detail .dgrid dt { font-size: calc(12px * var(--fs)); font-weight: 500; color: var(--muted); }
-  .dev-detail .dgrid dd { margin: 0; overflow-wrap: anywhere; align-self: center; }
+  .dev-detail .dgrid dd { margin: 0; overflow-wrap: anywhere; align-self: start; }
   .dev-detail .raw { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 2px; }
   .dev-detail .tag.mono, .dev-detail .raw .tag { font-family: ui-monospace, monospace; white-space: nowrap; }
   /* one row component for values, senders, settings and entities: inner space and fixed columns */
