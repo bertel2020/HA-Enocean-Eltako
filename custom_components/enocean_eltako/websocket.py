@@ -470,6 +470,7 @@ async def ws_discover(
         connection.send_result(msg["id"], {"reason": "no_matching_kind"})
         return
     hub.discovered[sender] = ReceivedTelegram(last.telegram, last.gateway, last.timestamp, sender)
+    hub.handed_over = (sender, time.monotonic())
     connection.send_result(msg["id"], {"entry_id": entry.entry_id})
 
 

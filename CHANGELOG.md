@@ -21,6 +21,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Add as device** (the + of an unknown sender in the panel): the next **Add device** of that gateway goes straight to the kind of the sender, without the menu and the list of discovered senders; the likeliest kind is preselected (a press or release telegram: the rocker). The hand-over is used once and expires after ten minutes, after which the menu is back.
 - **Telegram log**: for an unknown sender of a press or release telegram the hint lists the rocker profile (F6-02-01) first, ahead of rarer profiles such as the window handle.
 - **Installation**: every device name that is a link (Sender IDs, Links, Log, Eltako bus) opens the device in the Devices view, like the name in the table. A device without a row there still opens in the table of the Installation.
 - **Installation → Sender IDs**: one table instead of two lists. The list of the pool by device (with its search, chips and sort) is gone; the pool map, **Free all** with its confirmation and the confirmation of a single release stay above the table. Blocked IDs stand first in the table, and the tab shows how many wait.
@@ -81,6 +82,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Als Gerät anlegen** (das + eines unbekannten Senders im Panel): Das nächste **Gerät hinzufügen** dieses Gateways geht direkt zur Art des Senders, ohne Menü und ohne die Liste der entdeckten Sender; die wahrscheinlichste Art ist vorgewählt (bei einem Druck- oder Loslass-Telegramm der Taster). Die Übergabe gilt einmal und verfällt nach zehn Minuten, danach ist das Menü wieder da.
 - **Telegrammprotokoll**: Bei einem unbekannten Sender eines Druck- oder Loslass-Telegramms nennt der Hinweis zuerst das Taster-Profil (F6-02-01), vor selteneren wie dem Fenstergriff.
 - **Anlage**: Jeder Gerätename, der ein Link ist (Sender-IDs, Verbindungen, Protokoll, Eltako-Bus), öffnet das Gerät in der Geräte-Ansicht, wie der Name in der Tabelle. Ein Gerät ohne Zeile dort öffnet weiter in der Tabelle der Anlage.
 - **Anlage → Sender-IDs**: eine Tabelle statt zwei Listen. Die Liste des Pools nach Gerät (mit Suche, Chips und Sortierung) entfällt; die Pool-Karte, **Alle freigeben** mit Rückfrage und die Rückfrage einer einzelnen Freigabe bleiben über der Tabelle. Gesperrte IDs stehen in der Tabelle zuerst, der Reiter zeigt, wie viele warten.
