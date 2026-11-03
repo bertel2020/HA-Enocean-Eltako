@@ -468,7 +468,7 @@ const STYLE = `
   .senders .map .t-assigned { background: var(--accent); border-color: var(--accent); }
   .senders .map .t-blocked { background: var(--warn); border-color: var(--warn); }
   .senders .map .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
-  .senders .sid-head { cursor: pointer; }
+  .senders .sid-head.foldable { cursor: pointer; }
   .senders .sid-head .fold { margin-left: auto; width: 16px; text-align: center; color: var(--muted); font-size: calc(12px * var(--fs)); }
   .senders .sid-group.folded .sid-row, .senders .sid-group.folded .sid-hint, .senders .sid-group.folded .confirm { display: none; }
   .senders .sid-cols { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; padding: 8px 16px 6px 28px;
@@ -2901,9 +2901,11 @@ class EnOceanEltakoPanel extends HTMLElement {
               <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(t.freeConfirm)}</button></div></div>`
           : "";
         const gkey = g.ref || g.device || "";
-        const folded = !g.blocked && this._sidFolded.has(gkey);
+        // a group of one ID has nothing to hide
+        const foldable = !g.blocked && g.rows.length > 1;
+        const folded = foldable && this._sidFolded.has(gkey);
         return `<div class="sid-group${g.blocked ? " blocked" : ""}${folded ? " folded" : ""}">
-          <div class="sid-head" data-fold="${esc(gkey)}" role="button" tabindex="0" aria-expanded="${!folded}" title="${esc(t.foldGroup)}">${name}<span class="sub">${esc(t.idCount(g.rows.length))}</span><span class="fold" aria-hidden="true">${folded ? "▸" : "▾"}</span></div>
+          <div class="sid-head${foldable ? " foldable" : ""}"${foldable ? ` data-fold="${esc(gkey)}" role="button" tabindex="0" aria-expanded="${!folded}" title="${esc(t.foldGroup)}"` : ""}>${name}<span class="sub">${esc(t.idCount(g.rows.length))}</span>${foldable ? `<span class="fold" aria-hidden="true">${folded ? "▸" : "▾"}</span>` : ""}</div>
           ${rows}${g.blocked ? `<p class="sid-hint">${esc(t.blockedHint)}</p>` : ""}${confirm}</div>`;
       })
       .join("");
