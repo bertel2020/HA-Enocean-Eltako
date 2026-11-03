@@ -2563,7 +2563,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (value === true) return this._t.on;
     if (value === false) return this._t.off;
     if (typeof value === "number") return this._number(value, { maximumFractionDigits: 2 });
-    return String(value);
+    return this._t.commandValues[value] || String(value);
   }
 
   _previous(r) {

@@ -8,7 +8,7 @@ from typing import Any
 
 from ..telegram import RadioTelegram, Rorg
 from . import EEPRef
-from .eltako import futh, heating, sensors, shutter, switching
+from .eltako import commands, futh, heating, sensors, shutter, switching
 from .model import decode
 from .std.profiles import PROFILES
 
@@ -64,4 +64,43 @@ DECODERS: dict[EEPRef, Decoder] = {
 def decode_telegram(ref: EEPRef, telegram: RadioTelegram) -> dict[str, Any] | None:
     """Decoded values, or None for teach-in, foreign or undecodable telegrams."""
     decoder = DECODERS.get(ref)
+    return decoder(telegram) if decoder else None
+
+
+ROCKER_BUTTONS = {0: "AI", 1: "AO", 2: "BI", 3: "BO"}
+
+
+def _std_switch_command(telegram: RadioTelegram) -> dict[str, Any] | None:
+    """A5-38-08 command 2 as the standard controller sends it: on/off with a dim value."""
+    values = _std("A5-38-08")(telegram)
+    if not values or values.get("COM") != 2 or values.get("EDIM R"):
+        return None
+    return {"on": bool(values["SW"]), "dim": round(values["EDIM"])}
+
+
+def _std_rocker_command(telegram: RadioTelegram) -> dict[str, Any] | None:
+    """F6-02-01 as a sender presses and releases a rocker."""
+    values = _std("F6-02-01")(telegram)
+    if values is None:
+        return None
+    if telegram.status & 0x10:  # NU: the data byte is a rocker code
+        if values["EB"] and values["R1"] in ROCKER_BUTTONS:
+            return {"button": ROCKER_BUTTONS[values["R1"]], "pressed": True}
+        return None
+    return {"pressed": False} if telegram.data == b"\x00" else None
+
+
+# what a device sends to an actuator, by the EEP of its sender profile (not what it receives)
+COMMAND_DECODERS: dict[EEPRef, Decoder] = {
+    EEPRef("A5-38-08", "eltako"): _eltako(Rorg.BS4, commands.decode_central),
+    EEPRef("H5-3F-7F", "eltako"): _eltako(Rorg.BS4, commands.decode_shutter),
+    EEPRef("A5-10-06", "eltako"): _eltako(Rorg.BS4, commands.decode_heating_controller),
+    EEPRef("A5-38-08", "std"): _std_switch_command,
+    EEPRef("F6-02-01", "std"): _std_rocker_command,
+}
+
+
+def decode_command(ref: EEPRef, telegram: RadioTelegram) -> dict[str, Any] | None:
+    """Values of a telegram we sent from the sender profile with this EEP, or None."""
+    decoder = COMMAND_DECODERS.get(ref)
     return decoder(telegram) if decoder else None
