@@ -86,7 +86,11 @@ const STYLE = `
   button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   /* checkboxes in the accent colour, at one size */
-  input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; flex: none; cursor: pointer; }
+  input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; margin: 0; flex: none; cursor: pointer; border: 2px solid var(--muted); border-radius: 5px; background: transparent; display: inline-grid; place-content: center; vertical-align: middle; transition: background .12s, border-color .12s; }
+  input[type="checkbox"]:hover { border-color: var(--accent); }
+  input[type="checkbox"]:checked, input[type="checkbox"]:indeterminate { background: var(--accent); border-color: var(--accent); }
+  input[type="checkbox"]:checked::after { content: ""; width: 9px; height: 5px; border: solid var(--surface); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+  input[type="checkbox"]:indeterminate::after { content: ""; width: 8px; height: 2px; background: var(--surface); border-radius: 1px; }
 
   .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
     gap: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line);
