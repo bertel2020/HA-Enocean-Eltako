@@ -4,6 +4,7 @@ import pytest
 from homeassistant.core import HomeAssistant
 
 from custom_components.enocean_eltako.documentation import VERSION, collect
+from custom_components.enocean_eltako.notes import MANUAL_FIELDS
 
 from .test_devices import BASE, _push, _settle, _subentry, gateway  # noqa: F401
 
@@ -118,7 +119,68 @@ async def test_version_4_manual_entries_get_the_fields_of_version_5(
     )
     assert [manual[k] for k in ("kind", "location", "power")] == ["", "", ""]
     await notes.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 5
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
+
+
+async def test_version_5_manual_entries_get_the_fields_of_version_6(
+    hass: HomeAssistant,
+    hass_storage,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    await hass.config_entries.async_unload(entry.entry_id)
+    hass_storage[f"enocean_eltako.notes.{entry.entry_id}"] = {
+        "version": 5,
+        "key": f"enocean_eltako.notes.{entry.entry_id}",
+        "data": {
+            "gateway": "",
+            "devices": {},
+            "manual": [
+                {
+                    **{
+                        k: ""
+                        for k in MANUAL_FIELDS
+                        if k not in ("circuit", "fuse", "installed", "model")
+                    },
+                    "id": "a",
+                    "name": "Taster Flur",
+                    "address": "00-12-34-56",
+                    "location": "Flur",
+                }
+            ],
+        },
+    }
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    (manual,) = notes.manual
+    assert (manual["name"], manual["location"]) == ("Taster Flur", "Flur")
+    assert [manual[k] for k in ("circuit", "fuse", "installed", "model")] == ["", "", "", ""]
+    notes.set_manual(
+        [{**manual, "circuit": "3", "fuse": "B16", "installed": "gestern", "model": "PTM 215"}]
+    )
+    assert (notes.manual[0]["circuit"], notes.manual[0]["fuse"], notes.manual[0]["model"]) == (
+        "3",
+        "B16",
+        "PTM 215",
+    )
+    assert notes.manual[0]["installed"] == ""  # not a date
+    await notes.async_flush()
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
+
+
+async def test_import_matches_manual_entries_by_address(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    entry, _server = gateway
+    notes = entry.runtime_data.hub.notes[entry.entry_id]
+    notes.set_manual([{"id": "a", "name": "", "address": "00-12-34-56"}])
+    taken = notes.import_from(
+        {"manual": [{"name": "Taster Flur", "address": "00-12-34-56"}]}, overwrite=False
+    )
+    assert taken[1] == 0  # the same address: the same entry, even when it was named since
+    assert len(notes.manual) == 1
 
 
 async def test_a_manual_entry_keeps_its_kind_place_and_power(
@@ -210,7 +272,7 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 5, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 6, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
         "supplies": [],
@@ -273,6 +335,10 @@ async def test_manual_entries_are_validated_stored_and_documented(
         "kind": "",
         "location": "",
         "power": "",
+        "circuit": "",
+        "fuse": "",
+        "installed": "",
+        "model": "",
         "bus_power_table": None,
     }
     assert gateway_doc["manual"] == [
@@ -440,7 +506,7 @@ async def test_version_3_supplies_get_the_fields_of_version_4(
     )
     assert [supply[k] for k in ("location", "circuit", "fuse", "note")] == ["", "", "", ""]
     await notes.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 5
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
 
 
 async def test_a_supply_keeps_its_place_circuit_fuse_and_note(
@@ -764,7 +830,7 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     assert notes.device("05-00-00-12")["location"] == ""
     # a stored version 2 is read as it is
     await notes.async_flush()
-    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 5
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 6
 
 
 @pytest.mark.parametrize(
@@ -917,7 +983,7 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     assert notes.heard["00-21-63-43"]["rorg"] == "F6"
     await hass.config_entries.async_unload(entry.entry_id)
     assert notes._signal_timer is None
-    stored = await Store(hass, 5, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 6, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
     assert stored["heard"]["00-21-63-43"]["dbm"] == -71
 

@@ -181,12 +181,12 @@ export function documentationCsv(doc, t, profile, table = "devices") {
       if (!d.senders.length) rows.push([...base, "", "", "", "", wall, ""]);
       for (const s of d.senders) rows.push([...base, profile(s.profile), s.id, s.ute ? t.teachUte : t.teachTelegram, s.test ? (t.senderTestResult[s.test] || s.test) : "", wall, t.doc.state[state.get(s.id)] || ""]);
     }
-    const extra = (name, address, note) => {
+    const extra = (name, address, note, fields = {}) => {
       const row = blank(head.length);
-      Object.assign(row, { 0: gw.title, 1: gw.base_id ?? "", 2: name, 3: address, [7 + FIELD_KEYS.indexOf("note")]: note });
+      Object.assign(row, { 0: gw.title, 1: gw.base_id ?? "", 2: name, 3: address, ...Object.fromEntries(FIELD_KEYS.map((f, i) => [7 + i, f === "note" ? note : fields[f] ?? ""])) });
       rows.push(row);
     };
-    for (const m of gw.manual ?? []) extra(m.name, m.address, m.function);
+    for (const m of gw.manual ?? []) extra(m.name, m.address, m.function, m);
     for (const h of gw.heard ?? []) extra(t.doc.notSetUp, h.id, `${h.rorg}${h.dbm != null ? `, ${h.dbm} dBm` : ""}`);
     for (const p of gw.pools) {
       for (const s of p.senders.filter((x) => x.device == null)) {
@@ -288,7 +288,7 @@ export function docTables(gw, t, profile) {
     .flatMap((d) => (d.ids?.length ? d.ids.map((x) => ({ ...d, id: x.id, eep: x.eep, eep_extra: [] })) : [d]))
     .map((d) => ({ key: d.key ?? "", id: d.id, device: d.model ?? "", place: place(d), location: d.location ?? "", area: d.area ?? "", own: d.name, partOf: d.group ?? "", category: T.categories[d.category], description: d.group || d.name, eep: [d.eep, ...d.eep_extra].filter(Boolean).join(", "), sends: d.group ? d.name : T.categories[d.category], group: d.group || "" }))
     .sort((a, b) => (a.group || a.description).localeCompare(b.group || b.description) || a.id.localeCompare(b.id));
-  for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.name, place: "", description: m.function, eep: "", sends: T.byHand, group: "" });
+  for (const m of (gw.manual ?? []).filter((e) => e.address)) radio.push({ id: m.address, device: m.model ?? "", place: m.location ?? "", location: m.location ?? "", own: m.name, description: [m.name, m.function].filter(Boolean).join(", "), eep: "", sends: T.byHand, group: "" });
   return { senders, externals, buttons: buttonRows, radio };
 }
 
@@ -501,11 +501,11 @@ export function documentationHtml(doc, t, profile, lang, shown = ["handover", "c
   const ids = section("ids", d.sections.ids, "", perGateway((gw) => {
     const pool = gw.pools.flatMap((p) => p.senders);
     const poolRows = pool.map((s) => `<tr>${cell(`<span class="mono">${esc(s.id)}</span>`)}${cell(esc(s.device ?? d.deleted))}${cell(esc(profile(s.profile)))}${cell(esc(d.state[s.state] || s.state))}</tr>`).join("");
-    const manualRows = (gw.manual ?? []).map((m) => `<tr>${cell(esc(m.name))}${cell(`<span class="mono">${esc(m.address)}</span>`)}${cell(esc(m.function))}</tr>`).join("");
+    const manualRows = (gw.manual ?? []).map((m) => `<tr>${cell(esc(m.name))}${cell(`<span class="mono">${esc(m.address)}</span>`)}${cell(esc(t.inst.kinds[m.kind || "taster"]))}${cell(esc(m.model ?? ""))}${cell(esc(m.location ?? ""))}${cell(esc(m.function))}</tr>`).join("");
     const heardRows = (gw.heard ?? []).map((h) => `<tr>${cell(`<span class="mono">${esc(h.id)}</span>`)}${cell(esc(h.rorg))}${cell(esc(h.dbm != null ? `${h.dbm} dBm` : ""))}${cell(esc(when(h.last)))}</tr>`).join("");
     return [
       poolRows ? `<h4>${esc(d.pool)}</h4>${table([d.cols.senderId, d.cols.usedBy, d.cols.sender, d.cols.poolState], poolRows)}` : "",
-      manualRows ? `<h4>${esc(d.manualTitle)}</h4>${table([d.cols.device, d.cols.senderId, d.manualFunction], manualRows)}` : "",
+      manualRows ? `<h4>${esc(d.manualTitle)}</h4>${table([d.cols.device, d.cols.senderId, t.inst.art, d.cols.type, t.inst.fields.location, d.manualFunction], manualRows)}` : "",
       heardRows ? `<h4>${esc(d.heard)}</h4><p class="sub">${esc(d.heardNote)}</p>${table([d.cols.senderId, d.cols.type, d.cols.signal, d.cols.lastHeard], heardRows)}` : "",
       gw.hidden_senders.length ? `<h4>${esc(d.hidden)}</h4><p class="mono">${esc(gw.hidden_senders.join(", "))}</p>` : "",
     ].join("");
