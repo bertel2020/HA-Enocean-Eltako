@@ -290,6 +290,17 @@ def sender_owner(device_id: int, profile: str, channel: int = 1) -> str:
     return f"device:{subentry_unique_id(device_id, channel)}:{profile}"
 
 
+# device types that can be changed into each other: they share the platforms and the way a
+# sender commands them; the sender ID stays, the profile it is used with changes
+TYPE_FAMILIES = (("switch", "psc", "vld_switch"),)
+
+
+def type_choices(model: DeviceModel) -> list[str]:
+    """The device types this device can become, itself included; none when it has no family."""
+    family = next((f for f in TYPE_FAMILIES if model.kind in f), ())
+    return [kind for kind in family if kind in CATALOG] if len(family) > 1 else []
+
+
 def sender_field(profile: str) -> str:
     return f"sender_{profile}"
 
@@ -577,15 +588,21 @@ class DeviceForm:
             user_input = {k: v for k, v in user_input.items() if k != OPT_WALL_SWITCH}
         if errors:
             return None
+        # an ID that moves to another profile of this device (a changed device type) stays
+        # assigned: it is neither blocked nor taught out
+        moved = {parse_id(s) for s in current.values()} & set(wanted.values())
         released = {
             p: parse_id(s)
             for p, s in current.items()
-            if p not in wanted or format_id(wanted[p]) != s
+            if (p not in wanted or format_id(wanted[p]) != s) and parse_id(s) not in moved
         }
         assigned: list[int] = []
         for profile, sender in wanted.items():
             if current.get(profile) == format_id(sender):
                 continue
+            if sender in moved:
+                pool.release(sender)
+                pool.confirm_teach_out(sender)
             try:
                 pool.assign(sender, sender_owner(device_id, profile, status_channel(user_input)))
             except SenderIdError as err:
@@ -642,6 +659,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         self._kinds: list[str] = []
         self._group = GROUP_ELTAKO
         self._back = "user"  # step the "back" entry of the next menu returns to
+        self._retyped: DeviceModel | None = None  # reconfigure: the type chosen instead
 
     def _loaded(self) -> bool:
         entry = self._get_entry()
@@ -944,13 +962,20 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             return self.async_abort(reason="gateway_not_loaded")
         subentry = self._get_reconfigure_subentry()
         data = dict(subentry.data)
-        self._device_model = model = model_for(data)
+        stored = model_for(data)
+        self._device_model = model = self._retyped or stored
         self._custom = data.get(CONF_CUSTOM, "")
         device_id = parse_id(data[CONF_DEVICE_ID])
         current = {s[CONF_PROFILE]: s[CONF_SENDER_ID] for s in data.get(CONF_SENDERS, ())}
         errors: dict[str, str] = {}
         if user_input is None and model.kind == "cover" and not self._settings_chosen:
             return self.async_show_menu(step_id="cover_menu", menu_options=["settings", "measure"])
+        choices = type_choices(stored)
+        if user_input is not None and (chosen := user_input.get(CONF_MODEL)) in choices:
+            if chosen != model.kind:
+                return await self._async_retype(
+                    CATALOG[chosen], subentry.title, user_input, current
+                )
         if user_input is not None:
             if model.group == GROUP_VIRTUAL:  # the sender is the device's ID: it stays
                 user_input = {**user_input, **{sender_field(p): s for p, s in current.items()}}
@@ -972,9 +997,50 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 **{sender_field(p): s for p, s in current.items()},
             }
         )
-        schema = {vol.Required(CONF_NAME): TextSelector(), **self._fields(model, current)}
+        schema = {
+            vol.Required(CONF_NAME): TextSelector(),
+            **self._type_field(model, choices),
+            **self._fields(model, current),
+        }
         form: SubentryFlowResult = await self._form(
             "reconfigure", schema, user_input or suggested, errors
+        )
+        return form
+
+    @staticmethod
+    def _type_field(model: DeviceModel, choices: list[str]) -> dict[Any, Any]:
+        if not choices:
+            return {}
+        return {
+            vol.Required(CONF_MODEL, default=model.kind): SelectSelector(
+                SelectSelectorConfig(options=choices, translation_key="device_model")
+            )
+        }
+
+    async def _async_retype(
+        self, model: DeviceModel, title: str, user_input: dict[str, Any], current: dict[str, str]
+    ) -> SubentryFlowResult:
+        """Show the form of the chosen type; the sender ID of the old primary profile carries over.
+
+        Nothing is saved until that form is submitted, so going away loses nothing.
+        """
+        self._retyped = self._device_model = model
+        values: dict[str, Any] = {CONF_NAME: user_input.get(CONF_NAME, title), CONF_MODEL: model.id}
+        for profile in model.senders:
+            if sender := current.get(profile.id):
+                values[sender_field(profile.id)] = sender
+        first = sender_field(model.senders[0].id) if model.senders else ""
+        if first and first not in values and current:
+            values[first] = next(iter(current.values()))
+        if OPT_PLATFORM in user_input:
+            values[OPT_PLATFORM] = user_input[OPT_PLATFORM]
+        schema = {
+            vol.Required(CONF_NAME): TextSelector(),
+            **self._type_field(model, type_choices(model)),
+            **self._fields(model, current),
+        }
+        form: SubentryFlowResult = await self._form(
+            "reconfigure", schema, nest_sections(values), {}
         )
         return form
 

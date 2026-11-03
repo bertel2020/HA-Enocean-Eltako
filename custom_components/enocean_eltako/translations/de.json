@@ -736,7 +736,8 @@
             "weather_rain": "Regen",
             "weather_brightness": "Helligkeit",
             "run_time_tenths": "Fahrzeiten in 100 ms",
-            "model_name": "Modell (optional)"
+            "model_name": "Modell (optional)",
+            "model": "Gerätetyp"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -764,7 +765,8 @@
             "rain_hold": "Minuten, die „Regen kürzlich“ nach dem letzten Regen noch an bleibt.",
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
             "invert": "Kontakte: Ein heißt geschlossen. Fenstergriffe: Zu und Gekippt tauschen die Plätze (Griff andersherum montiert). Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
-            "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden."
+            "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden.",
+            "model": "Beim Wechsel des Typs bleibt die Sender-ID des ersten Senders; der Aktor muss sie eventuell neu einlernen. Seine Entitäten werden für den neuen Typ neu aufgebaut."
           },
           "sections": {
             "rocker_buttons": {
