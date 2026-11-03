@@ -86,6 +86,13 @@ def test_eltako_solar_sensor_adds_the_supply_voltage() -> None:
     assert "supply_voltage" not in std
 
 
+def test_eltako_solar_sensor_real_capture() -> None:
+    # FAFT60 capture: 0x7F x 0.025 V = 3.175 V (0.02 V/step would give 2.5 V, below its range)
+    values = decode_telegram(EEPRef("A5-04-02", "eltako"), tg(Rorg.BS4, "7FB3490F"))
+    assert values["supply_voltage"] == pytest.approx(3.175)
+    assert values["HUM"] == pytest.approx(71.6) and values["TMP"] == pytest.approx(3.36)
+
+
 def test_room_controller() -> None:
     values = decode_telegram(EEPRef("A5-10-06", "eltako"), tg(Rorg.BS4, "137F8009"))
     assert values["night_setback"] == 3
