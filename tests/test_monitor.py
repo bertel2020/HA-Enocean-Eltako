@@ -215,6 +215,14 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
     event = (await client.receive_json())["event"]
     assert "candidates" not in event and "teach_in" not in event
 
+    # a press telegram of an unknown rocker names the rocker profile first
+    server.push(
+        esp2.Esp2Frame(esp2.HSeq.RRT, 0x05, bytes([0x10, 0, 0, 0]), 0x0029CE04, 0x30).encode()
+    )
+    event = (await client.receive_json())["event"]
+    assert "device" not in event
+    assert event["candidates"][0] == "F6-02-01:std"
+
     await entry.runtime_data.queue.submit(RadioTelegram(Rorg.BS4, bytes(4), 0xFFB74481))
     event = (await client.receive_json())["event"]
     assert (event["dir"], event["device"], event["profile"]) == ("tx", "Licht Diele", "central")
@@ -241,8 +249,8 @@ async def test_websocket_describes_devices_and_teach_ins(hass: HomeAssistant, ha
         "FF-B7-44-80",
     )
     assert status["loaded"] and status["connected"]
-    assert (status["telegrams"], status["devices"], status["queue"]) == (6, 2, 0)
-    assert status["per_minute"] == 6
+    assert (status["telegrams"], status["devices"], status["queue"]) == (7, 2, 0)
+    assert status["per_minute"] == 7
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
 
