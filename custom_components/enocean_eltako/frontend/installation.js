@@ -96,7 +96,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -116,6 +116,7 @@ export const INSTALLATION_STYLE = `
   .installation table.itable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
   .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 14px; padding-right: 4px; }
   .installation .itable td.name { min-width: 160px; }
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
   .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
@@ -227,9 +228,12 @@ export const INSTALLATION_STYLE = `
     .installation .lrow > :nth-child(1), .installation .lrow > :nth-child(2), .installation .lrow > :nth-child(4) { flex: 1 1 100%; }
     .installation .lrow > :nth-child(3) { flex: 1 1 60%; }
   }
-  .installation details.sheet { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
-  .installation details.sheet > summary { cursor: pointer; font-weight: 500; font-size: calc(14px * var(--fs)); }
-  .installation details.sheet > p { margin: 8px 0 0; max-width: 90ch; }
+  .installation .sheet { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 14px; margin: 0 0 12px; background: var(--surface); }
+  .installation .sheet .sheethead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(14px * var(--fs)); }
+  .installation .sheet .sheethead .iconbtn { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .installation .sheet .sheethead .iconbtn:hover { background: var(--soft); color: var(--text); }
+  .installation .sheet .sheethead svg { width: 18px; height: 18px; }
+  .installation .sheet > p { margin: 4px 0 0; max-width: 90ch; }
   .installation ol.sheetsteps { list-style: none; margin: 12px 0 2px; padding: 0; display: grid; gap: 12px; }
   .installation ol.sheetsteps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; font-size: calc(13px * var(--fs)); }
   .installation ol.sheetsteps li > b { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); font-weight: 500; font-size: calc(12px * var(--fs)); }
@@ -750,12 +754,12 @@ export const installation = {
     const bulk = picked
       ? `<div class="bulk"><b>${esc(I.selected(picked))}</b><select data-in-bulk-field aria-label="${esc(I.setField)}">${INSTALLATION_FIELDS.map((f) => `<option value="${f}">${esc(label(t, f))}</option>`).join("")}</select><input data-in-bulk-value placeholder="${esc(I.value)}" aria-label="${esc(I.value)}"><button class="chip" data-in-act="bulk">${esc(I.apply)}</button><button class="chip" data-in-act="unpick">${esc(I.clearSelection)}</button></div>`
       : "";
-    const paste = `<details class="sheet" ${state.paste || state.pasteResult ? "open" : ""}><summary>${esc(I.pasteTitle)}</summary><p class="isub">${esc(I.pasteHint)}</p>
+    const paste = !state.sheet ? "" : `<div class="sheet"><div class="sheethead"><b>${esc(I.pasteTitle)}</b><button class="iconbtn" data-in-act="sheet" aria-label="${esc(I.sheetClose)}" title="${esc(I.sheetClose)}">${svg(ICON.close)}</button></div><p class="isub">${esc(I.pasteHint)}</p>
       <ol class="sheetsteps">
         <li><b>1</b><div><button class="chip" data-in-act="copy-table">${esc(I.copyTable)}</button> <span class="isub">${esc(I.sheetCopyHint)}</span></div></li>
         <li><b>2</b><div>${esc(I.sheetEdit)}</div></li>
         <li><b>3</b><div><textarea class="paste" data-in-paste placeholder="${esc(I.pastePlaceholder)}" aria-label="${esc(I.pasteTitle)}">${esc(state.paste)}</textarea><div class="sheetrun"><button class="chip" data-in-act="paste">${esc(I.sheetApply)}</button> <span class="isub" data-in-paste-info>${esc(state.pasteResult || this._instPasteSeen())}</span></div></div></li>
-      </ol></details>`;
+      </ol></div>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.keys(COLUMN_GROUPS).map((g) => `<label><input type="checkbox" data-in-columns="${g}" ${state.columns.has(g) ? "checked" : ""}>${esc(I.columnGroups[g])}</label>`).join("")}<span class="isub">${esc(I.columnsHint)}</span></div></details>`;
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
@@ -769,7 +773,7 @@ export const installation = {
       ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
       : "";
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
-    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span>${menu}</div>${artChips}${missChips}${state.view === "all" ? this._instProgress() : ""}${bulk}${sections.join("")}${paste}`;
+    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${artChips}${missChips}${state.view === "all" ? this._instProgress() : ""}${bulk}${sections.join("")}`;
   },
 
   _instLinks() {
@@ -1117,7 +1121,10 @@ export const installation = {
       state.selected.clear();
       this._renderInstallation();
     } else if (act === "bulk") this._instBulk();
-    else if (act === "paste") this._instPaste();
+    else if (act === "sheet") {
+      state.sheet = !state.sheet;
+      this._renderInstallation();
+    } else if (act === "paste") this._instPaste();
     else if (act === "copy-table") this._instCopyTable();
     else if (act === "doc-open") {
       state.docForm = true;

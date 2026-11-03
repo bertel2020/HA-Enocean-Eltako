@@ -29,6 +29,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - The block to **paste from a spreadsheet** is now **Edit with a spreadsheet**: three numbered steps (copy the table, fill it in, paste it back) with a plain hint instead of a tab-separated example, and a line under the text field that says how many rows and fields were found before you apply them.
 - Storage and documentation: the notes store is now **version 5**. A power supply of the bus has a place, circuit, fuse and note, and an entry written down by hand has a kind, place and supply (older entries are migrated, the new fields start empty). The documentation tells for every device when it was last heard, the best signal and whether it is heard only via a repeater, and for a virtual sensor the entities it follows.
 - **Telegram log**: a telegram Home Assistant sent to a device is no longer shown as if the device sent it. The row carries a **Sent** tag, the name reads "to <device>" and the second line "from <sender ID>".
+- **Installation**: checkboxes have their own look (clear box, accent fill with a tick) and the device table gives them room next to the row stripe. **Edit with a spreadsheet** is now a **Spreadsheet** button in the toolbar that opens a card with the three steps, instead of a collapsible block.
 
 **Deutsch**
 
@@ -53,6 +54,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - Der Block zum **Einfügen aus einer Tabellenkalkulation** heißt jetzt **Mit einer Tabellenkalkulation bearbeiten**: drei nummerierte Schritte (Tabelle kopieren, ausfüllen, wieder einfügen) mit einem klaren Hinweis statt eines Beispiels mit Tabulatoren, und eine Zeile unter dem Textfeld, die vor dem Übernehmen sagt, wie viele Zeilen und Felder erkannt wurden.
 - Speicher und Dokumentation: der Notizspeicher hat jetzt **Version 5**. Ein Netzteil des Busses hat Ort, Stromkreis, Sicherung und Notiz, ein von Hand notierter Eintrag eine Art, einen Ort und eine Versorgung (ältere Einträge werden migriert, die neuen Felder sind leer). Die Dokumentation nennt zu jedem Gerät, wann es zuletzt gehört wurde, das beste Signal und ob es nur über einen Repeater ankommt, und zu einem virtuellen Sensor die Entitäten, denen er folgt.
 - **Telegrammprotokoll**: ein Telegramm, das Home Assistant an ein Gerät gesendet hat, wird nicht mehr so gezeigt, als käme es vom Gerät. Die Zeile trägt das Tag **Gesendet**, der Name lautet "an <Gerät>", die zweite Zeile "von <Sender-ID>".
+- **Anlage**: Checkboxen haben ein eigenes Aussehen (klares Kästchen, Akzentfüllung mit Haken) und in der Gerätetabelle Abstand zum Zeilenstreifen. **Mit einer Tabellenkalkulation bearbeiten** ist jetzt ein Button **Tabellenkalkulation** in der Werkzeugleiste, der eine Karte mit den drei Schritten öffnet, statt eines aufklappbaren Blocks.
 
 ### [1.5.0] - 2026-11-02
 
