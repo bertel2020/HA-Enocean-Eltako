@@ -96,7 +96,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, sid: {}, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -275,6 +275,50 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
+  .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .installation .stile { flex: 1 1 120px; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 10px 14px; cursor: pointer; display: grid; }
+  .installation .stile b { font-size: calc(22px * var(--fs)); font-weight: 500; line-height: 1.2; }
+  .installation .stile span { font-size: calc(13px * var(--fs)); color: var(--muted); }
+  .installation .stile.u b { color: var(--accent); }
+  .installation .stile.w b { color: var(--warn); }
+  .installation .stile.f b { color: var(--ok); }
+  .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--soft)); }
+  .installation .sbar { display: flex; gap: 1px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); margin-bottom: 10px; }
+  .installation .sbar i { flex: 1; background: transparent; }
+  .installation .sbar i.u { background: var(--accent); }
+  .installation .sbar i.w { background: var(--warn); }
+  .installation .sbar i.g { background: var(--muted); }
+  .installation .snext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; background: color-mix(in srgb, var(--ok) 12%, transparent); font-size: calc(14px * var(--fs)); }
+  .installation .snext.none { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .snext b { font-weight: 500; }
+  .installation .sintro .info { cursor: help; color: var(--muted); }
+  .installation .swrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .installation .swrap .tablewrap { margin: 0; }
+  .installation .stable { font-size: calc(14px * var(--fs)); }
+  .installation .stable input.cell { min-width: 64px; }
+  .installation .stable td.mono { white-space: nowrap; }
+  .installation .stable th { padding: 9px 10px; }
+  .installation .stable td { padding: 8px 10px; }
+  .installation .stable th:first-child, .installation .stable td:first-child { width: 64px; padding-left: 14px; }
+  .installation .stable th.sortable { cursor: pointer; user-select: none; }
+  .installation .stable th .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
+  .installation .stable th.sortable:hover .sarrow { opacity: .45; }
+  .installation .stable th[aria-sort] .sarrow { opacity: 1; color: var(--accent); }
+  .installation .stable td.snr { font-weight: 500; font-size: calc(14px * var(--fs)); }
+  .installation .stable tr.s-u > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .installation .stable tr.s-w > td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+  .installation .stable tr.s-w > td { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .installation .stable tr.s-g > td:first-child, .installation .stable tr.s-x > td:first-child { box-shadow: inset 3px 0 0 var(--muted); }
+  .installation .stable tr.s-f > td { color: var(--muted); }
+  .installation .stag { font-size: calc(12px * var(--fs)); padding: 2px 10px; border-radius: 12px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+  .installation .stag.u { background: var(--accent-soft); color: var(--accent); }
+  .installation .stag.w { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .installation .spager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); color: var(--muted); }
+  .installation .spager > div { display: flex; align-items: center; gap: 8px; }
+  .installation .spager select { font: inherit; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
+  .installation .spager .chip { min-height: 28px; padding: 0 12px; }
+  .installation .spager .chip:disabled { opacity: .4; cursor: default; }
+
   /* colour: one hue per kind, used for tags, chips, row stripes and cards */
   .installation { --k-bus: #2f6fb5; --k-sensor: #139a87; --k-taster: #7b5cc9; --k-aktor: #d77f1f; --k-virt: #c2477f; --k-psu: #6b7b8d; }
   .installation .k-bus, .installation [data-k="bus"] { --k: var(--k-bus); }
@@ -451,22 +495,61 @@ export const installation = {
   },
 
   _instSenders() {
+    // the sender IDs of each gateway: how full the pool is, the next free ID, and a table to filter, sort and page
     const t = this._t;
     const T = t.doc.tbl;
-    const rows = (gw, senders, externals) => {
-      const body = foldFree(senders).map((r) => {
-        if (r.free) return `<tr class="free"><td class="mono">${r.nr === r.to ? r.nr : `${r.nr} – ${r.to}`}</td><td colspan="8">${esc(T.free)}</td></tr>`;
-        if (r.gateway) return `<tr><td class="mono">0</td><td class="mono">${esc(r.id)}</td><td colspan="7">${esc(T.gateway)}</td></tr>`;
-        if (r.blocked) return `<tr><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td colspan="6"><span class="tag warn">${esc(T.blocked)}</span></td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td></tr>`;
-        return `<tr data-in-row="snd|${esc(gw.entry_id)}|${r.nr}"><td class="mono">${r.nr}</td><td class="mono">${esc(r.id)}</td><td>${esc(r.fn)}</td><td>${esc(r.device)}</td><td>${[r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ")}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`;
+    const S = t.inst.sid;
+    const state = this._in;
+    const hue = (fn) => ["bus", "sensor", "taster", "aktor", "virt"][[...fn].reduce((n, c) => n + c.charCodeAt(0), 0) % 5];
+    const sorters = { nr: (r) => r.nr ?? 999, name: (r) => r.name || "", fn: (r) => r.fn || "", use: (r) => r.use || "", st: (r) => S.state[r.st] };
+    const html = this._instPerGateway((gw, parts) => {
+      if (!parts.senders.length && !parts.externals.length) return "";
+      const v = (state.sid[gw.entry_id] ??= { f: "used", fn: "", sort: "nr", dir: 1, pg: 0, ps: 25 });
+      const all = [
+        ...parts.senders.map((r) => ({ ...r, st: r.gateway ? "g" : r.free ? "f" : r.blocked ? "w" : "u" })),
+        ...parts.externals.map((r) => ({ ...r, nr: null, st: "x", fn: "" })),
+      ];
+      const count = (st) => all.filter((r) => st.includes(r.st)).length;
+      const key = esc(gw.entry_id);
+      const tile = (f, label, n, cls) => `<button class="stile ${cls}" data-in-sidf="${key}|${f}" aria-pressed="${v.f === f}"><b>${n}</b><span>${esc(label)}</span></button>`;
+      const tiles = `<div class="stiles">${tile("used", S.used, count("uwx"), "u")}${tile("w", S.blocked, count("w"), "w")}${tile("f", S.free, count("f"), "f")}${tile("all", S.all, all.length, "")}</div>`;
+      const bar = `<div class="sbar" role="img" aria-label="${esc(S.barLabel(count("uwx"), count("w"), count("f")))}">${all.map((r) => `<i class="${r.st}" title="${r.nr ?? ""}"></i>`).filter((_, i) => all[i].nr !== null).join("")}</div>`;
+      const free = all.find((r) => r.st === "f");
+      const next = free
+        ? `<div class="snext"><span>${esc(S.next)} <b class="mono">${esc(S.nr)} ${free.nr} · ${esc(free.id)}</b></span><button class="chip" data-in-act="copy-id" data-id="${esc(free.id)}">${esc(S.copy)}</button></div>`
+        : `<div class="snext none">${esc(S.full)}</div>`;
+      const fns = [...new Set(all.map((r) => r.fn).filter(Boolean))].sort((x, y) => x.localeCompare(y));
+      const chips = fns.map((fn) => `<button class="chip" data-k="${hue(fn)}" data-in-sidfn="${key}|${esc(fn)}" aria-pressed="${v.fn === fn}">${esc(fn)}</button>`).join("");
+      const q = state.q.trim().toLowerCase();
+      let rows = all.filter((r) => (v.f === "all" ? true : v.f === "used" ? "uwxg".includes(r.st) : r.st === v.f) && (!v.fn || r.fn === v.fn) && (!q || [r.nr, r.id, r.name, r.place, r.device, r.fn, r.use].join(" ").toLowerCase().includes(q)));
+      const by = sorters[v.sort];
+      rows = rows.sort((x, y) => {
+        const a = by(x);
+        const b = by(y);
+        return ((typeof a === "number" ? a - b : String(a).localeCompare(String(b))) || (x.nr ?? 999) - (y.nr ?? 999)) * v.dir;
+      });
+      const pages = Math.max(1, Math.ceil(rows.length / v.ps));
+      v.pg = Math.min(v.pg, pages - 1);
+      const page = rows.slice(v.pg * v.ps, (v.pg + 1) * v.ps);
+      const th = (col, label) => `<th class="sortable" data-in-sids="${key}|${col}"${v.sort === col ? ` aria-sort="${v.dir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(label)}</span><i class="sarrow">${v.sort === col && v.dir < 0 ? "↓" : "↑"}</i></th>`;
+      const head = `<tr>${th("nr", S.nr)}<th>${esc(T.senderId)}</th>${th("name", S.device)}${th("fn", T.function)}${th("use", S.role)}<th>${esc(T.busAddress)}</th><th>${esc(T.feedbackId)}</th>${th("st", S.status)}</tr>`;
+      const tag = (st) => `<span class="stag ${st}">${esc(S.state[st])}</span>`;
+      const body = page.map((r) => {
+        const base = `<tr class="s-${r.st}"${r.st === "u" ? ` data-in-row="snd|${key}|${r.nr}"` : ""}><td class="mono snr">${r.nr ?? "–"}</td><td class="mono">${esc(r.id)}${r.second ? `<div class="isub">+ ${esc(r.second)}</div>` : ""}</td>`;
+        if (r.st === "f") return `${base}<td colspan="5" class="isub">${esc(T.free)}</td><td>${tag("f")}</td></tr>`;
+        if (r.st === "g") return `${base}<td colspan="5">${esc(T.gateway)}</td><td>${tag("g")}</td></tr>`;
+        if (r.st === "w") return `${base}<td colspan="4" class="isub">${esc(T.blocked)}</td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td><td>${tag("w")}</td></tr>`;
+        if (r.st === "x") return `${base}<td>${esc(r.name)}<div class="isub">${esc(r.device)}</div></td><td></td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td></td><td></td><td>${tag("x")}</td></tr>`;
+        const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ");
+        return `${base}<td>${name}${r.device ? `<div class="isub">${esc(r.device)}</div>` : ""}</td><td>${r.fn ? `<span class="tag kind k-${hue(r.fn)}">${esc(r.fn)}</span>` : ""}</td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td>${tag("u")}</td></tr>`;
       }).join("");
-      const outside = externals.length
-        ? `<tr class="outside"><td colspan="9">${esc(T.external)}</td></tr>${externals.map((r) => `<tr><td class="mono">–</td><td class="mono">${esc(r.id)}</td><td></td><td>${esc(r.device)}</td><td>${esc(r.name)}</td><td></td><td></td><td><span class="tag">${esc(r.use)}</span></td><td class="mono">${esc(r.second)}</td></tr>`).join("")}`
-        : "";
-      return body + outside;
-    };
-    const head = [T.nr, T.senderId, T.function, T.device, T.description, T.busAddress, T.feedbackId, T.use, T.second];
-    return `<p class="isub">${esc(T.sendersIntro)} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw, parts) => (parts.senders.length || parts.externals.length ? this._instTable(head, rows(gw, parts.senders, parts.externals)) : ""));
+      const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
+      const from = rows.length ? v.pg * v.ps + 1 : 0;
+      const pager = `<div class="spager"><span>${esc(S.range(from, from + page.length - (rows.length ? 1 : 0), rows.length))}</span><div><label>${esc(S.perPage)} <select data-in-sidps="${key}" aria-label="${esc(S.perPage)}">${sizes}</select></label><button class="chip" data-in-sidpg="${key}|-1" aria-label="${esc(S.prev)}"${v.pg === 0 ? " disabled" : ""}>‹</button><span>${esc(S.page(v.pg + 1, pages))}</span><button class="chip" data-in-sidpg="${key}|1" aria-label="${esc(S.next2)}"${v.pg >= pages - 1 ? " disabled" : ""}>›</button></div></div>`;
+      const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(S.search)}" aria-label="${esc(S.search)}">`;
+      return `${tiles}${bar}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="8" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
+    });
+    return `<p class="isub sintro">${esc(S.intro)} <span class="info" title="${esc(`${T.sendersIntro} ${t.inst.editHint}`)}">ⓘ</span></p>${html}`;
   },
 
   _instExtras(gw) {
@@ -931,6 +1014,21 @@ export const installation = {
       state.colMenu = false;
       this.shadowRoot.querySelector("#installation details.colmenu")?.removeAttribute("open");
     }
+    const sidf = e.target.closest("[data-in-sidf]");
+    const sidfn = e.target.closest("[data-in-sidfn]");
+    const sids = e.target.closest("[data-in-sids]");
+    const sidpg = e.target.closest("[data-in-sidpg]");
+    if (sidf || sidfn || sids || sidpg) {
+      const [gw, arg] = (sidf || sidfn || sids || sidpg).dataset[sidf ? "inSidf" : sidfn ? "inSidfn" : sids ? "inSids" : "inSidpg"].split("|");
+      const v = state.sid[gw];
+      if (!v) return;
+      if (sidf) Object.assign(v, { f: arg, pg: 0 });
+      else if (sidfn) Object.assign(v, { fn: v.fn === arg ? "" : arg, pg: 0 });
+      else if (sids) Object.assign(v, v.sort === arg ? { dir: -v.dir } : { sort: arg, dir: 1 });
+      else v.pg = Math.max(0, v.pg + Number(arg));
+      this._renderInstallation();
+      return;
+    }
     const tab = e.target.closest("[data-in-tab]");
     if (tab) {
       state.tab = tab.dataset.inTab;
@@ -1112,6 +1210,7 @@ export const installation = {
     if (!act) return;
     this.shadowRoot.querySelector("#installation details.imenu")?.removeAttribute("open");
     if (act === "print") this._documentation("print");
+    else if (act === "copy-id") navigator.clipboard?.writeText(e.target.closest("[data-in-act]").dataset.id.replace(/(..)(?=.)/g, "$1-")).catch(() => {});
     else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "csv-tables") this._documentation("csv-tables");
@@ -1162,6 +1261,12 @@ export const installation = {
     const mkind = e.target.closest("select[data-in-mfield]");
     if (mkind) {
       this._instManualInput(mkind);
+      return;
+    }
+    const sidps = e.target.closest("[data-in-sidps]");
+    if (sidps && this._in.sid[sidps.dataset.inSidps]) {
+      Object.assign(this._in.sid[sidps.dataset.inSidps], { ps: Number(sidps.value), pg: 0 });
+      this._renderInstallation();
       return;
     }
     const groupsel = e.target.closest("[data-in-groupsel]");
