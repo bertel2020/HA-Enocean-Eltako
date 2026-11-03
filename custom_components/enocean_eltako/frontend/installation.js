@@ -125,6 +125,7 @@ export const INSTALLATION_STYLE = `
   .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 14px; padding-right: 4px; }
+  .installation .tabwarn { color: var(--warn); font-weight: 500; }
   .installation .itable td.name { min-width: 160px; }
   .installation .namelink { all: unset; cursor: pointer; color: inherit; }
   .installation .namelink:hover, .installation .namelink:focus-visible { color: var(--accent); text-decoration: underline; }
@@ -309,11 +310,6 @@ export const INSTALLATION_STYLE = `
   .installation .stile.zero b { color: var(--muted); }
   .installation .nolearn .lrow input.cell[data-in-learn], .installation .nolearn .lrow input.cell[data-in-efield="learn"] { display: none; }
   .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--soft)); }
-  .installation .sbar { display: flex; gap: 1px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); margin-bottom: 10px; }
-  .installation .sbar i { flex: 1; background: transparent; }
-  .installation .sbar i.u { background: var(--accent); }
-  .installation .sbar i.w { background: var(--warn); }
-  .installation .sbar i.g { background: var(--muted); }
   .installation .snext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; background: color-mix(in srgb, var(--ok) 12%, transparent); font-size: calc(14px * var(--fs)); }
   .installation .snext.none { background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .installation .snext b { font-weight: 500; }
@@ -486,8 +482,10 @@ export const installation = {
       this._replace(el, `<div class="ibody"><div class="none">${esc(state.error ? t.inst.failed : t.loading)}</div></div>`);
       return;
     }
-    const tab = (name, label, selected) => `<button class="itab" role="tab" data-in-tab="${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${esc(label)}</button>`;
-    const groups = TABS.map((name) => tab(name, t.inst.tabNames[name], state.tab === name)).join("");
+    const tab = (name, label, selected, badge = 0) => `<button class="itab" role="tab" data-in-tab="${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${esc(label)}${badge ? ` <b class="tabwarn" title="${esc(t.inst.sid.blocked)}">${badge}</b>` : ""}</button>`;
+    // blocked sender IDs wait for a release: the tab says so from anywhere
+    const blocked = gateways(state.doc).reduce((n, gw) => n + docTables(gw, t, (p) => this._profile(p)).senders.filter((r) => r.blocked).length, 0);
+    const groups = TABS.map((name) => tab(name, t.inst.tabNames[name], state.tab === name, name === "gwsenders" ? blocked : 0)).join("");
     const subtabs = "";
     const item = (act, icon, label) => `<button data-in-act="${act}">${icon ? svg(icon) : ""}${esc(label)}</button>`;
     const tools = `<details class="imenu"><summary class="iconbtn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${item("print", ICON.print, t.inst.print)}${item("csv", ICON.download, t.inst.csvDevices)}${item("csv-tables", ICON.download, t.inst.links.tablesCsv)}${item("csv-links", ICON.download, t.inst.links.csvShort)}${item("json", ICON.download, "JSON")}<hr>${item("import", ICON.upload, t.inst.import)}</div></details>`;
@@ -558,7 +556,6 @@ export const installation = {
       const key = esc(gw.entry_id);
       const tile = (f, label, n, cls) => `<button class="stile ${cls}" data-in-sidf="${key}|${f}" aria-pressed="${v.f === f}"><b>${n}</b><span>${esc(label)}</span></button>`;
       const tiles = `<div class="stiles">${tile("used", S.used, count("uwx"), "u")}${tile("w", S.blocked, count("w"), "w")}${tile("f", S.free, count("f"), "f")}${tile("all", S.all, all.length, "")}</div>`;
-      const bar = `<div class="sbar" role="img" aria-label="${esc(S.barLabel(count("uwx"), count("w"), count("f")))}">${all.map((r) => `<i class="${r.st}" title="${r.nr ?? ""}"></i>`).filter((_, i) => all[i].nr !== null).join("")}</div>`;
       const free = all.find((r) => r.st === "f");
       const next = free
         ? `<div class="snext"><span>${esc(S.next)} <b class="mono">${esc(S.nr)} ${free.nr} · ${esc(free.id)}</b></span><button class="chip" data-in-act="copy-id" data-id="${esc(free.id)}">${esc(S.copy)}</button></div>`
@@ -569,6 +566,8 @@ export const installation = {
       let rows = all.filter((r) => (v.f === "all" ? true : v.f === "used" ? "uwxg".includes(r.st) : r.st === v.f) && (!v.fn || r.fn === v.fn) && (!q || [r.nr, r.id, r.name, r.place, r.device, r.fn, r.use].join(" ").toLowerCase().includes(q)));
       const by = sorters[v.sort];
       rows = rows.sort((x, y) => {
+        // blocked IDs need a hand: they stay on top while the table is ordered by number
+        if (v.sort === "nr" && (x.st === "w") !== (y.st === "w")) return x.st === "w" ? -1 : 1;
         const a = by(x);
         const b = by(y);
         return ((typeof a === "number" ? a - b : String(a).localeCompare(String(b))) || (x.nr ?? 999) - (y.nr ?? 999)) * v.dir;
@@ -592,7 +591,7 @@ export const installation = {
       const from = rows.length ? v.pg * v.ps + 1 : 0;
       const pager = `<div class="spager"><span>${esc(S.range(from, from + page.length - (rows.length ? 1 : 0), rows.length))}</span><div><label>${esc(S.perPage)} <select data-in-sidps="${key}" aria-label="${esc(S.perPage)}">${sizes}</select></label><button class="chip" data-in-sidpg="${key}|-1" aria-label="${esc(S.prev)}"${v.pg === 0 ? " disabled" : ""}>‹</button><span>${esc(S.page(v.pg + 1, pages))}</span><button class="chip" data-in-sidpg="${key}|1" aria-label="${esc(S.next2)}"${v.pg >= pages - 1 ? " disabled" : ""}>›</button></div></div>`;
       const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(S.search)}" aria-label="${esc(S.search)}">`;
-      return `${tiles}${bar}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="8" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
+      return `${tiles}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="8" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
     });
     return `<p class="isub sintro">${esc(S.intro)} <span class="info" title="${esc(`${T.sendersIntro} ${t.inst.editHint}`)}">ⓘ</span></p>${html}`;
   },
@@ -1318,15 +1317,12 @@ export const installation = {
     }
     const free = e.target.closest("[data-in-free]");
     if (free) {
-      // the release is confirmed in the pool above the table, where the blocked ID is listed
+      // the release is confirmed in the pool above the table, next to its map
       const plain = (id) => id.replaceAll("-", "").toUpperCase(); // the table writes IDs without dashes
       let row = null;
       const pool = this._pools.find((p) => (row = p.rows.find((r) => plain(r.id) === plain(free.dataset.inFree))));
       if (!pool) return;
       this._pool = pool.id;
-      this._sid.text = row.id;
-      this._sid.state = "";
-      this.shadowRoot.getElementById("sidText").value = row.id;
       this._freeing = { id: row.id, device: row.device || row.ref || "" };
       state.poolOpen = true;
       this._setManage();

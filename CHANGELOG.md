@@ -21,6 +21,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Installation → Sender IDs**: one table instead of two lists. The list of the pool by device (with its search, chips and sort) is gone; the pool map, **Free all** with its confirmation and the confirmation of a single release stay above the table. Blocked IDs stand first in the table, and the tab shows how many wait.
 - **Sender IDs view**: a device with a single ID no longer has a fold arrow; only devices with several IDs can be collapsed.
 - **Devices view**: the ⋮ menu of a set-up device has *Remove*, which asks the same confirmation as removing a ticked selection.
 - **Installation view**: the kind chips sit on the line of the view switch, and the two missing-data tiles are one compact line.
@@ -78,6 +79,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Anlage → Sender-IDs**: eine Tabelle statt zwei Listen. Die Liste des Pools nach Gerät (mit Suche, Chips und Sortierung) entfällt; die Pool-Karte, **Alle freigeben** mit Rückfrage und die Rückfrage einer einzelnen Freigabe bleiben über der Tabelle. Gesperrte IDs stehen in der Tabelle zuerst, der Reiter zeigt, wie viele warten.
 - **Ansicht Sender-IDs**: Ein Gerät mit nur einer ID hat keinen Einklapp-Pfeil mehr; nur Geräte mit mehreren IDs lassen sich einklappen.
 - **Ansicht Geräte**: Das ⋮-Menü eines eingerichteten Geräts hat *Entfernen*; es fragt wie beim Entfernen einer markierten Auswahl nach.
 - **Ansicht Anlage**: Die Art-Chips stehen in der Zeile der Ansichtswahl, und die beiden Kacheln für fehlende Angaben sind eine kompakte Zeile.

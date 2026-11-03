@@ -344,7 +344,7 @@ jumps to the Sender IDs tab.
 
 **Sender IDs** is the table of the gateway senders: one row per sender (not per device; a device
 can hold several), number 0 to 127, the gateway's own ID as number 0, free numbers folded, blocked
-IDs with their release, and the sender ID pool above it. The device names jump to the device.
+IDs first, with their release, and the sender ID pool above it. The device names jump to the device.
 **Links** shows who is taught into which actuator, as a card per actuator, per sender or as a
 matrix. Every link names the other end, the role (a left or right rocker, say) and where it comes
 from: **assigned** (a sender Home Assistant holds for the actuator, with when its teach-in was
@@ -460,18 +460,15 @@ to any telegram; the telegram appears in the list as sent. In the details of a s
 
 ## Sender IDs
 
-The **Sender ID pool** (Installation → Sender IDs, above the table, can be folded) shows who uses which sender ID: per gateway (and per bus
-group) the free IDs of the pool, and each device with its IDs, their profile and status, blocked
-IDs first. Radio gateways hand out base ID + 1…127. The pool map shows every ID as a small
-square (free, assigned, blocked, used elsewhere; the legend below names the colours); the tooltip
-names ID and device, a click jumps to its row.
+The **Sender ID pool** (Installation → Sender IDs, above the table, can be folded) shows how full the
+pool is: per gateway (and per bus group) the pool map with every ID as a small square (free,
+assigned, blocked, used elsewhere; the legend below names the colours). The tooltip names ID and
+device, a click jumps to its row in the table below. Radio gateways hand out base ID + 1…127.
 
-After a device is deleted its ID stays **blocked** until it is taught out of every actuator.
-**Free** releases it once the actuator has forgotten it, after a confirmation.
-
-The list has a search (device name, profile, ID with or without dashes, or decimal), chips for
-**All / Assigned / Blocked** and a sort (blocked first, name, sender ID). **Free all** frees every
-blocked ID the list currently shows, again after a confirmation, so filter first to free only some.
+After a device is deleted its ID stays **blocked** until it is taught out of every actuator. Blocked
+IDs stand first in the table, and the tab shows how many wait. **Free** releases one once the
+actuator has forgotten it, after a confirmation. **Free all** above the map frees every blocked ID of
+the pool, again after a confirmation.
 Do this only when every actuator has forgotten them: a new device that gets such an ID would
 switch the old actuator too.
 
