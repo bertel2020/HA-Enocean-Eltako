@@ -1434,6 +1434,8 @@ export const busView = {
     const input = e.target.closest("[data-bv-form] [data-bvf]");
     if (!input || !["type", "role"].includes(input.dataset.bvf) || e.type !== "change") return false;
     const state = this._in.bus;
+    // a type cleared by hand keeps what it was before the list opened (the focus handler cleared it for the list)
+    if (input.dataset.bvf === "type" && !input.value.trim() && input.dataset.prev) input.value = input.dataset.prev;
     const module = this._bvReadModule();
     if (!module) return true;
     state.draft = { key: state.drawer?.id ?? "new", module };
