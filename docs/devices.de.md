@@ -69,6 +69,49 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Szenentaster (Szenen 1–4) | Home Assistant | - | `rocker: F6-02-01:std` | button | - |
 | Virtueller Sensor (Home Assistant sendet) | Virtueller Taster | Home Assistant | - | `rocker: F6-02-01:std` | button | - |
 
+## Eltako-Baureihe 14 am Bus (Installationsdokumentation)
+
+Was die Bus-Ansicht der Installationsdokumentation über einen Typ weiß: Breite in TE
+(je 18 mm), belegte Bus-Adressen (eine je Kanal), Leistung, die er vom Bus nimmt, und was er
+liefert (Watt; Quelle: Eltako Planungshilfe RS485-Bus Baureihe 14, 07/2014). Ein Strich: nicht bekannt. Mit * markierte Werte sind
+Annahmen, bis ein Datenblatt sie bestätigt.
+
+| Typ | Rolle | TE | Adressen | Nimmt (W) | Liefert (W) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| DSZ14DRS | Zähler | 4* | 1 | – | – |
+| F3Z14D | Zähler | 1* | 3 | – | – |
+| F4SR14-LED | Aktor | 1 | 4 | – | – |
+| FAE14LPR | Aktor | – | – | 0,42 | – |
+| FAE14SSR | Aktor | – | – | 0,4 | – |
+| FAM14 | Bus-Master | 2 | 0 | 0,8 | 12 |
+| FFR14 | Aktor | – | – | 0,63 | – |
+| FGSM14 | Sonstiges | – | – | 0,2 | – |
+| FGW14 | Gateway | 1 | 1 | 0,5 | – |
+| FGW14-USB | Gateway | 1 | 1 | 0,5 | – |
+| FHK14 | Aktor | – | – | 0,42 | – |
+| FMS14 | Aktor | – | – | 0,63 | – |
+| FMSR14 | Eingänge | – | – | 0,1 | – |
+| FMZ14 | Aktor | – | – | 0,4 | – |
+| FRP14 | Sonstiges | – | – | 0,5 | – |
+| FSB14 | Aktor | 1 | 2 | 0,42 | – |
+| FSG14/1-10V | Aktor | – | – | 0,2 | – |
+| FSNT14-12V/12W | Netzteil | 1 | 0 | – | 12 |
+| FSR14-2x | Aktor | 1 | 2 | 0,14 | – |
+| FSR14-4x | Aktor | 1 | 4 | 0,7 | – |
+| FSR14SSR | Aktor | 1 | 2* | 0,4 | – |
+| FSU14 | Aktor | 1 | 1* | 0,14 | – |
+| FTD14 | Sonstiges | – | – | 0,53 | – |
+| FTN14 | Aktor | 1 | 1 | 0,14 | – |
+| FTS14EM | Eingänge | 1 | – | 0,13 | – |
+| FTS14FA | Eingänge | – | – | 0,5 | – |
+| FTS14KS | Bus-Master | – | – | 0,36 | – |
+| FTS14TG | Eingänge | 1 | 1 | 0,42 | – |
+| FUD14 | Aktor | 1 | 1 | 0,2 | – |
+| FUD14/800W | Aktor | 1 | 1 | 0,2 | – |
+| FWZ14 | Zähler | 1 | 1 | 0,1 | – |
+| FWZ14-65A | Zähler | 1 | 1 | 0,1 | – |
+| FZK14 | Aktor | – | – | 0,14 | – |
+
 ## Über den Katalog hinaus
 
 - **Per EEP** (Experte): alle 318 Standardprofile der EnOcean Alliance lassen sich als

@@ -16,6 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from custom_components.enocean_eltako.bus_devices import BUS_TYPES, SOURCE  # noqa: E402
 from custom_components.enocean_eltako.catalog import (  # noqa: E402
     CATALOG,
     CATEGORIES,
@@ -124,6 +125,23 @@ TEXT = {
             "a model without it follows the manufacturer's documentation. Captures are welcome, see\n"
             "[CONTRIBUTING](../CONTRIBUTING.md)."
         ),
+        "bus": "Eltako series 14 on the bus (installation documentation)",
+        "bus_text": (
+            "What the Bus view of the installation documentation knows of a type: its width in TE\n"
+            "(18 mm each), the bus addresses it takes (one per channel), what it takes from the bus\n"
+            "and what it delivers (watts; source: {source}). A dash: not known. Values marked * are\n"
+            "assumed until a data sheet confirms them."
+        ),
+        "bus_cols": ("Type", "Role", "TE", "Addresses", "Takes (W)", "Delivers (W)"),
+        "roles": {
+            "master": "bus master",
+            "supply": "power supply",
+            "actuator": "actuator",
+            "meter": "meter",
+            "input": "inputs",
+            "gateway": "gateway",
+            "other": "other",
+        },
         "more": "Beyond the catalog",
         "more_text": (
             "- **By EEP** (expert): all {count} standard profiles of the EnOcean Alliance can be added\n"
@@ -172,6 +190,23 @@ TEXT = {
             "abspielen; ein Modell ohne ✓ folgt der Dokumentation des Herstellers. Mitschnitte sind willkommen,\n"
             "siehe [CONTRIBUTING](../CONTRIBUTING.md)."
         ),
+        "bus": "Eltako-Baureihe 14 am Bus (Installationsdokumentation)",
+        "bus_text": (
+            "Was die Bus-Ansicht der Installationsdokumentation über einen Typ weiß: Breite in TE\n"
+            "(je 18 mm), belegte Bus-Adressen (eine je Kanal), Leistung, die er vom Bus nimmt, und was er\n"
+            "liefert (Watt; Quelle: {source}). Ein Strich: nicht bekannt. Mit * markierte Werte sind\n"
+            "Annahmen, bis ein Datenblatt sie bestätigt."
+        ),
+        "bus_cols": ("Typ", "Rolle", "TE", "Adressen", "Nimmt (W)", "Liefert (W)"),
+        "roles": {
+            "master": "Bus-Master",
+            "supply": "Netzteil",
+            "actuator": "Aktor",
+            "meter": "Zähler",
+            "input": "Eingänge",
+            "gateway": "Gateway",
+            "other": "Sonstiges",
+        },
         "more": "Über den Katalog hinaus",
         "more_text": (
             "- **Per EEP** (Experte): alle {count} Standardprofile der EnOcean Alliance lassen sich als\n"
@@ -188,6 +223,28 @@ TEXT = {
 }
 
 
+def bus_table(lang: str) -> str:
+    """The catalog of the series 14 (bus_devices.BUS_TYPES), sorted by type."""
+    text = TEXT[lang]
+    number = (
+        (lambda v: "–" if v is None else f"{v:g}".replace(".", ","))
+        if lang == "de"
+        else (lambda v: "–" if v is None else f"{v:g}")
+    )
+    rows = [
+        "| " + " | ".join(text["bus_cols"]) + " |",
+        "| --- | --- | ---: | ---: | ---: | ---: |",
+    ]
+    for found in sorted(BUS_TYPES.values(), key=lambda t: t.name):
+        te = "*" if "te" in found.assumed else ""
+        addresses = "*" if "addresses" in found.assumed else ""
+        rows.append(
+            f"| {found.name} | {text['roles'][found.role]} | {number(found.te)}{te} | "
+            f"{number(found.addresses)}{addresses} | {number(found.power)} | {number(found.supply)} |"
+        )
+    return "\n".join(rows) + "\n"
+
+
 def doc(lang: str) -> str:
     text = TEXT[lang]
     names = _translations(lang)["selector"]["model"]["options"]
@@ -202,6 +259,8 @@ def doc(lang: str) -> str:
         f"{text['intro']}\n\n"
         f"## {text['gateways']}\n\n{text['gateways_text']}\n\n" + "\n".join(gateways) + "\n\n"
         f"## {text['devices']}\n\n{text['devices_text']}\n\n{table(lang)}\n"
+        f"## {text['bus']}\n\n" + text["bus_text"].format(source=SOURCE) + "\n\n"
+        f"{bus_table(lang)}\n"
         f"## {text['more']}\n\n" + text["more_text"].format(count=len(PROFILES)) + "\n"
     )
 

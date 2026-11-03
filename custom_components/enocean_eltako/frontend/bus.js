@@ -580,7 +580,7 @@ export const busView = {
       ${m.installed ? `<dt>${esc(B.installed)}</dt><dd>${esc(m.installed)}</dd>` : ""}
       ${m.note ? `<dt>${esc(B.note)}</dt><dd>${esc(m.note)}</dd>` : ""}
     </dl>`;
-    const tags = `<span class="tag kind" data-r="${role}">${esc(B.roles[role] ?? role)}</span>${m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : ""}${typeInfo?.assumed ? `<span class="tag" title="${esc(B.assumedHint)}">${esc(B.assumed)}</span>` : ""}`;
+    const tags = `<span class="tag kind" data-r="${role}">${esc(B.roles[role] ?? role)}</span>${m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : ""}${typeInfo?.assumed?.length ? `<span class="tag" title="${esc(B.assumedHint)}">${esc(B.assumed)}</span>` : ""}`;
     const title = isNew ? esc(B.newModule) : esc(this._bvTitle(v, m));
     const crumbs = this._bvCrumbs([...this._bvModuleCrumbs(v, m), [m.type || B.unknownType]]);
     return this._bvDHead(crumbs, title, isNew ? "" : tags) + `<div class="bv-dbody">${mine.length ? `<div class="bv-checks">${mine.join("")}</div>` : ""}${kv}${chs && !isNew ? `<div class="bv-box"><div class="bv-bar"><h3>${esc(B.channels)}</h3><span class="isub">${esc(B.channelsHint(m.channels.length))}</span></div><div class="bv-chlist">${chs}</div></div>` : ""}${this._bvModuleForm(v, m, isNew)}</div>`;
