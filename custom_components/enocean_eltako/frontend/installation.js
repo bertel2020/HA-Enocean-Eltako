@@ -134,7 +134,7 @@ const saveGroup = (group) => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: loadGroup(), placeText: new Set(), linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "", bus: busState(),
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: loadGroup(), placeText: new Set(), linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "", bus: busState(), back: null,
 });
 
 export const INSTALLATION_STYLE = `
@@ -219,7 +219,9 @@ export const INSTALLATION_STYLE = `
   .installation .isubtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 16px 0; }
   .installation .isubtabs .itab { font-size: calc(13px * var(--fs)); font-weight: 400; padding: 5px 12px; margin: 0; border: 0; border-radius: 14px; }
   .installation .isubtabs .itab[aria-selected="true"] { background: var(--accent-soft); font-weight: 500; }
-  .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+  .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+  .installation .itools .seg { flex-wrap: wrap; max-width: 100%; }
+  .installation .lnone { overflow-wrap: anywhere; white-space: normal; }
   .installation .gwhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .installation .gwhead h3 { margin: 0; }
   .installation .gbar { display: flex; align-items: center; gap: 10px; }
@@ -286,7 +288,14 @@ export const INSTALLATION_STYLE = `
   .installation .lhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; background: var(--soft); }
   .installation .lhead .grow { flex: 1; }
   .installation .lhead b { font-weight: 500; font-size: calc(14px * var(--fs)); }
-  .installation .lrow { display: grid; grid-template-columns: minmax(150px, 1.5fr) auto minmax(110px, 1fr) minmax(120px, 1fr) 30px; gap: 8px 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .installation .lrow { display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(110px, .9fr) minmax(200px, 1.3fr) 76px; gap: 8px 12px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line); min-height: 44px; box-sizing: border-box; }
+  .installation .lrow .nm { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+  .installation .lrow .lcol .tag, .installation .lrow .nm .tag, .installation .lrow .lstate .tag { white-space: nowrap; }
+  .installation .lrow .lacts { display: flex; justify-content: flex-end; gap: 2px; }
+  .installation .lrow .lacts .icon-btn { width: 32px; height: 32px; }
+  .installation .lrow .lstate { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+  .installation .lrow .lstate .isub { overflow: hidden; text-overflow: ellipsis; }
+  .installation .nolearn .lrow { grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(200px, 1.3fr) 76px; }
   .installation .lrow input.cell { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; }
   .installation .lrow input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .lnone { padding: 10px 12px; color: var(--warn); font-size: calc(13px * var(--fs)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, transparent); }
@@ -297,7 +306,7 @@ export const INSTALLATION_STYLE = `
   .installation .lrow .nm, .installation .lrow .lstate > span, .installation .lrow .nm a { overflow-wrap: anywhere; }
   .installation .lrow .lstate { min-width: 0; }
   .installation .lrow .lstate > span.isub { flex: 1 1 100%; min-width: 0; }
-  .installation .lrow .tag { white-space: normal; }
+  .installation .lrow .tag { white-space: nowrap; }
   .installation .lstate { overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: calc(12px * var(--fs)); }
   .installation table.matrix th, .installation table.matrix td { text-align: center; min-width: 76px; }
   .installation table.matrix th:first-child, .installation table.matrix td:first-child { text-align: left; min-width: 150px; }
@@ -308,9 +317,12 @@ export const INSTALLATION_STYLE = `
   .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; width: 26px; height: 26px; border-radius: 50%; }
   .installation .mplus:hover { background: var(--accent-soft); color: var(--accent); }
   @media (max-width: 720px) {
-    .installation .lrow { display: flex; flex-wrap: wrap; }
-    .installation .lrow > :nth-child(1), .installation .lrow > :nth-child(2), .installation .lrow > :nth-child(4) { flex: 1 1 100%; }
-    .installation .lrow > :nth-child(3) { flex: 1 1 60%; }
+    .installation .lrow, .installation .nolearn .lrow { grid-template-columns: minmax(0, 1fr) auto; }
+    .installation .lrow .nm { grid-column: 1; }
+    .installation .lrow .lacts { grid-column: 2; grid-row: 1; }
+    .installation .lrow > .lcol { grid-column: 1 / -1; display: inline-flex; }
+    .installation .lrow > .lcol + .lcol { margin-top: -6px; }
+    .installation .lrow > input.cell, .installation .lrow > .lstate { grid-column: 1 / -1; }
   }
   .installation .sheet { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 14px; margin: 0 0 12px; background: var(--surface); }
   .installation .sheet .sheethead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(14px * var(--fs)); }
@@ -571,7 +583,8 @@ export const installation = {
     const tools = `<details class="imenu"><summary class="iconbtn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${item("print", ICON.print, t.inst.print)}${item("csv", ICON.download, t.inst.csvDevices)}${item("csv-tables", ICON.download, t.inst.links.tablesCsv)}${item("csv-links", ICON.download, t.inst.links.csvShort)}${item("json", ICON.download, "JSON")}<hr>${item("import", ICON.upload, t.inst.import)}</div></details>`;
     const body = { devices: () => this._instDevicesTab(), gwsenders: () => this._instSenders(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
     this._setManage();
-    this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${tools}</div></div>${subtabs}`);
+    const back = state.back ? `<button class="chip text" data-in-back>← ${esc(t.inst.back)}</button>` : "";
+    this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${back}${tools}</div></div>${subtabs}`);
     this._replace(el, `<div class="ibody">${body}</div>`);
     if (state.hl) {
       const row = [...el.querySelectorAll("[data-in-row]")].find((r) => r.dataset.inRow === state.hl);
@@ -599,7 +612,7 @@ export const installation = {
   _instGwHead(gw, count = null) {
     // the name of a gateway with its base ID, and optionally how many devices it has
     const t = this._t.inst;
-    return `<header class="gwhead"><h3>${esc(gw.title)}</h3><span class="isub mono">${esc(gw.base_id ?? "")}</span>${count === null ? "" : `<span class="isub">${esc(t.deviceCount(count))}</span>`}</header>`;
+    return `<header class="gwhead"><h3><button class="namelink" data-in-gwopen="${esc(gw.entry_id)}" title="${esc(t.openGateway)}">${esc(gw.title)}</button></h3><span class="isub mono">${esc(gw.base_id ?? "")}</span>${count === null ? "" : `<span class="isub">${esc(t.deviceCount(count))}</span>`}</header>`;
   },
 
   _instEmpty(gw) {
@@ -664,7 +677,7 @@ export const installation = {
         if (r.st === "g") return `${base}<td colspan="5">${esc(T.gateway)}</td><td>${tag("g")}</td></tr>`;
         if (r.st === "w") return `${base}<td colspan="4" class="isub">${esc(T.blocked)}</td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td><td>${tag("w")}</td></tr>`;
         if (r.st === "x") return `${base}<td>${esc(r.name)}<div class="isub">${esc(r.device)}</div></td><td></td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td></td><td></td><td>${tag("x")}</td></tr>`;
-        const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ");
+        const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ") + ` <button class="tag" data-in-sndlinks="${esc(r.id)}" title="${esc(t.inst.linksOfSender)}">→ ${esc(t.inst.tabNames.links)}</button>`;
         return `${base}<td>${name}${r.device ? `<div class="isub">${esc(r.device)}</div>` : ""}</td><td>${r.fn ? `<span class="tag kind k-${hue(r.fn)}">${esc(r.fn)}</span>` : ""}</td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td>${tag("u")}</td></tr>`;
       }).join(""));
       const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
@@ -864,7 +877,28 @@ export const installation = {
 
   _instKindTag(d) {
     const kind = kindOf(d);
-    return `<button class="tag kind k-${kind}" data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}">${esc(this._t.inst.kinds[kind])}${kind === "bus" && d.bus_address ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+    const modules = this._in.doc?.installation?.modules ?? [];
+    // on the bus as documented: the tag opens its channel (or the supply's module) in the bus tab
+    let target = "";
+    if (d.psu) target = modules.find((m) => m.supply_id === d.sid) ? `module|${modules.find((m) => m.supply_id === d.sid).id}` : "";
+    else if (d.manual) {
+      const m = modules.find((x) => x.channels.some((c) => c.manual_id === d.mid));
+      target = m ? `channel|${m.id}:${m.channels.find((c) => c.manual_id === d.mid).n}` : "";
+    } else if (d.note_key) {
+      const m = modules.find((x) => x.channels.some((c) => c.device_key === d.note_key));
+      target = m ? `channel|${m.id}:${m.channels.find((c) => c.device_key === d.note_key).n}` : "";
+    }
+    const link = target ? `data-in-busgo="${esc(target)}" title="${esc(this._t.inst.inBus)}"` : `data-in-kind="${kind}" title="${esc(this._t.inst.kindHint)}"`;
+    return `<button class="tag kind k-${kind}" ${link}>${esc(this._t.inst.kinds[kind])}${kind === "bus" && d.bus_address ? ` · ${esc(d.bus_address)}` : ""}</button>`;
+  },
+
+  _instSndLink(entryId, id) {
+    // a sender ID: its row in the Sender IDs tab when it is a number of the gateway's pool
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === entryId);
+    const plain = (x) => String(x ?? "").replace(/[^0-9A-Fa-f]/g, "");
+    const raw = plain(String(id).split(" ")[0]);
+    const n = gw?.base_id && raw.length === 8 ? parseInt(raw, 16) - parseInt(plain(gw.base_id), 16) : null;
+    return n != null && n >= 0 && n <= 127 ? `<button class="tag mono" data-in-snd="${esc(entryId)}|${n}">${esc(id)}</button>` : `<span class="mono">${esc(id)}</span>`;
   },
 
   _instSendTag(gw, d) {
@@ -1092,7 +1126,9 @@ export const installation = {
         .map(([name, list]) => {
           const id = `${state.group}|${name}`;
           const closed = state.folded.has(id);
-          return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="tag">${list.length}</span></td></tr>${closed ? "" : list.map(({ gw, d }) => row(gw, d, columns)).join("")}`;
+          const busRow = state.group === "location" ? (state.doc.installation?.cabinets ?? []).flatMap((c) => c.rows.map((r) => [`${c.name} · ${r.name}`, r.id])).find(([n]) => n === name)?.[1] : null;
+          const busLink = busRow ? ` <button class="tag" data-in-busgo="row|${esc(busRow)}" title="${esc(I.busRowHint)}">→ ${esc(I.views.bus)}</button>` : "";
+          return `<tr class="grp" data-in-fold="${esc(id)}"><td colspan="${span}">${closed ? "▸" : "▾"} ${esc(name)} <span class="tag">${list.length}</span>${busLink}</td></tr>${closed ? "" : list.map(({ gw, d }) => row(gw, d, columns)).join("")}`;
         })
         .join("");
     } else rows = devices.map(({ gw, d }) => row(gw, d, columns)).join("");
@@ -1192,34 +1228,41 @@ export const installation = {
   },
 
   _instLinkRow(gw, l, model, mode) {
-    // one link: the other end, the role and where it comes from, the learn position, the state and proof
+    // one link in fixed columns: the other end (name and ID) | role | where it comes from | learn
+    // position | state with a short time (the full one as tooltip) | actions at the right
     const t = this._t;
     const L = t.inst.links;
-    const when = (iso) => new Date(iso).toLocaleString(this._hass.language);
+    const lang = this._hass.language;
     const plain = model.plain;
-    const goto = (device, name) => (device ? `<a data-in-goto="${esc(device.key)}">${esc(name)}</a>` : esc(name));
+    const goto = (key, name) => (key ? `<a data-in-goto="${esc(key)}">${esc(name)}</a>` : esc(name));
     let who;
     if (mode === "actuator") {
       const device = model.byId.get(plain(l.from_id)) ?? null;
-      const numbers = l.from_kind === "ha" ? (gw.numbers?.get(l.to_key) ?? []) : [];
-      const label = l.from_kind === "entered" ? [l.from_name, l.from_id].filter(Boolean).join(" · ") : `${L.from[l.from_kind]} · ${l.from_id}`;
-      who = `<div class="nm"><div style="min-width:0">${goto(device, label)}${l.from_kind === "ha" && numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}" title="${esc(t.inst.senderTagHint)}">${esc(t.inst.senderTag(numbers.join(", ")))}</button>` : ""}</div></div>`;
+      // a sender written down by hand that is an entry by hand: its row in the devices table
+      const manual = !device && l.from_id ? (gw.manual ?? []).find((m) => plain(m.address) === plain(l.from_id)) : null;
+      const name = l.from_kind === "entered" ? l.from_name || L.from.entered : L.from[l.from_kind];
+      const target = device ? device.key : manual ? `manual|${manual.id}` : "";
+      const number = l.from_kind === "ha" && gw.base_id && l.from_id ? parseInt(plain(l.from_id), 16) - parseInt(plain(gw.base_id), 16) : null;
+      const id = l.from_id ? (number != null && number >= 0 && number <= 127 ? `<button class="tag mono" data-in-snd="${esc(gw.entry_id)}|${number}" title="${esc(t.inst.senderTagHint)}">${esc(l.from_id)}</button>` : `<span class="tag mono">${esc(l.from_id)}</span>`) : "";
+      who = `<div class="nm">${goto(target, name)} ${id}</div>`;
     } else {
       const target = model.byNote.get(l.to_key) ?? null;
-      who = `<div class="nm"><div style="min-width:0">${goto(target, l.to_name)}<div class="isub">${esc(l.to_id)}</div></div></div>`;
+      who = `<div class="nm">${goto(target?.key, l.to_name)} ${l.to_id ? `<span class="tag mono">${esc(l.to_id)}</span>` : ""}</div>`;
     }
     const role = l.source === "assigned" ? this._profile(l.role) : l.role;
     const learn = l.source === "entered"
       ? `<input class="cell" data-in-efield="learn" data-in-eid="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`
       : `<input class="cell" data-in-learn="${esc(l.key)}" data-in-gw="${esc(gw.entry_id)}" value="${esc(l.learn)}" placeholder="${esc(L.learn)}" aria-label="${esc(L.learn)}" autocomplete="off">`;
-    const evidence = [l.teach_in ? L.teachIn(when(l.teach_in)) : "", l.tested ? L.tested(when(l.tested)) : ""].filter(Boolean);
+    // the newest proof, short: tested or taught in "3 d ago"; both in full as the tooltip
+    const full = [l.teach_in ? L.teachIn(new Date(l.teach_in).toLocaleString(lang)) : "", l.tested ? L.tested(new Date(l.tested).toLocaleString(lang)) : ""].filter(Boolean).join(" · ");
+    const newest = [l.tested && ["tested", l.tested], l.teach_in && ["taught", l.teach_in]].filter(Boolean).sort((a, b) => b[1].localeCompare(a[1]))[0];
+    const ago = newest ? `<span class="isub" title="${esc(full)}">${esc(L.when[newest[0]](t.ago(Math.max(0, Math.round((this._now() - Date.parse(newest[1])) / 1000)))))}</span>` : "";
     const state = l.source === "assigned"
-      ? `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>${evidence.map((e) => `<span class="isub">${esc(e)}</span>`).join("")}`
+      ? `<span class="tag ${l.status === "confirmed" ? "ok" : l.status === "no_answer" ? "warn" : ""}" title="${esc(L.statusHint[l.status])}">${esc(L.status[l.status])}</span>${ago}`
       : "";
-    const action = l.source === "entered"
-      ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>`
-      : `<button class="icon-btn" data-in-goto="${esc(model.byNote.get(l.to_key)?.key ?? "")}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>`;
-    return `<div class="lrow">${who}<span><span class="tag role">${esc(role || "–")}</span> <span class="tag src-${l.source}" title="${esc(L.sourceHint[l.source])}">${esc(L.source[l.source])}</span></span>${learn}<div class="lstate">${state}</div>${action}</div>`;
+    const device = model.byNote.get(l.to_key)?.key ?? "";
+    const actions = `${device && mode === "actuator" && l.source !== "entered" ? `<button class="icon-btn" data-in-goto="${esc(device)}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>` : ""}${mode === "sender" && device ? `<button class="icon-btn" data-in-goto="${esc(device)}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>` : ""}${l.source === "entered" ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>` : ""}`;
+    return `<div class="lrow">${who}<span class="lcol"><span class="tag role">${esc(role || "–")}</span></span><span class="lcol"><span class="tag src-${l.source}" title="${esc(L.sourceHint[l.source])}">${esc(L.source[l.source])}</span></span>${learn}<div class="lstate">${state}</div><div class="lacts">${actions}</div></div>`;
   },
 
   _instLinkAddForm(gw, model, key, mode) {
@@ -1307,7 +1350,7 @@ export const installation = {
         const name = at > 0 ? e.detail.slice(0, at) : e.device && at < 0 && e.kind !== "import" ? e.detail : "";
         const rest = at > 0 ? e.detail.slice(at + 2) : e.kind === "import" ? e.detail : "";
         const d = gw.devices.find((x) => e.device && x.note_key === e.device);
-        return { ...e, gateway: gw.title, name, rest, goto: d?.key ?? "", ts: Date.parse(e.time) };
+        return { ...e, gateway: gw.title, entry_id: gw.entry_id, name, rest, goto: d?.key ?? "", ts: Date.parse(e.time) };
       }))
       .sort((a, b) => b.ts - a.ts);
   },
@@ -1368,7 +1411,7 @@ export const installation = {
       const sep = label === last ? "" : `<tr class="logday"><td colspan="2">${esc(label)} <span class="isub">${perDay.get(label)}</span></td></tr>`;
       last = label;
       const who = e.name ? (e.goto ? `<a data-in-goto="${esc(e.goto)}">${esc(e.name)}</a>` : esc(e.name)) : "";
-      const parts = this._instLogText(e).map((p) => `${esc(p.text)}${p.id ? ` <span class="mono">${esc(p.id)}</span>` : ""}${p.result ? ` <span class="lres ${p.tone}">${esc(p.result)}</span>` : ""}`).join(`<span class="isub"> · </span>`);
+      const parts = this._instLogText(e).map((p) => `${esc(p.text)}${p.id ? ` ${this._instSndLink(e.entry_id, p.id)}` : ""}${p.result ? ` <span class="lres ${p.tone}">${esc(p.result)}</span>` : ""}`).join(`<span class="isub"> · </span>`);
       const age = Math.max(0, Math.round((now - e.ts) / 1000));
       const when = age < 86400 ? t.inst.funk.ago(age) : new Date(e.ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
       return `${sep}<tr><td class="logmain"><div class="logline"><span class="tag ev ev-${esc(e.kind)}">${esc(t.inst.events[e.kind] || e.kind)}</span>${who}${multi ? ` <span class="isub">${esc(e.gateway)}</span>` : ""}</div>${parts ? `<div class="logdetail">${parts}</div>` : ""}</td><td class="logwhen" title="${esc(new Date(e.ts).toLocaleString(lang))}">${esc(when)}</td></tr>`;
@@ -1382,8 +1425,59 @@ export const installation = {
   },
 
   _installationClick(e) {
-    if (this._busClick(e)) return;
     const state = this._in;
+    const back = e.target.closest("[data-in-back]");
+    if (back) {
+      // back to where the last jump came from
+      const from = state.back;
+      state.back = null;
+      if (from) {
+        Object.assign(state, { tab: from.tab, view: from.view, art: from.art, q: from.q, linkView: from.linkView });
+        Object.assign(state.bus, { sub: from.sub, drawer: from.drawer, history: [] });
+      }
+      this._renderInstallation();
+      return;
+    }
+    // a jump to another place of the installation keeps where it came from, for Back
+    if (e.target.closest("[data-in-goto], [data-in-snd], [data-in-kind], [data-in-busgo], [data-in-sndlinks], [data-in-rowdevices]")) {
+      state.back = { tab: state.tab, view: state.view, art: state.art, q: state.q, linkView: state.linkView, sub: state.bus.sub, drawer: state.bus.drawer };
+    }
+    const busgo = e.target.closest("[data-in-busgo]");
+    if (busgo) {
+      // a device, supply or row on the bus: its channel, module or row in the bus tab
+      const [type, ...rest] = busgo.dataset.inBusgo.split("|");
+      Object.assign(state, { tab: "devices", view: "bus" });
+      if (type === "row") {
+        this._renderInstallation();
+        this._bvGo("row", rest.join("|"));
+      } else {
+        Object.assign(state.bus, { sub: "list", drawer: { type, id: rest.join("|") }, history: [] });
+        this._renderInstallation();
+      }
+      return;
+    }
+    const rowdevices = e.target.closest("[data-in-rowdevices]");
+    if (rowdevices) {
+      // a row of a cabinet: its devices in the devices table, grouped by place
+      Object.assign(state, { tab: "devices", view: "all", art: "all", group: "location", q: rowdevices.dataset.inRowdevices });
+      this._renderInstallation();
+      return;
+    }
+    const gwopen = e.target.closest("[data-in-gwopen]");
+    if (gwopen) {
+      // a gateway: its card in the telegram view, opened
+      this._gatewayDetails?.add(gwopen.dataset.inGwopen);
+      this._setView("telegrams");
+      return;
+    }
+    const sndlinks = e.target.closest("[data-in-sndlinks]");
+    if (sndlinks) {
+      // a sender ID: the links it is in, by sender
+      Object.assign(state, { tab: "links", linkView: "sender", q: sndlinks.dataset.inSndlinks, linkFilter: "all", linkSource: "all", linkPg: 0 });
+      this._renderInstallation();
+      return;
+    }
+    if (this._busClick(e)) return;
     if (state.colMenu && !e.target.closest(".colmenu")) {
       state.colMenu = false;
       this.shadowRoot.querySelector("#installation details.colmenu")?.removeAttribute("open");

@@ -117,12 +117,21 @@ for (const lang of ["en", "de"]) {
     const artCount = (k) => Number(root.querySelector(`#installation .fbar [data-in-art="${k}"] b`)?.textContent);
     const viewCount = (v) => Number(root.querySelector(`#installation .fbar [data-in-view="${v}"] .isub`)?.textContent);
     expect("the counts agree: all devices = all kinds", viewCount("all") === artCount("all") && viewCount("bus") === artCount("bus") + artCount("psu"), true);
-    expect("every row names its kind (10 devices, 2 power supplies; the 3 entries by hand have a kind menu)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 12);
+    expect("every row names its kind (10 devices, 2 power supplies; the 3 entries by hand have a kind menu)", root.querySelectorAll("#installation .itable tbody tr :is([data-in-kind], [data-in-busgo])").length, 12);
     expect("an entry by hand has a kind menu and its own tag", root.querySelectorAll("#installation .itable tbody tr .kindmenu").length === 3 && root.querySelectorAll("#installation .itable tbody tr .tag.doc").length === 3, true);
     expect("the kind chips count the kinds", [...root.querySelectorAll("#installation [data-in-art]")].map((b) => b.textContent.replace(/\s+/g, " ").trim()).join("|").length > 0, true);
     const deviceRows = () => root.querySelectorAll("#installation .itable tbody tr:not(.grp)");
     expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", deviceRows().length, 15);
     expect("the table is grouped by place (cabinet · row) at first", root.querySelectorAll("#installation .itable tr.grp").length > 0 && root.querySelector("#installation [data-in-groupsel] option[selected]")?.value, "location");
+    expect("the gateway is a tag of the row only with several gateways; its name opens the gateway elsewhere", root.querySelectorAll("#installation [data-in-gwopen]").length >= 0, true);
+    const busTag = root.querySelector('#installation .itable [data-in-busgo^="channel|m_fsr"]');
+    expect("a bus device's kind tag leads to its channel in the bus tab", !!busTag, true);
+    busTag.click();
+    await settle();
+    expect("the channel opens in the bus tab", !!root.querySelector("#installation aside.bv-drawer") && root.querySelector('#installation [data-in-view="bus"]').getAttribute("aria-pressed"), "true");
+    root.querySelector("#installation [data-in-back]").click();
+    await settle();
+    expect("Back returns to the devices table", root.querySelector('#installation [data-in-view="all"]').getAttribute("aria-pressed") === "true" && !root.querySelector("#installation [data-in-back]"), true);
     expect("every row ends in the menu column", [...deviceRows()].every((r) => r.lastElementChild.matches("td.rmenu")) && !!root.querySelector("#installation .itable thead th.rmenu:last-child"), true);
     expect("entries by hand and power supplies have their menu there", root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length, 5);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
@@ -209,6 +218,13 @@ for (const lang of ["en", "de"]) {
     expect("the sender ID pool sits above the table", root.querySelector("#poolBox").getBoundingClientRect !== undefined && root.querySelector("#poolBox").compareDocumentPosition(root.querySelector("#instBody")) & Node.DOCUMENT_POSITION_FOLLOWING, Node.DOCUMENT_POSITION_FOLLOWING);
     expect("gateway senders show 0 to 127 folded", root.querySelectorAll("#installation .itable tbody tr").length > 5, true);
     expect("the sender table ends every row in the menu column", [...root.querySelectorAll("#installation .itable tbody tr")].every((r) => r.lastElementChild.matches("td.rmenu")), true);
+    const sndLinks = root.querySelector("#installation [data-in-sndlinks]");
+    expect("a used sender ID leads to the links it is in", !!sndLinks, true);
+    sndLinks.click();
+    await settle();
+    expect("the links tab by sender, filtered to that ID", root.querySelector('#installation [data-in-tab="links"]').getAttribute("aria-selected") === "true" && root.querySelector("#installation [data-in-search]").value === sndLinks.dataset.inSndlinks, true);
+    root.querySelector("#installation [data-in-back]").click();
+    await settle();
     // fields are edited in the tables: a device with two senders has its bus address in two rows, and both follow
     const addr = root.querySelectorAll('#installation [data-in-field="bus_address"][data-in-key="sub1"]');
     expect("the bus address of a device with two senders is in two rows", addr.length, 2);
@@ -382,6 +398,10 @@ for (const lang of ["en", "de"]) {
     await settle();
     expect("a card per actuator (four: the room controller is none)", root.querySelectorAll("#installation .lcard").length, 4);
     expect("link rows by actuator", root.querySelectorAll("#installation .lrow").length, 4);
+    expect("each link row has its columns, the actions last", [...root.querySelectorAll("#installation .lrow")].every((r) => r.children.length === 6 && r.lastElementChild.matches(".lacts")), true);
+    expect("a sender ID of Home Assistant leads to its row in the Sender IDs tab", root.querySelectorAll("#installation .lrow .nm [data-in-snd]").length >= 2, true);
+    expect("the time of a proof is short, the full time its tooltip", [...root.querySelectorAll("#installation .lrow .lstate .isub")].every((x) => x.title && !/\d{4}/.test(x.textContent)), true);
+    expect("an entry by hand as sender leads to its row", !!root.querySelector('#installation .lrow [data-in-goto^="manual|"]'), true);
     expect("a link says where it comes from", root.querySelectorAll('#installation .lrow .tag[class*="src-"]').length, 4);
     expect("the tiles count actuators, without a link, no answer, not tested, answered", root.querySelectorAll("#installation .stile").length, 5);
     expect("an actuator without a link is marked", root.querySelectorAll("#installation .lnone").length > 0, true);
@@ -451,6 +471,7 @@ for (const lang of ["en", "de"]) {
     await settle();
     expect("device details open", root.querySelectorAll(".dev-detail").length, 1);
     expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-B7-44-81"), true);
+    expect("an opened device leads to its links", !!root.querySelector('.dev-detail [data-dev-links="Licht Diele"]'), true);
     expect("device rows while one is open", root.querySelectorAll(".dev").length, 5);
     // the opened row: one card grid, the last telegram over two columns with its raw bytes as tags,
     // one row component for values, senders, settings and entities

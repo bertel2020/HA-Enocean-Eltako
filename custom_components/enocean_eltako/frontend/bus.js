@@ -639,7 +639,9 @@ export const busView = {
     const used = mods.reduce((n, m) => n + this._bvTe(v, m) + (m.spacer_before ? 0.5 : 0), 0);
     const foreign = mods.filter((m) => OFF.includes(this._bvRole(v, m))).length;
     const next = row.next?.kind ? `<div class="bvr-foot">↳ ${esc(B.busOn(B.next[row.next.kind], row.next.length_m))}</div>` : "";
-    return `<div class="bvr-row${this._in.bus.hl === row.id ? " hl" : ""}" data-bv-rail="${esc(row.id)}"><div class="bvr-label"><b>${esc(row.name)}</b><span class="isub">${esc(B.rowUse2(fmtNum(used), row.te, mods.length - foreign, foreign))}</span></div><div class="bvr-wrap"><div class="bvr-rail" style="--cols:${cols}">${items.join("")}</div></div>${next}</div>`;
+    const cab = v.rows.get(row.id)?.cab;
+    const devices = print || !cab ? "" : ` <button class="tag" data-in-rowdevices="${esc(`${cab.name} · ${row.name}`)}" title="${esc(this._t.inst.rowDevicesHint)}">→ ${esc(this._t.inst.views.all)}</button>`;
+    return `<div class="bvr-row${this._in.bus.hl === row.id ? " hl" : ""}" data-bv-rail="${esc(row.id)}"><div class="bvr-label"><b>${esc(row.name)}</b><span class="isub">${esc(B.rowUse2(fmtNum(used), row.te, mods.length - foreign, foreign))}</span>${devices}</div><div class="bvr-wrap"><div class="bvr-rail" style="--cols:${cols}">${items.join("")}</div></div>${next}</div>`;
   },
 
   _bvLegend() {

@@ -1293,6 +1293,13 @@ class EnOceanEltakoPanel extends HTMLElement {
         this._openTeach(teach.dataset.teach);
         return;
       }
+      const devLinks = e.target.closest("[data-dev-links]");
+      if (devLinks) {
+        // the links of this device: its card in the Installation's links tab
+        Object.assign(this._in, { tab: "links", linkView: "actuator", q: devLinks.dataset.devLinks, linkFilter: "all", linkSource: "all", linkPg: 0 });
+        this._setView("installation");
+        return;
+      }
       const senderTest = e.target.closest("[data-sender-test]");
       if (senderTest) {
         this._testSenders(senderTest.dataset.senderTest, senderTest.dataset.gateway);
@@ -3541,7 +3548,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const only = d.name || d.id;
     const actions = `<div class="dact">${d.page ? `<button class="chip" data-device-page="${esc(d.page)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${
       d.quiet && d.time == null ? "" : `<button class="chip" data-only="${esc(only)}">${svg(ICON.filter)}${esc(t.showTelegrams)}</button>`
-    }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}</div>`;
+    }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}${d.name ? `<button class="chip" data-dev-links="${esc(d.name)}" title="${esc(t.showLinksHint)}">${svg(ICON.list)}${esc(t.showLinks)}</button>` : ""}</div>`;
     return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders, x.senders.length || "")}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntitiesTitle, entities, x.entities.length || "")}${group(t.doc.notes, `<input class="note" data-note-device="${esc(d.devKey)}" data-note-gateway="${esc(x.entry_id)}" value="${esc(x.note)}" maxlength="500" placeholder="${esc(t.doc.notePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">`)}${actions}</div>`;
   }
 
