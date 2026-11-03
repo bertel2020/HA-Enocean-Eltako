@@ -874,6 +874,40 @@ def sync_manual(
     return repr(data) != before
 
 
+def move_module(data: dict[str, Any], module_id: str, direction: int) -> str:
+    """Arrange on the rail: swap a module with its neighbour on that side, or at the end of the
+    row move it by half a TE. "" when done, else why not (nothing changed then)."""
+    module = next((m for m in data["modules"] if m["id"] == module_id), None)
+    if module is None:
+        return "not_found"
+    if module.get("row") is None:
+        return "invalid_slot"
+    row = sorted(
+        (m for m in data["modules"] if m.get("row") == module["row"] and m.get("slot") is not None),
+        key=lambda m: m["slot"],
+    )
+    index = row.index(module)
+    before = {m["id"]: m["slot"] for m in row}
+    neighbour = row[index + direction] if 0 <= index + direction < len(row) else None
+
+    def spacer(m: dict[str, Any]) -> float:
+        return 0.5 if m.get("spacer_before") else 0.0
+
+    if neighbour is not None:
+        left, right = (neighbour, module) if direction < 0 else (module, neighbour)
+        start = left["slot"] - spacer(left)
+        right["slot"] = start + spacer(right)
+        left["slot"] = right["slot"] + te_of(right) + spacer(left)
+    else:
+        module["slot"] = module["slot"] + 0.5 * direction
+    for moved in (module, neighbour):
+        if moved is not None and (problem := place_problem(data, moved)) is not None:
+            for m in row:
+                m["slot"] = before[m["id"]]
+            return "row_full" if problem == "invalid_slot" else problem  # at the edge of the row
+    return ""
+
+
 def remove_module(data: dict[str, Any], module_id: str) -> dict[str, Any] | None:
     """Take a module out; a bus whose master it was gets none (the checks say so)."""
     module: dict[str, Any] | None = next((m for m in data["modules"] if m["id"] == module_id), None)

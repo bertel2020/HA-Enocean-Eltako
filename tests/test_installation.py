@@ -678,3 +678,120 @@ async def test_an_export_of_version_2_runs_through_the_same_migration(
         next(m for m in installation.data["modules"] if m["supply_id"])["legacy_range"] == "1-126"
     )
     assert _by_type(installation.data, "F3Z14D")[0]["first_address"] == 12
+
+
+def _rail():
+    """A cabinet with two rows: FAM14 (2 TE), FSNT14 and FUD14 side by side, row 2 with FSB14."""
+    data = empty()
+    absorb(data, {**GW, "devices": [_device("x", "X", "FUD14")], "supplies": [], "manual": []})
+    bus = data["buses"][0]["id"]
+    data["cabinets"] = [
+        {
+            "id": "c1",
+            "name": "UV",
+            "area_id": None,
+            "note": "",
+            "rows": [
+                {"id": "r1", "name": "R1", "te": 12, "next": {"kind": "", "length_m": None}},
+                {"id": "r2", "name": "R2", "te": 12, "next": {"kind": "", "length_m": None}},
+            ],
+        }
+    ]
+    master = next(m for m in data["modules"] if m["id"] == data["buses"][0]["master"])
+    master.update(row="r1", slot=1.0, placeholder=False)
+    fud = _by_type(data, "FUD14")[0]
+    fud.update(row="r1", slot=4.0, first_address=1, power="7")  # 7 W: the section is warm
+    supply, _ = check_module(data, {"bus": bus, "type": "FSNT14-12V/12W", "row": "r1", "slot": 3})
+    data["modules"].append(supply)
+    fsb, _ = check_module(
+        data, {"bus": bus, "type": "FSB14", "row": "r2", "slot": 1, "first_address": 5}
+    )
+    data["modules"].append(fsb)
+    return data, bus, master, supply, fud, fsb
+
+
+def test_the_rail_checks_air_terminator_and_row_links() -> None:
+    data, bus, master, supply, fud, fsb = _rail()
+    found = {i["code"]: i for i in run_checks(data, {}, set())["buses"][bus]["items"]}
+    # FAM14 (1-2), FSNT14 (3) and FUD14 (4) touch: warm neighbours above 6 W want half a TE
+    assert found["spacing"]["args"]["assumed"] is True
+    assert (
+        len(
+            [
+                i
+                for i in run_checks(data, {}, set())["buses"][bus]["items"]
+                if i["code"] == "spacing"
+            ]
+        )
+        == 2
+    )
+    assert found["fud14_spacer"]["targets"] == [{"type": "module", "id": fud["id"]}]
+    assert found["terminator_missing"]["targets"] == [{"type": "module", "id": fsb["id"]}]
+    assert found["row_link_missing"]["targets"] == [{"type": "row", "id": "r1"}]
+    # a long bridge left of the FUD14, a BBV14 to row 2, the resistor at the last device
+    fud["spacer_before"] = True
+    fud["slot"] = 4.5
+    data["cabinets"][0]["rows"][0]["next"]["kind"] = "bbv14"
+    fud["terminator"] = True
+    codes = {i["code"] for i in run_checks(data, {}, set())["buses"][bus]["items"]}
+    assert "fud14_spacer" not in codes and "row_link_missing" not in codes
+    assert "terminator_not_last" in codes  # the FSB14 in row 2 is the end of the bus
+    fsb["terminator"] = True
+    assert "terminator_twice" in {
+        i["code"] for i in run_checks(data, {}, set())["buses"][bus]["items"]
+    }
+
+
+def test_supply_sections_by_place_are_named_and_fall_back_to_ranges() -> None:
+    data, bus, master, supply, fud, fsb = _rail()
+    loads = supply_loads(data, data["buses"][0])
+    assert loads["mode"] == "place"
+    # cut at the cabinet end only: one section with FAM14 and FSNT14 (24 W)
+    (section,) = loads["supplies"]
+    assert section["section"] == "A" and section["capacity"] == 24
+    assert set(section["members"]) == {master["id"], fud["id"], fsb["id"]}
+    # a separator bridge right of the FSNT14: the FUD14 and the FSB14 hang on the FSNT14
+    master["separator_after"] = True
+    first, second = supply_loads(data, data["buses"][0])["supplies"]
+    assert (first["section"], first["modules"], first["capacity"]) == ("A", [master["id"]], 12)
+    assert second["modules"] == [supply["id"]] and second["load"] == 7.42
+    # a supply without a place: the address ranges decide again
+    supply["row"], supply["slot"] = None, None
+    assert supply_loads(data, data["buses"][0])["mode"] == "range"
+
+
+def test_modules_are_arranged_with_the_arrows() -> None:
+    from custom_components.enocean_eltako.installation_data import move_module
+
+    data, bus, master, supply, fud, fsb = _rail()
+    assert move_module(data, supply["id"], 1) == ""  # swapped with the FUD14 on its right
+    assert (fud["slot"], supply["slot"]) == (3.0, 4.0)
+    assert move_module(data, supply["id"], 1) == ""  # last in the row: half a TE to the right
+    assert supply["slot"] == 4.5
+    assert move_module(data, master["id"], -1) == "row_full"  # nothing left of slot 1
+    assert master["slot"] == 1.0
+    fsb["slot"] = 12.0
+    assert move_module(data, fsb["id"], 1) == "row_full" and fsb["slot"] == 12.0
+    assert move_module(data, "nope", 1) == "not_found"
+
+
+@pytest.mark.parametrize("gateway", [BUS_DEVICES], indirect=True)
+async def test_the_panel_moves_a_module(hass: HomeAssistant, gateway, hass_ws_client) -> None:  # noqa: F811
+    installation = get_installation(hass)
+    installation.set_cabinet({"name": "UV", "rows": [{"name": "R1", "te": 4}]})
+    row = installation.data["cabinets"][0]["rows"][0]["id"]
+    a, b = _by_type(installation.data, "FSR14-4x")
+    installation.set_module({**a, "row": row, "slot": 1})
+    installation.set_module({**b, "row": row, "slot": 2})
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {"id": 1, "type": "enocean_eltako/installation/move", "module_id": a["id"], "direction": 1}
+    )
+    reply = await client.receive_json()
+    assert reply["success"]
+    slots = {m["id"]: m["slot"] for m in reply["result"]["installation"]["modules"] if m["row"]}
+    assert slots == {a["id"]: 2.0, b["id"]: 1.0}
+    await client.send_json(
+        {"id": 2, "type": "enocean_eltako/installation/move", "module_id": b["id"], "direction": -1}
+    )
+    assert (await client.receive_json())["error"]["code"] == "row_full"

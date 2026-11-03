@@ -105,6 +105,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_installation)
     websocket_api.async_register_command(hass, ws_installation_set)
     websocket_api.async_register_command(hass, ws_installation_remove)
+    websocket_api.async_register_command(hass, ws_installation_move)
     async_setup_takeover_websocket(hass)
 
 
@@ -1300,5 +1301,26 @@ async def ws_installation_remove(
         reason = "" if installation.remove_module(msg["item_id"]) else "not_found"
     if reason:
         connection.send_error(msg["id"], reason, f"the {msg['kind']} was not removed: {reason}")
+        return
+    connection.send_result(msg["id"], installation.payload())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/installation/move",
+        vol.Required("module_id"): vol.All(str, vol.Length(min=1, max=32)),
+        vol.Required("direction"): vol.In([-1, 1]),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_installation_move(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Arrange a module on its rail: swap it with its left or right neighbour, or at the end of
+    the row move it by half a TE; refused when it would overlap or leave the row."""
+    installation = await async_get_installation(hass)
+    if reason := installation.move_module(msg["module_id"], msg["direction"]):
+        connection.send_error(msg["id"], reason, f"the module was not moved: {reason}")
         return
     connection.send_result(msg["id"], installation.payload())
