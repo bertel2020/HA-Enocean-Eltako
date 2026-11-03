@@ -296,7 +296,13 @@ def sender_owner(device_id: int, profile: str, channel: int = 1) -> str:
 
 # device types that can be changed into each other: they share the platforms and the way a
 # sender commands them; the sender ID stays, the profile it is used with changes
-TYPE_FAMILIES = (("switch", "psc", "vld_switch"),)
+TYPE_FAMILIES = (
+    ("switch", "psc", "vld_switch"),
+    (
+        "temp_humidity",
+        "temp_humidity_solar",
+    ),  # with or without the supply voltage of a solar sensor
+)
 
 
 def type_choices(model: DeviceModel) -> list[str]:
