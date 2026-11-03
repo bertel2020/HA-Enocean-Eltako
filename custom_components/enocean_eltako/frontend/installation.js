@@ -312,7 +312,7 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu summary { list-style: none; cursor: pointer; }
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-  .installation details.supplymenu .items { left: 0; right: auto; justify-items: start; }
+  .installation details.supplymenu .items { position: static; margin-top: 8px; justify-items: start; }
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
   .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
