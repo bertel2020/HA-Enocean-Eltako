@@ -168,6 +168,10 @@ export const INSTALLATION_STYLE = `
   .installation .imenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 220px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
   .installation .imenu .items button { text-align: left; font: inherit; font-size: calc(13px * var(--fs)); color: inherit; background: none; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
   .installation .imenu .items button:hover { background: var(--soft); }
+  .installation .imenu summary.iconbtn { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 18px; display: grid; place-items: center; color: var(--text); }
+  .installation .imenu summary.iconbtn:hover { background: var(--soft); }
+  .installation .imenu .items button { display: flex; align-items: center; gap: 10px; }
+  .installation .imenu .items button svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
   .installation .imenu .items hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
   .installation .itable td.num, .installation .itable th.num { text-align: right; white-space: nowrap; }
   .installation .itable tr.free td { color: var(--muted); background: var(--soft); font-size: calc(12px * var(--fs)); padding: 3px 8px 3px 0; }
@@ -261,7 +265,7 @@ export const INSTALLATION_STYLE = `
   .installation .tag.bus { background: var(--accent-soft); color: var(--accent); }
   .installation .itable tr.grp td { background: var(--soft); font-weight: 500; cursor: pointer; padding: 6px 8px; }
   .installation .itable td .dash { color: var(--muted); }
-  .installation .placeadd { font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: none; border: 1px dashed var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; text-align: left; }
+  .installation .placeadd { font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: none; border: 1px solid transparent; border-radius: 6px; padding: 4px 10px; cursor: pointer; text-align: left; }
   .installation .placeadd:hover { color: var(--accent); border-color: var(--accent); }
   .installation .itable th.sortable { cursor: pointer; user-select: none; }
   .installation .itable th.sortable .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
@@ -284,8 +288,8 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
   .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .installation .stile { flex: 1 1 120px; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 10px 14px; cursor: pointer; display: grid; }
-  .installation .stile b { font-size: calc(22px * var(--fs)); font-weight: 500; line-height: 1.2; }
+  .installation .stile { flex: 1 1 120px; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 8px 14px; cursor: pointer; display: grid; }
+  .installation .stile b { font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }
   .installation .stile span { font-size: calc(13px * var(--fs)); color: var(--muted); }
   .installation .stile.u b { color: var(--accent); }
   .installation .stile.w b { color: var(--warn); }
@@ -474,10 +478,8 @@ export const installation = {
     const tab = (name, label, selected) => `<button class="itab" role="tab" data-in-tab="${name}" aria-selected="${selected}" tabindex="${selected ? 0 : -1}">${esc(label)}</button>`;
     const groups = TABS.map((name) => tab(name, t.inst.tabNames[name], state.tab === name)).join("");
     const subtabs = "";
-    const item = (act, icon, label) => `<button data-in-act="${act}">${esc(label)}</button>`;
-    const tools = `<button class="chip" data-in-act="print">${svg(ICON.print)}${esc(t.inst.print)}</button>
-      <details class="imenu"><summary class="chip">${svg(ICON.download)}${esc(t.inst.output)}</summary><div class="items">${item("csv", "", t.inst.csvDevices)}${item("csv-tables", "", t.inst.links.tablesCsv)}${item("csv-links", "", t.inst.links.csvShort)}<hr>${item("json", "", "JSON")}</div></details>
-      <button class="chip" data-in-act="import">${svg(ICON.upload)}${esc(t.inst.import)}</button>`;
+    const item = (act, icon, label) => `<button data-in-act="${act}">${icon ? svg(icon) : ""}${esc(label)}</button>`;
+    const tools = `<details class="imenu"><summary class="iconbtn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${item("print", ICON.print, t.inst.print)}${item("csv", ICON.download, t.inst.csvDevices)}${item("csv-tables", ICON.download, t.inst.links.tablesCsv)}${item("csv-links", ICON.download, t.inst.links.csvShort)}${item("json", ICON.download, "JSON")}<hr>${item("import", ICON.upload, t.inst.import)}</div></details>`;
     const body = { devices: () => this._instDevicesTab(), gwsenders: () => this._instSenders(), links: () => this._instLinks(), log: () => this._instLog() }[state.tab]();
     this._setManage();
     this._replace(head, `<div class="itop"><div class="groups" role="tablist">${groups}</div><div class="itools">${tools}</div></div>${subtabs}`);
@@ -896,7 +898,7 @@ export const installation = {
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
     const artChips = kindList.length > 1
-      ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
+      ? `<div class="chips"><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.filter((k) => state.art === k || present.some((d) => kindOf(d) === k)).map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
     const placeable = present.filter((d) => !isVirtual(d));
     const fusable = present.filter((d) => FUSE_KINDS.has(kindOf(d)));
