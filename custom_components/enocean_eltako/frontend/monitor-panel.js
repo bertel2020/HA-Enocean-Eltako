@@ -627,7 +627,9 @@ const STYLE = `
     /* the link moves up to the logo's line, the tabs keep their own */
     .header-end { display: contents; }
     .brand { order: -2; }
-    .integration-link { order: -1; margin-left: auto; }
+    .look { order: -1; margin-left: auto; }
+    .integration-link { order: -1; padding: 0 10px; }
+    .integration-link span { display: none; }
     .card { gap: 12px; }
     .gateway-title { flex-basis: calc(100% - 60px); }
     .rate { border: 0; padding: 0; flex: 1; }
@@ -1036,7 +1038,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <button class="icon-btn" id="lookBtn" title="${esc(t.look.title)}" aria-label="${esc(t.look.title)}" aria-haspopup="true" aria-expanded="false" aria-controls="lookMenu">${svg(ICON.palette)}</button>
           <div class="menu look-menu" id="lookMenu" aria-label="${esc(t.look.title)}" hidden></div>
         </span>
-        <button class="chip integration-link" data-open-integration>${svg(ICON.open)}${esc(t.integration)}</button>
+        <button class="chip integration-link" data-open-integration title="${esc(t.integration)}" aria-label="${esc(t.integration)}">${svg(ICON.open)}<span>${esc(t.integration)}</span></button>
         </div>
       </header>
       <main>
