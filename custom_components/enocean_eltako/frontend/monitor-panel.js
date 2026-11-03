@@ -189,6 +189,8 @@ const STYLE = `
   .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; display: grid; min-width: 220px; padding: 6px 0;
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%); }
   .menu[hidden] { display: none; }
+  /* clearing the list lives in the more menu; its export item repeats the icon only where the icon is hidden */
+  #clear, .menu .dup { display: none; }
   .look-menu { min-width: 260px; padding: 8px 0; gap: 4px; }
   .lookgroup { display: grid; padding: 4px 0; }
   .lookgroup + .lookgroup { border-top: 1px solid var(--line-2); }
@@ -362,7 +364,7 @@ const STYLE = `
   .details .wide { grid-column: 1 / -1; }
   .chg { background: color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 3px; padding: 0 2px; }
   .m-only { display: none; }
-  .panel[data-view="devices"] .more.m-only { display: inline; } /* the documentation entries live in this menu */
+  .panel[data-view="devices"] .more.m-only, .panel[data-view="telegrams"] .more.m-only { display: inline; } /* the documentation entries live in this menu */
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .sendform { padding: 12px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 8%, transparent); }
   .sendform[hidden] { display: none; }
@@ -657,6 +659,7 @@ const STYLE = `
     tr.empty-row, tr.empty-row > td { display: block; }
     .m-only { display: inline; }
     .d-only { display: none; }
+    .menu .dup { display: flex; }
     /* the bar stays on one line: title, badge and at most three buttons */
     .bar { flex-wrap: nowrap; gap: 6px; padding-right: 6px; }
     .bar h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1059,7 +1062,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <span class="more m-only list-only">
               <button class="icon-btn" id="more" title="${esc(t.more)}" aria-label="${esc(t.more)}" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu">${svg(ICON.more)}</button>
               <span class="menu" id="moreMenu" role="menu" hidden>
-                <button role="menuitem" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
+                <button role="menuitem" class="dup" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
                 <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-print">${svg(ICON.print)}${esc(t.doc.print)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>

@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Telegram view**: clearing the list moved from its own icon, next to the send button, into the more menu (⋮), so it can no longer be hit by mistake.
 - **Installation view**: print, the exports and the notes import sit in one more menu (⋮); the kind chips lose their label and hide a kind without devices; the empty place fields are quiet (no dashed frame) and the two missing-data tiles are more compact.
 - **Panel header on a phone**: the palette and the integration link stay on the first line next to the logo (the link as an icon), the views scroll below.
 - **Devices view**: every device shows one **state pill** (active, silent, not heard, disabled, unknown) instead of a mix of tags; the first that applies counts, so a disabled device is not judged by its silence. The text names the state, the color only backs it up.
@@ -65,6 +66,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Ansicht Telegramme**: Das Leeren der Liste liegt nicht mehr als eigenes Symbol neben dem Senden-Knopf, sondern im Menü (⋮) und lässt sich so nicht mehr versehentlich treffen.
 - **Ansicht Anlage**: Drucken, die Ausgaben und der Notizen-Import liegen in einem Menü (⋮); die Art-Chips verlieren ihr Label und blenden eine Art ohne Geräte aus; die leeren Ortsfelder sind ruhig (ohne gestrichelten Rahmen) und die beiden Kacheln für fehlende Angaben sind kompakter.
 - **Kopfzeile des Panels auf dem Handy**: Farbwahl und Integrations-Link bleiben neben dem Logo in der ersten Zeile (der Link als Symbol), die Ansichten scrollen darunter.
 - **Geräteansicht**: Die Tabelle behält ihre Breiten: die Aktionsspalte hat eine feste Breite, die Überschrift *Zuletzt gehört* steht über den rechtsbündigen Werten, jede Zeile ist mindestens eine Höhe hoch, und ein nie gehörtes Gerät sagt das nicht mehr doppelt (die Statuspille tut es). Auf dem Handy ist die Kachel der Art kleiner.
