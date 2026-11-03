@@ -271,7 +271,7 @@ export const INSTALLATION_STYLE = `
   .installation .itable th.sortable .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
   .installation .itable th.sortable:hover .sarrow { opacity: .45; }
   .installation .itable th[aria-sort] .sarrow { opacity: 1; color: var(--accent); }
-  .installation .stile small { margin-top: 2px; }
+  .installation .stile small { margin: 0; }
   .installation .itools select { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; }
   .installation .place { display: flex; align-items: center; min-width: 250px; border: 1px solid transparent; border-radius: 6px; }
   .installation .place:hover { border-color: var(--line); }
@@ -288,7 +288,7 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
   .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .installation .stile { flex: 1 1 120px; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 8px 14px; cursor: pointer; display: grid; }
+  .installation .stile { flex: 0 1 auto; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 6px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
   .installation .stile b { font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }
   .installation .stile span { font-size: calc(13px * var(--fs)); color: var(--muted); }
   .installation .stile.u b { color: var(--accent); }
@@ -660,7 +660,7 @@ export const installation = {
     const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
     const tiles = `<div class="tiles">${tile(F.tileDevices, esc(F.devicesN(all.length)))}${tile(F.tileDocumented, String(all.filter((d) => d.manual).length))}${tile(F.tileSilent, String(late), late > 0)}${tile(F.tileRepeater, String(all.filter((d) => d.signal?.repeater_only).length))}</div>`;
     const kinds = ["taster", "sensor", "aktor"];
-    const artChips = `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
+    const artChips = `<div class="chips"><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${FUNK_COLUMNS.map((c) => `<label><input type="checkbox" data-in-funkcol="${c}" ${state.funkCols.has(c) ? "checked" : ""}>${esc(F.cols[c])}</label>`).join("")}</div></details>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     const form = state.docForm
@@ -690,7 +690,8 @@ export const installation = {
       const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
     });
-    return `${tiles}${tools}${artChips}${form}${sections.join("")}<p class="isub">${esc(F.hint)}</p>`;
+    this._artChips = artChips;
+    return `${tiles}${tools}${form}${sections.join("")}<p class="isub">${esc(F.hint)}</p>`;
   },
 
   _instBus() {
@@ -784,8 +785,10 @@ export const installation = {
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
     const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
+    this._artChips = "";
     const body = { all: () => this._instDevices(), virt: () => this._instVirt(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
-    return `<div class="gbar"><div class="seg" role="group">${seg}</div></div>${body}`;
+    // the views and the kinds of one view share a line
+    return `<div class="gbar"><div class="seg" role="group">${seg}</div>${this._artChips}</div>${body}`;
   },
 
   _instPlace(gw, d) {
@@ -913,7 +916,8 @@ export const installation = {
       ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
       : "";
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
-    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${artChips}${missChips}${bulk}${sections.join("")}`;
+    this._artChips = artChips;
+    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${missChips}${bulk}${sections.join("")}`;
   },
 
   _instLinks() {
