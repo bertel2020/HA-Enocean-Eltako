@@ -348,6 +348,7 @@ export const TEXT = {
     modelNone: "Not specified", modelOther: "Other model…", modelPlaceholder: "e.g. FSR14-4x", modelFailed: "Could not save the model.",
     dIdentity: "Identity", dRadio: "Radio", dSenders: "Sender IDs", dCommands: "Commands", dSettings: "Settings",
     dEntities: (n) => `Entities (${n})`,
+    dEntitiesTitle: "Entities", devState: "State", rawData: "Raw data", senderUntested: "not tested",
     doc: {
       importMap: (from, to) => `Gateway "${from}" of the file is not set up here. Import its notes into "${to}"?`,
       importItem: "Import notes from JSON", importUnsupported: "That is not a documentation export of this integration.", importFailed: "The notes could not be imported.",
@@ -853,6 +854,7 @@ export const TEXT = {
     modelNone: "Nicht angegeben", modelOther: "Anderes Modell …", modelPlaceholder: "z. B. FSR14-4x", modelFailed: "Das Modell konnte nicht gespeichert werden.",
     dIdentity: "Identität", dRadio: "Funk", dSenders: "Sender-IDs", dCommands: "Befehle", dSettings: "Einstellungen",
     dEntities: (n) => `Entitäten (${n})`,
+    dEntitiesTitle: "Entitäten", devState: "Zustand", rawData: "Rohdaten", senderUntested: "nicht getestet",
     doc: {
       importMap: (from, to) => `Das Gateway „${from}“ der Datei ist hier nicht eingerichtet. Seine Notizen in „${to}“ importieren?`,
       importItem: "Notizen aus JSON importieren", importUnsupported: "Das ist kein Dokumentations-Export dieser Integration.", importFailed: "Die Notizen konnten nicht importiert werden.",
