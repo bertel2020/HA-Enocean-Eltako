@@ -1026,10 +1026,11 @@ def test_the_bus_table_of_the_planning_guide_and_the_bus_addresses() -> None:
 
     assert bus_power("FSR14-4x") == 0.7 and bus_power(" fsr14-2X ") == 0.14
     assert bus_power("FUD14/800 W") == 0.2  # spaces and case do not matter
-    assert bus_power("F3Z14D") is None  # newer than the guide: no value, not zero
+    assert bus_power("F3Z14D") == 0.1  # the operating manual of 10/2026 gives it
+    assert bus_power("FLUD14") is None  # "–" in the table: no value, not zero
     assert bus_power("FSR14") is None  # the type does not say 2x or 4x
     assert bus_power(None) is None and bus_power("") is None
-    assert all(0 < watts < 1 for watts in POWER.values())
+    assert all(0 < watts <= 1 for watts in POWER.values())
     assert ADDRESSES == 126
     assert [valid_bus_address(a) for a in ("1", "126", "0", "127", "01", "1-1", "abc", "")] == [
         True,

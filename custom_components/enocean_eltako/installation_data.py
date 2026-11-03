@@ -27,6 +27,7 @@ MAX_CHANNELS = 16  # per module
 MAX_ROW_TE = 48
 DEFAULT_ROW_TE = 12  # the user's decision: 12 TE per row unless set otherwise
 MODULE_ROLES = (*ROLES, "foreign")  # foreign: on the rail, not on the bus (a circuit breaker)
+OFF_BUS = ("foreign", "accessory")  # on the rail, without address, load or channels
 NEXT_KINDS = ("", "bbv14", "fba14", "cable")
 VIA = ("radio", "wired")
 TEXT = {"name": 80, "type": 40, "note": 500, "circuit": 80, "fuse": 40, "revision": 40}
@@ -86,7 +87,7 @@ def te_of(module: dict[str, Any]) -> float:
 
 def address_count(module: dict[str, Any]) -> int:
     """How many bus addresses it takes: the catalog's, at least its highest channel number."""
-    if role(module) in ("master", "supply", "foreign"):
+    if role(module) in ("master", "supply", *OFF_BUS):
         return 0
     found = bus_type(module.get("type"))
     count = found.addresses if found and found.addresses is not None else 0

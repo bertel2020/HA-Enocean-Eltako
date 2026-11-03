@@ -73,44 +73,63 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 
 What the Bus view of the installation documentation knows of a type: its width in TE
 (18 mm each), the bus addresses it takes (one per channel), what it takes from the bus
-and what it delivers (watts; source: Eltako Planungshilfe RS485-Bus Baureihe 14, 07/2014). A dash: not known. Values marked * are
+and what it delivers (watts; source: Eltako operating manual series 14 RS485 bus 10/2026, main catalogue chapter 1). A dash: not given by Eltako's documents. Values marked * are
 assumed until a data sheet confirms them.
 
 | Type | Role | TE | Addresses | Takes (W) | Delivers (W) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| DSZ14DRS | meter | 4* | 1 | – | – |
-| F3Z14D | meter | 1* | 3 | – | – |
-| F4SR14-LED | actuator | 1 | 4 | – | – |
-| FAE14LPR | actuator | – | – | 0.42 | – |
-| FAE14SSR | actuator | – | – | 0.4 | – |
+| BGW14 | gateway | 1 | – | 0.3 | – |
+| DS14 | accessory (not on the bus) | 0.5 | 0 | – | – |
+| DSZ14DRS-3x80A | meter | 4 | – | – | – |
+| DSZ14WDRS-3x5A | meter | 4 | – | – | – |
+| F2L14 | actuator | 1 | – | 0.14 | – |
+| F3Z14D | meter | 1 | 3 | 0.1 | – |
+| F4HK14 | actuator | 1 | 4 | 0.7 | – |
+| F4SR14-LED | actuator | 2 | 4 | 1 | – |
+| FAE14LPR | actuator | 1 | 2 | 0.42 | – |
+| FAE14SSR | actuator | 1 | 2 | 0.4 | – |
 | FAM14 | bus master | 2 | 0 | 0.8 | 12 |
+| FBA14 | accessory (not on the bus) | 1 | 0 | – | – |
+| FD2G14 | gateway | – | – | 0.5 | – |
+| FDG14 | gateway | 2 | 16 | 0.4 | – |
 | FFR14 | actuator | – | – | 0.63 | – |
-| FGSM14 | other | – | – | 0.2 | – |
+| FGSM14 | gateway | – | – | 0.2 | – |
 | FGW14 | gateway | 1 | 1 | 0.5 | – |
-| FGW14-USB | gateway | 1 | 1 | 0.5 | – |
-| FHK14 | actuator | – | – | 0.42 | – |
-| FMS14 | actuator | – | – | 0.63 | – |
-| FMSR14 | inputs | – | – | 0.1 | – |
-| FMZ14 | actuator | – | – | 0.4 | – |
-| FRP14 | other | – | – | 0.5 | – |
+| FGW14-USB | gateway | 1 | 1 | 0.3 | – |
+| FHK14 | actuator | 1 | – | 0.42 | – |
+| FLUD14 | other | 1 | – | – | – |
+| FMS14 | actuator | 1 | – | 0.63 | – |
+| FMSR14 | inputs | 1 | 5 | 0.1 | – |
+| FMZ14 | actuator | 1 | 1 | 0.4 | – |
+| FPLG14 | gateway | – | – | 0.4 | – |
+| FPLT14 | gateway | – | – | 0.4 | – |
+| FRGBW14 | actuator | – | – | 0.1 | – |
+| FRP14 | other | 1 | – | 0.5 | – |
 | FSB14 | actuator | 1 | 2 | 0.42 | – |
-| FSG14/1-10V | actuator | – | – | 0.2 | – |
+| FSDG14 | meter | 1 | 2 | 0.4 | – |
+| FSG14/1-10V | actuator | 1 | 1 | 0.2 | – |
+| FSM14-UC | inputs | 1 | – | 0.1 | – |
 | FSNT14-12V/12W | power supply | 1 | 0 | – | 12 |
 | FSR14-2x | actuator | 1 | 2 | 0.14 | – |
 | FSR14-4x | actuator | 1 | 4 | 0.7 | – |
-| FSR14SSR | actuator | 1 | 2* | 0.4 | – |
-| FSU14 | actuator | 1 | 1* | 0.14 | – |
-| FTD14 | other | – | – | 0.53 | – |
+| FSR14M-2x | actuator | – | 2* | 0.14 | – |
+| FSR14SSR | actuator | 1 | 2 | 0.4 | – |
+| FSU14 | actuator | 1 | 8 | 0.14 | – |
+| FTD14 | other | 1 | – | 0.53 | – |
 | FTN14 | actuator | 1 | 1 | 0.14 | – |
-| FTS14EM | inputs | 1 | – | 0.13 | – |
-| FTS14FA | inputs | – | – | 0.5 | – |
-| FTS14KS | bus master | – | – | 0.36 | – |
-| FTS14TG | inputs | 1 | 1 | 0.42 | – |
+| FTS14EM | inputs | 2 | 0 | 0.13 | – |
+| FTS14FA | inputs | 1 | – | 0.5 | – |
+| FTS14GBZ | inputs | – | – | 0.1 | – |
+| FTS14KS | bus master | 2 | 0 | 0.4 | 8 |
+| FTS14TG | inputs | 2.5 | 1 | 0.42 | – |
 | FUD14 | actuator | 1 | 1 | 0.2 | – |
-| FUD14/800W | actuator | 1 | 1 | 0.2 | – |
-| FWZ14 | meter | 1 | 1 | 0.1 | – |
-| FWZ14-65A | meter | 1 | 1 | 0.1 | – |
+| FUD14/800W | actuator | 2 | 1 | 0.2 | – |
+| FWG14MS | gateway | 1 | – | 0.3 | – |
+| FWZ14 | meter | 1 | 1* | 0.1 | – |
+| FWZ14-65A | meter | 1 | 1* | 0.1 | – |
 | FZK14 | actuator | – | – | 0.14 | – |
+| GBA14 | accessory (not on the bus) | 1 | 0 | – | – |
+| STE14 | accessory (not on the bus) | 1 | 0 | – | – |
 
 ## Beyond the catalog
 

@@ -129,7 +129,7 @@ TEXT = {
         "bus_text": (
             "What the Bus view of the installation documentation knows of a type: its width in TE\n"
             "(18 mm each), the bus addresses it takes (one per channel), what it takes from the bus\n"
-            "and what it delivers (watts; source: {source}). A dash: not known. Values marked * are\n"
+            "and what it delivers (watts; source: {source}). A dash: not given by Eltako's documents. Values marked * are\n"
             "assumed until a data sheet confirms them."
         ),
         "bus_cols": ("Type", "Role", "TE", "Addresses", "Takes (W)", "Delivers (W)"),
@@ -141,6 +141,7 @@ TEXT = {
             "input": "inputs",
             "gateway": "gateway",
             "other": "other",
+            "accessory": "accessory (not on the bus)",
         },
         "more": "Beyond the catalog",
         "more_text": (
@@ -194,7 +195,7 @@ TEXT = {
         "bus_text": (
             "Was die Bus-Ansicht der Installationsdokumentation über einen Typ weiß: Breite in TE\n"
             "(je 18 mm), belegte Bus-Adressen (eine je Kanal), Leistung, die er vom Bus nimmt, und was er\n"
-            "liefert (Watt; Quelle: {source}). Ein Strich: nicht bekannt. Mit * markierte Werte sind\n"
+            "liefert (Watt; Quelle: {source}). Ein Strich: in den Eltako-Unterlagen nicht angegeben. Mit * markierte Werte sind\n"
             "Annahmen, bis ein Datenblatt sie bestätigt."
         ),
         "bus_cols": ("Typ", "Rolle", "TE", "Adressen", "Nimmt (W)", "Liefert (W)"),
@@ -206,6 +207,7 @@ TEXT = {
             "input": "Eingänge",
             "gateway": "Gateway",
             "other": "Sonstiges",
+            "accessory": "Zubehör (nicht am Bus)",
         },
         "more": "Über den Katalog hinaus",
         "more_text": (
