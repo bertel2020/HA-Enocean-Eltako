@@ -744,9 +744,21 @@ def test_supply_sections_by_place_are_named_and_fall_back_to_ranges() -> None:
     data, bus, master, supply, fud, fsb = _rail()
     loads = supply_loads(data, data["buses"][0])
     assert loads["mode"] == "place"
-    # cut at the cabinet end only: one section with FAM14 and FSNT14 (24 W)
+    # cut at the cabinet end only: one section; the FSNT14 right beside the FAM14 is the one that
+    # came with it, so the section has 12 W, not 24
     (section,) = loads["supplies"]
-    assert section["section"] == "A" and section["capacity"] == 24
+    assert section["section"] == "A" and section["capacity"] == 12
+    assert section["modules"] == [supply["id"]]
+    assert section["master_supply"] == [{"module": master["id"], "watts": 0.0, "from": "fsnt14"}]
+    # written down for the FAM14 (integrated supply, a FAM14 up to week 07/22), it counts too
+    master["supply_watts"] = "12"
+    (section,) = supply_loads(data, data["buses"][0])["supplies"]
+    assert section["capacity"] == 24 and section["master_supply"][0]["from"] == "entered"
+    # an FSNT14 not beside it: the FAM14's integrated 12 W and the FSNT14's 12 W
+    master["supply_watts"], supply["slot"], fud["slot"] = "", 4.0, 3.0
+    (section,) = supply_loads(data, data["buses"][0])["supplies"]
+    assert section["capacity"] == 24 and section["master_supply"][0]["from"] == "integrated"
+    supply["slot"], fud["slot"] = 3.0, 4.0
     assert set(section["members"]) == {master["id"], fud["id"], fsb["id"]}
     # a separator bridge right of the FSNT14: the FUD14 and the FSB14 hang on the FSNT14
     master["separator_after"] = True
