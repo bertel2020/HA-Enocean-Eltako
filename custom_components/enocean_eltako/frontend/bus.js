@@ -1180,6 +1180,7 @@ export const busView = {
     const state = this._in.bus;
     if (!(await this._bvGuard())) return;
     if (state.drawer) state.history.push(state.drawer);
+    else state.opener = this._bvTrigger ?? "";
     state.dirty = false;
     state.drawer = { type, id };
     state.error = "";
@@ -1223,8 +1224,12 @@ export const busView = {
 
   async _bvClose() {
     if (!(await this._bvGuard())) return;
-    Object.assign(this._in.bus, { drawer: null, history: [], error: "", draft: null, dirty: false });
+    const state = this._in.bus;
+    Object.assign(state, { drawer: null, history: [], error: "", draft: null, dirty: false });
     this._renderInstallation();
+    // back to where the drawer was opened from
+    if (state.opener) this.shadowRoot.querySelector(`#installation ${state.opener}`)?.focus();
+    state.opener = "";
   },
 
   // unsaved input in the drawer: ask before it is thrown away; true when the caller may go on
@@ -1275,9 +1280,21 @@ export const busView = {
   },
 
   _busKey(e) {
-    if (e.key === "Escape" && this._in?.bus?.drawer) {
+    if (!this._in?.bus?.drawer) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
       e.stopPropagation();
       this._bvClose();
+    } else if (e.key === "Tab") {
+      // the drawer is modal: Tab stays inside it
+      const drawer = this.shadowRoot.querySelector("#installation aside.bv-drawer");
+      const items = [...(drawer?.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])') ?? [])].filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const at = items.indexOf(this.shadowRoot.activeElement);
+      const wrap = e.shiftKey ? at <= 0 : at < 0 || at === items.length - 1;
+      if (!wrap) return;
+      e.preventDefault();
+      items[e.shiftKey ? items.length - 1 : 0].focus();
     }
   },
 
@@ -1298,6 +1315,8 @@ export const busView = {
       return false;
     }
     if (el.disabled) return true;
+    // the drawer gives focus back to what opened it: the data attributes find the element again after a redraw
+    this._bvTrigger = [...el.attributes].filter((a) => a.name.startsWith("data-") && a.name !== "data-bv-focus").map((a) => `[${a.name}="${CSS.escape(a.value)}"]`).join("");
     const d = el.dataset;
     if (d.bvGo) {
       const [type, ...rest] = d.bvGo.split("|");
