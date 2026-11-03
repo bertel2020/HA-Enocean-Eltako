@@ -106,6 +106,7 @@ from .const import (
 )
 from .custom_devices import DEFINITIONS
 from .discovery import async_set_hidden, pending
+from .hub import HANDOVER_SECONDS
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.eltako import shutter
@@ -186,7 +187,10 @@ def candidates(rorg: int, teach_in: TeachIn4BS | None, data: bytes = b"") -> lis
             eltako = teach_in.manufacturer == MANUFACTURER_ELTAKO
             kinds.sort(key=lambda m: (m.group == GROUP_ELTAKO) != eltako)
             return [m.id for m in kinds]
-    return [m.id for m in CATALOG.values() if rorg in expected_rorgs(m)]
+    kinds = [m for m in CATALOG.values() if rorg in expected_rorgs(m)]
+    if rorg == Rorg.RPS:  # a press or release telegram most likely comes from a rocker
+        kinds.sort(key=lambda m: not (m.receive and m.receive.eep.startswith("F6-02")))
+    return [m.id for m in kinds]
 
 
 OPTION_KEYS = (
@@ -671,11 +675,24 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             return self.async_abort(reason="gateway_not_loaded")
         self._device_model = None  # also when coming back: learning then suggests the kind
         custom = [CUSTOM] if DEFINITIONS else []  # I8: the user's own definitions
-        found = ["discovered"] if pending(self._get_entry()) else []
+        entry = self._get_entry()
+        if (handed := self._take_handed_over(entry)) is not None:
+            self._learned = handed  # the panel's "add as device": its sender, no menu and no list
+            return await self.async_step_learned()
+        found = ["discovered"] if pending(entry) else []
         return self.async_show_menu(
             step_id="user",
             menu_options=[*found, "learn", *GROUPS, GROUP_VIRTUAL, "eep", *custom],
         )
+
+    @staticmethod
+    def _take_handed_over(entry: Any) -> Any:
+        """The sender the panel handed over for this gateway, once and only while it is fresh."""
+        hub = entry.runtime_data.hub
+        handed, hub.handed_over = hub.handed_over, None
+        if handed is None or time.monotonic() - handed[1] > HANDOVER_SECONDS:
+            return None
+        return next((t for t in pending(entry) if t.sender == handed[0]), None)
 
     async def async_step_discovered(
         self, user_input: dict[str, Any] | None = None
@@ -782,13 +799,21 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         return await self.async_step_address()
 
     def _model_form(
-        self, step_id: str, kinds: list[str], placeholders: dict[str, str] | None = None
+        self,
+        step_id: str,
+        kinds: list[str],
+        placeholders: dict[str, str] | None = None,
+        default: str | None = None,
     ) -> SubentryFlowResult:
         return self.async_show_form(
             step_id=step_id,
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_MODEL): SelectSelector(
+                    (
+                        vol.Required(CONF_MODEL, default=default)
+                        if default
+                        else vol.Required(CONF_MODEL)
+                    ): SelectSelector(
                         SelectSelectorConfig(
                             options=kinds,
                             translation_key="device_model",
@@ -888,6 +913,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 "device_id": format_id(self._learned.sender),
                 "eep": teach_in.eep if teach_in else f"{telegram.rorg:02X}",
             },
+            default=kinds[0],  # the likeliest kind first: one click confirms it
         )
 
     async def async_step_learn_timeout(

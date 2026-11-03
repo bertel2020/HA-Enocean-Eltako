@@ -11,6 +11,7 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.discovery import CARD_DELAY
+from custom_components.enocean_eltako.hub import HANDOVER_SECONDS
 from custom_components.enocean_eltako.protocol.eep.teach_in import encode_teach_in_4bs
 
 from .test_devices import _push, _settle, _subentry, gateway  # noqa: F401
@@ -128,6 +129,50 @@ async def test_panel_offers_sender(hass: HomeAssistant, gateway, hass_ws_client)
     assert (await client.receive_json())["error"]["code"] == "not_found"
     await client.send_json({"id": 4, "type": "enocean_eltako/discover", "sender": "no ID"})
     assert (await client.receive_json())["error"]["code"] == "invalid_id"
+
+
+async def test_panel_hand_over_skips_menu_and_list(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, server = gateway
+    _push(server, 0x05, b"\x10", 0x00290CE4, 0x30)
+    await _settle(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/discover", "sender": "00-29-0C-E4"})
+    assert (await client.receive_json())["result"] == {"entry_id": entry.entry_id}
+
+    result = await _menu(hass, entry)  # no menu, no list: straight to the kind, rocker preselected
+    assert result["step_id"] == "learned"
+    (key,) = result["data_schema"].schema
+    assert key.default() == "rocker"
+    configure = hass.config_entries.subentries.async_configure
+    result = await configure(result["flow_id"], {"model": "rocker"})
+    assert result["step_id"] == "device"
+    hass.config_entries.subentries.async_abort(result["flow_id"])
+
+    result = await _menu(hass, entry)  # the hand-over is used up: the menu is back
+    assert result["type"] is FlowResultType.MENU
+    hass.config_entries.subentries.async_abort(result["flow_id"])
+
+
+async def test_hand_over_expires(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, server = gateway
+    _push(server, 0x05, b"\x10", 0x00290CE4, 0x30)
+    await _settle(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/discover", "sender": "00-29-0C-E4"})
+    await client.receive_json()
+    sender, at = entry.runtime_data.hub.handed_over
+    entry.runtime_data.hub.handed_over = (sender, at - HANDOVER_SECONDS - 1)
+    result = await _menu(hass, entry)
+    assert result["type"] is FlowResultType.MENU
+    assert result["menu_options"][0] == "discovered"
 
 
 async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noqa: F811

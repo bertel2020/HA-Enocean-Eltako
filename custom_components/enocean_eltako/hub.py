@@ -17,6 +17,8 @@ from .protocol.monitor import TelegramMonitor
 from .protocol.sender_pool import BUS_POOL_START, SenderRegistry
 from .senders import SenderStore, bus_key
 
+HANDOVER_SECONDS = 600
+
 
 @dataclass
 class BusGroupRuntime:
@@ -34,6 +36,9 @@ class Hub:
     bus_groups: dict[str, BusGroupRuntime] = field(default_factory=dict)
     # unknown senders heard (last telegram each), offered under "Add device"
     discovered: dict[int, ReceivedTelegram] = field(default_factory=dict)
+    # the sender the panel's "add as device" handed over (sender ID, monotonic time): the next
+    # "Add device" of its gateway goes straight to it, within HANDOVER_SECONDS
+    handed_over: tuple[int, float] | None = None
     hidden: dict[str, set[int]] = field(default_factory=dict)  # per gateway entry, stored
     notes: dict[str, Notes] = field(default_factory=dict)  # per gateway entry, stored
     card_timer: dict[str, Callable[[], None]] = field(
