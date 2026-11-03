@@ -118,3 +118,10 @@ def test_candidates_from_a_heard_telegram() -> None:
     assert candidates(Rorg.BS4, eltako) == ["meter", "psc"]
     assert candidates(Rorg.BS4, TeachIn4BS(0x12, 0x01, 0x046)) == ["psc", "meter"]
     assert candidates(Rorg.BS4, TeachIn4BS(0x38, 0x08, MANUFACTURER_ELTAKO)) == ["dimmer"]
+
+
+def test_psc_can_be_commanded_by_a_rocker() -> None:
+    """A PSC taught in as a wall switch is switched by a rocker press, alone."""
+    model = CATALOG["psc"]
+    assert [s.id for s in model.senders] == ["controller", "rocker"]
+    assert model.any_sender
