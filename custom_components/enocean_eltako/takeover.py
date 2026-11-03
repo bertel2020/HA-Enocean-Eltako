@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -45,6 +45,7 @@ from .catalog import (
     OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
+    PSC_CONTROLLER,
     ROCKER,
 )
 from .const import (
@@ -59,8 +60,11 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .entity_ids import gateway_prefix, object_id
+from .protocol.eep import EEPRef
+from .protocol.eep.codecs import decode_telegram
 from .protocol.ids import format_id, parse_id
 from .protocol.sender_pool import SenderIdError
+from .protocol.telegram import RadioTelegram, Rorg
 from .subentry_flow import sender_owner
 
 if TYPE_CHECKING:
@@ -91,6 +95,15 @@ SENSOR_MODELS = {
     "F6-10-00": "window_handle",
 }
 ROCKER_EEPS = ("F6-02-01", "F6-02-02")
+PSC_STATUS = EEPRef("D2-01-09", "std")
+
+
+def heard_psc(telegrams: Iterable[RadioTelegram]) -> set[int]:
+    """IDs that sent a D2-01-09 status: Permundo plugs, which the old configuration cannot tell.
+
+    The old integration knows no VLD: it lists such a plug as an Eltako switch.
+    """
+    return {t.sender for t in telegrams if t.rorg == Rorg.VLD and decode_telegram(PSC_STATUS, t)}
 
 
 @dataclass(slots=True)
@@ -180,7 +193,9 @@ def _sensor(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str, 
         device.reason = "takeover_unsupported"
 
 
-def _actuator(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str, Any]) -> None:
+def _actuator(
+    device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str, Any], psc: bool = False
+) -> None:
     sender_conf = conf.get("sender")
     if not isinstance(sender_conf, Mapping):
         device.reason = "takeover_no_sender"
@@ -194,6 +209,14 @@ def _actuator(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str
     if platform in (Platform.LIGHT, Platform.SWITCH):
         if eep in ROCKER_EEPS:  # a switch reporting as a rocker: the old one toggled per press
             device.reason = "takeover_unsupported"
+            return
+        if psc:  # heard sending D2-01-09: a Permundo plug, commanded with the standard A5-38-08
+            device.model = "psc"
+            if sender_eep == "A5-38-08":
+                device.senders[PSC_CONTROLLER.id] = sender
+            if not device.senders:
+                device.model = None
+                device.reason = "takeover_bad_sender"
             return
         device.model = "dimmer" if platform == Platform.LIGHT and eep == "A5-38-08" else "switch"
         if device.model == "switch":
@@ -249,8 +272,12 @@ def _button(device: TakeoverDevice, conf: Mapping[str, Any]) -> None:
     device.data[OPT_BUTTONS] = [_rocker_buttons(side)[OPT_ROCKER_ON]]  # left 0x30, right 0x70
 
 
-def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
-    """The devices of one old gateway and what each becomes; first entry of an ID wins."""
+def plan(gateway: Mapping[str, Any], psc: Iterable[int] = ()) -> list[TakeoverDevice]:
+    """The devices of one old gateway and what each becomes; first entry of an ID wins.
+
+    psc: IDs heard sending a Permundo plug's status (heard_psc).
+    """
+    plugs = set(psc)
     devices: list[TakeoverDevice] = []
     seen: set[int] = set()
     platforms = gateway.get("devices") or {}
@@ -276,7 +303,7 @@ def plan(gateway: Mapping[str, Any]) -> list[TakeoverDevice]:
             if platform in (Platform.BINARY_SENSOR, Platform.SENSOR):
                 _sensor(device, str(platform), eep, conf)
             elif platform in (Platform.LIGHT, Platform.SWITCH, Platform.COVER, Platform.CLIMATE):
-                _actuator(device, str(platform), eep, conf)
+                _actuator(device, str(platform), eep, conf, device_id in plugs)
             elif platform == Platform.BUTTON:
                 _button(device, conf)
             else:
