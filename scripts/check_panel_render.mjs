@@ -421,6 +421,17 @@ for (const lang of ["en", "de"]) {
     expect("device details open", root.querySelectorAll(".dev-detail").length, 1);
     expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-B7-44-81"), true);
     expect("device rows while one is open", root.querySelectorAll(".dev").length, 5);
+    // the opened row: one card grid, the last telegram over two columns with its raw bytes as tags,
+    // one row component for values, senders, settings and entities
+    const detail = root.querySelector(".dev-detail");
+    expect("the last telegram is a wide card with bytes and status as tags", !!detail.querySelector(".dgrid > div.wide .raw .tag.mono") && detail.querySelectorAll(".dgrid > div.wide .raw .tag").length, 2);
+    expect("the last values are read rows, the raw data below", detail.querySelectorAll(".rows .li.value").length > 0 && !!detail.querySelector(".rows .foot .tag.mono"), true);
+    expect("the senders are rows of the same component", detail.querySelectorAll(".dsec .rows .li").length > 4, true);
+    expect("no tables are left in the opened row", detail.querySelectorAll("table").length, 0);
+    expect("the section headings count their rows", [...detail.querySelectorAll(".dsec h4 .sub")].length >= 2, true);
+    const opened = root.querySelector('.dev[data-dev="sub1"]');
+    expect("the name keeps one line and has its full text as tooltip", opened.querySelector(".line1 .name").getAttribute("title"), "Licht Diele");
+    expect("last heard in two lines", !!opened.querySelector(".stats .l1") && !!opened.querySelector(".stats .l2"), true);
     // the model is a pick from the kind's models; a typed one comes through "other"
     const picker = root.querySelector("[data-model-for]");
     picker.value = "FL62";

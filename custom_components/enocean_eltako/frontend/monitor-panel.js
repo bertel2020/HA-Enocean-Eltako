@@ -447,7 +447,7 @@ const STYLE = `
   .senders .pick { padding: 12px 16px 0; }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 1.2fr) minmax(250px, 1.2fr) 128px; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(220px, 1.6fr) 96px 72px 64px minmax(0, 1.2fr) minmax(190px, auto) 128px; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -493,12 +493,35 @@ const STYLE = `
   .dev-detail .acts-row { margin-top: 8px; }
   input.note[aria-invalid="true"] { border-color: var(--warn); }
   input.note { width: 100%; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
-  .dev-detail .dsec h4 { margin: 0 0 8px; font-size: calc(13px * var(--fs)); font-weight: 500; color: var(--muted); }
+  .dev-detail .dsec h4 { margin: 0 0 8px; font-size: calc(13px * var(--fs)); font-weight: 600; color: var(--text); display: flex; gap: 8px; align-items: center; }
+  .dev-detail .dsec h4::before { content: ""; flex: none; width: 3px; height: 13px; border-radius: 2px; background: var(--accent); }
+  .dev-detail .dsec h4 .sub { font-weight: 400; }
   /* values as small tiles, like the Device Proxy's statistics */
-  .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 0; }
-  .dev-detail .dgrid > div { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  /* one card grid for every section: the cards of a row are alike in height, wide content takes two columns */
+  .dev-detail .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0; }
+  .dev-detail .dgrid > div { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 14px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 4px; }
+  .dev-detail .dgrid > div.wide { grid-column: span 2; }
   .dev-detail .dgrid dt { font-size: calc(12px * var(--fs)); font-weight: 500; color: var(--muted); }
-  .dev-detail .dgrid dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+  .dev-detail .dgrid dd { margin: 0; overflow-wrap: anywhere; align-self: center; }
+  .dev-detail .raw { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 2px; }
+  .dev-detail .tag.mono, .dev-detail .raw .tag { font-family: ui-monospace, monospace; white-space: nowrap; }
+  /* one row component for values, senders, settings and entities: inner space and fixed columns */
+  .dev-detail .rows { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+  .dev-detail .rows .li { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(140px, 1fr) minmax(90px, auto); gap: 4px 16px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line-2); font-size: calc(13px * var(--fs)); }
+  .dev-detail .rows .li:first-child { border-top: 0; }
+  .dev-detail .rows .li > :last-child { justify-self: end; text-align: right; }
+  .dev-detail .rows .li > * { min-width: 0; overflow-wrap: anywhere; }
+  .dev-detail .rows .li .k { color: var(--muted); }
+  .dev-detail .rows .li b { font-weight: 500; }
+  .dev-detail .rows .li.value b { font-size: calc(15px * var(--fs)); }
+  .dev-detail .rows .foot { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-2); background: var(--soft); }
+  .dev-detail .rows .foot .acts-row { margin: 0; }
+  @media (max-width: 760px) {
+    .dev-detail .dgrid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .dev-detail .dgrid > div.wide { grid-column: 1 / -1; }
+    .dev-detail .rows .li { grid-template-columns: minmax(0, 1fr) auto; }
+    .dev-detail .rows .li > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  }
   .dev-detail .dtbl, .dev-detail .vbox { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px 12px; }
   .dev-detail .vbox { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
   .dev-detail .dtbl { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
@@ -506,7 +529,7 @@ const STYLE = `
   .dev-detail .dtbl tr:first-child td { border-top: 0; }
   .dev-detail .values { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   .dev-detail .dact { display: flex; flex-wrap: wrap; gap: 8px; }
-  .dev-detail .mini { height: 32px; max-width: 100%; min-width: 12em; }
+  .dev-detail .mini { height: 32px; max-width: 100%; min-width: 0; width: 100%; box-sizing: border-box; }
   .dev-detail input.mini { margin-top: 4px; width: 100%; border: 1px solid var(--input-line); border-radius: 8px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
   .devices .dev.quiet .name { color: var(--muted); }
   .spark { display: block; flex: none; width: 96px; height: 32px; }
@@ -516,6 +539,12 @@ const STYLE = `
   .spark polyline { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .devices .dev .sub { color: var(--muted); font-size: calc(12px * var(--fs)); overflow-wrap: anywhere; }
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: calc(12px * var(--fs)); color: var(--muted); white-space: nowrap; min-width: 0; }
+  /* last heard in two lines: when, signal and dBm; then the telegrams with their trend */
+  .devices .dev .stats .l1 { display: inline-flex; align-items: center; gap: 8px; font-size: calc(13px * var(--fs)); color: var(--text); }
+  .devices .dev .stats .l2 { display: inline-flex; align-items: center; gap: 8px; }
+  .devices .dev .stats .l2 .spark { width: 64px; height: 18px; }
+  /* the name in one line; the whole name is its tooltip */
+  .devices .dev .line1 .name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
   .values .maybe { flex: 1 0 100%; min-width: 0; }
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
@@ -539,7 +568,7 @@ const STYLE = `
     .devices .tile { width: 30px; height: 30px; border-radius: 8px; }
     .devices .tile svg { width: 17px; height: 17px; }
     .devices .dev .sub { overflow-wrap: break-word; }
-    .devices .dev .stats > span:nth-child(2), .devices .dev .stats .spark, .devices .dev .stats .tag { display: none; }
+    .devices .dev .stats .l2, .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
     .devices .dev .values { grid-column: 2; grid-row: 2; }
     .devices .dev .acts { grid-column: 3; grid-row: 2; flex-wrap: nowrap; }
@@ -953,7 +982,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const bytes = l.data.match(/../g)?.join(" ") ?? "";
     const fields = (l.fields ?? []).map((f) => `${esc(f.label)} <b>${esc(this._value(f.value))}${f.unit ? ` ${esc(f.unit)}` : ""}</b>`).join(" · ");
     const head = `${esc(t.ago(Math.max(0, Math.round(now / 1000 - l.time))))} · ${esc(RORG[l.rorg] || l.rorg)}${l.dbm != null ? ` · ${esc(l.dbm)} dBm` : ""}`;
-    return `${head}<div class="mono sub">${esc(bytes)} · ${esc(t.status)} ${esc(l.status.toString(16).toUpperCase().padStart(2, "0"))}</div>${fields ? `<div class="sub">${fields}</div>` : ""}`;
+    // the bytes and the status byte as tags that never break; what they say below
+    return `<div>${head}</div><div class="raw"><span class="tag mono">${esc(bytes)}</span><span class="tag mono">${esc(t.status)} ${esc(l.status.toString(16).toUpperCase().padStart(2, "0"))}</span></div>${fields ? `<div class="sub">${fields}</div>` : ""}`;
   }
 
   _watchConnection() {
@@ -3367,7 +3397,7 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _deviceRow(d, now) {
     const t = this._t;
-    const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(d.name)}</span>`;
+    const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name" title="${esc(d.name)}">${esc(d.name)}</span>`;
     const none = `<span class="none">${esc(t.noValue)}</span>`;
     // a model that is not fixed (one EEP, several devices) names the candidates instead of nothing
     const model = d.model || (d.models.length ? d.models.join(" / ") : "");
@@ -3385,7 +3415,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
           )
           .join("")
-      : d.quiet ? this._stateValues(d) : `<span class="raw mono">${esc(d.data)}</span>`;
+      : this._stateValues(d) || (d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`);
     // one state per device, the first that applies: a disabled device is not judged by its silence
     const state = d.disabled ? "disabled" : d.unknown ? "unknown" : d.silent ? "silent" : d.time == null ? "unheard" : "active";
     const pill = `<span class="pill ${state}" title="${esc(t.deviceStateHint[state])}">${esc(t.deviceState[state])}</span>`;
@@ -3401,8 +3431,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.noValue;
     const stats = d.quiet
       ? `<span${d.time == null ? ' class="quiet-note"' : ""} title="${esc(t.quietHint)}">${esc(heard)}</span>`
-      : `<span>${esc(heard)}</span><span title="${esc(t.bufferHint)}">${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span>
-        <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}`;
+      : `<span class="l1"><span>${esc(heard)}</span><span class="signal">${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span>
+        <span class="l2" title="${esc(t.bufferHint)}">${this._sparkline(d.trend)}<span>${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span></span>`;
     const only = d.name || d.id;
     const open = !!d.devKey && this._devOpen.has(d.devKey);
     // everything but the one main action sits in the ⋮ menu: the buttons of a row stay where they are
@@ -3446,11 +3476,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const x = this._devDetails.get(d.devKey);
     if (!x) return `<div class="dev-detail"><span class="none">${esc(t.loading)}</span></div>`;
     const none = `<span class="none">${esc(t.noValue)}</span>`;
-    const item = (label, html) => (html ? `<div><dt>${esc(label)}</dt><dd>${html}</dd></div>` : "");
-    const group = (title, body) => (body ? `<section class="dsec"><h4>${esc(title)}</h4>${body}</section>` : "");
+    const item = (label, html, cls = "") => (html ? `<div${cls ? ` class="${cls}"` : ""}><dt>${esc(label)}</dt><dd>${html}</dd></div>` : "");
+    const group = (title, body, count = "") => (body ? `<section class="dsec"><h4>${esc(title)}${count !== "" ? ` <span class="sub">${esc(count)}</span>` : ""}</h4>${body}</section>` : "");
     const list = (items) => `<dl class="dgrid">${items.join("")}</dl>`;
-    const table = (rows) => `<table class="dtbl">${rows.map((r) => `<tr>${r.map((c, i) => `<td${i === 1 ? ' class="mono"' : ""}>${c}</td>`).join("")}</tr>`).join("")}</table>`;
-    const mono = (v) => `<span class="mono">${esc(v)}</span>`;
+    // rows of three columns (name, detail, value); a foot for actions or raw data
+    const rows = (lines, foot = "") => `<div class="rows">${lines.map((r) => `<div class="li${r.cls ? ` ${r.cls}` : ""}">${r.cells.map((c) => `<span>${c}</span>`).join("")}</div>`).join("")}${foot ? `<div class="foot">${foot}</div>` : ""}</div>`;
+    const mono = (v) => `<span class="tag mono">${esc(v)}</span>`;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
     const sig = x.signal;
     const identity = list([
@@ -3464,21 +3495,33 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.devCols.heard, esc(heard) + (x.silent ? ` <span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "")),
       item(t.signal, sig.rssi != null ? `${esc(sig.rssi)} dBm${sig.min != null ? ` <span class="sub">${esc(t.signalRange(sig.min, sig.max))}</span>` : ""}` : ""),
       item(t.repeater, x.repeat != null ? esc(x.repeat) : ""),
-      item(t.heardBy, this._heardBy(x.heard_by)),
+      item(t.heardBy, this._heardBy(x.heard_by), "wide"),
       item(t.telegramsSinceStart, esc(x.telegrams.toLocaleString())),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
-      ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now))),
+      ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now), "wide")),
     ]);
-    const fields = d.fields && d.fields.length ? d.fields.map((f) => (f.label === "on" || f.label === "state" ? `<span class="value"><b>${esc(this._value(f.value))}</b></span>` : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`)).join("") : "";
-    const values = fields || d.data ? `<div class="vbox">${fields ? `<div class="values">${fields}</div>` : ""}${d.data ? `<div class="mono sub">${esc(d.data)}</div>` : ""}</div>` : "";
+    // the last values: what the live telegram says, else what the server read from the last
+    // telegram of each ID (a restart in between); raw bytes only when nothing could be read
+    const fieldRow = (f, source) => ({ cls: "value", cells: [`<span class="k">${esc(f.label === "on" || f.label === "state" ? t.devState : this._label(f.label))}</span>`, source ? `<span class="sub">${esc(source)}</span>` : "", `<b>${esc(this._value(f.value))}${f.unit ? ` ${esc(f.unit)}` : ""}</b>`] });
+    const live = (d.fields ?? []).map((f) => fieldRow(f, [d.rorg ? RORG[d.rorg] || d.rorg : "", d.eep].filter(Boolean).join(" · ")));
+    const stored = live.length ? [] : (x.last_telegrams ?? []).flatMap((l) => (l.fields ?? []).map((f) => fieldRow(f, [RORG[l.rorg] || l.rorg, x.last_telegrams.length > 1 ? l.sender : ""].filter(Boolean).join(" · "))));
+    const rawTags = [
+      d.data ? `<span class="tag mono">${esc([d.rorg ? RORG[d.rorg] || d.rorg : "", d.data].filter(Boolean).join(" "))}</span>` : "",
+      ...(live.length ? [] : (x.last_telegrams ?? []).map((l) => `<span class="tag mono">${esc(`${RORG[l.rorg] || l.rorg} ${l.data.match(/../g)?.join(" ") ?? ""}`)}</span>`)),
+    ].filter(Boolean);
+    const valueRows = [...live, ...stored];
+    const raw = rawTags.length ? `<span class="sub">${esc(t.rawData)}</span>${[...new Set(rawTags)].join("")}` : "";
+    const values = valueRows.length ? rows(valueRows, raw) : raw ? rows([], raw) : "";
     const test = this._senderTests.get(d.devKey) || {};
     const verdict = (profile) => {
       const result = test.results?.[profile];
       return result ? `<span class="tag ${result === "confirmed" ? "ok" : "warn"}" title="${esc(t.senderTestResultHint[result] || "")}">${esc(t.senderTestResult[result] || result)}</span>` : "";
     };
     const senders = x.senders.length
-      ? table(x.senders.map((s) => [esc(this._profile(s.profile)), esc(s.id), esc(s.ute ? t.teachUte : t.teachTelegram), verdict(s.profile)]))
-        + (x.sender_test ? `<div class="acts-row"><button class="chip text" data-sender-test="${esc(d.devKey)}" data-gateway="${esc(x.entry_id)}" title="${esc(t.senderTestHint)}"${test.running ? " disabled" : ""}>${esc(test.running ? t.senderTesting : t.senderTest)}</button>${test.error ? ` <span class="tag warn">${esc(test.error)}</span>` : ""}</div>` : "")
+      ? rows(
+          x.senders.map((s) => ({ cells: [esc(this._profile(s.profile)), `${mono(s.id)} <span class="sub">${esc(s.ute ? t.teachUte : t.teachTelegram)}</span>`, verdict(s.profile) || `<span class="sub">${esc(t.senderUntested)}</span>`] })),
+          x.sender_test ? `<div class="acts-row"><button class="chip text" data-sender-test="${esc(d.devKey)}" data-gateway="${esc(x.entry_id)}" title="${esc(t.senderTestHint)}"${test.running ? " disabled" : ""}>${esc(test.running ? t.senderTesting : t.senderTest)}</button>${test.error ? ` <span class="tag warn">${esc(test.error)}</span>` : ""}</div>` : ""
+        )
       : "";
     const c = x.commands;
     const commands = c && c.sent
@@ -3490,16 +3533,16 @@ class EnOceanEltakoPanel extends HTMLElement {
       : "";
     const yes = (v) => (v === true ? t.yes : v === false ? t.no : v);
     const settings = Object.entries(x.settings).length
-      ? table(Object.entries(x.settings).map(([k, v]) => [esc(t.settingNames[k] || k), esc(yes(v))]))
+      ? rows(Object.entries(x.settings).map(([k, v]) => ({ cells: [`<span class="k">${esc(t.settingNames[k] || k)}</span>`, "", `<b>${esc(yes(v))}</b>`] })))
       : "";
     const entities = x.entities.length
-      ? table(x.entities.map((e) => [esc(e.name), esc(e.entity_id), e.state != null ? esc(`${e.state}${e.unit ? ` ${e.unit}` : ""}`) : ""]))
+      ? rows(x.entities.map((e) => ({ cells: [esc(e.name), `<span class="mono sub">${esc(e.entity_id)}</span>`, e.state != null ? `<b>${esc(`${e.state}${e.unit ? ` ${e.unit}` : ""}`)}</b>` : ""] })))
       : "";
     const only = d.name || d.id;
     const actions = `<div class="dact">${d.page ? `<button class="chip" data-device-page="${esc(d.page)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${
       d.quiet && d.time == null ? "" : `<button class="chip" data-only="${esc(only)}">${svg(ICON.filter)}${esc(t.showTelegrams)}</button>`
     }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}</div>`;
-    return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders)}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntities(x.entities.length), entities)}${group(t.doc.notes, `<input class="note" data-note-device="${esc(d.devKey)}" data-note-gateway="${esc(x.entry_id)}" value="${esc(x.note)}" maxlength="500" placeholder="${esc(t.doc.notePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">`)}${actions}</div>`;
+    return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders, x.senders.length || "")}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntitiesTitle, entities, x.entities.length || "")}${group(t.doc.notes, `<input class="note" data-note-device="${esc(d.devKey)}" data-note-gateway="${esc(x.entry_id)}" value="${esc(x.note)}" maxlength="500" placeholder="${esc(t.doc.notePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">`)}${actions}</div>`;
   }
 
   _modelPicker(key, x) {
