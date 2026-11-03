@@ -96,7 +96,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, sid: {}, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -282,6 +282,9 @@ export const INSTALLATION_STYLE = `
   .installation .stile.u b { color: var(--accent); }
   .installation .stile.w b { color: var(--warn); }
   .installation .stile.f b { color: var(--ok); }
+  .installation .stile.d b { color: var(--danger, var(--warn)); }
+  .installation .stile.zero b { color: var(--muted); }
+  .installation .nolearn .lrow input.cell[data-in-learn], .installation .nolearn .lrow input.cell[data-in-efield="learn"] { display: none; }
   .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--soft)); }
   .installation .sbar { display: flex; gap: 1px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--soft); margin-bottom: 10px; }
   .installation .sbar i { flex: 1; background: transparent; }
@@ -318,6 +321,27 @@ export const INSTALLATION_STYLE = `
   .installation .spager select { font: inherit; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .installation .spager .chip { min-height: 28px; padding: 0 12px; }
   .installation .spager .chip:disabled { opacity: .4; cursor: default; }
+
+  .installation table.log td { padding: 9px 10px; vertical-align: top; }
+  .installation table.log tr.logday td { background: var(--soft); font-size: calc(12px * var(--fs)); font-weight: 500; color: var(--muted); padding: 6px 14px; }
+  .installation table.log td.logmain { padding-left: 14px; }
+  .installation .logline { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: calc(14px * var(--fs)); }
+  .installation .logdetail { margin-top: 4px; color: var(--muted); font-size: calc(13px * var(--fs)); display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+  .installation .logdetail .mono { background: var(--soft); border-radius: 4px; padding: 0 5px; color: var(--text); }
+  .installation table.log td.logwhen { width: 1%; white-space: nowrap; text-align: right; color: var(--muted); font-size: calc(12px * var(--fs)); padding-right: 14px; }
+  .installation .lres { font-size: calc(12px * var(--fs)); padding: 1px 8px; border-radius: 12px; background: var(--soft); }
+  .installation .lres.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--text); }
+  .installation .lres.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .installation .lres.bad { background: color-mix(in srgb, var(--danger, #d33) 22%, transparent); color: var(--text); }
+  .installation .logbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: var(--soft); border-bottom: 1px solid var(--line); font-size: calc(13px * var(--fs)); color: var(--muted); }
+  .installation .logbar button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .installation .ev-chip[aria-pressed="true"] { border-color: var(--e); background: color-mix(in srgb, var(--e) 16%, transparent); color: color-mix(in srgb, var(--e) 72%, var(--text)); }
+  .installation .ev-device_added { --e: var(--ok); }
+  .installation .ev-device_removed, .installation .ev-sender_removed { --e: var(--warn); }
+  .installation .ev-sender_assigned { --e: var(--k-bus); }
+  .installation .ev-teach_in { --e: var(--k-taster); }
+  .installation .ev-sender_test { --e: var(--k-sensor); }
+  .installation .ev-import { --e: var(--k-psu); }
 
   /* colour: one hue per kind, used for tags, chips, row stripes and cards */
   .installation { --k-bus: #2f6fb5; --k-sensor: #139a87; --k-taster: #7b5cc9; --k-aktor: #d77f1f; --k-virt: #c2477f; --k-psu: #6b7b8d; }
@@ -865,7 +889,7 @@ export const installation = {
     const state = this._in;
     const L = t.inst.links;
     const seg = (view, text) => `<button data-in-linkview="${view}" aria-pressed="${state.linkView === view}">${esc(text)}</button>`;
-    const bar = `<div class="gbar"><div class="seg" role="group">${seg("actuator", L.byActuator)}${seg("sender", L.bySender)}${seg("matrix", L.matrix)}</div></div><div class="isub">${esc(L.honest)}</div>`;
+    const bar = `<div class="gbar"><div class="seg" role="group">${seg("actuator", L.byActuator)}${seg("sender", L.bySender)}${seg("matrix", L.matrix)}</div></div><p class="isub sintro">${esc(L.intro)} <span class="info" title="${esc(L.honest)}">ⓘ</span></p>`;
     const sections = gateways(state.doc).map((gw) => `<section class="gw">${this._instGwHead(gw)}${this._instLinksOf2(gw)}</section>`);
     return bar + (sections.join("") || `<div class="none">${esc(t.inst.noDevices)}</div>`);
   },
@@ -899,16 +923,19 @@ export const installation = {
     const testable = (a) => a.device && a.device.category === "lighting" && (a.device.senders ?? []).length > 0;
     const untested = (l) => l.source === "assigned" && l.status === "unverified";
     const nTested = model.actuators.flatMap((a) => (testable(a) ? a.links.filter((l) => l.source === "assigned") : []));
-    const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
+    const interactive = state.linkView !== "matrix";
+    const tile = (title, value, tone, filter) => interactive ? `<button class="stile ${tone}${value === "0" && filter !== "all" ? " zero" : ""}" data-in-linkfilter="${filter}" aria-pressed="${state.linkFilter === filter}"><b>${value}</b><span>${esc(title)}</span></button>` : `<div class="stile ${tone}"><b>${value}</b><span>${esc(title)}</span></div>`;
     const without = model.actuators.filter((a) => !a.links.length && a.device).length;
     const noAnswer = gw.links.filter((l) => l.status === "no_answer").length;
     const notTested = nTested.filter(untested).length;
-    const tiles = `<div class="tiles">${tile(L.tiles.actuators, String(model.actuators.length))}${tile(L.tiles.links, String(gw.links.length))}${tile(L.tiles.none, String(without), without > 0 ? true : "ok")}${tile(L.tiles.noAnswer, String(noAnswer), noAnswer > 0 ? true : "ok")}${tile(L.tiles.untested, String(notTested))}</div>`;
+    const confirmed = gw.links.filter((l) => l.status === "confirmed").length;
+    const tiles = `<div class="stiles">${tile(L.tiles.actuators, String(model.actuators.length), "u", "all")}${tile(L.tiles.none, String(without), "w", "none")}${tile(L.tiles.noAnswer, String(noAnswer), "d", "noanswer")}${tile(L.tiles.untested, String(notTested), "w", "untested")}${tile(L.tiles.answered, String(confirmed), "f", "confirmed")}</div>`;
     const chip = (attr, value, current, text, count = null) => `<button class="chip" ${attr}="${value}" aria-pressed="${current === value}">${esc(text)}${count === null ? "" : ` <b>${count}</b>`}</button>`;
-    const filters = state.linkView === "matrix" ? "" : `<div class="chips"><span class="isub lead">${esc(L.show)}</span>${chip("data-in-linkfilter", "all", state.linkFilter, L.filters.all)}${chip("data-in-linkfilter", "none", state.linkFilter, L.filters.none, without)}${chip("data-in-linkfilter", "untested", state.linkFilter, L.filters.untested, notTested)}${chip("data-in-linkfilter", "noanswer", state.linkFilter, L.filters.noanswer, noAnswer)}</div><div class="chips"><span class="isub lead">${esc(L.source.title)}</span>${chip("data-in-linksource", "all", state.linkSource, L.filters.all)}${["assigned", "declared", "entered"].map((x) => chip("data-in-linksource", x, state.linkSource, L.source[x]).replace('<button class="chip"', `<button class="chip" data-src="${x}"`)).join("")}</div>`;
-    const passLink = (l) => (state.linkSource === "all" || l.source === state.linkSource) && (state.linkFilter !== "untested" || untested(l)) && (state.linkFilter !== "noanswer" || l.status === "no_answer");
+    const filtered = state.linkFilter !== "all" || state.linkSource !== "all" || state.q;
+    const filters = state.linkView === "matrix" ? "" : `<div class="chips" style="margin-bottom:8px"><span class="isub lead">${esc(L.source.title)}</span>${["assigned", "declared", "entered"].map((x) => `<button class="chip" data-src="${x}" data-in-linksource="${state.linkSource === x ? "all" : x}" aria-pressed="${state.linkSource === x}" title="${esc(L.sourceHint[x])}">${esc(L.source[x])} <b>${gw.links.filter((l) => l.source === x).length}</b></button>`).join("")}<span style="flex:1"></span>${filtered ? `<button class="chip" data-in-linkreset="1">${esc(L.reset)}</button>` : ""}</div><div class="itools" style="align-items:center"><input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}"><span style="flex:1"></span><span class="isub">${esc(L.sort)}</span><span class="seg" role="group">${["name", "status", "count"].map((k) => `<button data-in-linksort="${k}" aria-pressed="${state.linkSort === k}">${esc(L.sorts[k])}${state.linkSort === k ? (state.linkDir > 0 ? " ↑" : " ↓") : ""}</button>`).join("")}</span><button class="chip" data-in-linklearn="1" aria-pressed="${state.linkLearn}" title="${esc(L.learnHint)}">${esc(L.learn)}</button></div>`;
+    const passLink = (l) => (state.linkSource === "all" || l.source === state.linkSource) && (state.linkFilter !== "untested" || untested(l)) && (state.linkFilter !== "noanswer" || l.status === "no_answer") && (state.linkFilter !== "confirmed" || l.status === "confirmed");
     const body = state.linkView === "matrix" ? this._instLinkMatrix(gw, model) : state.linkView === "sender" ? this._instLinkBySender(gw, model, passLink) : this._instLinkByActuator(gw, model, passLink, testable);
-    return `${tiles}${filters}${body}`;
+    return `${tiles}${filters}<div class="${state.linkLearn ? "" : "nolearn"}">${body}</div>`;
   },
 
   _instLinkRow(gw, l, model, mode) {
@@ -955,7 +982,11 @@ export const installation = {
   _instLinkByActuator(gw, model, pass, testable) {
     const L = this._t.inst.links;
     const state = this._in;
-    const cards = model.actuators.map((a) => {
+    const q = state.q.trim().toLowerCase();
+    const worst = (a) => Math.min(3, ...a.links.map((l) => ({ no_answer: 0, unverified: 1, confirmed: 2 })[l.status] ?? 3), a.links.length ? 3 : -1);
+    const sorters = { name: (a, b) => a.name.localeCompare(b.name), status: (a, b) => worst(a) - worst(b) || a.name.localeCompare(b.name), count: (a, b) => a.links.length - b.links.length || a.name.localeCompare(b.name) };
+    const actuators = model.actuators.filter((a) => !q || [a.name, a.id, a.device?.model, ...a.links.flatMap((l) => [l.from_name, l.from_id, l.role])].join(" ").toLowerCase().includes(q)).sort((a, b) => sorters[state.linkSort](a, b) * state.linkDir);
+    const cards = actuators.map((a) => {
       const shown = a.links.filter(pass);
       if (state.linkFilter === "none" ? a.links.length > 0 || !a.device : state.linkFilter !== "all" ? !shown.length : state.linkSource !== "all" && !shown.length) return "";
       const key = `a|${a.key}`;
@@ -964,23 +995,42 @@ export const installation = {
       const head = `<div class="lhead"><div><b>${a.device ? `<a data-in-goto="${esc(a.device.key)}">${esc(a.name)}</a>` : esc(a.name)}</b><div class="isub">${esc([a.device?.model, a.id].filter(Boolean).join(" · "))}</div></div>${a.device ? this._instKindTag(a.device) : ""}${numbers.length ? ` <button class="tag" data-in-snd="${esc(gw.entry_id)}|${numbers[0]}">${esc(this._t.inst.senderTag(numbers.join(", ")))}</button>` : ""}<span class="grow"></span><span class="isub">${a.links.length ? L.count(a.links.length) : ""}</span>${testable(a) ? `<button class="chip" data-in-test="${esc(a.device.key)}" data-in-gw="${esc(gw.entry_id)}" ${running ? "disabled" : ""}>${esc(running ? L.testing : L.test)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addLink)}</button></div>`;
       const rows = a.links.length ? shown.map((l) => this._instLinkRow(gw, l, model, "actuator")).join("") : `<div class="lnone">${esc(L.noLink)}</div>`;
       return `<div class="lcard" data-k="${a.device ? kindOf(a.device) : "aktor"}">${head}${rows}${this._instLinkAddForm(gw, model, key, "actuator")}</div>`;
-    }).join("");
-    return cards || `<div class="none">${esc(L.none)}</div>`;
+    }).filter(Boolean);
+    return this._instLinkPage(cards);
+  },
+
+  _instLinkPage(cards) {
+    // the cards of one gateway, one page at a time
+    const t = this._t;
+    const state = this._in;
+    const L = t.inst.links;
+    if (!cards.length) return `<div class="none">${esc(L.none)}</div>`;
+    const pages = Math.max(1, Math.ceil(cards.length / state.linkPs));
+    state.linkPg = Math.min(state.linkPg, pages - 1);
+    const from = state.linkPg * state.linkPs;
+    const page = cards.slice(from, from + state.linkPs);
+    const sizes = [25, 50, 100].map((n) => `<option${state.linkPs === n ? " selected" : ""}>${n}</option>`).join("");
+    const pager = `<div class="spager" style="border:1px solid var(--line);border-radius:12px"><span>${esc(t.inst.sid.range(from + 1, from + page.length, cards.length))}</span><div><label>${esc(t.inst.sid.perPage)} <select data-in-linkps aria-label="${esc(t.inst.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-linkpg="-1"${state.linkPg === 0 ? " disabled" : ""} aria-label="${esc(t.inst.sid.prev)}">‹</button><span>${esc(t.inst.sid.page(state.linkPg + 1, pages))}</span><button class="chip" data-in-linkpg="1"${state.linkPg >= pages - 1 ? " disabled" : ""} aria-label="${esc(t.inst.sid.next2)}">›</button></div></div>`;
+    return page.join("") + pager;
   },
 
   _instLinkBySender(gw, model, pass) {
     const L = this._t.inst.links;
     const state = this._in;
     const wallWithoutDevice = (x) => x.kind === "wall" && !x.device;
-    const cards = model.senders.map((x) => {
+    const q = state.q.trim().toLowerCase();
+    const senders = model.senders.filter((x) => !q || [x.name, x.id, ...x.links.flatMap((l) => [l.to_name, l.to_id, l.role])].join(" ").toLowerCase().includes(q));
+    if (state.linkSort === "count") senders.sort((a, b) => (a.links.length - b.links.length) * state.linkDir);
+    else if (state.linkDir < 0) senders.reverse();
+    const cards = senders.map((x) => {
       const shown = x.links.filter(pass);
       if (!shown.length) return "";
       const key = `s|${x.key}`;
       const title = x.kind === "ha" ? `${L.from.ha} · ${x.id}` : [x.name, x.id].filter(Boolean).join(" · ");
       const head = `<div class="lhead"><div><b>${x.device ? `<a data-in-goto="${esc(x.device.key)}">${esc(title)}</a>` : esc(title)}</b></div><span class="grow"></span>${wallWithoutDevice(x) || (x.kind === "entered" && !x.device && x.id) ? `<button class="chip" data-in-walldoc="${esc(x.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.documentHint)}">${esc(L.document)}</button>` : ""}<button class="chip" data-in-linkadd="${esc(key)}">${esc(L.addActuator)}</button></div>`;
       return `<div class="lcard" data-k="${x.device ? kindOf(x.device) : x.kind === "ha" ? "virt" : "taster"}">${head}${shown.map((l) => this._instLinkRow(gw, l, model, "sender")).join("")}${this._instLinkAddForm(gw, model, key, "sender")}</div>`;
-    }).join("");
-    return cards || `<div class="none">${esc(L.none)}</div>`;
+    });
+    return this._instLinkPage(cards.filter(Boolean));
   },
 
   _instLinkMatrix(gw, model) {
@@ -996,16 +1046,86 @@ export const installation = {
     return `<div class="tablewrap"><table class="itable matrix"><thead>${head}</thead><tbody>${rows}</tbody></table></div><p class="isub">${esc(L.matrixHint)}</p>`;
   },
 
+  _instLogRows() {
+    // every event of every gateway with the device name split from its detail, newest first
+    return gateways(this._in.doc)
+      .flatMap((gw) => gw.log.map((e) => {
+        const at = (e.detail || "").indexOf(": ");
+        const name = at > 0 ? e.detail.slice(0, at) : e.device && at < 0 && e.kind !== "import" ? e.detail : "";
+        const rest = at > 0 ? e.detail.slice(at + 2) : e.kind === "import" ? e.detail : "";
+        const d = gw.devices.find((x) => e.device && x.note_key === e.device);
+        return { ...e, gateway: gw.title, name, rest, goto: d?.key ?? "", ts: Date.parse(e.time) };
+      }))
+      .sort((a, b) => b.ts - a.ts);
+  },
+
+  _instLogText(e) {
+    // what an event says in words: plain text for the search and the CSV, and the same as HTML
+    const L = this._t.inst.log;
+    const profile = (p) => this._profile(p);
+    const parts = [];
+    if (e.kind === "sender_test") {
+      for (const pair of e.rest.split(", ")) {
+        const [p, r = ""] = pair.split("=");
+        const key = Object.keys(L.results).find((k) => r.toLowerCase().includes(k)) ?? "";
+        parts.push({ text: profile(p), result: key ? L.results[key][0] : r, tone: key ? L.results[key][1] : "neu" });
+      }
+    } else if (e.kind === "teach_in") parts.push({ text: L.taughtIn(profile(e.profile || e.rest)) });
+    else if (e.kind === "sender_assigned") parts.push({ text: L.sender, id: e.rest });
+    else if (e.kind === "sender_removed") parts.push({ text: L.sender, id: e.rest, result: L.blocked, tone: "warn" });
+    else if (e.kind === "import") {
+      const n = e.rest.match(/\d+/g) ?? [];
+      parts.push({ text: n.length === 3 ? L.imported(...n) : e.rest });
+    } else if (e.rest) parts.push({ text: e.rest });
+    return parts;
+  },
+
   _instLog() {
     const t = this._t;
+    const L = t.inst.log;
+    const v = this._in.log;
+    const q = this._in.q.trim().toLowerCase();
+    const all = this._instLogRows();
+    if (!all.length) return `<div class="none">${esc(t.inst.noLog)}</div>`;
+    const now = Date.now();
+    const midnight = new Date(now).setHours(0, 0, 0, 0);
+    const since = { all: 0, today: midnight, week: midnight - 6 * 864e5 }[v.period];
+    const words = (e) => `${t.inst.events[e.kind] || e.kind} ${e.name} ${this._instLogText(e).map((p) => `${p.text} ${p.id ?? ""} ${p.result ?? ""}`).join(" ")}`.toLowerCase();
+    const base = all.filter((e) => e.ts >= since && (!q || words(e).includes(q)));
+    const kinds = Object.keys(t.inst.events);
+    const count = (k) => base.filter((e) => e.kind === k).length;
+    const chips = `<button class="chip" data-in-logk="" aria-pressed="${!v.kinds.size}">${esc(L.all)} <b>${base.length}</b></button>${kinds.map((k) => `<button class="chip ev-chip ev-${k}" data-in-logk="${k}" aria-pressed="${v.kinds.has(k)}"${count(k) ? "" : ' style="opacity:.5"'}>${esc(t.inst.events[k])} <b>${count(k)}</b></button>`).join("")}`;
+    const period = ["today", "week", "all"].map((p) => `<button data-in-logp="${p}" aria-pressed="${v.period === p}">${esc(L.periods[p])}</button>`).join("");
+    const list = base.filter((e) => !v.kinds.size || v.kinds.has(e.kind)).sort((a, b) => (a.ts - b.ts) * -v.dir);
+    const pages = Math.max(1, Math.ceil(list.length / v.ps));
+    v.pg = Math.min(v.pg, pages - 1);
+    const page = list.slice(v.pg * v.ps, (v.pg + 1) * v.ps);
+    const lang = this._hass.language;
+    const day = (ts) => {
+      const diff = Math.round((midnight - new Date(ts).setHours(0, 0, 0, 0)) / 864e5);
+      const date = new Date(ts).toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "long" });
+      return diff === 0 ? `${L.today} · ${date}` : diff === 1 ? `${L.yesterday} · ${date}` : date;
+    };
+    const perDay = new Map();
+    for (const e of list) perDay.set(day(e.ts), (perDay.get(day(e.ts)) ?? 0) + 1);
     const multi = gateways(this._in.doc).length > 1;
-    const rows = gateways(this._in.doc)
-      .flatMap((gw) => gw.log.map((e) => ({ ...e, gateway: gw.title })))
-      .sort((a, b) => b.time.localeCompare(a.time))
-      .map((e) => `<tr><td class="mono">${esc(new Date(e.time).toLocaleString(this._hass.language))}</td><td class="kind"><span class="tag ev ev-${esc(e.kind)}">${esc(t.inst.events[e.kind] || e.kind)}</span></td><td>${esc(e.detail || e.device)}</td>${multi ? `<td class="isub">${esc(e.gateway)}</td>` : ""}</tr>`)
-      .join("");
-    if (!rows) return `<div class="none">${esc(t.inst.noLog)}</div>`;
-    return `<div class="tablewrap"><table class="itable log"><thead><tr><th>${esc(t.time)}</th><th>${esc(t.inst.event)}</th><th>${esc(t.inst.detail)}</th>${multi ? `<th>${esc(t.gateway)}</th>` : ""}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    let last = "";
+    const body = page.map((e) => {
+      const label = day(e.ts);
+      const sep = label === last ? "" : `<tr class="logday"><td colspan="2">${esc(label)} <span class="isub">${perDay.get(label)}</span></td></tr>`;
+      last = label;
+      const who = e.name ? (e.goto ? `<a data-in-goto="${esc(e.goto)}">${esc(e.name)}</a>` : esc(e.name)) : "";
+      const parts = this._instLogText(e).map((p) => `${esc(p.text)}${p.id ? ` <span class="mono">${esc(p.id)}</span>` : ""}${p.result ? ` <span class="lres ${p.tone}">${esc(p.result)}</span>` : ""}`).join(`<span class="isub"> · </span>`);
+      const age = Math.max(0, Math.round((now - e.ts) / 1000));
+      const when = age < 86400 ? t.inst.funk.ago(age) : new Date(e.ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+      return `${sep}<tr><td class="logmain"><div class="logline"><span class="tag ev ev-${esc(e.kind)}">${esc(t.inst.events[e.kind] || e.kind)}</span>${who}${multi ? ` <span class="isub">${esc(e.gateway)}</span>` : ""}</div>${parts ? `<div class="logdetail">${parts}</div>` : ""}</td><td class="logwhen" title="${esc(new Date(e.ts).toLocaleString(lang))}">${esc(when)}</td></tr>`;
+    }).join("");
+    const from = list.length ? v.pg * v.ps + 1 : 0;
+    const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
+    const pager = `<div class="spager"><span>${esc(t.inst.sid.range(from, from + page.length - (list.length ? 1 : 0), list.length))}</span><div><label>${esc(t.inst.sid.perPage)} <select data-in-logps aria-label="${esc(t.inst.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-logpg="-1"${v.pg === 0 ? " disabled" : ""} aria-label="${esc(t.inst.sid.prev)}">‹</button><span>${esc(t.inst.sid.page(v.pg + 1, pages))}</span><button class="chip" data-in-logpg="1"${v.pg >= pages - 1 ? " disabled" : ""} aria-label="${esc(t.inst.sid.next2)}">›</button></div></div>`;
+    const search = `<input class="isearch" data-in-search value="${esc(this._in.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}">`;
+    const empty = `<tr><td colspan="2" class="none">${esc(L.none)}</td></tr>`;
+    return `<div class="itools" style="align-items:center">${search}<span class="seg" role="group">${period}</span><span style="flex:1"></span><button class="chip" data-in-act="log-csv">${svg(ICON.download)}${esc(L.csv)}</button></div><div class="chips" style="margin-bottom:10px">${chips}</div><div class="swrap"><div class="logbar"><span>${esc(L.count(list.length, all.length))}</span><button data-in-logsort="1">${esc(t.time)} ${v.dir < 0 ? "↓" : "↑"} ${esc(v.dir < 0 ? L.newest : L.oldest)}</button></div><div class="tablewrap"><table class="itable log"><tbody>${body || empty}</tbody></table></div>${pager}</div>`;
   },
 
   _installationClick(e) {
@@ -1026,6 +1146,24 @@ export const installation = {
       else if (sidfn) Object.assign(v, { fn: v.fn === arg ? "" : arg, pg: 0 });
       else if (sids) Object.assign(v, v.sort === arg ? { dir: -v.dir } : { sort: arg, dir: 1 });
       else v.pg = Math.max(0, v.pg + Number(arg));
+      this._renderInstallation();
+      return;
+    }
+    const logk = e.target.closest("[data-in-logk]");
+    const logp = e.target.closest("[data-in-logp]");
+    const logsort = e.target.closest("[data-in-logsort]");
+    const logpg = e.target.closest("[data-in-logpg]");
+    if (logk || logp || logsort || logpg) {
+      const v = state.log;
+      if (logk) {
+        const k = logk.dataset.inLogk;
+        if (!k) v.kinds.clear();
+        else if (v.kinds.has(k)) v.kinds.delete(k);
+        else v.kinds.add(k);
+        v.pg = 0;
+      } else if (logp) Object.assign(v, { period: logp.dataset.inLogp, pg: 0 });
+      else if (logsort) v.dir = -v.dir;
+      else v.pg = Math.max(0, v.pg + Number(logpg.dataset.inLogpg));
       this._renderInstallation();
       return;
     }
@@ -1145,9 +1283,20 @@ export const installation = {
       this._renderInstallation();
       return;
     }
+    const linkMore = e.target.closest("[data-in-linksort], [data-in-linklearn], [data-in-linkreset], [data-in-linkpg]");
+    if (linkMore) {
+      const d = linkMore.dataset;
+      if (d.inLinksort) Object.assign(state, state.linkSort === d.inLinksort ? { linkDir: -state.linkDir } : { linkSort: d.inLinksort, linkDir: 1 });
+      else if (d.inLinklearn) state.linkLearn = !state.linkLearn;
+      else if (d.inLinkreset) Object.assign(state, { linkFilter: "all", linkSource: "all", q: "" });
+      else state.linkPg = Math.max(0, state.linkPg + Number(d.inLinkpg));
+      this._renderInstallation();
+      return;
+    }
     const linkFilter = e.target.closest("[data-in-linkfilter]");
     if (linkFilter) {
-      state.linkFilter = linkFilter.dataset.inLinkfilter;
+      state.linkFilter = state.linkFilter === linkFilter.dataset.inLinkfilter ? "all" : linkFilter.dataset.inLinkfilter;
+      state.linkPg = 0;
       this._renderInstallation();
       return;
     }
@@ -1211,7 +1360,15 @@ export const installation = {
     this.shadowRoot.querySelector("#installation details.imenu")?.removeAttribute("open");
     if (act === "print") this._documentation("print");
     else if (act === "copy-id") navigator.clipboard?.writeText(e.target.closest("[data-in-act]").dataset.id.replace(/(..)(?=.)/g, "$1-")).catch(() => {});
-    else if (act === "csv") this._documentation("csv");
+    else if (act === "log-csv") {
+      const L = this._t.inst.log;
+      const q = (x) => `"${String(x).replace(/"/g, '""')}"`;
+      const rows = this._instLogRows().map((e) => [e.time, this._t.inst.events[e.kind] || e.kind, e.name, this._instLogText(e).map((p) => [p.text, p.id, p.result].filter(Boolean).join(" ")).join(", ")].map(q).join(";"));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["\ufeff" + [[this._t.time, this._t.inst.event, this._t.inst.device, this._t.inst.detail].map(q).join(";"), ...rows].join("\n")], { type: "text/csv" }));
+      a.download = L.file;
+      a.click();
+    } else if (act === "csv") this._documentation("csv");
     else if (act === "csv-links") this._documentation("csv-links");
     else if (act === "csv-tables") this._documentation("csv-tables");
     else if (act === "json") this._documentation("json");
@@ -1261,6 +1418,18 @@ export const installation = {
     const mkind = e.target.closest("select[data-in-mfield]");
     if (mkind) {
       this._instManualInput(mkind);
+      return;
+    }
+    const linkps = e.target.closest("[data-in-linkps]");
+    if (linkps) {
+      Object.assign(this._in, { linkPs: Number(linkps.value), linkPg: 0 });
+      this._renderInstallation();
+      return;
+    }
+    const logps = e.target.closest("[data-in-logps]");
+    if (logps) {
+      Object.assign(this._in.log, { ps: Number(logps.value), pg: 0 });
+      this._renderInstallation();
       return;
     }
     const sidps = e.target.closest("[data-in-sidps]");

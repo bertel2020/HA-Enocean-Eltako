@@ -257,7 +257,7 @@ for (const lang of ["en", "de"]) {
     expect("a card per actuator (four: the room controller is none)", root.querySelectorAll("#installation .lcard").length, 4);
     expect("link rows by actuator", root.querySelectorAll("#installation .lrow").length, 4);
     expect("a link says where it comes from", root.querySelectorAll('#installation .lrow .tag[class*="src-"]').length, 4);
-    expect("the tiles count actuators, links, actuators without a link, no answer, not tested", root.querySelectorAll("#installation .tile").length, 5);
+    expect("the tiles count actuators, without a link, no answer, not tested, answered", root.querySelectorAll("#installation .stile").length, 5);
     expect("an actuator without a link is marked", root.querySelectorAll("#installation .lnone").length > 0, true);
     const learn = root.querySelector("#installation [data-in-learn]");
     learn.value = "Funktion 45";
@@ -289,7 +289,7 @@ for (const lang of ["en", "de"]) {
     expect("the matrix has a row per actuator", root.querySelectorAll("#installation table.matrix tbody tr").length, 4);
     root.querySelector('#installation [data-in-tab="log"]').click();
     await settle();
-    expect("log rows", root.querySelectorAll("#installation .log tbody tr").length, 3);
+    expect("log rows", root.querySelectorAll("#installation .log tbody tr:not(.logday)").length, 3);
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 5);
     // a set-up device opens in place, with what the server knows of it, and closes again
