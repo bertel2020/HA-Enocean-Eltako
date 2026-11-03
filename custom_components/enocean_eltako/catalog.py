@@ -279,7 +279,10 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SWITCH, Platform.LIGHT, Platform.SENSOR),
             category="lighting",
             group=GROUP_ENOCEAN,
-            senders=(PSC_CONTROLLER,),
+            # the plug obeys the central command A5-38-08 or a rocker taught in as a wall switch
+            senders=(PSC_CONTROLLER, ROCKER),
+            any_sender=True,
+            options=(OPT_ROCKER_ON,),
             # D2-01-09 state over ESP3, and over Eltako ESP2 gateways as ORG 0xD2
             receive_extra=(_ref("A5-12-01:std"), _ref("M5-38-08:eltako")),
             interval=600,  # power repeated every 10 min
