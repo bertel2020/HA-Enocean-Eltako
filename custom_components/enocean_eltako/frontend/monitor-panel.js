@@ -665,11 +665,11 @@ const STYLE = `
 
 // the profile candidates of an unknown sender: the first two, the rest as "+n" (all in the tooltip)
 const MAYBE_SHOWN = 2;
-function maybeTag(t, candidates) {
+function maybeTag(t, candidates, label = t.maybe, hint = t.maybeHint) {
   if (!candidates?.length) return "";
   const shown = candidates.slice(0, MAYBE_SHOWN).join(", ");
   const more = candidates.length > MAYBE_SHOWN ? ` +${candidates.length - MAYBE_SHOWN}` : "";
-  return `<div class="maybe"><span class="tag" title="${esc(`${t.maybeHint}: ${candidates.join(", ")}`)}">${esc(t.maybe)} ${esc(shown)}${more}</span></div>`;
+  return `<div class="maybe"><span class="tag" title="${esc(`${hint}: ${candidates.join(", ")}`)}">${esc(label)} ${esc(shown)}${more}</span></div>`;
 }
 
 function bars(dbm) {
@@ -2208,7 +2208,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
     return (
-      [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name, ...(r.candidates || []), ...extra].some((v) => v && String(v).toLowerCase().includes(text)) ||
+      [r.device, r.data, r.teach_in, r.profile, r.eep, r.model, r.gateway_name, ...(r.candidates || []), ...(r.fits || []), ...extra].some((v) => v && String(v).toLowerCase().includes(text)) ||
       (r.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
       (!!compact && String(r.sender).replace(/-/g, "").toLowerCase().includes(compact))
     );
@@ -2650,7 +2650,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const tags = (sent ? `<span class="tag tx">${esc(t.tx)}</span>` : "") + (unanswered ? `<span class="tag warn" title="${esc(t.noAnswer)}">${esc(t.noAnswerTag)}</span>` : "") + (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra = r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "";
-    const maybe = maybeTag(t, r.candidates);
+    const maybe = r.fits ? maybeTag(t, r.fits, t.fits, t.fitsHint) : maybeTag(t, r.candidates);
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
     const line2 = [`${sent ? `${esc(t.sentFrom)} ` : ""}<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
@@ -2694,6 +2694,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           ${hops ? `<div><dt>${esc(t.repeater)}</dt><dd>${hops}</dd></div>` : ""}
           ${copies ? `<div><dt>${esc(t.repeated)}</dt><dd>${esc(t.heardTimes(copies))}</dd></div>` : ""}
           ${r.candidates ? `<div class="wide"><dt>${esc(t.maybe)}</dt><dd class="mono">${esc(r.candidates.join(", "))}</dd></div>` : ""}
+          ${r.fits ? `<div class="wide"><dt>${esc(t.fits)}</dt><dd>${esc(r.fits.join(", "))}</dd></div>` : ""}
           ${r.eep ? `<div><dt>${esc(t.eep)}</dt><dd class="mono">${esc(r.eep)}</dd></div>` : ""}
           ${r.model ? `<div><dt>${esc(t.model)}</dt><dd>${esc(r.model)}</dd></div>` : r.models?.length ? `<div class="wide"><dt>${esc(t.models)}</dt><dd>${esc(r.models.join(", "))}</dd></div>` : ""}
           ${pair ? `<div><dt>${esc(t.pair)}</dt><dd>${esc(pair)}</dd></div>` : ""}
