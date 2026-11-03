@@ -55,7 +55,7 @@ export function fakeHass(params = new URLSearchParams()) {
       { id: "05-10-A2-B3", device: "Licht Diele", category: "lighting", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
       { id: "05-10-A2-B4", device: "Dimmer Flur", category: "lighting", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [], labels: [], disabled: false },
-      { id: "05-11-11-11", device: "Temperatur Bad", category: "sensors", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
+      { id: "05-11-11-11", device: "Temperatur Bad", category: "sensors", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, entity_ids: ["sensor.temperatur_bad_temperatur", "sensor.temperatur_bad_feuchte"], eep: "A5-02-05" },
       { id: "05-22-22-22", device: "Fensterkontakt Küche", category: "sensors", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
     ],
   };
@@ -86,6 +86,10 @@ export function fakeHass(params = new URLSearchParams()) {
     language: params.get("lang") || "de",
     locale: { language: params.get("lang") || "de", number_format: "language", time_format: "language", time_zone: "local" },
     config: { time_zone: "Europe/Berlin" },
+    states: {
+      "sensor.temperatur_bad_temperatur": { entity_id: "sensor.temperatur_bad_temperatur", state: "21.5", attributes: { unit_of_measurement: "°C", friendly_name: "Temperatur Bad Temperatur" } },
+      "sensor.temperatur_bad_feuchte": { entity_id: "sensor.temperatur_bad_feuchte", state: "unavailable", attributes: { unit_of_measurement: "%", friendly_name: "Temperatur Bad Feuchte" } },
+    },
     themes: { darkMode: params.has("dark"), theme: "default" },
     connection: {
       connected: true,

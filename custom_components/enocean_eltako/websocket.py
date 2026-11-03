@@ -347,6 +347,7 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
             (DOMAIN, device.unique_prefix), device.entry.entry_id
         )
         area = ar.async_get(hass).async_get_area(entry.area_id) if entry and entry.area_id else None
+        entities = er.async_entries_for_device(er.async_get(hass), entry.id) if entry else []
         row = {
             "id": format_id(device.radio_ids[0]),
             "device": device.subentry.title,
@@ -357,9 +358,9 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
             "models": [] if device._model_label else list(device.model.example_list),
             "category": device.model.category,
             "area": area.name if area else None,
-            "entities": (
-                len(er.async_entries_for_device(er.async_get(hass), entry.id)) if entry else 0
-            ),
+            "entities": len(entities),
+            # what the device shows: the enabled entities that are not diagnostics or settings
+            "entity_ids": [e.entity_id for e in entities if e.entity_category is None],
             "ha_device": entry.id if entry else None,
             "labels": sorted(entry.labels) if entry else [],
             "disabled": bool(entry and entry.disabled),
@@ -377,7 +378,7 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
         rows.append(row)
         # a device with several IDs (FUTH): one line per ID, the entities counted once
         rows += [
-            {**row, "id": format_id(radio_id), "entities": 0, "teach": []}
+            {**row, "id": format_id(radio_id), "entities": 0, "entity_ids": [], "teach": []}
             for radio_id in device.radio_ids[1:]
         ]
     return rows
