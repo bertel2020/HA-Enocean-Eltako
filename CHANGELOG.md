@@ -21,6 +21,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Sender IDs view**: a device with a single ID no longer has a fold arrow; only devices with several IDs can be collapsed.
 - **Devices view**: the ⋮ menu of a set-up device has *Remove*, which asks the same confirmation as removing a ticked selection.
 - **Installation view**: the kind chips sit on the line of the view switch, and the two missing-data tiles are one compact line.
 - **Takeover view**: the two counts above the device list (in configuration.yaml, already set up) are larger.
@@ -77,6 +78,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Ansicht Sender-IDs**: Ein Gerät mit nur einer ID hat keinen Einklapp-Pfeil mehr; nur Geräte mit mehreren IDs lassen sich einklappen.
 - **Ansicht Geräte**: Das ⋮-Menü eines eingerichteten Geräts hat *Entfernen*; es fragt wie beim Entfernen einer markierten Auswahl nach.
 - **Ansicht Anlage**: Die Art-Chips stehen in der Zeile der Ansichtswahl, und die beiden Kacheln für fehlende Angaben sind eine kompakte Zeile.
 - **Ansicht Übernahme**: Die beiden Zähler über der Geräteliste (in configuration.yaml, bereits eingerichtet) sind größer.
