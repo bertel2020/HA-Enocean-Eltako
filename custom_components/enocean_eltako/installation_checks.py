@@ -25,6 +25,7 @@ from .installation_data import (
     role,
     rows_by_id,
     supply_of,
+    watts,
 )
 
 RESERVE_LIMIT = 2 / 3  # above this share of its rated power a supply should get company
@@ -114,6 +115,9 @@ def supply_loads(data: dict[str, Any], bus: dict[str, Any]) -> dict[str, Any]:
     for group in groups:
         source = by_id.get(group["module"] or "")
         capacity = supply_of(source) if source else 12.0
+        if source is not None and role(source) == "master":
+            # no supply written down: the master's own one (or the FSNT14 that came with it)
+            capacity = watts(source.get("supply_watts")) or supply_of(source) or 12.0
         load = round(sum(power_of(m)[0] or 0 for m in group["members"]), 2)
         result.append(
             {
@@ -127,6 +131,31 @@ def supply_loads(data: dict[str, Any], bus: dict[str, Any]) -> dict[str, Any]:
             }
         )
     return {"mode": "range", "supplies": result, "unfed": unfed}
+
+
+def master_supply(master: dict[str, Any], section: list[dict[str, Any]]) -> tuple[float, str]:
+    """What a FAM14 itself delivers to its section, and why: "entered" (written down), "fsnt14"
+    (0 W: an FSNT14 right beside it in the same section is the supply that came with it), or
+    "integrated" (the catalog's 12 W).
+
+    Eltako: a FAM14 up to production week 07/22 has its supply unit integrated (12 V DC-1A, the
+    left half of its 2 TE, manual 30014000-2 and operating manual series 14); a later FAM14
+    comes with an FSNT14-12V/12W of its own (manual 30014000-7) that delivers the 12 W. That an
+    FSNT14 directly beside the FAM14 is that enclosed one is an assumption; a value written down
+    for the FAM14 (0 or 12 W) decides instead.
+    """
+    if (value := watts(master.get("supply_watts"))) is not None:
+        return value, "entered"
+    if master.get("row") is not None:
+        for other in section:
+            if other is master or other.get("row") != master["row"] or role(other) != "supply":
+                continue
+            if not str(other.get("type", "")).upper().startswith("FSNT14"):
+                continue
+            left, right = (other, master) if other["slot"] < master["slot"] else (master, other)
+            if float(right["slot"]) - _span(left)[1] <= 0.5:
+                return 0.0, "fsnt14"
+    return supply_of(master) or 12.0, "integrated"
 
 
 def _by_place(data: dict[str, Any], modules: list[dict[str, Any]]) -> dict[str, Any]:
@@ -144,9 +173,16 @@ def _by_place(data: dict[str, Any], modules: list[dict[str, Any]]) -> dict[str, 
         last_cabinet, cut = cabinet, module["separator_after"]
     result = []
     for members in sections:
-        feeders = [m for m in members if role(m) in ("master", "supply")]
+        own = {m["id"]: master_supply(m, members) for m in members if role(m) == "master"}
+        feeders = [
+            m
+            for m in members
+            if role(m) == "supply" or (role(m) == "master" and own[m["id"]][0] > 0)
+        ]
         consumers = [m for m in members if role(m) != "supply"]
-        capacity = round(sum(supply_of(m) or 0 for m in feeders), 2)
+        capacity = round(
+            sum((own[m["id"]][0] if m["id"] in own else supply_of(m) or 0) for m in feeders), 2
+        )
         load = round(sum(power_of(m)[0] or 0 for m in consumers), 2)
         result.append(
             {
@@ -158,6 +194,9 @@ def _by_place(data: dict[str, Any], modules: list[dict[str, Any]]) -> dict[str, 
                 "state": _state(load, capacity) if feeders else "none",
                 "members": [m["id"] for m in consumers],
                 "without_value": [m["id"] for m in consumers if power_of(m)[0] is None],
+                "master_supply": [
+                    {"module": i, "watts": w, "from": source} for i, (w, source) in own.items()
+                ],
             }
         )
     placed = {m["id"] for s in sections for m in s}

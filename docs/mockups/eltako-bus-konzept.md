@@ -104,7 +104,7 @@ mit **(A)** markiert.
 
 | Typ | TE | Adressen/Kanäle | Busleistung (W, Planungshilfe) | Art |
 |---|---|---|---|---|
-| FAM14 | 2 | Master (keine) | 0,80 (liefert 12 W) | Master |
+| FAM14 | 2 | Master (keine) | 0,80 (liefert 12 W: bis KW 07/22 integriert, danach über das beiliegende FSNT14) | Master |
 | FSR14-4x | 1 | 4 | 0,70 | Schalten |
 | FSR14-2x | 1 | 2 | 0,14 | Schalten |
 | FSR14SSR | 1 | (A) 2 | 0,40 | Schalten |
@@ -431,3 +431,13 @@ Grundsatzfragen, die das Konzept offen ließ, entschieden nach CLAUDE.md:
 - **Gebaut (read-only, sendet nichts):** `protocol/bus/observe.py` wertet Telegramme aus, die ohnehin ankommen: Adressen = gehörte ID − Base-ID (Funk) bzw. ID (Draht, Annahme), Art des Telegramms, Vorschlag einer Base-ID (Block von 128 IDs mit den meisten gehörten Adressen, ohne die eigenen Gateways), Rückmelde-ID = Base-ID + Adresse. Websocket `installation/listen`: nur nach Opt-in, höchstens 120 s, Abbruch durch Abmelden, nimmt die letzten Telegramme je Sender (Notizen) und den Puffer des Monitors dazu. Nichts geht in die Sendewarteschlange. Prüfungen „gehört, nicht dokumentiert“, „dokumentiert, nicht gehört“ (erst ab 30 s Mithören), „Base-ID vorschlagen“, alle mit `assumed`.
 - **Nicht gebaut:** aktives Scannen, Typ lesen, Base-ID aus dem FAM14 lesen, PCT14-Import. Ohne veröffentlichte Protokollbasis wäre das Vermutung; außerdem müsste dafür an den FAM14 gesendet werden.
 - **Nicht mit Hardware geprüft:** alles in Phase 3. Typische Fehlerquellen: FAM14 in Pos. 3/6 funkt keine Bestätigungen; ein anderer Sender im selben ID-Block verfälscht den Base-ID-Vorschlag.
+
+## Speiseleistung FAM14 / FSNT14 (Korrektur)
+
+Belegt: Ein **FAM14 bis Fertigungswoche 07/22** hat das Netzteil 12 V DC-1A **integriert** (linke Hälfte seiner 2 TE; Anleitung 30014000-2 von 01/2014, Betriebsanleitung Baureihe 14 10/2026: das FSNT14 kann das defekte Netzteil „linke Hälfte“ eines FAM14 bis KW 07/22 ersetzen). **Spätere FAM14** werden mit einem beiliegenden **FSNT14-12V/12W** geliefert, das die 12 W liefert (Anleitung 30014000-7, Katalog Kap. 1). Je weitere 12 W ein weiteres FSNT14, abgetrennt mit TB14. Widerspruch: Die Leistungstabelle im Katalog nennt „FAM14 bzw. FTS14KS: 12 V DC/8 W“; Anleitung und Betriebsanleitung nennen 12 W. Für das FTS14KS ist 8 W in Kapitel 2 ausdrücklich belegt (übernommen), für den FAM14 bleiben 12 W.
+
+Umsetzung (`installation_checks.master_supply`), ohne Datenmigration:
+- Für den FAM14 eingetragen (`supply_watts`, im Drawer „Eigenes Netzteil“): 12 = integriert, 0 = über FSNT14. Das entscheidet.
+- Sonst **Annahme (A)**: Ein FSNT14 direkt neben dem FAM14 (≤ ½ TE Luft, gleiche Reihe, gleicher Abschnitt) ist das beiliegende; der FAM14 liefert dann 0 W, der Abschnitt hat 12 W statt 24 W.
+- Sonst: integriert, 12 W (wie beim FAM14 des Nutzers, 2 TE mit integriertem Netzteil; so zeigt es auch das Mockup).
+- Bei Adressbereichen ohne eingetragenes Netzteil bleibt der FAM14 wie bisher die 12-W-Quelle des ganzen Busses.

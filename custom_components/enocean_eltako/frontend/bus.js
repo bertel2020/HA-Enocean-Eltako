@@ -304,6 +304,24 @@ export const busView = {
     return (v.checks.supplies?.supplies ?? []).find((s) => s.members.includes(m.id) || s.module === m.id || (s.modules ?? []).includes(m.id)) ?? null;
   },
 
+  _bvMasterSupply(v, m) {
+    // what the FAM14 itself delivers, as the server reckons it: written down, its integrated 12 W
+    // (up to production week 07/22), or 0 W when the FSNT14 that came with it sits beside it
+    for (const s of v.checks.supplies?.supplies ?? []) {
+      const found = (s.master_supply ?? []).find((x) => x.module === m.id);
+      if (found) return found;
+    }
+    const own = watts(m.supply_watts);
+    return own != null ? { watts: own, from: "entered" } : { watts: this._bvType(v, m)?.supply ?? 12, from: "integrated" };
+  },
+
+  _bvMasterText(v, m, long = false) {
+    const B = this._t.inst.busv;
+    const own = this._bvMasterSupply(v, m);
+    if (!own.watts) return B.masterViaFsnt;
+    return long ? B.masterDelivers(fmtNum(own.watts), own.from) : B.masterSupply(fmtNum(own.watts));
+  },
+
   _bvSupplyName(v, s) {
     const B = this._t.inst.busv;
     const m = s.module ? v.byId.get(s.module) : null;
@@ -361,7 +379,7 @@ export const busView = {
     const B = this._t.inst.busv;
     const master = v.byId.get(v.bus.master ?? "");
     const place = master ? this._bvPlace(v, master) : "";
-    const supply = master && this._bvRole(v, master) === "master" ? ` <span class="tag kind" data-r="master">${esc(B.masterSupply(fmtNum(this._bvType(v, master)?.supply ?? 12)))}</span>` : "";
+    const supply = master && this._bvRole(v, master) === "master" ? ` <span class="tag kind" data-r="master">${esc(this._bvMasterText(v, master))}</span>` : "";
     const masterCard = master
       ? `<div><b>${this._bvL("module", master.id, esc(this._bvTitle(v, master)))}</b>${supply} <span class="tag">${esc(B.te(fmtNum(this._bvTe(v, master))))}</span></div><div class="isub">${place ? this._bvL("place", master.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`} · ${esc(B.baseId)} <span class="mono">${esc(v.bus.base_id || "–")}</span> · ${esc(B.upTo(ADDRESSES))}</div>`
       : `<div><span class="tag bad">${esc(B.noMaster)}</span></div>`;
@@ -412,7 +430,7 @@ export const busView = {
       const s = this._bvSupplyOf(v, m);
       const role = this._bvRole(v, m);
       const place = this._bvPlace(v, m);
-      const power = OFF.includes(role) ? '<span class="isub">–</span>' : role === "supply" || role === "master" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
+      const power = OFF.includes(role) ? '<span class="isub">–</span>' : role === "master" ? `<span class="isub">${esc(this._bvMasterText(v, m))}</span>` : role === "supply" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
       const range = this._bvRange(v, m) ?? (this._bvCount(v, m) ? `<span class="tag warn">${esc(B.none)}</span>` : "–");
       const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : OFF.includes(role) ? `<span class="tag doc">${esc(B.roles[role])}</span>` : ""].join("");
       return `<tr class="bv-mod" data-r="${role}" data-in-row="bv|${esc(m.id)}"><td>${place ? this._bvL("place", m.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`}</td><td>${this._bvL("module", m.id, `<b>${esc(m.type || B.unknownType)}</b>`)} ${m.name ? esc(m.name) : ""} ${tags}<div class="isub">${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.legacy_location ? ` · ${esc(B.before)} „${esc(m.legacy_location)}“` : ""}</div></td><td class="mono">${range}</td><td></td><td class="bv-hide-s"></td><td class="bv-hide-s"></td><td class="num">${power}</td><td class="bv-hide-s">${s ? this._bvL("supply", s.module ?? "", esc(this._bvSupplyName(v, s))) : '<span class="isub">–</span>'}</td></tr>`;
@@ -601,7 +619,7 @@ export const busView = {
         }).join("");
         const flag = print ? "" : this._bvFlag(v, m);
         const adr = role === "master" ? `<span class="bvr-mtag">${esc(B.masterTag)}</span>` : role === "supply" ? `<span class="bvr-adr">${esc(w(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12))}</span>` : this._bvRange(v, m) ? `<span class="bvr-adr">${esc(this._bvRange(v, m))}</span>` : `<span class="bvr-adr none">${esc(B.none)}</span>`;
-        const label = te >= 2 ? `<span class="bvr-lbl">${esc(role === "master" ? B.masterSupply(fmtNum(this._bvType(v, m)?.supply ?? 12)) : m.name || "")}</span>` : "";
+        const label = te >= 2 ? `<span class="bvr-lbl">${esc(role === "master" ? this._bvMasterText(v, m) : m.name || "")}</span>` : "";
         const documented = m.channels.length && !m.channels.some((c) => c.device_key) ? " doc" : "";
         items.push(`<${tag} class="bvr-tile${wide}${role === "master" ? " master" : ""}${documented}${this._in.bus.hl === m.id ? " hl" : ""}" data-r="${role}"${go} data-hl="${esc(m.id)}" style="grid-column:${col} / span ${span}" title="${esc(title)}">${flag ? `<span class="bvr-flag${flag === "bad" ? " bad" : ""}"></span>` : ""}${adr}<span class="bvr-type">${esc(m.type || B.unknownType)}</span>${label}<span class="bvr-leds">${leds}</span></${tag}>${moves}`);
       }
@@ -800,7 +818,7 @@ export const busView = {
       <dt>${esc(B.width)}</dt><dd>${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.spacer_before ? ` · ${esc(B.spacerShort)}` : ""}${m.separator_after ? ` · ${esc(B.separatorShort)}` : ""}${m.terminator ? ` · ${esc(B.terminatorShort)}` : ""}</dd>
       ${this._bvCount(v, m) ? `<dt>${esc(B.addresses)}</dt><dd class="mono">${esc(this._bvRange(v, m) ?? B.none)} <span class="isub">(${esc(B.consecutive(this._bvCount(v, m)))})</span></dd>` : ""}
       ${role === "master" ? `<dt>${esc(B.baseId)}</dt><dd class="mono">${esc(v.buses.find((b) => b.id === m.bus)?.base_id || "–")}</dd>` : ""}
-      <dt>${esc(B.power)}</dt><dd>${role === "supply" || role === "master" ? esc(B.delivers(fmtNum(watts(m.supply_watts) ?? typeInfo?.supply ?? 12))) : p.w != null ? `${esc(fmtNum(p.w))} W <span class="isub">${esc(p.from === "user" ? B.entered : B.fromTable)}</span>` : `<span class="tag warn">${esc(B.noValue)}</span>`}</dd>
+      <dt>${esc(B.power)}</dt><dd>${role === "master" ? esc(this._bvMasterText(v, m, true)) : role === "supply" ? esc(B.delivers(fmtNum(watts(m.supply_watts) ?? typeInfo?.supply ?? 12))) : p.w != null ? `${esc(fmtNum(p.w))} W <span class="isub">${esc(p.from === "user" ? B.entered : B.fromTable)}</span>` : `<span class="tag warn">${esc(B.noValue)}</span>`}</dd>
       <dt>${esc(B.supply)}</dt><dd>${s ? this._bvL("supply", s.module ?? "", esc(this._bvSupplyName(v, s))) : "–"}${m.legacy_range ? ` <span class="tag">${esc(B.rangeBefore(m.legacy_range.replace("-", "–")))}</span>` : ""}</dd>
       <dt>${esc(B.circuitFuse)}</dt><dd>${esc(m.circuit || "–")} · ${esc(m.fuse || "–")}</dd>
       ${m.installed ? `<dt>${esc(B.installed)}</dt><dd>${esc(m.installed)}</dd>` : ""}
@@ -836,7 +854,7 @@ export const busView = {
       const options = `<option value=""${value === "" ? " selected" : ""}>${esc(B.chUnknown)}</option><option value="unused"${value === "unused" ? " selected" : ""}>${esc(B.free)}</option><option value="doc"${value === "doc" ? " selected" : ""}>${esc(B.chDocumented)}</option>${manualOpt}${own}${candidates.map(([k, x]) => `<option value="ha|${esc(k)}"${value === `ha|${k}` ? " selected" : ""}>${esc(`${x.d.name}${x.d.model ? ` (${x.d.model})` : ""}`)}</option>`).join("")}`;
       return `<div class="bv-chedit" data-bvch="${n}"><span class="no">${esc(B.channelShort(n))}</span><select data-bvc-f="link" aria-label="${esc(B.channelN(n))}">${options}</select><input data-bvc-f="name" value="${esc(c.name)}" placeholder="${esc(B.chName)}" aria-label="${esc(B.chName)}" autocomplete="off"><input data-bvc-f="feedback_id" class="mono" value="${esc(c.feedback_id)}" placeholder="${esc(B.feedback)}" aria-label="${esc(B.feedback)}" maxlength="16" autocomplete="off"></div>`;
     }).join("");
-    const supplyFields = OFF.includes(role) ? "" : role === "supply" || role === "master" ? `${field("supply_watts", B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
+    const supplyFields = OFF.includes(role) ? "" : role === "supply" || role === "master" ? `${field("supply_watts", role === "master" ? B.masterWattsField : B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(role === "master" ? B.masterWattsPh : fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
     const addr = this._bvCount(v, m) ? field("first_address", B.firstAddress, m.first_address ?? "", `type="number" min="1" max="${ADDRESSES}" placeholder="1–${ADDRESSES}"`) : "";
     const found = m.row ? v.rows.get(m.row) : null;
     return `<div class="bv-box edit" data-bv-form="${esc(isNew ? "new" : m.id)}"><h3>${esc(isNew ? B.newModule : B.edit)}</h3><div class="bv-form">

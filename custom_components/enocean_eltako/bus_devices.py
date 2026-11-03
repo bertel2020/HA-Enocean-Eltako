@@ -47,8 +47,12 @@ class BusType:
 
 _TYPES = (
     # masters and power supplies
-    BusType("FAM14", "master", te=2, addresses=0, power=0.80, supply=12.0),  # [K][M][B]
-    BusType("FTS14KS", "master", te=2, addresses=0, power=0.40, supply=8.0),  # [K] 12 V DC/8 W
+    # FAM14 up to week 07/22: supply 12 V DC-1A integrated (left half of its 2 TE) [M][B]; later
+    # ones come with an FSNT14-12V/12W of their own [M] that delivers the 12 W instead (the
+    # section rule in installation_checks.master_supply keeps them from counting twice). The
+    # catalogue's power table says "FAM14 resp. FTS14KS: 12 V DC/8 W" [K], against 12 W in [M][B].
+    BusType("FAM14", "master", te=2, addresses=0, power=0.80, supply=12.0),
+    BusType("FTS14KS", "master", te=2, addresses=0, power=0.40, supply=8.0),  # [K] ch. 2
     BusType("FSNT14-12V/12W", "supply", te=1, addresses=0, supply=12.0),  # [K]
     # switching actuators
     BusType("FSR14-4x", "actuator", te=1, addresses=4, power=0.70),  # [K][B]
