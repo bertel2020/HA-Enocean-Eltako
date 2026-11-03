@@ -1,6 +1,6 @@
 # Konzept: Ansicht „Eltako-Bus“ (Installationsdokumentation)
 
-Stand: 2026-11-03 · Status: Phase 1 umgesetzt (siehe „Entscheidungen bei der Umsetzung“) · Mockup: [eltako-bus-ansicht.html](eltako-bus-ansicht.html)
+Stand: 2026-11-03 · Status: Phase 1 und 2 umgesetzt (siehe „Entscheidungen bei der Umsetzung“) · Mockup: [eltako-bus-ansicht.html](eltako-bus-ansicht.html)
 
 Ziel: Die Ansicht *Installation → Geräte → Bus* bildet die Reiheneinbaugeräte der Eltako-Baureihe 14
 am RS485-Bus so ab, wie sie wirklich verbaut sind: **Bus-Master FAM14 → Schrank → Reihe (Hutschiene) →
@@ -402,4 +402,15 @@ Grundsatzfragen, die das Konzept offen ließ, entschieden nach CLAUDE.md:
 | Fremdgeräte | Rolle `foreign` ist im Datenmodell vorhanden (Name, TE, ohne Adresse und Leistung); Darstellung auf der Schiene ist Phase 2. |
 | Katalogannahmen | Als `assumed` je Feld markiert: Adressen von FSR14SSR und FSU14, TE von F3Z14D und DSZ14DRS. Typen ohne bekannte TE oder Adressen zeigen „–“ (Breite 1 TE, Kanäle wie eingetragen). |
 
-Nicht gebaut (Phase 2): Schrankgrafik mit Hutschiene, Anordnen, Bänder der Speiseabschnitte, Prüfungen zu DS14/FUD14/Abschluss, Druck mit Schienengrafik.
+## Entscheidungen bei der Umsetzung (Phase 2)
+
+| Frage | Entscheidung |
+|---|---|
+| Anordnen | Websocket `installation/move` (Modul, Richtung −1/+1): tauscht mit dem Nachbarn (beide rücken ab dem linken Anfang zusammen, ihre Abstände bleiben), am Reihenende ½ TE weiter. Atomar im Server geprüft (Überlappung, Reihe zu voll); kein Drag and Drop. |
+| Speiseabschnitte | Wie in Phase 1: Schnitt an `separator_after` (TB14) und am Schrankwechsel, **nicht** an Reihenwechseln im selben Schrank (A: die 12 V gehen über BBV14 mit). Abschnitte heißen A, B, C … in Bus-Reihenfolge. Rückfall auf die Adressbereiche, solange ein Netzteil (oder der Master) keinen Einbauort hat; die Schrankansicht sagt das statt Bänder zu zeigen. |
+| DS14-Abstand (A) | „Warm“ sind Netzteile, der FAM14 und FUD14. Berühren sich zwei warme Module in einer Reihe (Lücke < ½ TE, kein `spacer_before` rechts) und liegt die Last ihres Abschnitts (bzw. bei Adressbereichen die des ganzen Busses) über 6 W: Hinweis, als Annahme gekennzeichnet (`assumed`). |
+| FUD14 | Info, wenn ein FUD14 einen linken Nachbarn ohne ½ TE Lücke hat und kein `spacer_before` gesetzt ist. |
+| Abschlusswiderstand | Hinweis, wenn keiner, mehr als einer oder er nicht am letzten Bus-Gerät in Bus-Reihenfolge sitzt (Fremdgeräte zählen nicht). „Genau einer am Ende“ wie in §2.1. |
+| Reihenverbindung | Hinweis für jede Reihe mit Bus-Geräten, auf die in Bus-Reihenfolge noch eine folgt, ohne `next.kind`. |
+| Fremdgeräte | Rolle `foreign`: Block mit Name und TE, ohne Adresse, Leistung und Kanäle; zählt nicht in Abschnitten und Prüfungen, aber in der Belegung der Reihe. |
+| Druck | Eigene Druckseite der Bus-Ansicht (A4 quer): Schienen in Seitenbreite, Kanalliste nach Einbauort, offene Prüfungen (ohne Info), Etikettenstreifen maßstäblich 18 mm je TE (Reihen breiter als die Seite brechen um). Der bisherige Gesamtdruck bleibt unverändert. |
