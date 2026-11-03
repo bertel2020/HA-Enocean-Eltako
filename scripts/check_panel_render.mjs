@@ -305,6 +305,21 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-bv-cabsave="c1"]').click();
     await settle();
     expect("a cabinet is saved with its rows", fake.sent.some((m) => m.type === "enocean_eltako/installation/set" && m.kind === "cabinet" && m.item.rows.length === 3), true);
+    // reading the bus: only after the opt-in, by listening; the answers are compared with the documentation
+    root.querySelector('#installation [data-bv-sub="read"]').click();
+    await settle();
+    expect("reading waits for the opt-in", root.querySelector('#installation [data-bv-act="listen"]').disabled, true);
+    root.querySelector("#installation [data-bv-optin]").click();
+    await settle();
+    root.querySelector('#installation [data-bv-act="listen"]').click();
+    await settle();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await settle();
+    expect("the bus is read with the opt-in", fake.sent.some((m) => m.type === "enocean_eltako/installation/listen" && m.opt_in === true), true);
+    expect("the addresses heard are listed, an undocumented one can be documented", root.querySelectorAll("#installation [data-bv-docaddr]").length >= 1 && root.querySelectorAll("#installation [data-bv-adddev]").length > 0, true);
+    root.querySelector('#installation [data-bv-sub="checks"]').click();
+    await settle();
+    expect("the checks compare heard and documented", busText().includes("30"), true);
     root.querySelector('#installation [data-bv-sub="supplies"]').click();
     await settle();
     expect("the power supplies by place: three sections with a load bar each", root.querySelectorAll("#installation .bv-sec").length === 3 && root.querySelectorAll("#installation .bv-load").length === 3 && /(Section|Abschnitt) C/.test(busText()), true);
