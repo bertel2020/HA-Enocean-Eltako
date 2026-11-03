@@ -196,6 +196,8 @@ def candidate_eeps(telegram: RadioTelegram) -> list[str]:
     then; short VLD telegrams and 1BS contacts are narrow enough.
     """
     found = [str(ref) for ref in _catalog_refs() if decode_telegram(ref, telegram)]
+    # a rocker (F6-02) is the likeliest sender of a press or release telegram: it comes first
+    found.sort(key=lambda eep: not eep.startswith("F6-02"))
     return found if len(found) <= MAX_CANDIDATES else []
 
 
