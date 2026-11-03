@@ -408,40 +408,12 @@ const STYLE = `
   .panel:not([data-view="devices"]) .devices, .panel:not([data-isub="manage"]) .poolbox,
   .panel:not([data-view="takeover"]) .takeover, .panel:not([data-view="installation"]) .installation { display: none; }
   /* the pool at a glance: four tiles, one bar, a note when something waits, then the map */
-  .senders .ptiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 16px 16px 0; }
-  .senders .ptile { background: var(--soft); border-radius: 12px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .senders .ptile small { font-size: calc(12px * var(--fs)); font-weight: 500; color: var(--muted); }
-  .senders .ptile b { font-size: calc(22px * var(--fs)); font-weight: 500; line-height: 1.2; }
-  .senders .ptile b i { font-style: normal; font-size: calc(13px * var(--fs)); font-weight: 400; color: var(--muted); margin-left: 4px; }
-  .senders .ptile .id { display: flex; align-items: center; gap: 2px; font-size: calc(14px * var(--fs)); font-weight: 500; line-height: 30px; }
-  .senders .ptile .id button { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--accent); }
-  .senders .ptile .id button:hover { background: var(--accent-soft); }
-  .senders .ptile .id svg { width: 16px; height: 16px; }
-  .senders .ptile.warn { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 35%, transparent); }
-  .senders .ptile.warn small, .senders .ptile.warn b { color: var(--warn); }
-  .senders .pstack { margin: 16px 16px 0; height: 12px; border-radius: 6px; background: var(--soft); display: flex; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line-2); }
-  .senders .pstack i { display: block; height: 100%; }
-  .senders .pstack .a { background: var(--accent); }
-  .senders .pstack .b { background: var(--warn); }
-  .senders .prange { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; margin: 6px 16px 0; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .senders .pnote { margin: 14px 16px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; font-size: calc(13px * var(--fs));
     background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); color: var(--warn); }
   .senders .pnote button { margin-left: auto; font-weight: 500; text-decoration: underline; color: var(--warn); }
   .senders .pread { margin: 0 16px 12px; min-height: 36px; display: flex; align-items: center; gap: 4px 12px; flex-wrap: wrap; padding: 6px 12px; border-radius: 12px;
     background: var(--soft); font-size: calc(13px * var(--fs)); color: var(--muted); }
   .senders .pread b { color: var(--text); font-weight: 500; }
-  .senders .sid-group { padding: 4px 0 8px; border-top: 1px solid var(--line); }
-  .senders .sid-group.blocked { background: color-mix(in srgb, var(--warn) 10%, transparent); }
-  .senders .sid-head { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px 2px; min-width: 0; }
-  .senders .sid-name { font-size: calc(14px * var(--fs)); font-weight: 500; overflow-wrap: anywhere; }
-  .senders .sid-name.link { display: inline-flex; align-items: center; gap: 2px; color: var(--accent); cursor: pointer; }
-  .senders .sid-name.link:hover { color: var(--accent-hover); text-decoration: underline; }
-  .senders .sid-name.link .go { width: 16px; height: 16px; }
-  .senders .sid-head .sub { font-size: calc(12px * var(--fs)); color: var(--muted); white-space: nowrap; }
-  .senders .sid-row { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; align-items: center;
-    min-height: 34px; padding: 2px 16px 2px 28px; font-size: calc(13px * var(--fs)); }
-  .senders .sid-profile { color: var(--muted); overflow-wrap: anywhere; }
-  .senders .sid-dec { color: var(--muted); }
   /* the pool map: the full width, 32 to a row (16 on phones), each row labelled with its first
      ID's last byte; details in the tooltip */
   .senders .map { display: grid; grid-template-columns: 56px repeat(32, minmax(0, 1fr)); gap: 3px; align-items: center; padding: 16px 16px 8px; }
@@ -468,33 +440,11 @@ const STYLE = `
   .senders .map .t-assigned { background: var(--accent); border-color: var(--accent); }
   .senders .map .t-blocked { background: var(--warn); border-color: var(--warn); }
   .senders .map .t-unavailable { background: repeating-linear-gradient(45deg, var(--line) 0 2px, transparent 2px 4px); }
-  .senders .sid-head.foldable { cursor: pointer; }
-  .senders .sid-head .fold { margin-left: auto; width: 16px; text-align: center; color: var(--muted); font-size: calc(12px * var(--fs)); }
-  .senders .sid-group.folded .sid-row, .senders .sid-group.folded .sid-hint, .senders .sid-group.folded .confirm { display: none; }
-  .senders .sid-cols { display: grid; grid-template-columns: 120px 110px minmax(0, 1fr) 96px auto; gap: 2px 12px; padding: 8px 16px 6px 28px;
-    border-top: 1px solid var(--line); font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .senders .sid-cols span:last-child { width: 0; }
-  .senders .act { text-align: right; }
-  .senders .act .chip { height: 30px; }
-  .senders .deleted { color: var(--muted); font-weight: 400; }
-  .senders .tag.ok { background: color-mix(in srgb, var(--ok) 20%, transparent); }
-  .senders .sid-hint { margin: 4px 16px 0 28px; font-size: calc(12px * var(--fs)); color: var(--muted); }
-  .senders .confirm { margin: 10px 16px 0 28px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+  .senders .confirm { margin: 10px 16px 0; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
   .senders .confirm b { display: block; font-weight: 500; margin-bottom: 4px; }
   .senders .confirm p { margin: 0 0 12px; font-size: calc(13px * var(--fs)); color: var(--muted); }
   .senders .confirm .buttons { display: flex; justify-content: flex-end; gap: 8px; }
   .senders .pick { padding: 12px 16px 0; }
-  @media (max-width: 760px) {
-    /* phones: ID and status on top, profile and button below */
-    .senders .sid-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id state" "dec act" "profile profile"; padding: 6px 16px; }
-    .senders .sid-cols { display: none; }
-    .senders .sid-dec { grid-area: dec; }
-    .senders .sid-id { grid-area: id; }
-    .senders .sid-state { grid-area: state; }
-    .senders .sid-profile { grid-area: profile; }
-    .senders .act { grid-area: act; }
-    .senders .sid-hint, .senders .confirm { margin-left: 16px; }
-  }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
   .devices { display: grid; grid-template-columns: 28px minmax(160px, 1.4fr) 96px 72px 64px minmax(0, 1.2fr) minmax(250px, 1.2fr) 128px; column-gap: 16px; }
@@ -792,9 +742,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._pool = ""; // shown pool
     this._poolSel = ""; // the square chosen on the pool map (its ID)
     this._freeing = null; // blocked sender ID waiting for its confirmation
-    this._sid = { text: "", state: "", sort: "state" }; // search, state filter and sort of the Sender IDs view
-    this._sidShownBlocked = []; // the blocked IDs the list shows: what Free all frees
-    this._sidFolded = new Set(); // devices whose IDs are hidden in the Sender IDs view
+    this._sidBlocked = []; // the blocked IDs of the pool: what Free all frees
     const view = loadView();
     this._savedView = view.view; // shown once the gateways and the Takeover check are in
     this._filter = view.filter;
@@ -1123,19 +1071,6 @@ class EnOceanEltakoPanel extends HTMLElement {
           <details class="poolbox" id="poolBox" open><summary id="poolSummary"></summary>
           <div class="senders" id="senders">
             <div id="sidTop"></div>
-            <div class="filters" id="sidTools" hidden>
-              <div class="statusrow" id="sidState" role="group" aria-label="${esc(t.colStatus)}">
-                <button class="chip" data-sid-state="" aria-pressed="true">${esc(t.dirAll)}</button>
-                <button class="chip" data-sid-state="assigned" aria-pressed="false">${esc(t.poolAssigned)} <b class="count"></b></button>
-                <button class="chip" data-sid-state="blocked" aria-pressed="false">${esc(t.poolBlocked)} <b class="count"></b></button>
-              </div>
-              <label class="search">
-                ${svg(ICON.search)}
-                <input id="sidText" type="search" placeholder="${esc(t.sidSearch)}" aria-label="${esc(t.sidSearch)}" autocomplete="off">
-              </label>
-              <select class="select" id="sidSort" aria-label="${esc(t.sortLabel)}"><option value="state">${esc(t.sidSortState)}</option><option value="name">${esc(t.devCols.name)}</option><option value="id">${esc(t.colId)}</option></select>
-              <button class="chip" id="sidFreeAll" hidden></button>
-            </div>
             <div id="sidList"></div>
           </div>
           </details>
@@ -1196,12 +1131,6 @@ class EnOceanEltakoPanel extends HTMLElement {
       tab.focus();
     });
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
-    $("senders").addEventListener("keydown", (e) => {
-      if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-fold], [data-dev-panel]")) {
-        e.preventDefault();
-        this._sendersClick(e);
-      }
-    });
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
     $("installation").addEventListener("click", (e) => this._installationClick(e));
     $("installation").addEventListener("change", (e) => this._installationChange(e));
@@ -1222,29 +1151,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._freeing = null;
       this._renderSenderIds();
     });
-    const sidChanged = () => {
-      if (this._freeing?.all) this._freeing = null; // the IDs it listed may be gone from the list
-      this._renderSenderIds();
-    };
-    $("sidText").addEventListener("input", (e) => {
-      this._sid.text = e.target.value;
-      sidChanged();
-    });
-    $("sidSort").addEventListener("change", (e) => {
-      this._sid.sort = e.target.value;
-      sidChanged();
-    });
-    $("sidState").addEventListener("click", (e) => {
-      const button = e.target.closest("[data-sid-state]");
-      if (!button) return;
-      this._sid.state = button.dataset.sidState;
-      sidChanged();
-    });
     $("poolBox").addEventListener("toggle", (e) => this._poolToggled(e.target.open));
-    $("sidFreeAll").addEventListener("click", () => {
-      this._freeing = { all: true, ids: this._sidShownBlocked };
-      this._renderSenderIds();
-    });
     $("selAll").addEventListener("change", (e) => this._selectAll(e.target.checked));
     $("selBar").addEventListener("click", (e) => {
       const act = e.target.closest("[data-sel-act]")?.dataset.selAct;
@@ -2835,80 +2742,18 @@ class EnOceanEltakoPanel extends HTMLElement {
     const t = this._t;
     const $ = (id) => this.shadowRoot.getElementById(id);
     const pool = this._pools.find((p) => p.id === this._pool);
-    // nothing to filter in a pool without senders
-    $("sidTools").hidden = $("sidState").hidden = !pool || !pool.rows.length;
     if (!pool) {
       this._replace($("sidTop"), this._noGateway());
       this._replace($("sidList"), "");
       return;
     }
     const blocked = pool.rows.filter((r) => r.state === "blocked");
-    const used = pool.size - pool.free;
+    this._sidBlocked = blocked.map((r) => r.id);
     const select = this._pools.length > 1
       ? `<div class="pick"><select class="select" id="poolSelect" aria-label="${esc(t.pools)}">${this._pools
           .map((p) => `<option value="${esc(p.id)}"${p.id === pool.id ? " selected" : ""}>${esc(this._poolLabel(p))}</option>`)
           .join("")}</select></div>`
       : "";
-    // one block per device with its IDs; blocked IDs (deleted devices) first, they need doing
-    const f = this._sid;
-    const q = f.text.trim().toLowerCase();
-    const qId = /^[0-9a-f\s-]+$/.test(q) ? q.replace(/[\s-]/g, "") : "";
-    const isBlocked = (r) => r.state === "blocked";
-    const nr = (r) => r.decimal - pool.first + 1; // the number counted from the base ID: first ID = 1
-    // a device name or profile finds all its IDs, an ID or decimal only itself
-    const matches = (r) =>
-      (!q ||
-        (r.device || t.deletedDevice).toLowerCase().includes(q) ||
-        (qId && r.id.replace(/-/g, "").toLowerCase().includes(qId)) ||
-        String(nr(r)).includes(q) || String(r.decimal).includes(q) ||
-        (r.profile && (r.profile.toLowerCase().includes(q) || this._profile(r.profile).toLowerCase().includes(q)))) &&
-      (!f.state || r.state === f.state);
-    const groups = new Map();
-    for (const r of pool.rows.filter(matches)) {
-      const key = r.ref || r.device || r.id;
-      if (!groups.has(key)) groups.set(key, { device: r.device, ref: r.ref, rows: [] });
-      groups.get(key).rows.push(r);
-    }
-    const firstId = (g) => Math.min(...g.rows.map((r) => r.decimal));
-    const byName = (a, b) => (a.device == null) - (b.device == null) || collator.compare(a.device || "", b.device || "");
-    const order = {
-      state: (a, b) => b.blocked - a.blocked || byName(a, b),
-      name: (a, b) => byName(a, b) || firstId(a) - firstId(b),
-      id: (a, b) => firstId(a) - firstId(b),
-    }[f.sort];
-    const list = [...groups.values()]
-      .map((g) => ({ ...g, blocked: g.rows.some(isBlocked), rows: g.rows.sort((a, b) => isBlocked(b) - isBlocked(a) || collator.compare(a.id, b.id)) }))
-      .sort(order);
-    this._sidShownBlocked = list.flatMap((g) => g.rows.filter(isBlocked).map((r) => r.id));
-    const byRef = new Map(this._deviceItems().filter((d) => d.devKey).map((d) => [d.id, d.devKey]));
-    const html = list
-      .map((g) => {
-        const panelKey = byRef.get(g.ref);
-        const name = g.device && panelKey
-          ? `<a class="sid-name link" data-dev-panel="${esc(panelKey)}" role="link" tabindex="0" title="${esc(t.inPanelHint)}">${esc(g.device)}${svg(ICON.next, "go")}</a>`
-          : g.device
-          ? `<span class="sid-name">${esc(g.device)}</span>`
-          : `<span class="sid-name deleted" title="${esc(g.ref || "")}">${esc(t.deletedDevice)}</span>`;
-        const rows = g.rows
-          .map((r) => `<div class="sid-row${isBlocked(r) ? " blocked" : ""}" data-key="${esc(r.id)}">
-            <span class="sid-id mono">${esc(r.id)}</span><span class="sid-dec mono" title="${esc(t.colNumber)}">${esc(nr(r))}</span><span class="sid-profile">${esc(r.profile ? this._profile(r.profile) : "–")}</span>
-            <span class="sid-state"><span class="tag ${isBlocked(r) ? "warn" : "ok"}">${esc(isBlocked(r) ? t.stateBlocked : t.stateAssigned)}</span></span>
-            <span class="act">${isBlocked(r) ? `<button class="chip" data-free="${esc(r.id)}" data-device="${esc(r.device || r.ref || "")}">${esc(t.freeAction)}</button>` : ""}</span>
-          </div>`)
-          .join("");
-        const confirm = this._freeing && g.rows.some((r) => isBlocked(r) && r.id === this._freeing.id)
-          ? `<div class="confirm"><b>${esc(t.freeConfirmTitle(this._freeing.id))}</b><p>${esc(t.freeConfirmText)}</p>
-              <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(t.freeConfirm)}</button></div></div>`
-          : "";
-        const gkey = g.ref || g.device || "";
-        // a group of one ID has nothing to hide
-        const foldable = !g.blocked && g.rows.length > 1;
-        const folded = foldable && this._sidFolded.has(gkey);
-        return `<div class="sid-group${g.blocked ? " blocked" : ""}${folded ? " folded" : ""}">
-          <div class="sid-head${foldable ? " foldable" : ""}"${foldable ? ` data-fold="${esc(gkey)}" role="button" tabindex="0" aria-expanded="${!folded}" title="${esc(t.foldGroup)}"` : ""}>${name}<span class="sub">${esc(t.idCount(g.rows.length))}</span>${foldable ? `<span class="fold" aria-hidden="true">${folded ? "▸" : "▾"}</span>` : ""}</div>
-          ${rows}${g.blocked ? `<p class="sid-hint">${esc(t.blockedHint)}</p>` : ""}${confirm}</div>`;
-      })
-      .join("");
     const byId = new Map(pool.rows.map((r) => [r.decimal, r]));
     const away = new Set(pool.unavailable);
     const lastByte = (n) => (n & 255).toString(16).toUpperCase().padStart(2, "0");
@@ -2927,20 +2772,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       // a label starts every row: its range, every 32 IDs (16 on phones, which break in between)
       const range = (len) => `${lastByte(n)}–${lastByte(Math.min(n + len - 1, lastId))}`;
       const row = i % 16 ? "" : `<span class="row-id${i % 32 ? " half" : ""}" aria-hidden="true" title="${esc(hex)}">${i % 32 ? "" : `<span class="lf">${range(32)}</span>`}<span class="lh">${range(16)}</span></span>`;
-      return `${row}<button class="t-${state}${chosen ? " sel" : ""}" data-tile="${esc(hex)}"${r ? ` data-goto="${esc(r.id)}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
+      return `${row}<button class="t-${state}${chosen ? " sel" : ""}" data-tile="${esc(hex)}"${r ? ` data-goto="${i + 1}"` : ""} title="${esc(text)}" aria-label="${esc(text)}"></button>`;
     }).join("");
     const assigned = pool.rows.length - blocked.length;
-    const pct = (n) => (pool.size ? (n / pool.size) * 100 : 0);
-    const tile = (label, body, cls = "") => `<div class="ptile${cls ? ` ${cls}` : ""}"><small>${esc(label)}</small>${body}</div>`;
-    const next = pool.next_free
-      ? `<span class="id mono">${esc(pool.next_free)}<button data-copy-id="${esc(pool.next_free)}" title="${esc(t.copyId)}" aria-label="${esc(t.copyId)}">${svg(ICON.copy)}</button></span>`
-      : `<b>${esc(t.noValue)}</b>`;
-    const overview = `<div class="ptiles">${tile(t.poolFree, `<b>${esc(pool.free)}<i>${esc(t.poolOf(pool.size))}</i></b>`)}${tile(t.poolAssigned, `<b>${assigned}</b>`)}${tile(t.poolBlocked, `<b>${blocked.length}</b>`, blocked.length ? "warn" : "")}${
-      away.size ? tile(t.stateUnavailable[0].toUpperCase() + t.stateUnavailable.slice(1), `<b>${away.size}</b>`) : ""
-    }${tile(t.poolNext, next)}</div>
-      <div class="pstack" role="img" aria-label="${esc(t.poolSummary(assigned, blocked.length))}"><i class="a" style="width:${pct(assigned)}%"></i><i class="b" style="width:${pct(blocked.length)}%"></i></div>
-      <div class="prange"><span class="mono">${esc(pool.start)}</span><span class="mono">${esc(pool.end)}</span></div>
-      ${blocked.length ? `<div class="pnote"><span>${esc(t.poolBlockedNote(blocked.length))}</span><button data-goto="${esc(blocked[0].id)}">${esc(t.poolShow)}</button></div>` : ""}`;
     // the legend names the states the map shows, with their numbers; free is always there to compare with
     const shown = new Set(["free", ...pool.rows.map((r) => r.state), ...(away.size ? ["unavailable"] : [])]);
     const counts = { free: pool.free, assigned, blocked: blocked.length, unavailable: away.size };
@@ -2948,38 +2782,28 @@ class EnOceanEltakoPanel extends HTMLElement {
       .filter(([state]) => shown.has(state))
       .map(([state, label]) => `<span><i class="t-${state}"></i>${esc(label)} ${counts[state]}</span>`)
       .join("");
+    const note = blocked.length
+      ? `<div class="pnote"><span>${esc(t.poolBlockedNote(blocked.length))}</span><button data-free-all>${esc(t.freeAllAction(blocked.length))}</button></div>`
+      : "";
     this._replace($("sidTop"), `${select}
-      ${overview}
+      ${note}
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
       <div class="pread" aria-live="polite">${readout}</div>
       <div class="legend" aria-hidden="true">${legend}</div>`);
-    // the search box, chips and sort are not redrawn, so typing keeps its focus: only their state is set
-    if ($("sidText").value !== f.text) $("sidText").value = f.text;
-    $("sidSort").value = f.sort;
-    for (const button of $("sidState").querySelectorAll("button")) {
-      const state = button.dataset.sidState;
-      button.setAttribute("aria-pressed", String(state === f.state));
-      const count = button.querySelector(".count");
-      if (count) count.textContent = state === "blocked" ? blocked.length : assigned;
-    }
-    const freeAll = $("sidFreeAll");
-    freeAll.hidden = !this._sidShownBlocked.length;
-    freeAll.textContent = t.freeAllAction(this._sidShownBlocked.length);
-    const confirmAll = this._freeing?.all
-      ? `<div class="confirm" style="margin-left:16px"><b>${esc(t.freeAllConfirmTitle(this._freeing.ids.length))}</b><p>${esc(t.freeAllConfirmText)}</p>
-          <div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(t.freeAllConfirm)}</button></div></div>`
+    // the release asks first: for one ID or for all blocked ones
+    const confirm = this._freeing?.all
+      ? `<b>${esc(t.freeAllConfirmTitle(this._freeing.ids.length))}</b><p>${esc(t.freeAllConfirmText)}</p>`
+      : this._freeing
+      ? `<b>${esc(t.freeConfirmTitle(this._freeing.id))}</b><p>${esc(t.freeConfirmText)}</p>`
       : "";
-    const none = pool.rows.length
-      ? this._emptyState(ICON.search, t.sidNoMatch, "", `<button class="chip" data-sid-reset>${esc(t.resetFilters)}</button>`, true)
-      : this._emptyState(ICON.send, t.noSenderIds, t.noSenderIdsText, "", true);
-    this._replace($("sidList"), `${confirmAll}${list.length ? `<div class="sid-cols"><span>${esc(t.colId)}</span><span>${esc(t.colNumber)}</span><span>${esc(t.colProfile)}</span><span>${esc(t.colStatus)}</span><span></span></div><div class="sid-list">${html}</div>` : none}`);
+    const ok = this._freeing?.all ? t.freeAllConfirm : t.freeConfirm;
+    this._replace($("sidList"), confirm
+      ? `<div class="confirm" style="margin:0 16px 12px">${confirm}<div class="buttons"><button class="chip" data-free-cancel>${esc(t.sendCancel)}</button><button class="chip primary" data-free-confirm>${esc(ok)}</button></div></div>`
+      : "");
   }
 
   _sendersClick(e) {
-    const free = e.target.closest("[data-free]");
-    const fold = e.target.closest("[data-fold]");
     const goto = e.target.closest("[data-goto]");
-    const inPanel = e.target.closest("[data-dev-panel]");
     const tile = e.target.closest("[data-tile]");
     const copyId = e.target.closest("[data-copy-id]");
     if (tile) {
@@ -2990,27 +2814,15 @@ class EnOceanEltakoPanel extends HTMLElement {
       navigator.clipboard.writeText(copyId.dataset.copyId).then(() => this._notice(this._t.idCopied, true), () => this._notice(this._t.copyFailed));
       return;
     }
-    if (inPanel) {
-      e.stopPropagation(); // the link sits in the fold header
-      this._showDevice(inPanel.dataset.devPanel);
-    } else if (fold) {
-      const key = fold.dataset.fold;
-      if (!this._sidFolded.delete(key)) this._sidFolded.add(key);
+    if (e.target.closest("[data-free-all]")) {
+      this._freeing = { all: true, ids: this._sidBlocked };
       this._renderSenderIds();
+      this.shadowRoot.querySelector("#senders .confirm")?.scrollIntoView({ block: "center", behavior: "smooth" });
     } else if (goto) {
-      // a folded group opens so the row can be shown
-      const row = [...this.shadowRoot.querySelectorAll(".sid-row")].find((r) => r.dataset.key === goto.dataset.goto);
-      const head = row?.closest(".sid-group")?.querySelector("[data-fold]");
-      if (head && this._sidFolded.delete(head.dataset.fold)) this._renderSenderIds();
-      const shown = [...this.shadowRoot.querySelectorAll(".sid-row")].find((r) => r.dataset.key === goto.dataset.goto);
-      shown?.scrollIntoView({ block: "center", behavior: "smooth" });
-    } else if (free) {
-      this._freeing = { id: free.dataset.free, device: free.dataset.device };
-      this._renderSenderIds();
-    } else if (e.target.closest("[data-sid-reset]")) {
-      this._sid.text = "";
-      this._sid.state = "";
-      this._renderSenderIds();
+      // the row of this number in the table below the map
+      const rows = [...this.shadowRoot.querySelectorAll("#installation [data-in-row^='snd|']")].filter((r) => r.dataset.inRow.endsWith(`|${goto.dataset.goto}`));
+      const row = rows.find((r) => r.dataset.inRow.split("|")[1] === this._pool) ?? rows[0];
+      row?.scrollIntoView({ block: "center", behavior: "smooth" });
     } else if (e.target.closest("[data-free-cancel]")) {
       this._freeing = null;
       this._renderSenderIds();

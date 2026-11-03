@@ -363,7 +363,7 @@ in den Reiter Sender-IDs springt.
 
 **Sender-IDs** ist die Tabelle der Gateway-Sender: eine Zeile je Sender (nicht je Gerät; ein Gerät
 kann mehrere halten), Nummer 0 bis 127, die Gateway-ID selbst als Nummer 0, freie Nummern
-zusammengefasst, blockierte IDs mit der Freigabe, dazu der Sender-ID-Pool darüber. Die Gerätenamen
+zusammengefasst, blockierte IDs zuerst, mit der Freigabe, dazu der Sender-ID-Pool darüber. Die Gerätenamen
 springen zum Gerät. **Verbindungen** zeigt, wer in welchen Aktor eingelernt ist, als Karte je
 Aktor, je Sender oder als Matrix. Jede Verbindung nennt das andere Ende, die Rolle (etwa linke
 oder rechte Wippe) und woher sie kommt: **vergeben** (ein Sender, den Home Assistant für den
@@ -491,20 +491,16 @@ als gesendet. In den Details eines gesendeten Telegramms schickt **Nochmal sende
 
 ## Sender-IDs
 
-Der **Sender-ID-Pool** (Anlage → Sender-IDs, über der Tabelle, einklappbar) zeigt, wer welche Sender-ID nutzt: je Gateway (und je
-Bus-Gruppe) die freien IDs des Pools und jedes Gerät mit seinen IDs, deren Profil und Status,
-gesperrte IDs zuerst. Funkgateways vergeben Base-ID + 1…127. Die Pool-Karte zeigt jede ID als
-kleines Feld (frei, zugewiesen, gesperrt, anderweitig belegt; die Legende darunter nennt die
-Farben); der Tooltip nennt ID und Gerät, ein Klick springt zur Zeile.
+Der **Sender-ID-Pool** (Anlage → Sender-IDs, über der Tabelle, einklappbar) zeigt, wie voll der Pool
+ist: je Gateway (und je Bus-Gruppe) die Pool-Karte mit jeder ID als kleinem Feld (frei, zugewiesen,
+gesperrt, anderweitig belegt; die Legende darunter nennt die Farben). Der Tooltip nennt ID und
+Gerät, ein Klick springt zur Zeile in der Tabelle darunter. Funkgateways vergeben Base-ID + 1…127.
 
 Nach dem Löschen eines Geräts bleibt seine ID **gesperrt**, bis sie aus allen Aktoren abgelernt
-ist. **Freigeben** gibt sie nach einer Rückfrage frei, sobald der Aktor sie verlernt hat
-(Teach-out).
-
-Die Liste hat eine Suche (Gerätename, Profil, ID mit oder ohne Bindestriche oder dezimal), Chips
-für **Alle / Zugewiesen / Gesperrt** und eine Sortierung (Gesperrte zuerst, Name, Sender-ID).
-**Alle freigeben** gibt jede gesperrte ID frei, die die Liste gerade zeigt, ebenfalls nach einer
-Rückfrage; wer nur einige freigeben will, filtert vorher. Nur tun, wenn jeder Aktor sie verlernt
+ist. Gesperrte IDs stehen in der Tabelle zuerst, der Reiter zeigt, wie viele warten. **Freigeben**
+gibt eine nach einer Rückfrage frei, sobald der Aktor sie verlernt hat (Teach-out). **Alle
+freigeben** über der Karte gibt jede gesperrte ID des Pools frei, ebenfalls nach einer Rückfrage.
+Nur tun, wenn jeder Aktor sie verlernt
 hat: Ein neues Gerät mit einer solchen ID würde den alten Aktor sonst mitsteuern.
 
 ## Gateway-Einstellungen und Reparaturen
