@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 5
+STORAGE_VERSION = 6
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -52,6 +52,10 @@ MANUAL_FIELDS = {
     "kind": 10,  # what it is on radio, one of MANUAL_KINDS; empty counts as a button
     "location": FIELDS["location"],
     "power": FIELDS["power"],  # mains, battery type ...
+    "circuit": FIELDS["circuit"],
+    "fuse": FIELDS["fuse"],
+    "installed": FIELDS["installed"],  # a date (YYYY-MM-DD)
+    "model": 60,  # the type, for example PTM 215
 }
 MANUAL_KINDS = ("taster", "sensor", "aktor")
 # a power supply of the bus: what it is, what it delivers, the bus addresses it feeds (optional)
@@ -90,7 +94,8 @@ class _NotesStore(Store[dict[str, Any]]):
     """Version 1 kept a device's note as a string; version 2 keeps a dict of typed fields;
     version 3 keeps the power supplies of the bus as a list (version 2 had at most one); version 4
     gives each supply a place, circuit, fuse and note like a device has; version 5 gives an entry
-    made by hand a kind, a place and a supply (battery type or mains)."""
+    made by hand a kind, a place and a supply (battery type or mains); version 6 adds its circuit,
+    fuse, date of installation and type."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -114,6 +119,12 @@ class _NotesStore(Store[dict[str, Any]]):
                 if isinstance(e, dict)
             ]
         if old_major_version < 5:
+            old_data["manual"] = [
+                {**{k: "" for k in MANUAL_FIELDS}, **e}
+                for e in old_data.get("manual", [])
+                if isinstance(e, dict)
+            ]
+        if old_major_version < 6:
             old_data["manual"] = [
                 {**{k: "" for k in MANUAL_FIELDS}, **e}
                 for e in old_data.get("manual", [])
@@ -337,13 +348,14 @@ class Notes:
         entries = [e for e in gateway.get("manual", []) if isinstance(e, dict)]
         if overwrite:
             self.manual = []
-        known = {(e["name"], e["address"]) for e in self.manual}
+        known = {e["address"] for e in self.manual if e["address"]}
+        known_unaddressed = {e["name"] for e in self.manual if not e["address"]}
         taken = []
         for entry in entries:
             name, address = str(entry.get("name") or ""), str(entry.get("address") or "")
-            if (name, address) in known:
-                continue
-            known.add((name, address))
+            if (address in known) if address else (name in known_unaddressed):
+                continue  # the same address (or, without one, the same name) is the same entry
+            known.add(address) if address else known_unaddressed.add(name)
             taken.append(
                 {
                     "id": uuid.uuid4().hex[:8],
@@ -424,6 +436,8 @@ class Notes:
                 entry["bus_address"] = ""  # not an address of the bus
             if entry["kind"] not in MANUAL_KINDS:
                 entry["kind"] = ""  # not a kind: it counts as a button
+            if entry["installed"] and not _DATE.fullmatch(entry["installed"]):
+                entry["installed"] = ""  # not a date
         self._save()
 
     def set_links(self, entries: list[dict[str, str]]) -> None:

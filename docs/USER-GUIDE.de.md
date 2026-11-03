@@ -448,6 +448,12 @@ importieren.
 **Als Gerät anlegen** oder **Nur dokumentieren** willst (ein Eintrag mit dem Kennzeichen *nur
 dokumentiert* unter **Geräte → Funk** mit ausgefüllter ID, für die Dokumentation; Home Assistant
 legt nichts an), und das Pfeil-Symbol öffnet die Geräteseite in Home Assistant.
+**Als Gerät anlegen** hält den Sender für das nächste **Gerät hinzufügen** seines Gateways bereit (zehn
+Minuten, einmal): Der Dialog geht dann direkt zur Art, die wahrscheinlichste ist vorgewählt. Ein nur
+dokumentierter Eintrag zeigt **Unbenannter Sender**, bis du **Namen geben** wählst; unter dem Namen
+stehen die ID, der Typ (zum Beispiel PTM 215) und die Art, und das Menü (⋮) bietet **Als Gerät anlegen**
+und **Eintrag entfernen**. Ort, Stromkreis, Sicherung, Einbaudatum, Versorgung und Funktion trägst du
+ein wie bei jedem Gerät.
 
 **Einlernen** (Doktorhut-Symbol, bei Geräten mit eigener Sender-ID) lernt das Gerät in seinen
 Aktor ein, ohne dafür die Geräteseite zu öffnen: Aktor in den Lernmodus bringen (bei Eltako

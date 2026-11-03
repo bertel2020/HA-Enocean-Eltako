@@ -421,6 +421,11 @@ the file that found no match into the one set up here that got nothing.
 **Telegrams** opens that device's telegrams, the **+** of an unknown sender asks whether to **Set up as
 device** or **Only write down** (an entry tagged *only written down* under **Devices → Radio** with the ID
 filled in, for the documentation; Home Assistant creates nothing), and the arrow icon opens the device's page in Home Assistant.
+**Set up as device** leaves the sender for the next **Add device** of its gateway (ten minutes, once): that
+dialog goes straight to the kind, with the likeliest one preselected. An entry written down only shows
+**Unnamed sender** until you **Give a name**; the ID, the type (for example PTM 215) and the kind stand under
+the name, and the more menu (⋮) offers **Set up as device** and **Remove entry**. Place, circuit, fuse,
+date of installation, supply and function are filled in like for any device.
 
 **Teach in** (graduation cap icon, for devices with a sender ID of their own) teaches the device
 into its actuator without opening the device page: put the actuator into learn mode (on Eltako

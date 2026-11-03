@@ -724,6 +724,11 @@ function rowKey(r) {
   return `${r.time}|${r.dir}|${r.sender}|${r.data}|${r.gateway}`;
 }
 
+// what a panel leaves behind when Home Assistant takes it off the page: the next one starts from it
+// and refreshes in the background, so leaving and coming back does not show empty lists. Kept in
+// the page only; a reload starts empty, as telegrams are not for the browser's storage.
+const KEPT = {};
+
 class EnOceanEltakoPanel extends HTMLElement {
   constructor() {
     super();
@@ -899,10 +904,46 @@ class EnOceanEltakoPanel extends HTMLElement {
     Object.assign(EnOceanEltakoPanel.prototype, installation); // the Installation view (installation.js)
     this._tk = takeoverState();
     this._in = installationState();
+    this._restoreKept();
     this._ready = true;
     this._loading = null;
     this.hass = this._waiting;
     this._waiting = null;
+  }
+
+  _restoreKept() {
+    if (!KEPT.rows) return;
+    this._rows = KEPT.rows;
+    this._keys = KEPT.keys;
+    this._cleared = KEPT.cleared;
+    this._gateways = KEPT.gateways;
+    this._skew = KEPT.skew;
+    this._pools = KEPT.pools;
+    this._pool = KEPT.pool;
+    this._devDetails = KEPT.devDetails;
+    this._areas = KEPT.areas;
+    this._labels = KEPT.labels;
+    this._multi = KEPT.multi;
+    this._in.doc = KEPT.doc;
+    this._initialised = true; // the rows are not new: no highlight for them
+  }
+
+  _keepForNext() {
+    if (!this._ready || (!this._rows.length && !this._gateways.length)) return;
+    Object.assign(KEPT, {
+      rows: this._rows,
+      keys: this._keys,
+      cleared: this._cleared,
+      gateways: this._gateways,
+      skew: this._skew,
+      pools: this._pools,
+      pool: this._pool,
+      devDetails: this._devDetails,
+      areas: this._areas,
+      labels: this._labels,
+      multi: this._multi,
+      doc: this._in.doc,
+    });
   }
 
   _watchConnection() {
@@ -959,6 +1000,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     document.removeEventListener("visibilitychange", this._onVisible);
     document.removeEventListener("pointerdown", this._onPointer);
     window.removeEventListener("location-changed", this._onLocation);
+    this._keepForNext();
     clearInterval(this._timer);
     this._timer = null;
     clearTimeout(this._tkTyping);
@@ -1133,6 +1175,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("senders").addEventListener("click", (e) => this._sendersClick(e));
     $("takeover").addEventListener("click", (e) => this._takeoverClick(e));
     $("installation").addEventListener("click", (e) => this._installationClick(e));
+    $("installation").addEventListener("focusout", (e) => this._instNameDone(e));
     $("installation").addEventListener("change", (e) => this._installationChange(e));
     $("installation").addEventListener("input", (e) => this._installationInput(e));
     // the empty state without a gateway and the gateway details: to the integration
@@ -1946,6 +1989,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._in.tab = "devices";
     this._in.view = "funk";
+    this._in.nameEdit = entry.id; // a new entry opens with its name field
     this._setView("installation");
     // the Installation view fills in a moment after it opens: wait up to two seconds for the row
     for (let tries = 0; tries < 40; tries++) {

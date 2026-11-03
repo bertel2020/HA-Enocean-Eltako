@@ -44,12 +44,12 @@ const BUS_MODEL = /^F[A-Z0-9]{1,4}14/;
 const isActuator = (d) => !isVirtual(d) && (["lighting", "covers"].includes(d.category) || (d.category === "climate" && kindOf(d) === "bus"));
 const kindOf = (d) => (d.psu ? "psu" : d.manual ? (/^\d+$/.test(d.bus_address ?? "") ? "bus" : ["taster", "sensor", "aktor"].includes(d.kindRaw) ? d.kindRaw : "taster") : isVirtual(d) ? "virt" : /^\d+$/.test(d.bus_address ?? "") || BUS_MODEL.test(d.model ?? "") ? "bus" : d.category === "buttons" ? "taster" : ["sensors", "meters", "climate"].includes(d.category) ? "sensor" : "aktor");
 // the columns of the radio view that can be shown; the first three at first
-const FUNK_COLUMNS = ["loc", "id", "sends", "pow", "grp", "sig", "conn"];
+const FUNK_COLUMNS = ["loc", "id", "model", "sends", "pow", "circuit", "fuse", "grp", "sig", "conn"];
 const FUNK_DEFAULT = ["id", "sig", "conn"];
 const SIGNAL_FRESH = 24 * 3600; // heard within a day: fine; within a week: late; else: silent
 const SIGNAL_LATE = 7 * 24 * 3600;
 // a field of an entry written by hand, by the name the table gives it
-const MANUAL_FIELD = { location: "location", power: "power", note: "function", bus_address: "bus_address", feedback_id: "feedback_id", bus_power: "bus_power" };
+const MANUAL_FIELD = { location: "location", power: "power", note: "function", bus_address: "bus_address", feedback_id: "feedback_id", bus_power: "bus_power", circuit: "circuit", fuse: "fuse", installed: "installed", model: "model" };
 // 12 V DC supplies of Eltako for the bus, by their rated power (Eltako data sheets); the name is the type designation
 const SUPPLY_PRESETS = [
   { name: "FSNT14-12V/12W", watts: "12" },
@@ -104,7 +104,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -127,6 +127,15 @@ export const INSTALLATION_STYLE = `
   .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 14px; padding-right: 4px; }
   .installation .tabwarn { color: var(--warn); font-weight: 500; }
   .installation .itable td.name { min-width: 160px; }
+  .installation .unnamed { font-style: italic; color: var(--muted); }
+  .installation .tag.doc { background: none; border: 1px dashed var(--line); color: var(--muted); }
+  .installation summary.tag { list-style: none; cursor: pointer; }
+  .installation summary.tag::-webkit-details-marker { display: none; }
+  .installation details.kindmenu, .installation details.rowmenu { display: inline-block; }
+  .installation details.kindmenu .items, .installation details.rowmenu .items { left: 0; right: auto; min-width: 0; z-index: 6; }
+  .installation details.rowmenu .items { left: auto; right: 0; white-space: nowrap; }
+  .installation details.kindmenu .items button, .installation details.rowmenu .items button { all: unset; cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+  .installation details.kindmenu .items button:hover, .installation details.rowmenu .items button:hover { background: var(--soft); }
   .installation .namelink { all: unset; cursor: pointer; color: inherit; }
   .installation .namelink:hover, .installation .namelink:focus-visible { color: var(--accent); text-decoration: underline; }
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
@@ -600,7 +609,7 @@ export const installation = {
     // what the device table lists besides the devices: the power supplies and the entries written by hand
     const t = this._t;
     const supplies = (gw.supplies ?? []).map((x) => ({ psu: true, sid: x.id, key: `psu|${x.id}`, name: x.name || t.doc.tbl.supplyNoName, id: "", area: "", virtual: false, bus_address: "", location: x.location, circuit: x.circuit, fuse: x.fuse, note: x.note, model: x.watts ? `${x.watts} W` : "" }));
-    const manual = (gw.manual ?? []).map((m) => ({ manual: true, mid: m.id, key: `manual|${m.id}`, kindRaw: m.kind, name: m.name || m.address || t.inst.funk.unnamed, id: m.address, area: "", virtual: false, bus_address: m.bus_address, feedback_id: m.feedback_id, bus_power: m.bus_power, location: m.location, power: m.power, note: m.function, group: "", circuit: "", fuse: "", installed: "", revision: "" }));
+    const manual = (gw.manual ?? []).map((m) => ({ manual: true, mid: m.id, key: `manual|${m.id}`, kindRaw: m.kind, named: Boolean(m.name), name: m.name || t.inst.funk.unnamed, id: m.address, model: m.model ?? "", area: "", virtual: false, bus_address: m.bus_address, feedback_id: m.feedback_id, bus_power: m.bus_power, location: m.location, power: m.power, note: m.function, group: "", circuit: m.circuit ?? "", fuse: m.fuse ?? "", installed: m.installed ?? "", revision: "" }));
     return [...supplies, ...manual];
   },
 
@@ -648,7 +657,7 @@ export const installation = {
   _instSignal(d) {
     const T = this._t;
     const sig = d.signal;
-    if (!sig || sig.last == null) return `<span class="isub">${esc(d.manual ? T.inst.funk.documented : T.inst.funk.notHeard)}</span>`;
+    if (!sig || sig.last == null) return `<span class="isub">${esc(d.manual ? T.inst.funk.notWatched : T.inst.funk.notHeard)}</span>`;
     const age = Math.max(0, Math.round(this._now() / 1000 - sig.last));
     const level = age <= SIGNAL_FRESH ? "ok" : age <= SIGNAL_LATE ? "late" : "silent";
     return `<span class="sig"><i class="dot ${level}"></i>${esc(T.ago(age))}</span><div class="isub">${[sig.rssi != null ? `${sig.rssi} dBm` : "", sig.repeater_only ? T.repeaterOnly : ""].filter(Boolean).map(esc).join(" · ")}</div>`;
@@ -685,17 +694,18 @@ export const installation = {
       if (c === "id") return `<td class="mono">${esc(d.id)}${(d.ids ?? []).filter((x) => x.id !== d.id).map((x) => `<br>${esc(x.id)}`).join("")}${d.ids?.length > 1 ? `<div class="isub" style="font-family:inherit">${esc(F.manyIds(d.ids.length))}</div>` : ""}</td>`;
       if (c === "sends") return `<td>${d.manual ? input(d, gw, "note", d.note, t.doc.manualFunctionHead) : esc([t.doc.tbl.categories[d.category], d.eep].filter(Boolean).join(" · ") || "–")}</td>`;
       if (c === "pow") return `<td>${input(d, gw, "power", d.power, label(t, "power"))}</td>`;
+      if (c === "circuit" || c === "fuse") return `<td>${d.manual && !(!FIELD_KINDS[c] || FIELD_KINDS[c].includes(kindOf(d))) ? '<span class="dash">–</span>' : input(d, gw, c, d[c], label(t, c))}</td>`;
+      if (c === "model") return `<td>${d.manual ? input(d, gw, "model", d.model, F.cols.model) : esc(d.model ?? "") || '<span class="dash">–</span>'}</td>`;
       if (c === "grp") return `<td>${d.manual ? '<span class="dash">–</span>' : input(d, gw, "group", d.group, label(t, "group"))}</td>`;
       if (c === "sig") return `<td>${this._instSignal(d)}</td>`;
       return `<td class="lk">${this._instLinksOf(gw, d)}</td>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const rows = radio(gw).map((d) => {
-        const kindSelect = d.manual ? ` <select class="cell" data-in-mfield="kind" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" aria-label="${esc(I.art)}: ${esc(d.name)}">${kinds.map((k) => `<option value="${k}" ${kindOf(d) === k ? "selected" : ""}>${esc(I.kinds[k])}</option>`).join("")}</select>` : "";
-        const name = d.manual ? `<input class="cell" data-in-mfield="name" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(d.name === F.unnamed ? "" : d.name)}" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}" autocomplete="off">` : esc(d.name);
+        const name = d.manual ? this._instManualName(gw, d) : esc(d.name);
         const sub = d.manual ? "" : `<div class="isub">${esc([d.model, d.eep].filter(Boolean).join(" · "))}</div>`;
-        const delete_ = d.manual ? `<td><button class="icon-btn" data-in-mdel="${esc(d.mid)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(t.doc.manualRemove)}" aria-label="${esc(t.doc.manualRemove)}">${svg(ICON.close)}</button></td>` : "<td></td>";
-        return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td class="name">${name}${sub}<div>${d.manual ? kindSelect : this._instKindTag(d)}${d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(F.documented)}</span>` : ""}</div></td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
+        const delete_ = d.manual ? `<td>${this._instManualMenu(gw, d)}</td>` : "<td></td>";
+        return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td class="name">${name}${sub}${d.manual ? this._instManualTags(gw, d) : `<div>${this._instKindTag(d)}${this._instSendTag(gw, d)}</div>`}</td>${cols.map((c) => cell(c, gw, d)).join("")}${delete_}</tr>`;
       }).join("");
       const head = cols.map((c) => `<th>${esc(F.cols[c])}</th>`).join("");
       return `<section class="gw">${this._instGwHead(gw)}<div class="tablewrap"><table class="itable"><thead><tr><th>${esc(I.device)}</th>${head}<th></th></tr></thead><tbody>${rows || `<tr><td colspan="${cols.length + 2}" class="none">${esc(F.none)}</td></tr>`}</tbody></table></div></section>`;
@@ -707,6 +717,42 @@ export const installation = {
   _instBus() {
     const t = this._t;
     return `<p class="isub">${esc(t.doc.tbl.busIntro.replace(" (*)", ""))} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw) => this._instBusOf(gw));
+  },
+
+  _instManualName(gw, d) {
+    // the name of an entry written by hand: plain text to click, or "give it a name" while it has none
+    const F = this._t.inst.funk;
+    const who = `data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}"`;
+    if (this._in.nameEdit === d.mid) return `<input class="cell" data-in-mfield="name" ${who} data-in-focus data-in-nameend value="${esc(d.named ? d.name : "")}" placeholder="${esc(this._t.doc.manualName)}" aria-label="${esc(this._t.doc.manualName)}" autocomplete="off">`;
+    if (d.named) return `<button class="namelink" data-in-nameedit="${esc(d.mid)}" title="${esc(F.editName)}">${esc(d.name)}</button>`;
+    return `<span class="unnamed">${esc(F.unnamed)}</span> <button class="placeadd" data-in-nameedit="${esc(d.mid)}">+ ${esc(F.giveName)}</button>`;
+  },
+
+  _instNameDone(e) {
+    // leaving the name field of an entry: back to the plain name, only that cell redrawn so a click elsewhere is not lost
+    const input = e.target;
+    if (!input.matches?.("[data-in-nameend]")) return;
+    this._in.nameEdit = "";
+    const gw = gateways(this._in.doc).find((g) => g.entry_id === input.dataset.inGw);
+    const d = gw && this._instExtras(gw).find((x) => x.mid === input.dataset.inMid);
+    const cell = input.closest("td");
+    if (d && cell) cell.innerHTML = `${this._instManualName(gw, d)}${this._instManualTags(gw, d)}`;
+  },
+
+  _instManualTags(gw, d) {
+    // under the name: the ID (with its type), the kind to change, and that Home Assistant does not know it
+    const I = this._t.inst;
+    const kinds = ["taster", "sensor", "aktor"];
+    const items = kinds.map((k) => `<button data-in-mkind="${esc(gw.entry_id)}|${esc(d.mid)}|${k}">${esc(I.kinds[k])}</button>`).join("");
+    const kind = `<details class="colmenu kindmenu"><summary class="tag kind k-${kindOf(d)}" title="${esc(I.art)}">${esc(I.kinds[kindOf(d)])} ⌄</summary><div class="items">${items}</div></details>`;
+    return `<div class="isub mono">${esc([d.id, d.model].filter(Boolean).join(" · "))}</div><div>${kind} <span class="tag doc" title="${esc(I.funk.documentedHint)}">${esc(I.funk.documented)}</span></div>`;
+  },
+
+  _instManualMenu(gw, d) {
+    // the more menu of an entry: set it up in Home Assistant, or remove it
+    const t = this._t;
+    const item = (act, label) => `<button data-in-mact="${act}|${esc(gw.entry_id)}|${esc(d.mid)}">${esc(label)}</button>`;
+    return `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${item("device", t.addAsDevice)}${item("remove", t.doc.manualRemove)}</div></details>`;
   },
 
   _instKindTag(d) {
@@ -836,7 +882,7 @@ export const installation = {
     const key = (gw, d) => `${gw.entry_id}|${d.key}`;
     const applies = (d, f) => {
       if (d.psu) return ["location", "circuit", "fuse", "note"].includes(f);
-      if (d.manual) return f === "location" || f === "note" || (kindOf(d) === "bus" ? ["bus_address", "feedback_id", "bus_power"].includes(f) : f === "power");
+      if (d.manual) return f === "location" || f === "note" || (["circuit", "fuse", "installed"].includes(f) && (!FIELD_KINDS[f] || FIELD_KINDS[f].includes(kindOf(d)))) || (kindOf(d) === "bus" ? ["bus_address", "feedback_id", "bus_power"].includes(f) : f === "power");
       if (isVirtual(d)) return f === "note";
       return !FIELD_KINDS[f] || FIELD_KINDS[f].includes(kindOf(d));
     };
@@ -859,7 +905,7 @@ export const installation = {
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
       const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${d.key && !d.psu && !d.manual && this._inPanel(d.key) ? `<button class="namelink" data-in-device="${esc(d.key)}" title="${esc(t.inPanelHint)}">${esc(d.name)}</button>` : esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
+      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${d.manual ? this._instManualName(gw, d) : d.key && !d.psu && this._inPanel(d.key) ? `<button class="namelink" data-in-device="${esc(d.key)}" title="${esc(t.inPanelHint)}">${esc(d.name)}</button>` : esc(d.name)}${d.manual ? this._instManualTags(gw, d) : `<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu ? "" : this._instSendTag(gw, d)}</div>`}</td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const found = [...gw.devices, ...psus(gw)].filter(pass);
@@ -1281,16 +1327,40 @@ export const installation = {
       this._renderInstallation();
       return;
     }
-    const mdel = e.target.closest("[data-in-mdel]");
-    if (mdel) {
-      const gw = gateways(state.doc).find((g) => g.entry_id === mdel.dataset.inGw);
-      if (!gw) return;
-      gw.manual = gw.manual.filter((x) => x.id !== mdel.dataset.inMdel);
+    for (const menu of this.shadowRoot.querySelectorAll("#installation details.supplymenu[open], #installation details.kindmenu[open], #installation details.rowmenu[open]")) if (!menu.contains(e.target)) menu.removeAttribute("open");
+    const nameEdit = e.target.closest("[data-in-nameedit]");
+    if (nameEdit) {
+      state.nameEdit = nameEdit.dataset.inNameedit;
       this._renderInstallation();
-      this._instSaveManual(gw);
+      this.shadowRoot.querySelector("#installation [data-in-focus]")?.focus();
       return;
     }
-    for (const menu of this.shadowRoot.querySelectorAll("#installation details.supplymenu[open]")) if (!menu.contains(e.target)) menu.removeAttribute("open");
+    const mkindSet = e.target.closest("[data-in-mkind]");
+    if (mkindSet) {
+      const [entryId, mid, kind] = mkindSet.dataset.inMkind.split("|");
+      const gw = gateways(state.doc).find((g) => g.entry_id === entryId);
+      const entry = gw?.manual.find((x) => x.id === mid);
+      if (entry) {
+        entry.kind = kind;
+        this._renderInstallation();
+        this._instSaveManual(gw);
+      }
+      return;
+    }
+    const mact = e.target.closest("[data-in-mact]");
+    if (mact) {
+      const [act, entryId, mid] = mact.dataset.inMact.split("|");
+      const gw = gateways(state.doc).find((g) => g.entry_id === entryId);
+      const entry = gw?.manual.find((x) => x.id === mid);
+      if (!entry) return;
+      if (act === "device") this._addDevice(entry.address);
+      else {
+        gw.manual = gw.manual.filter((x) => x.id !== mid);
+        this._renderInstallation();
+        this._instSaveManual(gw);
+      }
+      return;
+    }
     const supplyAdd = e.target.closest("[data-in-supply-add]");
     if (supplyAdd) {
       const gw = gateways(state.doc).find((g) => g.entry_id === supplyAdd.dataset.inSupplyAdd);
@@ -1483,11 +1553,6 @@ export const installation = {
       const free = other.value === "other";
       form.querySelector('[data-in-new="name"]').hidden = !free;
       form.querySelector('[data-in-new="id"]').hidden = !free || form.dataset.inLinkmode === "sender";
-      return;
-    }
-    const mkind = e.target.closest("select[data-in-mfield]");
-    if (mkind) {
-      this._instManualInput(mkind);
       return;
     }
     const devps = e.target.closest("[data-in-devps]");
