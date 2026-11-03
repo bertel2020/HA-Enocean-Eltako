@@ -73,6 +73,15 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "heard once more" : `heard ${n} more times`),
     viewInstallation: "Installation",
     inst: {
+      log: {
+        all: "All", search: "Search device, sender ID or text", csv: "As CSV", file: "installation-log.csv", none: "No events found. Reset the search or the period.",
+        periods: { today: "Today", week: "7 days", all: "All" }, today: "Today", yesterday: "Yesterday", newest: "newest first", oldest: "oldest first",
+        count: (n, m) => (n === m ? `${n} events` : `${n} of ${m} events`),
+        sender: "Sender ID", blocked: "blocked until the teach-out is confirmed",
+        taughtIn: (p) => `Profile ${p} taught in, the actuator was expected to be in learn mode`,
+        imported: (a, b, c) => `${a} notes, ${b} entries, ${c} links taken over`,
+        results: { unconfirmed: ["not confirmed", "warn"], confirmed: ["confirmed", "ok"], failed: ["failed", "bad"], skipped: ["skipped", "neu"], sent: ["sent", "neu"] },
+      },
       sid: {
         used: "In use", blocked: "Blocked", free: "Free", all: "All", nr: "No.", device: "Device", role: "Role", status: "Status",
         state: { u: "in use", w: "blocked", f: "free", g: "gateway", x: "outside" },
@@ -110,7 +119,8 @@ export const TEXT = {
         statusHint: { confirmed: "The last sender test was answered by the actuator", no_answer: "The last sender test got no answer: the actuator may not know this sender, or stays silent", unverified: "Home Assistant holds this sender, but the actuator was never tested", declared: "Set as the wall switch in the device's options; not checked", entered: "Written down by you; not checked" },
         teachIn: (when) => `taught in ${when}`, tested: (when) => `tested ${when}`,
         matrix: "Matrix", show: "Show", filters: { all: "All", none: "Without link", untested: "Not tested", noanswer: "No answer" },
-        tiles: { actuators: "Actuators", links: "Links", none: "Actuator without link", noAnswer: "No answer", untested: "Not tested" },
+        tiles: { actuators: "Actuators", links: "Links", none: "Without link", noAnswer: "No answer", untested: "Not tested", answered: "Answered" },
+        intro: "Links that were written down; what an actuator has really learned cannot be read.", reset: "Reset filters", search: "Search actuator, sender or ID", sort: "Sort", sorts: { name: "Name", status: "Status", count: "Number" }, learnHint: "Show the learn position of every link for editing",
         noLink: "No link written down. Who switches this actuator?", count: (n) => (n === 1 ? "1 link" : `${n} links`),
         addLink: "+ Link", addActuator: "+ Actuator", test: "Test senders", testing: "Testing …", otherSender: "Other button or sender …", nameOrId: "Name", cancel: "Cancel",
         roles: ["left rocker", "right rocker", "top button", "bottom button", "scene", "window contact", "room temperature"],
@@ -480,6 +490,15 @@ export const TEXT = {
     heardTimes: (n) => (n === 1 ? "noch einmal empfangen" : `noch ${n}-mal empfangen`),
     viewInstallation: "Anlage",
     inst: {
+      log: {
+        all: "Alle", search: "Gerät, Sender-ID oder Text suchen", csv: "Als CSV", file: "anlage-protokoll.csv", none: "Keine Ereignisse gefunden. Setze Suche oder Zeitraum zurück.",
+        periods: { today: "Heute", week: "7 Tage", all: "Alle" }, today: "Heute", yesterday: "Gestern", newest: "neueste zuerst", oldest: "älteste zuerst",
+        count: (n, m) => (n === m ? `${n} Ereignisse` : `${n} von ${m} Ereignissen`),
+        sender: "Sender-ID", blocked: "gesperrt bis das Auslernen bestätigt ist",
+        taughtIn: (p) => `Profil ${p} eingelernt, der Aktor sollte im Lernmodus sein`,
+        imported: (a, b, c) => `${a} Notizen, ${b} Einträge, ${c} Verbindungen übernommen`,
+        results: { unconfirmed: ["nicht bestätigt", "warn"], confirmed: ["bestätigt", "ok"], failed: ["fehlgeschlagen", "bad"], skipped: ["übersprungen", "neu"], sent: ["gesendet", "neu"] },
+      },
       sid: {
         used: "In Gebrauch", blocked: "Gesperrt", free: "Frei", all: "Alle", nr: "Nr.", device: "Gerät", role: "Rolle", status: "Status",
         state: { u: "belegt", w: "gesperrt", f: "frei", g: "Gateway", x: "extern" },
@@ -517,7 +536,8 @@ export const TEXT = {
         statusHint: { confirmed: "Der letzte Sendertest wurde vom Aktor beantwortet", no_answer: "Der letzte Sendertest blieb ohne Antwort: der Aktor kennt den Sender vielleicht nicht oder bleibt stumm", unverified: "Home Assistant hält diesen Sender, der Aktor wurde aber nie getestet", declared: "In den Optionen des Geräts als Wandschalter angegeben; nicht geprüft", entered: "Von dir notiert; nicht geprüft" },
         teachIn: (when) => `eingelernt ${when}`, tested: (when) => `getestet ${when}`,
         matrix: "Matrix", show: "Zeigen", filters: { all: "Alle", none: "Ohne Verbindung", untested: "Nicht getestet", noanswer: "Keine Antwort" },
-        tiles: { actuators: "Aktoren", links: "Verbindungen", none: "Aktor ohne Verbindung", noAnswer: "Keine Antwort", untested: "Nicht getestet" },
+        tiles: { actuators: "Aktoren", links: "Verbindungen", none: "Ohne Verbindung", noAnswer: "Keine Antwort", untested: "Nicht getestet", answered: "Antwort" },
+        intro: "Notierte Verbindungen; was ein Aktor wirklich gelernt hat, lässt sich nicht auslesen.", reset: "Filter zurücksetzen", search: "Aktor, Absender oder ID suchen", sort: "Sortieren", sorts: { name: "Name", status: "Status", count: "Anzahl" }, learnHint: "Lernposition jeder Verbindung zum Bearbeiten einblenden",
         noLink: "Keine Verbindung notiert. Wer schaltet diesen Aktor?", count: (n) => (n === 1 ? "1 Verbindung" : `${n} Verbindungen`),
         addLink: "+ Verbindung", addActuator: "+ Aktor", test: "Sender testen", testing: "Teste …", otherSender: "Anderer Taster oder Sender …", nameOrId: "Name", cancel: "Abbrechen",
         roles: ["linke Wippe", "rechte Wippe", "Taste oben", "Taste unten", "Szene", "Fensterkontakt", "Raumtemperatur"],
