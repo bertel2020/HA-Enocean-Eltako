@@ -39,6 +39,7 @@ from .documentation import IMPORTABLE_VERSIONS
 from .documentation import collect as collect_documentation
 from .heard import heard_by
 from .hub import async_get_hub
+from .installation import async_get_installation
 from .notes import (
     FIELDS,
     LINK_FIELDS,
@@ -101,6 +102,9 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     websocket_api.async_register_command(hass, ws_free_senders)
+    websocket_api.async_register_command(hass, ws_installation)
+    websocket_api.async_register_command(hass, ws_installation_set)
+    websocket_api.async_register_command(hass, ws_installation_remove)
     async_setup_takeover_websocket(hass)
 
 
@@ -703,8 +707,8 @@ def ws_set_note(
     }
 )
 @websocket_api.require_admin
-@callback
-def ws_import_documentation(
+@websocket_api.async_response
+async def ws_import_documentation(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Take over the notes and entries made by hand from an export, e.g. after a gateway swap.
@@ -718,7 +722,7 @@ def ws_import_documentation(
         connection.send_error(msg["id"], "unsupported_version", "not a documentation export")
         return
     loaded = {e.data.get(CONF_BASE_ID): e for e in hass.config_entries.async_loaded_entries(DOMAIN)}
-    result = []
+    matched: list[tuple[dict[str, Any], ConfigEntry | None]] = []
     for gateway in gateways[:MAX_IMPORT_GATEWAYS]:
         if not isinstance(gateway, dict):
             continue
@@ -726,6 +730,21 @@ def ws_import_documentation(
         entry = loaded.get(base_id)
         if entry is None and (mapped := msg["gateway_map"].get(str(base_id))):
             entry = next((e for e in loaded.values() if e.entry_id == mapped), None)
+        matched.append((gateway, entry))
+    installation = await async_get_installation(hass)
+    # version 3 carries the bus as documented; its gateways are those of this file
+    modules = 0
+    if doc.get("version") == 3:
+        entry_map = {
+            str(gateway.get("entry_id")): entry.entry_id
+            for gateway, entry in matched
+            if entry is not None and gateway.get("entry_id")
+        }
+        modules = installation.import_block(
+            doc.get("installation"), entry_map, overwrite=msg["overwrite"]
+        )
+    result = []
+    for gateway, entry in matched:
         if entry is None:
             result.append(
                 {
@@ -738,6 +757,8 @@ def ws_import_documentation(
         notes, manual, links = entry.runtime_data.hub.notes[entry.entry_id].import_from(
             gateway, overwrite=msg["overwrite"]
         )
+        # what came into the notes (bus fields of older files too) is taken over into the store
+        modules += installation.reconcile_entry(entry, entry.runtime_data.hub.notes[entry.entry_id])
         result.append(
             {
                 "title": entry.title,
@@ -750,7 +771,7 @@ def ws_import_documentation(
         entry.runtime_data.hub.notes[entry.entry_id].add_log(
             "import", "", f"{notes} notes, {manual} entries, {links} links"
         )
-    connection.send_result(msg["id"], {"gateways": result})
+    connection.send_result(msg["id"], {"gateways": result, "modules": modules})
 
 
 FIELD_VALUES: dict[Any, Any] = {
@@ -769,8 +790,8 @@ FIELD_VALUES: dict[Any, Any] = {
     }
 )
 @websocket_api.require_admin
-@callback
-def ws_set_fields(
+@websocket_api.async_response
+async def ws_set_fields(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Typed fields of devices (location, circuit, fuse ...): one device, a selection or a table."""
@@ -779,6 +800,7 @@ def ws_set_fields(
         connection.send_error(msg["id"], "not_found", "gateway not loaded")
         return
     notes = entry.runtime_data.hub.notes[entry.entry_id]
+    installation = await async_get_installation(hass)
     saved, rejected = 0, []
     for item in msg["items"]:
         device = entry.runtime_data.devices.get(item["device"])
@@ -786,6 +808,8 @@ def ws_set_fields(
             rejected.append(item["device"])
         else:
             saved += 1
+            # the bus fields of an older view: the documented bus follows
+            installation.legacy_device(entry, device, item["values"])
     connection.send_result(msg["id"], {"saved": saved, "rejected": rejected})
 
 
@@ -878,8 +902,8 @@ MANUAL_ENTRY: dict[Any, Any] = {
     }
 )
 @websocket_api.require_admin
-@callback
-def ws_set_manual(
+@websocket_api.async_response
+async def ws_set_manual(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Devices Home Assistant cannot see, written down for the installation documentation."""
@@ -888,6 +912,7 @@ def ws_set_manual(
         connection.send_error(msg["id"], "not_found", "gateway not loaded")
         return
     entry.runtime_data.hub.notes[entry.entry_id].set_manual(msg["entries"])
+    (await async_get_installation(hass)).legacy_manual(entry)
     connection.send_result(msg["id"])
 
 
@@ -905,8 +930,8 @@ SUPPLY_ENTRY: dict[Any, Any] = {
     }
 )
 @websocket_api.require_admin
-@callback
-def ws_set_supplies(
+@websocket_api.async_response
+async def ws_set_supplies(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """The power supplies of the FAM14 bus, for the load of the bus in the documentation."""
@@ -917,6 +942,7 @@ def ws_set_supplies(
     if not entry.runtime_data.hub.notes[entry.entry_id].set_supplies(msg["supplies"]):
         connection.send_error(msg["id"], "invalid_format", "watts, first or last are not valid")
         return
+    (await async_get_installation(hass)).legacy_supplies(entry)
     connection.send_result(msg["id"])
 
 
@@ -1205,3 +1231,74 @@ async def ws_free_senders(
     if senders:
         await found[2].async_save()
     connection.send_result(msg["id"], {"freed": len(senders)})
+
+
+INSTALLATION_KINDS = ("module", "cabinet", "bus")
+MAX_PAYLOAD_ITEMS = 64  # rows of a cabinet, channels of a module: the data check is stricter
+
+
+@websocket_api.websocket_command({vol.Required("type"): "enocean_eltako/installation"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_installation(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """The bus as documented (buses, cabinets, modules), its checks and the catalog."""
+    connection.send_result(msg["id"], (await async_get_installation(hass)).payload())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/installation/set",
+        vol.Required("kind"): vol.In(INSTALLATION_KINDS),
+        vol.Required("item"): vol.All(dict, vol.Length(max=MAX_PAYLOAD_ITEMS)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_installation_set(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Add or change a module, a cabinet with its rows or a bus; checked before it is kept.
+
+    A module must fit its row (half-TE grid, width, no overlap) and its addresses lie in 1 to
+    126; a duplicate address is kept and named by the checks. The result is the whole store
+    with its checks, and the ID of what was saved.
+    """
+    installation = await async_get_installation(hass)
+    setter = {
+        "module": installation.set_module,
+        "cabinet": installation.set_cabinet,
+        "bus": installation.set_bus,
+    }[msg["kind"]]
+    saved, reason = setter(msg["item"])
+    if saved is None:
+        connection.send_error(msg["id"], reason, f"the {msg['kind']} was not saved: {reason}")
+        return
+    connection.send_result(msg["id"], {"id": saved["id"], **installation.payload()})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/installation/remove",
+        vol.Required("kind"): vol.In(INSTALLATION_KINDS),
+        vol.Required("item_id"): vol.All(str, vol.Length(min=1, max=32)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_installation_remove(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Remove a module, a cabinet (its modules keep no place) or an empty bus."""
+    installation = await async_get_installation(hass)
+    if msg["kind"] == "bus":
+        reason = installation.remove_bus(msg["item_id"])
+    elif msg["kind"] == "cabinet":
+        reason = "" if installation.remove_cabinet(msg["item_id"]) else "not_found"
+    else:
+        reason = "" if installation.remove_module(msg["item_id"]) else "not_found"
+    if reason:
+        connection.send_error(msg["id"], reason, f"the {msg['kind']} was not removed: {reason}")
+        return
+    connection.send_result(msg["id"], installation.payload())

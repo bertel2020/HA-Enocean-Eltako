@@ -21,12 +21,16 @@ from .const import CONF_BASE_ID, CONF_MODEL, DOMAIN
 from .device import EnOceanDevice
 from .discovery import pending
 from .heard import heard_by
+from .installation import TYPES, get_installation
+from .installation_data import empty
 from .notes import Notes, device_key
 from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 
-VERSION = 2  # 2: typed device fields, links, the event log; the import still takes 1
-IMPORTABLE_VERSIONS = (1, VERSION)
+# 2: typed device fields, links, the event log; 3: the installation of the bus (buses, cabinets,
+# modules with their channels); the import still takes 1 and 2
+VERSION = 3
+IMPORTABLE_VERSIONS = (1, 2, VERSION)
 
 
 def _signal(device: EnOceanDevice) -> dict[str, Any] | None:
@@ -254,8 +258,14 @@ def collect(hass: HomeAssistant) -> dict[str, Any]:
                 ),
             }
         )
+    installation = get_installation(hass)
     return {
         "bus_info": {"addresses": ADDRESSES, "supply_watts": SUPPLY_WATTS, "source": SOURCE},
+        # the bus as documented, for all gateways: what an import of version 3 takes back
+        "installation": installation.data if installation else empty(),
+        # what the panel shows with it: the checks and the catalog of the series 14
+        "installation_checks": installation.checks() if installation else None,
+        "bus_types": TYPES,
         "version": VERSION,
         "generated": dt_util.utcnow().isoformat(timespec="seconds"),
         "gateways": gateways,

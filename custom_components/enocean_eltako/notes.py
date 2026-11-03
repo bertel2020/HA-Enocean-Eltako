@@ -21,7 +21,7 @@ from homeassistant.util import dt as dt_util
 from .bus_devices import ADDRESSES
 from .const import DOMAIN
 
-STORAGE_VERSION = 7
+STORAGE_VERSION = 8
 MAX_NOTE = 500
 # the typed fields of a device and their longest text; installed is a date (YYYY-MM-DD)
 FIELDS = {
@@ -96,7 +96,9 @@ class _NotesStore(Store[dict[str, Any]]):
     version 3 keeps the power supplies of the bus as a list (version 2 had at most one); version 4
     gives each supply a place, circuit, fuse and note like a device has; version 5 gives an entry
     made by hand a kind, a place and a supply (battery type or mains); version 6 adds its circuit,
-    fuse, date of installation and type; version 7 keeps the last telegram of each sender."""
+    fuse, date of installation and type; version 7 keeps the last telegram of each sender;
+    version 8 says whether the bus fields were taken over into the installation store (they
+    stay here as a readable copy that the store keeps up to date)."""
 
     async def _async_migrate_func(
         self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
@@ -133,6 +135,8 @@ class _NotesStore(Store[dict[str, Any]]):
             ]
         if old_major_version < 7:
             old_data.setdefault("last", {})
+        if old_major_version < 8:
+            old_data["migrated_to_installation"] = False
         return old_data
 
 
@@ -166,6 +170,9 @@ class Notes:
         self.last: dict[str, dict[str, Any]] = {}
         # the devices as they were at the last load, to tell what was added or removed since
         self.known: dict[str, dict[str, Any]] = {}
+        # the bus fields, supplies and bus entries by hand were taken over into the installation
+        # store (installation.py); from then on the store keeps them, this is their copy
+        self.migrated = False
 
     async def async_load(self) -> None:
         stored = await self._store.async_load() or {}
@@ -196,6 +203,7 @@ class Notes:
         self.last = {
             str(k): dict(v) for k, v in stored.get("last", {}).items() if isinstance(v, dict)
         }
+        self.migrated = bool(stored.get("migrated_to_installation", False))
 
     def _data(self) -> dict[str, Any]:
         return {
@@ -211,6 +219,7 @@ class Notes:
             "signal": self.signal,
             "heard": self.heard,
             "last": self.last,
+            "migrated_to_installation": self.migrated,
         }
 
     def _save(self) -> None:
@@ -253,6 +262,11 @@ class Notes:
         }
         if known != self.known:
             self.known = known
+            self._save()
+
+    def set_migrated(self) -> None:
+        if not self.migrated:
+            self.migrated = True
             self._save()
 
     def set_gateway(self, text: str) -> None:
