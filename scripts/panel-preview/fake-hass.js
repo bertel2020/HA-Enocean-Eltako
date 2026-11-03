@@ -52,11 +52,11 @@ export function fakeHass(params = new URLSearchParams()) {
       ? [{ id: "m1", name: "Hallway button left", address: "00-12-34-56", function: "taught in directly to Licht Diele" }, { id: "m2", name: "Motion sensor basement", address: "00-8A-12-3F", function: "FBH65, belongs to another system" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "", bus_power_table: null }]
       : [{ id: "m1", name: "Taster Flur links", address: "00-12-34-56", function: "direkt auf Licht Diele eingelernt" }, { id: "m2", name: "Bewegungsmelder Keller", address: "00-8A-12-3F", function: "FBH65, von einem anderen System" }, { id: "m3", name: "F3Z14D", address: "", function: "Stromzähler Haus", bus_address: "12", feedback_id: "00008C0C", bus_power: "", bus_power_table: null }],
     radio_devices: [
-      { id: "05-10-A2-B3", device: "Licht Diele", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
+      { id: "05-10-A2-B3", device: "Licht Diele", category: "lighting", last_seen: now - 30, silent: false, ha_device: "dev123", area: "Flur", entities: 3, eep: "M5-38-08:eltako", model: "FSR14-4x", models: [], labels: ["lbl_battery"], disabled: false,
         key: "sub1", teach: [{ profile: "central", id: "FF-B7-44-81", ute: false }, { profile: "rocker", id: "FF-B7-44-83", ute: false }] },
-      { id: "05-10-A2-B4", device: "Dimmer Flur", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [], labels: [], disabled: false },
-      { id: "05-11-11-11", device: "Temperatur Bad", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
-      { id: "05-22-22-22", device: "Fensterkontakt Küche", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
+      { id: "05-10-A2-B4", device: "Dimmer Flur", category: "lighting", last_seen: now - 90, silent: false, ha_device: "dev124", area: "Flur", entities: 1, eep: "A5-38-08:eltako", model: "", models: ["FUD14", "FUD61", "FD62"], key: "sub2", teach: [], labels: [], disabled: false },
+      { id: "05-11-11-11", device: "Temperatur Bad", category: "sensors", last_seen: now - 200000, silent: true, ha_device: "dev456", area: "Bad", entities: 2, eep: "A5-02-05" },
+      { id: "05-22-22-22", device: "Fensterkontakt Küche", category: "sensors", last_seen: null, silent: false, area: "Küche", entities: 1, eep: "D5-00-01" },
     ],
   };
   const labels = [{ label_id: "lbl_battery", name: "Battery" }, { label_id: "lbl_window", name: "Window" }];
