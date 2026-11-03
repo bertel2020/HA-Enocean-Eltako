@@ -1260,6 +1260,29 @@ def test_heating_controller_telegram() -> None:
 
 @pytest.mark.parametrize(
     "gateway",
+    [[_subentry("meter", "05-00-00-12", "Waschmaschine")]],
+    indirect=True,
+)
+async def test_last_seen_survives_a_restart_without_the_sensor(
+    hass: HomeAssistant, gateway
+) -> None:
+    """The saved signal data gives last_seen back, so the entity can stay disabled."""
+    entry, _server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    assert device.stats.last_seen is None  # nothing heard since the start
+    device.seed_signal(
+        {
+            "gw-a": {"count": 3, "direct": 1, "rssi": -80, "last": 1000.0},
+            "gw-b": {"count": 5, "direct": 5, "rssi": -60, "last": 2000.0},
+        }
+    )
+    assert device.stats.last_seen == 2000.0 and device.stats.gateway == "gw-b"
+    device.seed_signal({"gw-a": {"last": 3000.0}})  # a later seed never overwrites a heard time
+    assert device.stats.last_seen == 2000.0
+
+
+@pytest.mark.parametrize(
+    "gateway",
     [[_subentry("meter", "05-00-00-12", "Waschmaschine", unavailable_when_silent=True)]],
     indirect=True,
 )
