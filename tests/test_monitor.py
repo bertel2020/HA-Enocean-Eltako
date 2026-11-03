@@ -295,6 +295,9 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
         registered is not None and registered.model == "M5-38-08"
     )  # several FSRs: the EEP is all we know, and it is not repeated as the model ID
     assert registered.model_id is None
+    from homeassistant.helpers import entity_registry as er
+
+    registered_entities = er.async_entries_for_device(er.async_get(hass), registered.id)
     # configured devices for the panel's "not heard" list: nothing heard yet
     assert status["radio_devices"] == [
         {
@@ -308,6 +311,7 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "category": "lighting",
             "area": None,
             "entities": 3,
+            "entity_ids": [e.entity_id for e in registered_entities if e.entity_category is None],
             "ha_device": registered.id,
             "labels": [],
             "disabled": False,

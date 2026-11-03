@@ -3053,7 +3053,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
         hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
-        category: info?.category || "", models: info?.models || [], eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
+        category: info?.category || "", models: info?.models || [], entityIds: info?.entity_ids || [], eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null, labels: info?.labels || [], disabled: !!info?.disabled,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
         dbm: r.dbm, trend: d.dbm, fields: d.fields, data: r.data, teach: d.teach, candidates: d.candidates, rorg: r.rorg,
@@ -3063,7 +3063,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
         key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
-        category: d.category || "", models: d.models || [], eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
+        category: d.category || "", models: d.models || [], entityIds: d.entity_ids || [], eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
       });
@@ -3468,6 +3468,20 @@ class EnOceanEltakoPanel extends HTMLElement {
     return `<svg class="spark ${tone}" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(title)}"><title>${esc(title)}</title>${weak}<polyline points="${points}"/><circle cx="${end[0]}" cy="${end[1]}" r="3"/></svg>`;
   }
 
+  _stateValues(d) {
+    // a device with no telegram in the buffer: what its entities hold, the first two that have a value
+    const states = this._hass?.states ?? {};
+    return d.entityIds
+      .map((id) => states[id])
+      .filter((st) => st && !["unavailable", "unknown"].includes(st.state))
+      .slice(0, 2)
+      .map((st) => {
+        const text = this._hass.formatEntityState ? this._hass.formatEntityState(st) : `${st.state}${st.attributes?.unit_of_measurement ? ` ${st.attributes.unit_of_measurement}` : ""}`;
+        return `<span class="value" title="${esc(st.attributes?.friendly_name ?? st.entity_id)}"><b>${esc(text)}</b></span>`;
+      })
+      .join("");
+  }
+
   _deviceRow(d, now) {
     const t = this._t;
     const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name">${esc(d.name)}</span>`;
@@ -3488,7 +3502,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               : `<span class="value"><span>${esc(this._label(f.label))}</span> <b>${esc(this._value(f.value))}</b>${f.unit ? ` ${esc(f.unit)}` : ""}</span>`
           )
           .join("")
-      : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
+      : d.quiet ? this._stateValues(d) : `<span class="raw mono">${esc(d.data)}</span>`;
     // one state per device, the first that applies: a disabled device is not judged by its silence
     const state = d.disabled ? "disabled" : d.unknown ? "unknown" : d.silent ? "silent" : d.time == null ? "unheard" : "active";
     const pill = `<span class="pill ${state}" title="${esc(t.deviceStateHint[state])}">${esc(t.deviceState[state])}</span>`;

@@ -301,6 +301,7 @@ for (const lang of ["en", "de"]) {
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
     expect("a sender that is not set up is unknown", state("01-99-88-77"), "unknown");
     const row = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name));
+    expect("a quiet device shows what its entities hold, not an unavailable one", row("Temperatur Bad").querySelector(".values").textContent.includes("21.5 °C") && !row("Temperatur Bad").querySelector(".values").textContent.includes("%"), true);
     expect("every row has a kind tile", root.querySelectorAll(".dev .ident .tile").length, 5);
     expect("a light gets the light tile", !!row("Licht Diele").querySelector(".tile.lighting"), true);
     expect("a sender that is not set up gets the question mark tile", !!row("01-99-88-77").querySelector(".tile.unknown"), true);

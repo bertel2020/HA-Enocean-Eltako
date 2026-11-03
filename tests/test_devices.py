@@ -1057,6 +1057,10 @@ async def test_futh_is_one_device_with_four_ids(hass: HomeAssistant, gateway) ->
         (f"FF-80-1C-{o:02X}", "FUTH Bad") for o in (1, 0x10, 0x11, 0x12)
     ]
     assert rows[0]["entities"] > 0 and {r["entities"] for r in rows[1:]} == {0}
+    # the entities are listed once as well, and none of them is a diagnostic
+    assert rows[0]["entity_ids"] and {tuple(r["entity_ids"]) for r in rows[1:]} == {()}
+    registry = er.async_get(hass)
+    assert all(registry.async_get(e).entity_category is None for e in rows[0]["entity_ids"])
 
 
 async def test_add_futh_by_its_base_id(hass: HomeAssistant, gateway) -> None:
