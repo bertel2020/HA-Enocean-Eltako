@@ -263,8 +263,7 @@ sent are right above the list. **Unknown only** sits right next to them. **Filte
 4BS, VLD …) or repetitions. Set filters show as chips above the list;
 their cross removes one, **Reset filters** clears them all. The panel remembers the filters in the
 browser. Pause (key `P`) keeps collecting (up to 1,000) and shows how many telegrams arrived;
-export saves all telegrams matching the filter (every page) as JSON lines; on a phone, export
-and **Clear display** sit in the **⋮** menu. The badge next to
+export saves all telegrams matching the filter (every page) as JSON lines; **Clear display** sits in the **⋮** menu (on a phone export does too). The chip **Unknown senders only** shows how many unknown senders the buffer holds. The badge next to
 the title says **Live**, **Paused**, **Connecting…** or **No connection** (then telegrams are
 missing until Home Assistant is reachable again). While text in the list is selected, for example
 to copy an ID, new telegrams wait until the selection ends.
@@ -358,7 +357,7 @@ write a link down (so does a **+** in the matrix), and a wall switch ID without 
 **Write down as device**. What an actuator has really learned is stored in the actuator and cannot
 be read, so the tab says so; a link that was never tested says "not tested". **Log** lists what
 happened: devices added or removed, senders assigned or removed, teach-ins, sender tests and
-imports. Print, CSV, JSON and import are buttons of the tab.
+imports. Print, the CSV and JSON exports and the notes import sit in the **⋮** menu of the tab.
 
 **Outputs:** the buttons of the Installation tab (and the ⋮ menu of the Devices view) give:
 
@@ -434,10 +433,10 @@ Above the list a hint counts the senders with a weak signal; a click shows only 
 first (also the status **Weak signal**).
 
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
-search box, the status chips (**All devices / Set up / Unknown / Silent / Weak signal**) and, under **Filter**, the gateway and the area narrow the list (**Filter** only shows with several gateways or areas),
+search box, the status chips (**All devices / Set up / Unknown / Silent / Weak signal**, each with its count) and, under **Filter**, the gateway and the area narrow the list (**Filter** only shows with several gateways or areas),
 and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
 newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
-as CSV; sending and clearing belong to the telegram list and are not offered here.
+as CSV; sending and clearing belong to the telegram list and are not offered here. Each row shows one state (active, silent, not heard, disabled, unknown); its **⋮** menu holds teach-in, opening the device in Home Assistant, the device's telegrams and **Remove**, which asks first.
 
 **Selecting several devices:** every set-up device has a box at the start of its row, **Select all**
 above the list ticks all filtered ones. As soon as something is ticked, a bar offers what to do with

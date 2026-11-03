@@ -279,8 +279,7 @@ Gesetzte Filter stehen als Chips über der Liste, ihr Kreuz hebt sie einzeln auf
 zurücksetzen** alle. Das Panel
 merkt sich die Filter im Browser. Anhalten (Taste `P`) sammelt weiter (bis zu 1.000) und zeigt,
 wie viele Telegramme eingetroffen sind; Exportieren speichert alle Telegramme, die zum Filter
-passen (alle Seiten), als JSON-Zeilen; auf dem Handy stehen Exportieren und **Anzeige leeren** im
-Menü **⋮**. Das Kennzeichen neben dem Titel zeigt **Live**,
+passen (alle Seiten), als JSON-Zeilen; **Anzeige leeren** steht im Menü **⋮** (auf dem Handy auch Exportieren). Der Chip **Nur unbekannte Sender** zeigt, wie viele unbekannte Sender der Puffer enthält. Das Kennzeichen neben dem Titel zeigt **Live**,
 **Pausiert**, **Verbinde…** oder **Keine Verbindung** (dann fehlen Telegramme, bis Home Assistant
 wieder erreichbar ist).
 Solange in der Liste Text markiert ist, etwa um eine ID zu kopieren, warten neue Telegramme,
@@ -378,8 +377,7 @@ und **+ Aktor** notieren eine Verbindung (ebenso ein **+** in der Matrix), und e
 Wandschalter-ID ohne Gerät bekommt **Als Gerät notieren**. Was ein Aktor wirklich gelernt hat,
 steckt im Aktor und lässt sich nicht lesen, das sagt der Reiter auch; eine nie getestete
 Verbindung heißt „nicht getestet“. **Protokoll** listet, was passiert ist: Geräte hinzugefügt
-oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. Drucken, CSV,
-JSON und Import sind Knöpfe des Reiters.
+oder entfernt, Sender vergeben oder entfernt, Einlernen, Sendertests und Importe. Drucken, die Ausgaben als CSV und JSON und der Notizen-Import stehen im Menü **⋮** des Reiters.
 
 **Ausgaben:** Die Knöpfe des Reiters Anlage (und das ⋮-Menü der Geräteansicht) liefern:
 
@@ -463,10 +461,10 @@ schwächste zuerst (auch als Status **Schwaches Signal**).
 
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
 übernimmt das eine Auswahl. Die Suche, die Status-Chips (**Alle Geräte /
-Eingerichtet / Unbekannt / Still / Schwaches Signal**) und unter **Filter** das Gateway und der Bereich grenzen die Liste ein (**Filter** erscheint nur bei mehreren Gateways oder Bereichen), und sie wird seitenweise mit 25 bis 200 Zeilen
+Eingerichtet / Unbekannt / Still / Schwaches Signal**, jeweils mit Zähler) und unter **Filter** das Gateway und der Bereich grenzen die Liste ein (**Filter** erscheint nur bei mehreren Gateways oder Bereichen), und sie wird seitenweise mit 25 bis 200 Zeilen
 gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
 Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
-Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier.
+Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier. Jede Zeile zeigt einen Zustand (aktiv, still, nicht gehört, deaktiviert, unbekannt); ihr Menü **⋮** enthält Einlernen, das Gerät in Home Assistant öffnen, die Telegramme des Geräts und **Entfernen**, das vorher nachfragt.
 
 **Mehrere Geräte auswählen:** Jedes eingerichtete Gerät hat vorn ein Kästchen, **Alle auswählen**
 über der Liste wählt alle gefilterten. Sobald etwas gewählt ist, zeigt eine Leiste, was sich mit
