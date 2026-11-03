@@ -253,12 +253,12 @@ def _bus_checks(
             )
         )
     consumers = [m for m in modules if role(m) not in ("master", "supply", "foreign")]
-    for module in consumers:
-        if module["first_address"] is None:
-            items.append(_item("warning", "no_address", [_module(module)]))
-    for module in modules:
-        if module.get("row") is None and not module["placeholder"]:
-            items.append(_item("warning", "no_place", [_module(module)]))
+    without_address = [_module(m) for m in consumers if m["first_address"] is None]
+    if without_address:
+        items.append(_item("warning", "no_address", without_address, count=len(without_address)))
+    without_place = [_module(m) for m in modules if m.get("row") is None and not m["placeholder"]]
+    if without_place:
+        items.append(_item("warning", "no_place", without_place, count=len(without_place)))
     access = {a["entry_id"] for a in bus["access"]}
     mine = [u for u in unassigned if u["entry_id"] in access]
     if mine:
