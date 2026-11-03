@@ -317,6 +317,8 @@ const STYLE = `
   .who .name.unknown { font-weight: 400; color: var(--muted); }
   .who .line2 { font-size: calc(12px * var(--fs)); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
   .tag { flex: none; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; background: var(--tag-bg); color: var(--tag-text); white-space: nowrap; }
+  .tag.tx { background: var(--accent-soft); color: var(--accent); }
+  .who .name .to { font-weight: 400; color: var(--muted); }
   .tag.teach, .tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
   .tag.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
   .values { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
@@ -2633,16 +2635,18 @@ class EnOceanEltakoPanel extends HTMLElement {
     const clock = this._clock(time);
     const unknown = !r.device && r.dir === "rx";
     const hidden = unknown && this._isHidden(r.gateway, r.sender);
+    // a telegram we sent is addressed to the device, it did not come from it
+    const sent = r.dir === "tx";
     const name = r.device
-      ? `<i class="mark known" aria-hidden="true"></i><span class="name">${esc(r.device)}</span>`
+      ? `<i class="mark known" aria-hidden="true"></i><span class="name">${sent ? `<span class="to">${esc(t.sentTo)}</span> ` : ""}${esc(r.device)}</span>`
       : `<i class="mark" aria-hidden="true"></i><span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
-    const tags = (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
+    const tags = (sent ? `<span class="tag tx">${esc(t.tx)}</span>` : "") + (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra = r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "";
     const maybe = maybeTag(t, r.candidates);
     const type = RORG[r.rorg] || r.rorg;
     // on phones type and gateway have no column of their own
-    const line2 = [`<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
+    const line2 = [`${sent ? `${esc(t.sentFrom)} ` : ""}<span class="mono">${esc(r.sender)}</span>`, r.profile ? esc(this._profile(r.profile)) : "", r.eep ? esc(r.eep) : "", r.eep?.endsWith(":eltako") && r.model ? esc(r.model) : ""].filter(Boolean).join(" · ") +
       `<span class="m-only"> · ${esc(type)}${this._multi ? ` · ${esc(r.gateway_name)}` : ""}</span>`;
     const fields = r.fields || (r.values ? Object.entries(r.values).map(([label, value]) => ({ label, value })) : null);
     const values = fields && fields.length
