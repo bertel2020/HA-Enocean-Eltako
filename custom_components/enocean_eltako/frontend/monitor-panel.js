@@ -904,15 +904,15 @@ class EnOceanEltakoPanel extends HTMLElement {
     Object.assign(EnOceanEltakoPanel.prototype, installation); // the Installation view (installation.js)
     this._tk = takeoverState();
     this._in = installationState();
-    this._restoreKept();
+    this._restoreKept(this._waiting?.connection);
     this._ready = true;
     this._loading = null;
     this.hass = this._waiting;
     this._waiting = null;
   }
 
-  _restoreKept() {
-    if (!KEPT.rows) return;
+  _restoreKept(connection) {
+    if (!KEPT.rows || KEPT.connection !== connection) return; // another Home Assistant connection: nothing of it
     this._rows = KEPT.rows;
     this._keys = KEPT.keys;
     this._cleared = KEPT.cleared;
@@ -931,6 +931,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _keepForNext() {
     if (!this._ready || (!this._rows.length && !this._gateways.length)) return;
     Object.assign(KEPT, {
+      connection: this._hass?.connection,
       rows: this._rows,
       keys: this._keys,
       cleared: this._cleared,
@@ -1974,29 +1975,33 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   async _documentSender(gateway, sender) {
-    // only for the documentation: an entry under "Other devices" with the ID filled in, then its name field
+    // only for the documentation: the form of "Write down as device" opens with the ID filled in and a kind guessed
+    // from what the sender sent; an ID written down before is shown in its row instead
     const gw = this._gateways.find((g) => g.entry_id === gateway);
     if (!gw) {
       this._notice(this._t.addResult.failed);
       return;
     }
     const same = (a) => String(a).replace(/[^0-9a-f]/gi, "").toLowerCase();
-    let entry = (gw.manual ?? []).find((e) => same(e.address) === same(sender));
-    if (!entry) {
-      entry = { id: Math.random().toString(36).slice(2, 10), name: "", address: sender, function: "", bus_address: "", feedback_id: "", bus_power: "", kind: "", location: "", power: "" };
-      gw.manual = [...(gw.manual ?? []), entry];
-      await this._saveManual(gw);
-    }
+    const entry = (gw.manual ?? []).find((e) => same(e.address) === same(sender));
+    const last = this._rows.find((r) => same(r.sender) === same(sender));
+    // a press or release telegram is a button, a contact or data telegram a sensor, a VLD telegram an actuator
+    const kind = { F6: "taster", D2: "aktor" }[last?.rorg] ?? (last ? "sensor" : "taster");
     this._in.tab = "devices";
     this._in.view = "funk";
-    this._in.nameEdit = entry.id; // a new entry opens with its name field
+    if (entry) this._in.hl = `manual|${entry.id}`;
+    else {
+      this._in.docForm = true;
+      this._in.docError = "";
+      this._in.docDraft = { kind, address: sender, gateway };
+    }
     this._setView("installation");
-    // the Installation view fills in a moment after it opens: wait up to two seconds for the row
+    // the Installation view fills in a moment after it opens: wait up to two seconds for the form or the row
     for (let tries = 0; tries < 40; tries++) {
-      const name = this.shadowRoot.querySelector(`#installation [data-in-mid="${entry.id}"][data-in-mfield="name"]`);
-      if (name) {
-        name.scrollIntoView({ block: "center" });
-        name.focus();
+      const target = this.shadowRoot.querySelector(entry ? `#installation [data-in-row="manual|${entry.id}"]` : '#installation [data-in-doc-field="name"]');
+      if (target) {
+        target.scrollIntoView({ block: "center" });
+        if (!entry) target.focus();
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -2490,14 +2495,6 @@ class EnOceanEltakoPanel extends HTMLElement {
     const gateway = this._gateways.find((g) => g.entry_id === entryId);
     if (gateway) gateway.orphan_notes = 0;
     this._renderCards();
-  }
-
-  async _saveManual(gateway) {
-    try {
-      await this._hass.callWS({ type: "enocean_eltako/set_manual", entry_id: gateway.entry_id, entries: gateway.manual });
-    } catch (err) {
-      this._notice(this._t.doc.noteFailed);
-    }
   }
 
   _renderCards(background = false) {

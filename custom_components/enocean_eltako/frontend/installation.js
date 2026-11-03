@@ -104,7 +104,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -218,9 +218,16 @@ export const INSTALLATION_STYLE = `
   .installation .sig .dot.silent { background: #d33; }
   .installation .lk a { color: var(--accent); cursor: pointer; text-decoration: underline; }
   .installation .itable tr.hl td { background: color-mix(in srgb, var(--warn) 22%, transparent); }
-  .installation .docform { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
-  .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
-  .installation .docform .cerr { width: 100%; }
+  .installation .docform { padding: 12px 14px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); margin-bottom: 12px; }
+  .installation .docform h4 { margin: 0 0 2px; font-size: calc(14px * var(--fs)); font-weight: 500; }
+  .installation .docform .dfgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 12px; margin: 10px 0; }
+  .installation .docform label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .installation .docform label > span { font-size: calc(11px * var(--fs)); color: var(--muted); }
+  .installation .docform label.wide { grid-column: span 2; }
+  .installation .docform .place { display: flex; align-items: center; gap: 4px; }
+  .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+  .installation .docform .dfbtns { display: flex; gap: 8px; }
+  .installation .docform .cerr { margin-top: 8px; }
   .installation .itable select.cell { font: inherit; font-size: calc(12px * var(--fs)); padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .installation .lcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
   .installation .lhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; background: var(--soft); }
@@ -682,9 +689,7 @@ export const installation = {
     const artChips = `<div class="chips"><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${FUNK_COLUMNS.map((c) => `<label><input type="checkbox" data-in-funkcol="${c}" ${state.funkCols.has(c) ? "checked" : ""}>${esc(F.cols[c])}</label>`).join("")}</div></details>`;
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
-    const form = state.docForm
-      ? `<div class="docform"><input data-in-doc-field="name" placeholder="${esc(t.doc.manualName)}" aria-label="${esc(t.doc.manualName)}"><input data-in-doc-field="address" class="mono" maxlength="11" placeholder="${esc(F.idPlaceholder)}" aria-label="${esc(t.doc.manualAddress)}">${gateways(state.doc).length > 1 ? `<select data-in-doc-field="gateway" aria-label="${esc(F.gateway)}">${gateways(state.doc).map((g) => `<option value="${esc(g.entry_id)}">${esc(g.title)}</option>`).join("")}</select>` : ""}<select data-in-doc-field="kind" aria-label="${esc(I.art)}">${kinds.map((k) => `<option value="${k}">${esc(I.kinds[k])}</option>`).join("")}</select><input data-in-doc-field="function" placeholder="${esc(t.doc.manualFunction)}" aria-label="${esc(t.doc.manualFunctionHead)}" style="flex:1;min-width:160px"><button class="chip" data-in-act="doc-add">${esc(F.add)}</button><button class="chip" data-in-act="doc-cancel">${esc(F.cancel)}</button>${state.docError ? `<div class="cerr" role="alert">${esc(state.docError)}</div>` : ""}</div>`
-      : "";
+    const form = state.docForm ? this._instDocForm(kinds) : "";
     const tools = `<div class="itools" style="align-items:center">${search}<span style="flex:1"></span><button class="chip" data-in-act="doc-open">${esc(F.document)}</button>${menu}</div>`;
     const input = (d, gw, field, value, placeholder, extra = "") => (d.manual
       ? `<input class="cell" data-in-mfield="${MANUAL_FIELD[field] ?? field}" data-in-gw="${esc(gw.entry_id)}" data-in-mid="${esc(d.mid)}" value="${esc(value ?? "")}" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}: ${esc(d.name)}" autocomplete="off" ${extra}>`
@@ -726,6 +731,34 @@ export const installation = {
     if (this._in.nameEdit === d.mid) return `<input class="cell" data-in-mfield="name" ${who} data-in-focus data-in-nameend value="${esc(d.named ? d.name : "")}" placeholder="${esc(this._t.doc.manualName)}" aria-label="${esc(this._t.doc.manualName)}" autocomplete="off">`;
     if (d.named) return `<button class="namelink" data-in-nameedit="${esc(d.mid)}" title="${esc(F.editName)}">${esc(d.name)}</button>`;
     return `<span class="unnamed">${esc(F.unnamed)}</span> <button class="placeadd" data-in-nameedit="${esc(d.mid)}">+ ${esc(F.giveName)}</button>`;
+  },
+
+  _instDocForm(kinds) {
+    // the form of an entry for the documentation: what it is, where it sits, what feeds it; the draft survives a redraw
+    const t = this._t;
+    const I = t.inst;
+    const F = I.funk;
+    const state = this._in;
+    const draft = state.docDraft;
+    const v = (name) => esc(draft[name] ?? "");
+    const kind = draft.kind || "taster";
+    const field = (name, label, extra = "", cls = "") => `<label class="${cls}"><span>${esc(label)}</span><input data-in-doc-field="${name}" value="${v(name)}" autocomplete="off" ${extra}></label>`;
+    const places = I.placeParts.map((label, i) => `<input data-in-doc-field="loc${i}" value="${v(`loc${i}`)}" placeholder="${esc(label)}" aria-label="${esc(label)}" autocomplete="off">`).join("<i>·</i>");
+    const gws = gateways(state.doc);
+    const gateway = gws.length > 1 ? `<label><span>${esc(F.gateway)}</span><select data-in-doc-field="gateway">${gws.map((g) => `<option value="${esc(g.entry_id)}" ${draft.gateway === g.entry_id ? "selected" : ""}>${esc(g.title)}</option>`).join("")}</select></label>` : "";
+    const fused = ["bus", "aktor"].includes(kind);
+    return `<div class="docform"><h4>${esc(F.formTitle)}</h4><p class="isub">${esc(I.funk.documentedHint)}.</p><div class="dfgrid">
+      ${field("name", t.doc.manualName)}
+      ${field("address", t.doc.manualAddress, `class="mono" maxlength="11" placeholder="${esc(F.idPlaceholder)}"`)}
+      <label><span>${esc(I.art)}</span><select data-in-doc-field="kind">${kinds.map((k) => `<option value="${k}" ${kind === k ? "selected" : ""}>${esc(I.kinds[k])}</option>`).join("")}</select></label>
+      ${gateway}
+      ${field("model", F.cols.model, `placeholder="${esc(F.modelExample)}"`)}
+      <label class="wide"><span>${esc(label(t, "location"))}</span><div class="place" data-in-docplace>${places}</div></label>
+      ${field("function", t.doc.manualFunctionHead, `placeholder="${esc(t.doc.manualFunction)}"`, "wide")}
+      ${fused ? field("circuit", label(t, "circuit")) + field("fuse", label(t, "fuse")) : ""}
+      ${field("installed", label(t, "installed"), 'type="date"')}
+      ${field("power", label(t, "power"))}
+    </div><div class="dfbtns"><button class="chip primary" data-in-act="doc-add">${esc(F.add)}</button><button class="chip" data-in-act="doc-cancel">${esc(F.cancel)}</button></div>${state.docError ? `<div class="cerr" role="alert">${esc(state.docError)}</div>` : ""}</div>`;
   },
 
   _instNameDone(e) {
@@ -1525,10 +1558,12 @@ export const installation = {
     else if (act === "doc-open") {
       state.docForm = true;
       state.docError = "";
+      state.docDraft = { kind: "taster" };
       this._renderInstallation();
       this.shadowRoot.querySelector('#installation [data-in-doc-field="name"]')?.focus();
     } else if (act === "doc-cancel") {
       state.docForm = false;
+      state.docDraft = {};
       this._renderInstallation();
     } else if (act === "doc-add") this._instDocAdd();
     else if (act === "next-open") {
@@ -1547,6 +1582,12 @@ export const installation = {
   },
 
   _installationChange(e) {
+    if (e.target.matches("select[data-in-doc-field]")) {
+      // the kind decides which fields the form has: redraw, the draft keeps what was typed
+      this._in.docDraft[e.target.dataset.inDocField] = e.target.value;
+      if (e.target.dataset.inDocField === "kind") this._renderInstallation();
+      return;
+    }
     const other = e.target.closest('select[data-in-new="other"]');
     if (other) {
       const form = other.closest("[data-in-linkform]");
@@ -1609,6 +1650,10 @@ export const installation = {
         this._renderInstallation();
         this.shadowRoot.querySelector("[data-in-search]")?.focus();
       }, 250);
+      return;
+    }
+    if (e.target.matches("[data-in-doc-field]")) {
+      state.docDraft[e.target.dataset.inDocField] = e.target.value;
       return;
     }
     const sfield = e.target.closest("[data-in-sfield]");
@@ -1750,23 +1795,31 @@ export const installation = {
   },
 
   async _instDocAdd() {
-    // an entry written by hand from the form: name, ID, kind, what it does
+    // an entry written by hand from the form: what it is, where it sits, what feeds it
     const state = this._in;
-    const form = this.shadowRoot.querySelector("#installation .docform");
-    const get = (name) => form.querySelector(`[data-in-doc-field="${name}"]`).value.trim();
-    const gw = gateways(state.doc).find((g) => g.entry_id === form.querySelector('[data-in-doc-field="gateway"]')?.value) ?? gateways(state.doc)[0];
+    const draft = state.docDraft;
+    for (const input of this.shadowRoot.querySelectorAll("#installation .docform [data-in-doc-field]")) draft[input.dataset.inDocField] = input.value; // autofill fires no input event
+    const get = (name) => String(draft[name] ?? "").trim();
+    const gw = gateways(state.doc).find((g) => g.entry_id === draft.gateway) ?? gateways(state.doc)[0];
     const plain = get("address").replaceAll("-", "").toUpperCase();
     state.docError = "";
     if (!get("name")) state.docError = this._t.inst.funk.needName;
     else if (!/^[0-9A-F]{8}$/.test(plain)) state.docError = this._t.inst.funk.badId;
     else if (gw.manual.some((m) => m.address.replaceAll("-", "").toUpperCase() === plain)) state.docError = this._t.inst.funk.known;
+    else if (get("installed") && !/^\d{4}-\d{2}-\d{2}$/.test(get("installed"))) state.docError = this._t.inst.funk.badDate;
     if (state.docError) {
       this._renderInstallation();
       return;
     }
+    const kind = get("kind") || "taster";
+    const fused = ["bus", "aktor"].includes(kind);
     const id = Math.random().toString(36).slice(2, 10);
-    gw.manual = [...gw.manual, { id, name: get("name"), address: plain.match(/../g).join("-"), function: get("function"), bus_address: "", feedback_id: "", bus_power: "", kind: get("kind"), location: "", power: "" }];
+    gw.manual = [...gw.manual, {
+      id, name: get("name"), address: plain.match(/../g).join("-"), function: get("function"), bus_address: "", feedback_id: "", bus_power: "", kind,
+      location: joinPlace([get("loc0"), get("loc1"), get("loc2")]), power: get("power"), circuit: fused ? get("circuit") : "", fuse: fused ? get("fuse") : "", installed: get("installed"), model: get("model"),
+    }];
     state.docForm = false;
+    state.docDraft = {};
     state.hl = `manual|${id}`;
     this._renderInstallation();
     this._instSaveManual(gw);

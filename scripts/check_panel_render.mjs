@@ -114,7 +114,8 @@ for (const lang of ["en", "de"]) {
     expect("four tabs: devices, sender IDs, links, log", root.querySelectorAll("#installation .groups .itab").length, 4);
     expect("the views are a segmented control", root.querySelectorAll("#installation .seg button").length, 4);
     expect("a gateway section names its device count", !!root.querySelector("#installation section.gw .gwhead .isub:last-child"), true);
-    expect("every row names its kind (10 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 15);
+    expect("every row names its kind (10 devices, 2 power supplies; the 3 entries by hand have a kind menu)", root.querySelectorAll("#installation .itable tbody tr [data-in-kind]").length, 12);
+    expect("an entry by hand has a kind menu and its own tag", root.querySelectorAll("#installation .itable tbody tr .kindmenu").length === 3 && root.querySelectorAll("#installation .itable tbody tr .tag.doc").length === 3, true);
     expect("the kind chips count the kinds", [...root.querySelectorAll("#installation [data-in-art]")].map((b) => b.textContent.replace(/\s+/g, " ").trim()).join("|").length > 0, true);
     expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", root.querySelectorAll("#installation .itable tbody tr").length, 15);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
@@ -193,7 +194,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-view="funk"]').click();
     await settle();
     expect("the radio table lists devices and the entries by hand", root.querySelectorAll("#installation .itable tbody tr").length > 3, true);
-    expect("the entries by hand without a bus address are rows with a name field", root.querySelectorAll('#installation [data-in-mfield="name"]').length, 2);
+    expect("the entries by hand without a bus address are rows with a name to click", root.querySelectorAll('#installation [data-in-nameedit]').length, 2);
     expect("the radio tiles count devices, entries written down, silent ones and repeater-only ones", root.querySelectorAll("#installation .tile").length, 4);
     root.querySelector('#installation [data-in-funkcol="grp"]').click();
     await settle();
@@ -217,7 +218,7 @@ for (const lang of ["en", "de"]) {
     form2.querySelector('[data-in-doc-field="kind"]').value = "taster";
     root.querySelector('#installation [data-in-act="doc-add"]').click();
     await settle();
-    expect("a documented device is a new row and goes to the server", root.querySelectorAll('#installation [data-in-mfield="name"]').length === 3 && fake.sent.filter((m) => m.type === "enocean_eltako/set_manual").length === 1, true);
+    expect("a documented device is a new row and goes to the server", root.querySelectorAll('#installation [data-in-nameedit]').length === 3 && fake.sent.filter((m) => m.type === "enocean_eltako/set_manual").length === 1, true);
     // the virtual view: what Home Assistant sends, what it follows, and the jump to the sender number
     root.querySelector('#installation [data-in-view="virt"]').click();
     await settle();
@@ -367,24 +368,9 @@ for (const lang of ["en", "de"]) {
     expect("teach-in form closed", root.getElementById("teachForm").hidden, true);
     await view("senders");
     expect("pool map squares", root.querySelectorAll(".map button").length, 128);
-    expect("sender ID rows", root.querySelectorAll(".sid-row").length, 2);
-    const sidText = root.getElementById("sidText");
-    sidText.value = "ba";
-    sidText.dispatchEvent(new Event("input"));
-    expect("search without a match", root.querySelectorAll(".sid-row").length, 0);
-    root.querySelector("[data-sid-reset]").click();
-    expect("search reset", root.querySelectorAll(".sid-row").length, 2);
-    sidText.value = "ff-b7-44-85"; // an ID finds only itself
-    sidText.dispatchEvent(new Event("input"));
-    expect("search by ID", root.querySelectorAll(".sid-row").length, 1);
-    sidText.value = "";
-    sidText.dispatchEvent(new Event("input"));
-    root.querySelector('[data-sid-state="assigned"]').click();
-    expect("assigned only", root.querySelectorAll(".sid-row.blocked").length + root.querySelectorAll(".sid-row").length, 1);
-    expect("free all hidden without blocked rows", root.getElementById("sidFreeAll").hidden, true);
-    root.querySelector('[data-sid-state=""]').click();
-    expect("free all shown", root.getElementById("sidFreeAll").hidden, false);
-    root.getElementById("sidFreeAll").click();
+    expect("no list by device above the table", root.querySelectorAll(".sid-row, .sid-group").length, 0);
+    expect("free all shown with a blocked ID", !!root.querySelector("[data-free-all]"), true);
+    root.querySelector("[data-free-all]").click();
     expect("free all asks first", !!root.querySelector(".confirm [data-free-confirm]"), true);
     root.querySelector("[data-free-cancel]").click();
     const rowFree = root.querySelector("#instBody [data-in-free]");
@@ -393,11 +379,9 @@ for (const lang of ["en", "de"]) {
       rowFree.click();
       expect("a blocked row of the table asks before it frees the ID", !!root.querySelector("#senders .confirm [data-free-confirm]"), true);
       root.querySelector("[data-free-cancel]").click();
-      root.getElementById("sidText").value = "";
-      root.getElementById("sidText").dispatchEvent(new Event("input"));
     }
-    expect("pool tiles", root.querySelectorAll(".ptile").length, 5); // the sample pool has IDs used elsewhere
     expect("blocked note", !!root.querySelector(".pnote"), true);
+    expect("the Sender IDs tab counts the blocked IDs", !!root.querySelector('#installation [data-in-tab="gwsenders"] .tabwarn'), true);
     root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
     await settle();
     expect("chosen square is read out", root.querySelector(".pread").textContent.includes("Licht Diele"), true);
@@ -405,7 +389,8 @@ for (const lang of ["en", "de"]) {
     root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
     await settle();
     expect("square unchosen", root.querySelectorAll(".map button.sel").length, 0);
-    root.querySelector(".sid-name[data-dev-panel]").click();
+    await view("senders");
+    root.querySelector("#instBody a[data-in-goto]").click();
     await settle();
     expect("devices view after the sender ID link", root.querySelector('#view [data-view="devices"]').getAttribute("aria-selected"), "true");
     expect("device opened by the sender ID link", root.querySelectorAll(".dev-detail").length, 1);
