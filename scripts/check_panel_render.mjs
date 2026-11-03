@@ -144,7 +144,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-columns="upkeep"]').click();
     await settle();
     expect("the upkeep columns can be shown", !!root.querySelector('#installation [data-in-field="installed"]'), true);
-    expect("the progress counts the devices with a place", !!root.querySelector("#installation .progress"), true);
+    expect("the tiles count the devices without a place", !!root.querySelector("#installation .stile[data-in-miss=\"loc\"]"), true);
     root.querySelector('#installation [data-in-columns="upkeep"]').click();
     await settle();
     root.querySelector('#installation [data-in-pick="gw1|sub1"]').click();

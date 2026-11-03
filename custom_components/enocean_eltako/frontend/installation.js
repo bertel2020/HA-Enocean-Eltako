@@ -96,7 +96,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
 });
 
 export const INSTALLATION_STYLE = `
@@ -261,6 +261,14 @@ export const INSTALLATION_STYLE = `
   .installation .tag.bus { background: var(--accent-soft); color: var(--accent); }
   .installation .itable tr.grp td { background: var(--soft); font-weight: 500; cursor: pointer; padding: 6px 8px; }
   .installation .itable td .dash { color: var(--muted); }
+  .installation .placeadd { font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: none; border: 1px dashed var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; text-align: left; }
+  .installation .placeadd:hover { color: var(--accent); border-color: var(--accent); }
+  .installation .itable th.sortable { cursor: pointer; user-select: none; }
+  .installation .itable th.sortable .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
+  .installation .itable th.sortable:hover .sarrow { opacity: .45; }
+  .installation .itable th[aria-sort] .sarrow { opacity: 1; color: var(--accent); }
+  .installation .stile small { margin-top: 2px; }
+  .installation .itools select { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; }
   .installation .place { display: flex; align-items: center; min-width: 250px; border: 1px solid transparent; border-radius: 6px; }
   .installation .place:hover { border-color: var(--line); }
   .installation .place:focus-within { border-color: var(--accent); background: var(--surface); }
@@ -783,7 +791,10 @@ export const installation = {
     const parts = placeParts(d.location);
     const inputs = this._t.inst.placeParts.map((label, i) => `<input data-in-part="${i}" value="${esc(parts[i])}" placeholder="${esc(label)}" aria-label="${esc(label)}: ${esc(d.name)}" autocomplete="off">`).join("<i>·</i>");
     const who = d.psu ? `data-in-sid="${esc(d.sid)}"` : d.manual ? `data-in-mid="${esc(d.mid)}"` : `data-in-key="${esc(d.key)}"`;
-    return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs}</div>`;
+    const id = d.psu ? d.sid : d.manual ? d.mid : d.key;
+    if (!d.location && this._in.placeEdit !== id) return `<button class="placeadd" data-in-placeedit="${esc(id)}">+ ${esc(this._t.inst.placeAdd)}</button>`;
+    const focus = this._in.placeEdit === id ? " data-in-focus" : "";
+    return `<div class="place${d.location ? "" : " blank"}" data-in-place data-in-gw="${esc(gw.entry_id)}" ${who}>${inputs.replace("<input ", `<input${focus} `)}</div>`;
   },
 
   _instProgress() {
@@ -834,8 +845,18 @@ export const installation = {
       return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
-      const devices = [...gw.devices, ...psus(gw)].filter(pass);
-      const columns = enabled.filter((f) => (state.art !== "all" || COMMON_FIELDS.has(f)) && devices.some((d) => applies(d, f)));
+      const found = [...gw.devices, ...psus(gw)].filter(pass);
+      const columns = enabled.filter((f) => (state.art !== "all" || COMMON_FIELDS.has(f)) && found.some((d) => applies(d, f)));
+      const sortValue = (d) => String(state.devSort === "name" ? d.name : state.devSort === "area" ? d.area : d[state.devSort] ?? "");
+      found.sort((a, b) => {
+        const x = sortValue(a);
+        const y = sortValue(b);
+        return (!x - !y || x.localeCompare(y, undefined, { numeric: true }) * state.devDir) || a.name.localeCompare(b.name);
+      });
+      const pages = Math.max(1, Math.ceil(found.length / state.devPs));
+      const pg = Math.min(state.devPg[gw.entry_id] ?? 0, pages - 1);
+      state.devPg[gw.entry_id] = pg;
+      const devices = found.slice(pg * state.devPs, (pg + 1) * state.devPs);
       const span = columns.length + (showArea ? 1 : 0) + 2;
       let rows;
       if (state.group && devices.length) {
@@ -854,8 +875,12 @@ export const installation = {
           })
           .join("");
       } else rows = devices.map((d) => row(gw, d, columns)).join("");
-      const head = columns.map((f) => `<th>${esc(label(t, f))}</th>`).join("");
-      return `<section class="gw">${this._instGwHead(gw, devices.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th><th>${esc(I.device)}</th>${showArea ? `<th>${esc(I.area)}</th>` : ""}${head}</tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div></section>`;
+      const th = (f, text) => `<th class="sortable" data-in-devsort="${f}"${state.devSort === f ? ` aria-sort="${state.devDir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(text)}</span><i class="sarrow">${state.devSort === f && state.devDir < 0 ? "↓" : "↑"}</i></th>`;
+      const head = columns.map((f) => th(f, label(t, f))).join("");
+      const sizes = [25, 50, 100].map((n) => `<option${state.devPs === n ? " selected" : ""}>${n}</option>`).join("");
+      const from = found.length ? pg * state.devPs + 1 : 0;
+      const pager = found.length > 25 || state.devPs !== 25 ? `<div class="spager"><span>${esc(I.sid.range(from, from + devices.length - (found.length ? 1 : 0), found.length))}</span><div><label>${esc(I.sid.perPage)} <select data-in-devps aria-label="${esc(I.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-devpg="${esc(gw.entry_id)}|-1"${pg === 0 ? " disabled" : ""} aria-label="${esc(I.sid.prev)}">‹</button><span>${esc(I.sid.page(pg + 1, pages))}</span><button class="chip" data-in-devpg="${esc(gw.entry_id)}|1"${pg >= pages - 1 ? " disabled" : ""} aria-label="${esc(I.sid.next2)}">›</button></div></div>` : "";
+      return `<section class="gw">${this._instGwHead(gw, found.length)}<div class="tablewrap"><table class="itable"><thead><tr><th></th>${th("name", I.device)}${showArea ? th("area", I.area) : ""}${head}</tr></thead><tbody>${rows || `<tr><td colspan="${span}" class="none">${esc(I.noDevices)}</td></tr>`}</tbody></table></div>${pager}</section>`;
     });
     const picked = state.selected.size;
     const bulk = picked
@@ -873,14 +898,20 @@ export const installation = {
     const artChips = kindList.length > 1
       ? `<div class="chips"><span class="isub lead">${esc(I.art)}</span><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
+    const placeable = present.filter((d) => !isVirtual(d));
+    const fusable = present.filter((d) => FUSE_KINDS.has(kindOf(d)));
+    const missTile = (name, list, field, text) => {
+      const miss = list.filter((d) => !d[field]).length;
+      return `<button class="stile ${miss ? "w" : "f"}" data-in-miss="${name}" aria-pressed="${state.miss[name]}"><b>${miss ? miss : "✓"}</b><span>${esc(text)}</span><small class="isub">${esc(I.recorded(list.length - miss, list.length))}</small></button>`;
+    };
     const missChips = state.view === "all"
-      ? `<div class="chips"><span class="isub lead">${esc(I.missing)}</span><button class="chip" data-in-miss="loc" aria-pressed="${state.miss.loc}">${esc(label(t, "location"))} <b>${present.filter((d) => !isVirtual(d) && !d.location).length}</b></button><button class="chip" data-in-miss="fuse" aria-pressed="${state.miss.fuse}">${esc(label(t, "fuse"))} <b>${present.filter((d) => FUSE_KINDS.has(kindOf(d)) && !d.fuse).length}</b></button></div>`
+      ? `<div class="stiles">${missTile("loc", placeable, "location", I.missPlace)}${missTile("fuse", fusable, "fuse", I.missFuse)}${placeable.some((d) => !d.location) ? `<button class="chip" data-in-act="next-open" style="align-self:center">${esc(I.nextOpen)}</button>` : ""}</div>`
       : "";
     const group = state.view === "all"
       ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option></select></label>`
       : "";
     const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
-    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${artChips}${missChips}${state.view === "all" ? this._instProgress() : ""}${bulk}${sections.join("")}`;
+    return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${artChips}${missChips}${bulk}${sections.join("")}`;
   },
 
   _instLinks() {
@@ -1283,6 +1314,18 @@ export const installation = {
       this._renderInstallation();
       return;
     }
+    const devMore = e.target.closest("[data-in-devsort], [data-in-devpg], [data-in-placeedit]");
+    if (devMore) {
+      const d = devMore.dataset;
+      if (d.inDevsort) Object.assign(state, state.devSort === d.inDevsort ? { devDir: -state.devDir } : { devSort: d.inDevsort, devDir: 1 });
+      else if (d.inDevpg) {
+        const [gw, step] = d.inDevpg.split("|");
+        state.devPg[gw] = Math.max(0, (state.devPg[gw] ?? 0) + Number(step));
+      } else state.placeEdit = d.inPlaceedit;
+      this._renderInstallation();
+      this.shadowRoot.querySelector("#installation [data-in-focus]")?.focus();
+      return;
+    }
     const linkMore = e.target.closest("[data-in-linksort], [data-in-linklearn], [data-in-linkreset], [data-in-linkpg]");
     if (linkMore) {
       const d = linkMore.dataset;
@@ -1418,6 +1461,12 @@ export const installation = {
     const mkind = e.target.closest("select[data-in-mfield]");
     if (mkind) {
       this._instManualInput(mkind);
+      return;
+    }
+    const devps = e.target.closest("[data-in-devps]");
+    if (devps) {
+      Object.assign(this._in, { devPs: Number(devps.value), devPg: {} });
+      this._renderInstallation();
       return;
     }
     const linkps = e.target.closest("[data-in-linkps]");
