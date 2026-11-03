@@ -172,8 +172,12 @@ def run_checks(
     data: dict[str, Any],
     devices: dict[tuple[str, str], dict[str, Any]],
     loaded: set[str],
+    observed: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Every finding per bus, the supplies' loads, and the bus devices without a module.
+
+    observed: per bus what was heard on demand (Installation.observe): the addresses that
+    answered and the base ID candidates; compared with what is documented.
 
     devices: the devices of the loaded gateways, (entry_id, device_key) -> {"name", "model",
     "bus": whether it looks like a bus device (a type of the series 14 or a bus field)}.
@@ -184,8 +188,65 @@ def run_checks(
         if device.get("bus") and key not in linked:
             result["unassigned"].append({"entry_id": key[0], "device_key": key[1]})
     for bus in data["buses"]:
-        result["buses"][bus["id"]] = _bus_checks(data, bus, devices, loaded, result["unassigned"])
+        found = _bus_checks(data, bus, devices, loaded, result["unassigned"])
+        if observed and bus["id"] in observed:
+            found["items"] += _observed_checks(data, bus, observed[bus["id"]])
+        result["buses"][bus["id"]] = found
     return result
+
+
+def _observed_checks(
+    data: dict[str, Any], bus: dict[str, Any], seen: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Heard on the bus versus documented. Experimental: the reading rests on Eltako's
+    description of the confirmation telegrams, not on a test with a FAM14 (assumed=True)."""
+    items: list[dict[str, Any]] = []
+    documented: dict[int, list[tuple[dict[str, Any], int]]] = {}
+    for module in (m for m in data["modules"] if m["bus"] == bus["id"]):
+        for channel in module["channels"]:
+            if not channel["unused"] and (a := channel_address(module, channel["n"])) is not None:
+                documented.setdefault(a, []).append((module, channel["n"]))
+    heard = {int(a): x for a, x in seen.get("answers", {}).items()}
+    unknown = sorted(a for a in heard if a not in documented)
+    if unknown:
+        items.append(
+            _item(
+                "warning",
+                "heard_undocumented",
+                [{"type": "heard", "id": str(a)} for a in unknown],
+                count=len(unknown),
+                addresses=_runs(unknown),
+                assumed=True,
+            )
+        )
+    # one round of the FAM14 takes up to about 10 s: silence says something only after a while
+    if seen.get("seconds", 0) >= 30 and (heard or seen.get("base_id")):
+        silent = [
+            (m, n) for a, users in sorted(documented.items()) if a not in heard for m, n in users
+        ]
+        if silent:
+            items.append(
+                _item(
+                    "info",
+                    "documented_silent",
+                    [_channel(m, n) for m, n in silent],
+                    count=len(silent),
+                    assumed=True,
+                )
+            )
+    if not bus.get("base_id") and seen.get("candidates"):
+        base, count = seen["candidates"][0]
+        items.append(
+            _item(
+                "info",
+                "base_id_candidate",
+                [{"type": "bus", "id": bus["id"]}],
+                base_id=base,
+                count=count,
+                assumed=True,
+            )
+        )
+    return items
 
 
 def _bus_checks(
