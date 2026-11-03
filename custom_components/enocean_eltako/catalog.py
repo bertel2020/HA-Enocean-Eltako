@@ -176,6 +176,7 @@ class DeviceModel:
     interval: int | None = None  # expected seconds between telegrams; None = only on change
     manufacturer: str = "Eltako"
     options: tuple[str, ...] = ()
+    rocker_buttons: tuple[str, str] = ("a0", "a1")  # rocker sender: buttons for on and for off
     examples: str = ""  # models shown in the flow
     models: tuple[str, ...] = ()  # models of this kind the user can pick (display only)
 
@@ -283,6 +284,7 @@ CATALOG: dict[str, DeviceModel] = {
             senders=(PSC_CONTROLLER, ROCKER),
             any_sender=True,
             options=(OPT_ROCKER_ON,),
+            rocker_buttons=("a1", "a0"),  # AI switches the plug on, A0 off (as RCM taught it)
             # D2-01-09 state over ESP3, and over Eltako ESP2 gateways as ORG 0xD2
             receive_extra=(_ref("A5-12-01:std"), _ref("M5-38-08:eltako")),
             interval=600,  # power repeated every 10 min

@@ -532,7 +532,11 @@ class DeviceForm:
             schema[vol.Required(OPT_UNAVAILABLE_WHEN_SILENT, default=False)] = BooleanSelector()
         if OPT_ROCKER_ON in model.options:
             schema[vol.Optional(SECTION_ROCKER, default={})] = _buttons_section(
-                {}, ((OPT_ROCKER_ON, "a0"), (OPT_ROCKER_OFF, "a1"))
+                {},
+                (
+                    (OPT_ROCKER_ON, model.rocker_buttons[0]),
+                    (OPT_ROCKER_OFF, model.rocker_buttons[1]),
+                ),
             )
         if new and OPT_STATUS_CHANNEL in model.options:  # the device's identity, fixed afterwards
             schema[vol.Optional(SECTION_STATUS, default={})] = section(

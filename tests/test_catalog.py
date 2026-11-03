@@ -125,3 +125,9 @@ def test_psc_can_be_commanded_by_a_rocker() -> None:
     model = CATALOG["psc"]
     assert [s.id for s in model.senders] == ["controller", "rocker"]
     assert model.any_sender
+
+
+def test_psc_rocker_default_buttons() -> None:
+    """The plug is switched on by AI (0x10) and off by A0 (0x30); Eltako actuators keep A0 / AI."""
+    assert CATALOG["psc"].rocker_buttons == ("a1", "a0")
+    assert CATALOG["switch"].rocker_buttons == ("a0", "a1")
