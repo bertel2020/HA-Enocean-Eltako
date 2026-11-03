@@ -721,18 +721,8 @@ def _rail():
 def test_the_rail_checks_air_terminator_and_row_links() -> None:
     data, bus, master, supply, fud, fsb = _rail()
     found = {i["code"]: i for i in run_checks(data, {}, set())["buses"][bus]["items"]}
-    # FAM14 (1-2), FSNT14 (3) and FUD14 (4) touch: warm neighbours above 6 W want half a TE
-    assert found["spacing"]["args"]["assumed"] is True
-    assert (
-        len(
-            [
-                i
-                for i in run_checks(data, {}, set())["buses"][bus]["items"]
-                if i["code"] == "spacing"
-            ]
-        )
-        == 2
-    )
+    # FAM14 (1-2), FSNT14 (3), FUD14 (4) side by side, the FSNT14's section over 6 W
+    assert "supply_air_left" in found and "supply_air_fam14" in found
     assert found["fud14_spacer"]["targets"] == [{"type": "module", "id": fud["id"]}]
     assert found["terminator_missing"]["targets"] == [{"type": "module", "id": fsb["id"]}]
     assert found["row_link_missing"]["targets"] == [{"type": "row", "id": "r1"}]
@@ -913,3 +903,35 @@ async def test_listening_hears_live_telegrams_and_can_be_stopped(
     assert (await client.receive_json())["success"]
     await _settle(hass)
     assert len(entry.runtime_data.hub.dispatcher._listeners.get(None, ())) == listeners
+
+
+def test_a_loaded_power_supply_wants_air_as_the_fam14_manual_says() -> None:
+    data, bus, master, supply, fud, fsb = _rail()
+
+    def codes():
+        return {i["code"]: i for i in run_checks(data, {}, set())["buses"][bus]["items"]}
+
+    load = supply_loads(data, data["buses"][0])["supplies"][0]["load"]
+    assert load > 6  # FAM14 0.8 + FUD14 7 + FSB14 0.42
+    found = codes()
+    # above 4 W: half a TE on the FSNT14's left side; above 6 W: half a TE to the FAM14
+    assert found["supply_air_left"]["targets"] == [
+        {"type": "module", "id": supply["id"]},
+        {"type": "module", "id": master["id"]},
+    ]
+    assert found["supply_air_left"]["args"] == {"load": load, "watts": 4.0}
+    assert found["supply_air_fam14"]["args"]["watts"] == 6.0
+    # a DS14 between FAM14 and FSNT14: half a TE of air, both rules met
+    supply["spacer_before"], supply["slot"] = True, 3.5
+    fud["slot"] = 4.5
+    assert "supply_air_left" not in codes() and "supply_air_fam14" not in codes()
+    # between 4 and 6 W only the left side counts
+    supply["spacer_before"], supply["slot"], fud["slot"] = False, 3.0, 4.0
+    fud["power"] = "4"
+    assert "supply_air_left" in codes() and "supply_air_fam14" not in codes()
+    fud["power"] = "2"  # below 4 W: no air needed
+    assert "supply_air_left" not in codes()
+    # the FSNT14 first in its row has no neighbour on its left
+    fud["power"] = "7"
+    master["row"], master["slot"] = "r2", 3.0
+    assert "supply_air_left" not in codes() and "supply_air_fam14" not in codes()
