@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Installation view**: the kind chips sit on the line of the view switch, and the two missing-data tiles are one compact line.
 - **Takeover view**: the two counts above the device list (in configuration.yaml, already set up) are larger.
 - **Telegram view**: the *Unknown senders only* chip shows how many unknown senders the buffer holds.
 - **Telegram view**: clearing the list moved from its own icon, next to the send button, into the more menu (⋮), so it can no longer be hit by mistake.
@@ -68,6 +69,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Ansicht Anlage**: Die Art-Chips stehen in der Zeile der Ansichtswahl, und die beiden Kacheln für fehlende Angaben sind eine kompakte Zeile.
 - **Ansicht Übernahme**: Die beiden Zähler über der Geräteliste (in configuration.yaml, bereits eingerichtet) sind größer.
 - **Ansicht Telegramme**: Der Chip *Nur unbekannte Sender* zeigt, wie viele unbekannte Sender der Puffer enthält.
 - **Ansicht Telegramme**: Das Leeren der Liste liegt nicht mehr als eigenes Symbol neben dem Senden-Knopf, sondern im Menü (⋮) und lässt sich so nicht mehr versehentlich treffen.
