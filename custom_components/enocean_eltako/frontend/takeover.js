@@ -126,6 +126,8 @@ export const TAKEOVER_STYLE = `
   .takeover .chip-s.avail { color: var(--muted); border: 1px dashed var(--line); background: none; }
   .takeover button.chip-s { font: inherit; font-size: calc(11px * var(--fs)); border: 0; cursor: pointer; text-align: left; }
   .takeover button.chip-s:hover { text-decoration: underline; }
+  /* the two counts above the list tell what there is to take over: a size to be read, not a footnote */
+  .takeover .counts .chip-s { font-size: calc(13px * var(--fs)); padding: 4px 12px; margin: 0 6px 4px 0; }
   .takeover .mono.old, .takeover .old { color: var(--muted); }
   .takeover .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); }
   .takeover .check.wait { opacity: .6; }
