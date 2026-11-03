@@ -235,8 +235,8 @@ for (const lang of ["en", "de"]) {
     const busText = () => root.querySelector("#instBody").textContent;
     expect("the bus head names the master and the radio gateway as access", !!root.querySelector("#installation .bv-card.master [data-bv-go='module|m_fam']") && root.querySelector("#installation .bv-card.access").textContent.includes("FAM-USB Keller"), true);
     expect("the bus tiles: devices, channels, addresses, supplies, checks", root.querySelectorAll("#installation button.tile[data-bv-sub]").length, 5);
-    expect("one row per module of the bus", root.querySelectorAll("#installation table.bv-list tr.bv-mod").length, 8);
-    expect("the channels below their module", root.querySelectorAll("#installation table.bv-list tr.bv-ch").length, 10);
+    expect("one row per module of the bus", root.querySelectorAll("#installation table.bv-list tr.bv-mod").length, 10);
+    expect("the channels below their module", root.querySelectorAll("#installation table.bv-list tr.bv-ch").length, 12);
     expect("a duplicate address is marked", root.querySelectorAll("#installation table.bv-list tr.dup").length, 2);
     expect("a channel of Home Assistant links to its device", !!root.querySelector('#installation table.bv-list [data-in-goto="sub1"]'), true);
     root.querySelector('#installation [data-bv-mode="address"]').click();
@@ -277,13 +277,37 @@ for (const lang of ["en", "de"]) {
     expect("the checks show the duplicate address as an error", root.querySelectorAll("#installation .bv-check.error").length > 0 && busText().length > 0, true);
     root.querySelector('#installation [data-bv-sub="cabinets"]').click();
     await settle();
-    expect("a cabinet with its two rows", root.querySelectorAll("#installation .bv-cab").length === 1 && root.querySelectorAll("#installation [data-bv-row]").length === 2, true);
+    // the cabinet drawn to scale: a rail per row, tiles at their slots, the bands of the supply sections
+    expect("a cabinet with its three rows, each a rail", root.querySelectorAll("#installation .bv-cab").length === 1 && root.querySelectorAll("#installation [data-bv-row]").length === 3 && root.querySelectorAll("#installation .bvr-rail").length === 3, true);
+    expect("the FAM14 is the master tile, two TE wide", root.querySelector('#installation .bvr-tile.master[data-bv-go="module|m_fam"]')?.getAttribute("style").includes("span 4"), true);
+    expect("a device not on the bus is a hatched block", !!root.querySelector('#installation .bvr-tile.foreign[data-bv-go="module|m_ls"]'), true);
+    expect("separator bridge, spacer and the row link are drawn", !!root.querySelector("#installation .bvr-tb") && !!root.querySelector("#installation .bvr-spacer") && root.querySelectorAll("#installation .bvr-foot").length === 2, true);
+    expect("supply sections by place are bands below the rail", root.querySelectorAll("#installation .bvr-band").length >= 2, true);
+    root.querySelector('#installation [data-bv-act="arrange"]').click();
+    await settle();
+    root.querySelector('#installation [data-bv-move="m_fsb|-1"]').click();
+    await settle();
+    expect("arranging asks the server to swap with the neighbour", fake.sent.some((m) => m.type === "enocean_eltako/installation/move" && m.module_id === "m_fsb" && m.direction === -1), true);
+    root.querySelector('#installation [data-bv-cabsel="c2"]').click();
+    await settle();
+    expect("another cabinet is chosen", root.querySelector("#installation .bv-cab h3").textContent, "UV Obergeschoss");
+    root.querySelector('#installation [data-bv-act="foreign-new"]').click();
+    await settle();
+    expect("a device not on the bus is written down in the drawer, with a free slot", drawer()?.querySelector('[data-bvf="role"] option[selected]')?.value === "foreign" && drawer().querySelector('[data-bvf="slot"]').value === "3", true);
+    root.querySelector('#installation [data-bv-act="close"]').click();
+    await settle();
+    root.querySelector('#installation [data-bv-cabsel="c1"]').click();
+    await settle();
+    // the printout: the rails, the channels by place, the open checks and label strips to scale
+    const host = root.host;
+    const page = host._bvPrintPage(host._bv());
+    expect("the printout has the rails, the channel list and label strips", page.includes("bvr-rail") && page.includes("class=\"strip\"") && page.includes("width:18mm") && page.includes("00000081") && !page.includes("data-bv-move"), true);
     root.querySelector('#installation [data-bv-cabsave="c1"]').click();
     await settle();
-    expect("a cabinet is saved with its rows", fake.sent.some((m) => m.type === "enocean_eltako/installation/set" && m.kind === "cabinet" && m.item.rows.length === 2), true);
+    expect("a cabinet is saved with its rows", fake.sent.some((m) => m.type === "enocean_eltako/installation/set" && m.kind === "cabinet" && m.item.rows.length === 3), true);
     root.querySelector('#installation [data-bv-sub="supplies"]').click();
     await settle();
-    expect("the power supplies by address range with a load bar each", root.querySelectorAll("#installation .bv-sec").length === 2 && root.querySelectorAll("#installation .bv-load").length === 2, true);
+    expect("the power supplies by place: three sections with a load bar each", root.querySelectorAll("#installation .bv-sec").length === 3 && root.querySelectorAll("#installation .bv-load").length === 3 && /(Section|Abschnitt) C/.test(busText()), true);
     // the previous view of the supplies by address range stays, inside the supplies
     const legacy = "#installation details.bv-legacy";
     expect("the bus table has a sum, tiles and load bars in the supply rows", root.querySelectorAll(`${legacy} .itable tbody tr`).length > 3 && root.querySelectorAll(`${legacy} .tile`).length === 5 && root.querySelectorAll(`${legacy} .psurow .barbg`).length > 0, true);

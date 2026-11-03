@@ -18,7 +18,59 @@ const typeKey = (type) => String(type ?? "").replace(/\s+/g, "").toUpperCase();
 const fmtNum = (n) => String(n).replace(".", ",");
 const watts = (text) => (/^\d{1,4}([.,]\d{1,3})?$/.test(String(text ?? "").trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 
-export const busState = () => ({ id: "", sub: "list", mode: "place", drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "" });
+export const busState = () => ({ id: "", sub: "list", mode: "place", drawer: null, history: [], error: "", legacyOpen: false, draft: null, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false });
+
+// the DIN rail drawn to scale in TE (one grid column is half a TE): in the panel and in the print
+export const RAIL_CSS = `
+  .bvr-row { display: grid; gap: 6px; border-radius: 8px; padding: 2px; }
+  .bvr-row.hl { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .bvr-label { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: calc(13px * var(--fs, 1)); }
+  .bvr-label b { font-weight: 500; }
+  .bvr-wrap { overflow-x: auto; padding-bottom: 4px; }
+  .bvr-rail { position: relative; isolation: isolate; display: grid; grid-template-columns: repeat(var(--cols), minmax(20px, 1fr)); grid-template-rows: auto 20px; min-width: calc(var(--cols) * 20px); border-radius: 6px; background-color: var(--soft); background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); background-size: calc(100% / (var(--cols) / 2)) 100%; padding-top: 6px; border: 1px solid var(--line); }
+  .bvr-rail::before { content: ""; position: absolute; left: 0; right: 0; top: 46%; height: 14px; transform: translateY(-50%); background: linear-gradient(var(--line), var(--line-2, var(--line))); z-index: 0; }
+  .bvr-tile { position: relative; z-index: 1; grid-row: 1; margin: 0 1px; min-height: 150px; border-radius: 5px; border: 1px solid color-mix(in srgb, var(--k) 45%, var(--line)); background: color-mix(in srgb, var(--k) 12%, var(--surface)); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px 2px 26px; text-align: center; overflow: hidden; color: var(--text); font: inherit; box-sizing: border-box; min-width: 0; }
+  button.bvr-tile { cursor: pointer; }
+  button.bvr-tile:hover { border-color: var(--k); }
+  button.bvr-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .bvr-tile.doc { border-style: dashed; }
+  .bvr-tile.master { background: color-mix(in srgb, var(--k) 22%, var(--surface)); border-width: 2px; }
+  .bvr-tile.foreign { background: repeating-linear-gradient(45deg, var(--soft) 0 6px, var(--surface) 6px 12px); border-style: dashed; border-color: var(--input-line, var(--line)); }
+  .bvr-tile.hl { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent); }
+  .bvr-adr { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); white-space: nowrap; }
+  .bvr-adr.none { color: var(--warn); border-color: var(--warn-line, var(--warn)); }
+  .bvr-type { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; font-weight: 600; flex: 1; white-space: nowrap; }
+  .bvr-tile.wide .bvr-type { writing-mode: horizontal-tb; transform: none; flex: 0; padding-top: 6px; white-space: normal; overflow-wrap: anywhere; }
+  .bvr-lbl { font-size: 11px; color: var(--muted); line-height: 1.2; }
+  .bvr-leds { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .bvr-tile.wide .bvr-leds { flex-direction: row; }
+  .bvr-led { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--k); background: var(--k); box-sizing: border-box; display: inline-block; }
+  .bvr-led.doc { background: transparent; border-style: dashed; }
+  .bvr-led.free { background: transparent; border-color: var(--input-line, var(--line)); }
+  .bvr-flag { position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+  .bvr-flag.bad { background: var(--bad); }
+  .bvr-mtag { font-size: 10px; font-weight: 600; color: var(--on-accent, #fff); background: var(--k); border-radius: 6px; padding: 0 5px; }
+  .bvr-spacer { grid-row: 1; z-index: 1; margin: 0 1px; min-height: 150px; border-radius: 4px; border: 1px dashed var(--input-line, var(--line)); background: repeating-linear-gradient(90deg, transparent 0 3px, var(--line) 3px 4px); display: grid; place-items: center; }
+  .bvr-spacer span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 10px; color: var(--muted); }
+  .bvr-tb { grid-row: 1; z-index: 2; justify-self: end; width: 0; border-right: 3px dashed var(--bad); margin-right: -2px; position: relative; }
+  .bvr-tb span { position: absolute; bottom: 30px; left: 4px; font-size: 10px; font-weight: 600; color: var(--bad); background: var(--surface); padding: 0 3px; border-radius: 4px; white-space: nowrap; }
+  .bvr-term { grid-row: 1; z-index: 2; align-self: center; justify-self: start; font-size: 10px; padding: 2px 4px; margin-left: 4px; border-radius: 4px; background: var(--surface); border: 1px solid var(--input-line, var(--line)); white-space: nowrap; }
+  .bvr-band { grid-row: 2; align-self: center; height: 16px; margin: 0 1px; border-radius: 4px; font: inherit; font-size: 10px; line-height: 16px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 0; text-align: left; background: color-mix(in srgb, var(--sec) 22%, transparent); color: color-mix(in srgb, var(--sec) 75%, var(--text)); }
+  button.bvr-band { cursor: pointer; }
+  .bvr-band.bad { background: color-mix(in srgb, var(--bad) 25%, transparent); color: var(--bad); }
+  .bvr-moves { grid-row: 1; align-self: end; z-index: 3; display: flex; justify-content: center; gap: 2px; padding-bottom: 4px; pointer-events: none; }
+  .bvr-moves button { pointer-events: auto; }
+  .bvr-moves button { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1px solid var(--input-line, var(--line)); background: var(--surface); color: var(--text); cursor: pointer; font-size: 11px; line-height: 1; }
+  .bvr-moves button:hover { border-color: var(--accent); color: var(--accent); }
+  .bvr-foot { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .bvr-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); align-items: center; }
+  .bvr-legend i { display: inline-block; vertical-align: middle; margin-right: 4px; }
+  [data-r="master"], [data-r="gateway"] { --k: var(--k-bus, #2f6fb5); }
+  [data-r="actuator"] { --k: var(--k-aktor, #d77f1f); }
+  [data-r="meter"] { --k: var(--k-sensor, #139a87); }
+  [data-r="input"] { --k: var(--k-taster, #7b5cc9); }
+  [data-r="supply"], [data-r="foreign"], [data-r="other"] { --k: var(--k-psu, #6b7b8d); }`;
+const SECTION_COLORS = ["var(--k-bus)", "var(--k-aktor)", "var(--k-sensor)", "var(--k-taster)"];
 
 export const BUS_STYLE = `
   .installation .bv-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
@@ -122,6 +174,11 @@ export const BUS_STYLE = `
   .installation .bv-rowedit { display: grid; grid-template-columns: minmax(0, 1.4fr) 70px minmax(0, 1fr) 80px 32px; gap: 6px; align-items: center; border-radius: 8px; padding: 2px; }
   .installation .bv-rowuse { font-size: calc(12px * var(--fs)); color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; grid-column: 1 / -1; padding: 0 2px 6px; }
   .installation details.bv-legacy > summary { cursor: pointer; font-weight: 500; padding: 6px 0; }
+  .installation .bv-err.top { margin: 0; }
+  .installation details.bv-cabedit > summary { cursor: pointer; font-weight: 500; padding: 4px 0; }
+  .installation .bv-cab .bv-cabhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .installation .bv-cab .bv-cabhead h3 { margin: 0; }
+  ${RAIL_CSS}
   @media (max-width: 860px) {
     .installation .bv-head { grid-template-columns: minmax(0, 1fr); }
   }
@@ -286,7 +343,7 @@ export const busView = {
     const warnings = items.filter((i) => i.level === "warning").length;
     const subs = SUBS.map((s) => `<button data-bv-sub="${s}" aria-pressed="${state.sub === s}">${esc(B.subs[s])}${s === "checks" && (errors || warnings) ? `<span class="bv-cnt${errors ? "" : " warn"}">${errors || warnings}</span>` : ""}</button>`).join("");
     const body = { list: () => this._bvList(v), addresses: () => this._bvAddresses(v), supplies: () => this._bvSupplies(v), checks: () => this._bvChecksView(v), cabinets: () => this._bvCabinets(v) }[state.sub]();
-    return `${chips}${this._bvHead(v)}${this._bvTiles(v)}<div class="bv-bar"><div class="seg" role="group" aria-label="${esc(B.views)}">${subs}</div><span class="grow"></span><button class="chip" data-bv-act="module-new">${esc(B.addModule)}</button><button class="chip" data-bv-act="bus-edit" data-bv-id="${esc(v.bus.id)}">${esc(B.editBus)}</button></div>${body}${this._bvDrawer(v)}`;
+    return `${chips}${this._bvHead(v)}${this._bvTiles(v)}<div class="bv-bar"><div class="seg" role="group" aria-label="${esc(B.views)}">${subs}</div><span class="grow"></span><button class="chip" data-bv-act="module-new">${esc(B.addModule)}</button><button class="chip" data-bv-act="bus-edit" data-bv-id="${esc(v.bus.id)}">${esc(B.editBus)}</button><button class="chip" data-bv-act="print">${svg(ICON.print)}${esc(B.print)}</button></div>${body}${this._bvDrawer(v)}`;
   },
 
   _bvBusName(v, b) {
@@ -351,9 +408,9 @@ export const busView = {
       const s = this._bvSupplyOf(v, m);
       const role = this._bvRole(v, m);
       const place = this._bvPlace(v, m);
-      const power = role === "supply" || role === "master" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
+      const power = role === "foreign" ? '<span class="isub">–</span>' : role === "supply" || role === "master" ? `<span class="isub">${esc(B.delivers(fmtNum(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12)))}</span>` : p.w != null ? `${esc(fmtNum(p.w))} W${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}` : `<span class="tag warn">${esc(B.noValue)}</span>`;
       const range = this._bvRange(v, m) ?? (this._bvCount(v, m) ? `<span class="tag warn">${esc(B.none)}</span>` : "–");
-      const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : ""].join("");
+      const tags = [m.placeholder ? `<span class="tag doc">${esc(B.placeholder)}</span>` : "", role === "master" ? `<span class="tag kind" data-r="master">${esc(B.roles.master)}</span>` : role === "supply" ? `<span class="tag kind" data-r="supply">${esc(B.roles.supply)}</span>` : role === "foreign" ? `<span class="tag doc">${esc(B.roles.foreign)}</span>` : ""].join("");
       return `<tr class="bv-mod" data-r="${role}" data-in-row="bv|${esc(m.id)}"><td>${place ? this._bvL("place", m.id, esc(place)) : `<span class="tag warn">${esc(B.noPlace)}</span>`}</td><td>${this._bvL("module", m.id, `<b>${esc(m.type || B.unknownType)}</b>`)} ${m.name ? esc(m.name) : ""} ${tags}<div class="isub">${esc(B.te(fmtNum(this._bvTe(v, m))))}${m.legacy_location ? ` · ${esc(B.before)} „${esc(m.legacy_location)}“` : ""}</div></td><td class="mono">${range}</td><td></td><td class="bv-hide-s"></td><td class="bv-hide-s"></td><td class="num">${power}</td><td class="bv-hide-s">${s ? this._bvL("supply", s.module ?? "", esc(this._bvSupplyName(v, s))) : '<span class="isub">–</span>'}</td></tr>`;
     };
     let body = "";
@@ -421,7 +478,9 @@ export const busView = {
     const cards = loads.supplies.map((s) => {
       const pct = s.capacity ? Math.min(100, (s.load / s.capacity) * 100) : 100;
       const owner = s.module ? v.byId.get(s.module) : null;
-      const name = owner ? this._bvL("module", owner.id, esc(this._bvSupplyName(v, s))) : esc(this._bvSupplyName(v, s));
+      const feeders = (s.modules ?? (s.module ? [s.module] : [])).map((id) => v.byId.get(id)).filter(Boolean);
+      const names = feeders.length ? feeders.map((m) => this._bvL("module", m.id, esc(this._bvRole(v, m) === "master" ? B.famSupply : this._bvTitle(v, m)))).join(" + ") : owner ? this._bvL("module", owner.id, esc(this._bvSupplyName(v, s))) : esc(this._bvSupplyName(v, s));
+      const name = s.section ? `${esc(B.section(s.section))} · ${names}` : names;
       const members = s.members.map((id) => v.byId.get(id)).filter(Boolean).map((m) => {
         const p = this._bvPower(v, m);
         return `<tr><td>${this._bvL("module", m.id, esc(this._bvTitle(v, m)))}</td><td class="mono">${esc(this._bvRange(v, m) ?? "–")}</td><td class="num">${p.w != null ? esc(w(p.w)) : `<span class="tag warn">${esc(B.noValue)}</span>`}${p.from === "user" ? ` <span class="tag">${esc(B.entered)}</span>` : ""}</td></tr>`;
@@ -459,6 +518,10 @@ export const busView = {
       const found = v.devices.get(`${entryId}|${key}`);
       return `<button class="chip small" data-bv-assign="${esc(target.id)}">+ ${esc(found?.d.name ?? key)}</button>`;
     }
+    if (target.type === "row") {
+      const found = v.rows.get(target.id);
+      return found ? `<button class="chip small" data-bv-go="row|${esc(target.id)}">${esc(`${found.cab.name} · ${found.row.name}`)}</button>` : "";
+    }
     if (target.type === "view") return `<button class="chip small" data-bv-sub="${esc(target.id)}">${esc(B.subs[target.id] ?? target.id)}</button>`;
     if (target.type === "bus") return `<button class="chip small" data-bv-act="bus-edit" data-bv-id="${esc(target.id)}">${esc(B.editBus)}</button>`;
     return "";
@@ -489,21 +552,179 @@ export const busView = {
 
   // ---- cabinets and rows ------------------------------------------------------------------------
 
+  _bvFlag(v, m) {
+    // the worst finding about a module, as a dot on its tile
+    const mine = this._bvMine(v, m).map((i) => i.level);
+    return mine.includes("error") ? "bad" : mine.includes("warning") ? "warn" : "";
+  },
+
+  _bvSections(v) {
+    // the sections of the rail by place (with a colour each); none while the address ranges decide
+    const loads = v.checks.supplies ?? { mode: "range", supplies: [] };
+    if (loads.mode !== "place") return [];
+    return loads.supplies.map((s, i) => ({ ...s, color: SECTION_COLORS[i % SECTION_COLORS.length], ids: new Set([...s.members, ...(s.modules ?? [])]) }));
+  },
+
+  _bvRail(v, row, { edit = false, print = false } = {}) {
+    // one row of a cabinet: the modules at their slots, spacers, separator bridges, the
+    // terminating resistor and, below the rail, the bands of the supply sections
+    const B = this._t.inst.busv;
+    const lang = this._hass?.language || "en";
+    const w = (n) => `${Number(n ?? 0).toLocaleString(lang, { maximumFractionDigits: 2 })} W`;
+    const cols = Math.round(row.te * 2);
+    const mods = v.data.modules.filter((m) => m.row === row.id && m.slot != null).sort((a, b) => a.slot - b.slot);
+    const items = [];
+    for (const m of mods) {
+      const te = this._bvTe(v, m);
+      const col = Math.round(m.slot * 2 - 1);
+      const span = Math.max(1, Math.round(te * 2));
+      const role = this._bvRole(v, m);
+      const title = `${this._bvTitle(v, m)} · ${this._bvPlace(v, m)}`;
+      if (m.spacer_before && col > 1) items.push(`<div class="bvr-spacer" style="grid-column:${col - 1} / span 1" title="${esc(B.spacerShort)}"><span>½</span></div>`);
+      const wide = te >= 2 ? " wide" : "";
+      const moves = edit ? `<div class="bvr-moves" style="grid-column:${col} / span ${span}"><button data-bv-move="${esc(m.id)}|-1" title="${esc(B.moveLeft)}" aria-label="${esc(`${m.type} ${B.moveLeft}`)}">◀</button><button data-bv-move="${esc(m.id)}|1" title="${esc(B.moveRight)}" aria-label="${esc(`${m.type} ${B.moveRight}`)}">▶</button></div>` : "";
+      const tag = print ? "div" : "button";
+      const go = print ? "" : ` data-bv-go="module|${esc(m.id)}"`;
+      if (role === "foreign") {
+        items.push(`<${tag} class="bvr-tile foreign wide" data-r="foreign"${go} data-hl="${esc(m.id)}" style="grid-column:${col} / span ${span}" title="${esc(title)}"><span class="bvr-type">${esc(m.name || m.type || B.roles.foreign)}</span><span class="bvr-lbl">${esc(B.notOnBusTe(fmtNum(te)))}</span></${tag}>${moves}`);
+      } else {
+        const count = this._bvCount(v, m);
+        const leds = Array.from({ length: Math.min(count, 16) }, (_, i) => {
+          const c = m.channels.find((x) => x.n === i + 1);
+          const cls = !c || c.unused ? "free" : c.device_key ? "" : "doc";
+          return `<i class="bvr-led ${cls}" title="${esc(`${B.channelShort(i + 1)}: ${c ? this._bvChannel(v, m, c).name : B.chUnknown}`)}"></i>`;
+        }).join("");
+        const flag = print ? "" : this._bvFlag(v, m);
+        const adr = role === "master" ? `<span class="bvr-mtag">${esc(B.masterTag)}</span>` : role === "supply" ? `<span class="bvr-adr">${esc(w(watts(m.supply_watts) ?? this._bvType(v, m)?.supply ?? 12))}</span>` : this._bvRange(v, m) ? `<span class="bvr-adr">${esc(this._bvRange(v, m))}</span>` : `<span class="bvr-adr none">${esc(B.none)}</span>`;
+        const label = te >= 2 ? `<span class="bvr-lbl">${esc(role === "master" ? B.masterSupply(fmtNum(this._bvType(v, m)?.supply ?? 12)) : m.name || "")}</span>` : "";
+        const documented = m.channels.length && !m.channels.some((c) => c.device_key) ? " doc" : "";
+        items.push(`<${tag} class="bvr-tile${wide}${role === "master" ? " master" : ""}${documented}${this._in.bus.hl === m.id ? " hl" : ""}" data-r="${role}"${go} data-hl="${esc(m.id)}" style="grid-column:${col} / span ${span}" title="${esc(title)}">${flag ? `<span class="bvr-flag${flag === "bad" ? " bad" : ""}"></span>` : ""}${adr}<span class="bvr-type">${esc(m.type || B.unknownType)}</span>${label}<span class="bvr-leds">${leds}</span></${tag}>${moves}`);
+      }
+      if (m.separator_after) items.push(`<div class="bvr-tb" style="grid-column:${Math.min(col + span - 1, cols)} / span 1"><span>TB14</span></div>`);
+      if (m.terminator) items.push(`<div class="bvr-term" style="grid-column:${Math.min(col + span, cols)} / span ${Math.min(2, cols - Math.min(col + span, cols) + 1)}">⊣ 120 Ω</div>`);
+    }
+    for (const s of this._bvSections(v)) {
+      const inRow = mods.filter((m) => s.ids.has(m.id));
+      if (!inRow.length) continue;
+      const a = Math.min(...inRow.map((m) => Math.round(m.slot * 2 - 1) - (m.spacer_before ? 1 : 0)));
+      const b = Math.max(...inRow.map((m) => Math.round(m.slot * 2 - 1) + Math.round(this._bvTe(v, m) * 2)));
+      const feeders = (s.modules ?? []).map((id) => v.byId.get(id)).filter(Boolean).map((m) => (this._bvRole(v, m) === "master" ? "FAM14" : m.type)).join(" + ") || B.noSupply;
+      const text = `${s.section} · ${feeders} · ${w(s.load)}`;
+      const tag = print ? "div" : "button";
+      items.push(`<${tag} class="bvr-band${s.state === "over" || s.state === "none" ? " bad" : ""}" style="--sec:${s.color};grid-column:${Math.max(a, 1)} / ${Math.min(b, cols + 1)}"${print ? "" : ` data-bv-sub="supplies"`} title="${esc(`${B.section(s.section)}: ${w(s.load)} / ${w(s.capacity)}`)}">${esc(text)}</${tag}>`);
+    }
+    const used = mods.reduce((n, m) => n + this._bvTe(v, m) + (m.spacer_before ? 0.5 : 0), 0);
+    const foreign = mods.filter((m) => this._bvRole(v, m) === "foreign").length;
+    const next = row.next?.kind ? `<div class="bvr-foot">↳ ${esc(B.busOn(B.next[row.next.kind], row.next.length_m))}</div>` : "";
+    return `<div class="bvr-row${this._in.bus.hl === row.id ? " hl" : ""}" data-bv-rail="${esc(row.id)}"><div class="bvr-label"><b>${esc(row.name)}</b><span class="isub">${esc(B.rowUse2(fmtNum(used), row.te, mods.length - foreign, foreign))}</span></div><div class="bvr-wrap"><div class="bvr-rail" style="--cols:${cols}">${items.join("")}</div></div>${next}</div>`;
+  },
+
+  _bvLegend() {
+    const B = this._t.inst.busv;
+    const kinds = ["master", "actuator", "meter", "input", "supply"].map((r) => `<span data-r="${r}"><i class="bvr-led"></i>${esc(B.roles[r])}</span>`).join("");
+    return `<div class="bvr-legend">${kinds}<span data-r="actuator"><i class="bvr-led doc"></i>${esc(B.documented)}</span><span><i class="bvr-led free" style="--k:var(--muted)"></i>${esc(B.free)}</span><span><i style="width:0;height:12px;border-left:3px dashed var(--bad)"></i>${esc(B.separatorShort)}</span><span><i style="width:10px;height:12px;border:1px dashed var(--input-line)"></i>${esc(B.spacerShort)}</span></div>`;
+  },
+
   _bvCabinets(v) {
     const B = this._t.inst.busv;
     const state = this._in.bus;
-    const cards = v.data.cabinets.map((c) => {
+    const cab = v.data.cabinets.find((c) => c.id === state.cab) ?? v.data.cabinets[0];
+    const chips = v.data.cabinets.length > 1 ? v.data.cabinets.map((c) => `<button class="chip" data-bv-cabsel="${esc(c.id)}" aria-pressed="${c.id === cab?.id}">${esc(c.name)}</button>`).join("") : "";
+    const editForm = (c) => {
       const rows = c.rows.map((r) => {
         const mods = this._bvOrder(v, v.data.modules.filter((m) => m.row === r.id));
         const used = mods.reduce((n, m) => n + this._bvTe(v, m) + (m.spacer_before ? 0.5 : 0), 0);
         const next = NEXT.map((k) => `<option value="${k}"${(r.next?.kind ?? "") === k ? " selected" : ""}>${esc(B.next[k || "none"])}</option>`).join("");
-        return `<div class="bv-rowedit${state.hl === r.id ? " hl" : ""}" data-bv-row="${esc(r.id)}"><input data-bvr="name" value="${esc(r.name)}" aria-label="${esc(B.rowName)}" placeholder="${esc(B.rowName)}"><input data-bvr="te" type="number" min="1" max="48" step="1" value="${esc(r.te)}" aria-label="${esc(B.rowTe)}" title="${esc(B.rowTe)}"><select class="bv-next" data-bvr="kind" aria-label="${esc(B.rowNext)}">${next}</select><input class="bv-next" data-bvr="length" type="number" min="0" max="1000" step="0.5" value="${esc(r.next?.length_m ?? "")}" placeholder="${esc(B.metres)}" aria-label="${esc(B.metres)}"><button class="bv-ibtn" data-bv-rowdel="${esc(r.id)}" title="${esc(B.rowRemove)}" aria-label="${esc(B.rowRemove)}">${svg(ICON.close)}</button><div class="bv-rowuse">${esc(B.rowUse(fmtNum(used), r.te, mods.length))}${mods.map((m) => this._bvL("module", m.id, esc(`${fmtNum(m.slot)}: ${m.type || B.unknownType}`), "chip small")).join("")}</div></div>`;
+        return `<div class="bv-rowedit${state.hl === r.id ? " hl" : ""}" data-bv-row="${esc(r.id)}"><input data-bvr="name" value="${esc(r.name)}" aria-label="${esc(B.rowName)}" placeholder="${esc(B.rowName)}"><input data-bvr="te" type="number" min="1" max="48" step="1" value="${esc(r.te)}" aria-label="${esc(B.rowTe)}" title="${esc(B.rowTe)}"><select class="bv-next" data-bvr="kind" aria-label="${esc(B.rowNext)}">${next}</select><input class="bv-next" data-bvr="length" type="number" min="0" max="1000" step="0.5" value="${esc(r.next?.length_m ?? "")}" placeholder="${esc(B.metres)}" aria-label="${esc(B.metres)}"><button class="bv-ibtn" data-bv-rowdel="${esc(r.id)}" title="${esc(B.rowRemove)}" aria-label="${esc(B.rowRemove)}">${svg(ICON.close)}</button><div class="bv-rowuse">${esc(B.rowUse(fmtNum(used), r.te, mods.length))}</div></div>`;
       }).join("");
-      return `<section class="bv-cab${state.hl === c.id ? " hl" : ""}" data-bv-cab="${esc(c.id)}"><div class="bv-form"><label class="wide"><span>${esc(B.cabinetName)}</span><input data-bvc="name" value="${esc(c.name)}" autocomplete="off"></label><label class="wide"><span>${esc(B.note)}</span><input data-bvc="note" value="${esc(c.note)}" autocomplete="off"></label></div><div class="bv-bar"><b>${esc(B.rows)}</b><span class="isub">${esc(B.rowsHint)}</span></div>${rows || `<div class="isub">${esc(B.noRows)}</div>`}<div class="bv-bar"><button class="chip small" data-bv-rowadd="${esc(c.id)}">${esc(B.addRow)}</button><span class="grow"></span><button class="chip small" data-bv-cabdel="${esc(c.id)}">${esc(B.cabinetRemove)}</button><button class="chip small primary" data-bv-cabsave="${esc(c.id)}">${esc(B.save)}</button></div>${state.cabinet === c.id && state.error ? `<div class="bv-err" role="alert">${esc(state.error)}</div>` : ""}</section>`;
-    }).join("");
+      return `<details class="bv-cabedit" data-bv-cabedit${state.cabEdit ? " open" : ""}><summary>${esc(B.editCabinet)}</summary><div class="bv-form"><label class="wide"><span>${esc(B.cabinetName)}</span><input data-bvc="name" value="${esc(c.name)}" autocomplete="off"></label><label class="wide"><span>${esc(B.note)}</span><input data-bvc="note" value="${esc(c.note)}" autocomplete="off"></label></div><div class="bv-bar"><b>${esc(B.rows)}</b><span class="isub">${esc(B.rowsHint)}</span></div>${rows || `<div class="isub">${esc(B.noRows)}</div>`}<div class="bv-bar"><button class="chip small" data-bv-rowadd="${esc(c.id)}">${esc(B.addRow)}</button><span class="grow"></span><button class="chip small" data-bv-cabdel="${esc(c.id)}">${esc(B.cabinetRemove)}</button><button class="chip small primary" data-bv-cabsave="${esc(c.id)}">${esc(B.save)}</button></div></details>`;
+    };
     const unplaced = v.modules.filter((m) => !m.row && !m.placeholder);
-    const tray = unplaced.length ? `<div class="bv-box"><b>${esc(B.withoutPlace(unplaced.length))}</b><div class="chips">${unplaced.map((m) => `<button class="chip small" data-bv-go="module|${esc(m.id)}">${esc(this._bvTitle(v, m))}</button>`).join("")}</div><span class="isub">${esc(B.withoutPlaceHint)}</span></div>` : "";
-    return `<div class="bv-bar"><span class="isub">${esc(B.cabinetsHint)}</span><span class="grow"></span><button class="chip" data-bv-act="cabinet-new">${esc(B.addCabinet)}</button></div>${tray}${cards || `<div class="none">${esc(B.noCabinets)}</div>`}`;
+    const tray = unplaced.length ? `<div class="bv-box"><b>${esc(B.withoutPlace(unplaced.length))}</b><div class="chips">${unplaced.map((m) => `<button class="chip small" data-bv-go="module|${esc(m.id)}">${esc(this._bvTitle(v, m))}${this._bvRange(v, m) ? ` · ${esc(this._bvRange(v, m))}` : ""}</button>`).join("")}</div><span class="isub">${esc(B.withoutPlaceHint)}</span></div>` : "";
+    const sections = (v.checks.supplies?.mode ?? "range") === "place" ? "" : `<p class="bv-note">${esc(B.bandsLater)}</p>`;
+    const card = cab
+      ? `<section class="bv-cab${state.hl === cab.id ? " hl" : ""}" data-bv-cab="${esc(cab.id)}"><div class="bv-cabhead"><h3>${esc(cab.name)}</h3><span class="isub">${esc(B.cabinetSub(cab.rows.length))}</span></div>${state.error && state.cabinet === cab.id ? `<div class="bv-err top" role="alert">${esc(state.error)}</div>` : ""}${cab.rows.map((r) => this._bvRail(v, r, { edit: state.arrange })).join("") || `<div class="isub">${esc(B.noRows)}</div>`}${this._bvLegend()}${sections}${editForm(cab)}</section>`
+      : "";
+    const tools = cab ? `<button class="chip" data-bv-act="arrange" aria-pressed="${Boolean(state.arrange)}">${esc(state.arrange ? B.arrangeDone : B.arrange)}</button><button class="chip" data-bv-act="foreign-new">${esc(B.addForeign)}</button>` : "";
+    return `<div class="bv-bar">${chips}<span class="grow"></span>${tools}<button class="chip" data-bv-act="cabinet-new">${esc(B.addCabinet)}</button></div><p class="bv-note">${esc(state.arrange ? B.arrangeHint : B.cabinetsHint)}</p>${tray}${card || `<div class="none">${esc(B.noCabinets)}</div>`}`;
+  },
+
+  // ---- the printout: rails, channel list, open checks, label strips ----------------------------
+
+  _bvPrintPage(v) {
+    const B = this._t.inst.busv;
+    const lang = this._hass?.language || "en";
+    const bus = v.bus;
+    const master = v.byId.get(bus.master ?? "");
+    const access = bus.access.map((a) => `${v.gws.get(a.entry_id)?.title ?? B.gatewayGone} (${a.via === "wired" ? B.wired : B.radio})`).join(", ");
+    const save = this._in.bus.hl;
+    this._in.bus.hl = "";
+    const cabinets = v.data.cabinets.filter((c) => c.rows.some((r) => v.modules.some((m) => m.row === r.id))).map((c) => `<section class="cab"><h2>${esc(c.name)}</h2>${c.note ? `<p class="sub">${esc(c.note)}</p>` : ""}${c.rows.map((r) => this._bvRail(v, r, { print: true })).join("")}</section>`).join("");
+    this._in.bus.hl = save;
+    const rows = this._bvOrder(v, v.modules).map((m) => {
+      const head = `<tr class="mod"><td>${esc(this._bvPlace(v, m) || B.noPlace)}</td><td><b>${esc(this._bvTitle(v, m))}</b></td><td class="mono">${esc(this._bvRange(v, m) ?? "–")}</td><td></td><td></td><td>${esc([m.circuit, m.fuse].filter(Boolean).join(" · "))}</td></tr>`;
+      const chs = m.channels.filter((c) => !c.unused).map((c) => {
+        const info = this._bvChannel(v, m, c);
+        return `<tr><td class="sub">${esc(B.channelN(c.n))}</td><td>${esc(info.name)}</td><td class="mono">${esc(this._bvAddr(m, c) ?? "–")}</td><td class="mono">${esc(c.feedback_id || "–")}</td><td>${esc(info.ha ? info.ha.d.name : info.hand ? B.byHand : B.documented)}</td><td></td></tr>`;
+      }).join("");
+      return head + chs;
+    }).join("");
+    const words = (i) => {
+      const w = B.checks[i.code];
+      return w ? (typeof w.title === "function" ? w.title(i.args ?? {}) : w.title) : i.code;
+    };
+    const open = v.checks.items.filter((i) => i.level !== "info").map((i) => `<li><b>${esc(B.levels[i.level])}:</b> ${esc(words(i))}</li>`).join("");
+    const strips = v.data.cabinets.flatMap((c) => c.rows.map((r) => {
+      const mods = v.data.modules.filter((m) => m.row === r.id && m.slot != null).sort((a, b) => a.slot - b.slot);
+      if (!mods.length) return "";
+      let at = 1;
+      const cells = [];
+      for (const m of mods) {
+        const start = m.slot - (m.spacer_before ? 0.5 : 0);
+        if (start > at) cells.push(`<div class="cell gap" style="width:${(start - at) * 18}mm"></div>`);
+        if (m.spacer_before) cells.push(`<div class="cell gap" style="width:9mm"></div>`);
+        const names = m.channels.filter((c) => !c.unused).map((c) => `${c.n} ${this._bvChannel(v, m, c).name}`);
+        cells.push(`<div class="cell" style="width:${this._bvTe(v, m) * 18}mm"><b>${esc(this._bvRole(v, m) === "foreign" ? m.name || m.type : m.type || "")}</b><span class="mono">${esc(this._bvRange(v, m) ?? "")}</span>${names.map((n) => `<span>${esc(n)}</span>`).join("")}</div>`);
+        at = m.slot + this._bvTe(v, m);
+      }
+      return `<div class="strip"><div class="sub">${esc(`${c.name} · ${r.name}`)}</div><div class="cells">${cells.join("")}</div></div>`;
+    })).join("");
+    const tokens = "--bg:#fff;--surface:#fff;--soft:#f5f7f9;--line:#d5dbe2;--line-2:#eef0f3;--input-line:#c3cbd5;--text:#1b1f24;--muted:#5b6270;--accent:#0a6aa8;--on-accent:#fff;--warn:#8a4b00;--warn-line:#f3d19e;--bad:#a1261b;--focus:#7db8e0;--k-bus:#2f6fb5;--k-sensor:#139a87;--k-taster:#7b5cc9;--k-aktor:#d77f1f;--k-psu:#6b7b8d;--fs:1";
+    return `<!doctype html><html lang="${esc(lang)}"><head><meta charset="utf-8"><title>${esc(B.printTitle(this._bvBusName(v, bus)))}</title><style>
+      :root { ${tokens}; } body { font: 12px/1.4 Roboto, system-ui, sans-serif; color: var(--text); background: #fff; margin: 0; padding: 12mm; }
+      h1 { font-size: 18px; margin: 0 0 4px; } h2 { font-size: 15px; margin: 16px 0 6px; } .sub { color: var(--muted); } .mono { font-family: ui-monospace, monospace; }
+      table { border-collapse: collapse; width: 100%; } th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; } tr.mod td { background: var(--soft); border-top: 1px solid var(--line); }
+      .cab { break-inside: avoid; } .bvr-row { margin-bottom: 8px; break-inside: avoid; } .bvr-wrap { overflow: visible; } .bvr-rail { min-width: 0; }
+      .bvr-tile { min-height: 120px; } .bvr-spacer { min-height: 120px; }
+      .labels { break-before: page; } .strip { margin: 0 0 6mm; break-inside: avoid; } .cells { display: flex; flex-wrap: wrap; }
+      .cell { box-sizing: border-box; height: 16mm; border: 0.3mm solid #000; padding: 1mm; overflow: hidden; display: flex; flex-direction: column; font-size: 7pt; line-height: 1.15; } .cell b { font-size: 8pt; } .cell span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .cell.gap { border-style: dashed; border-color: #999; }
+      @page { size: A4 landscape; margin: 10mm; } @media print { body { padding: 0; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+      ${RAIL_CSS}
+    </style></head><body>
+      <h1>${esc(B.printTitle(this._bvBusName(v, bus)))}</h1>
+      <p class="sub">${esc(B.master)}: ${esc(master ? this._bvTitle(v, master) : B.noMaster)}${bus.base_id ? ` · ${esc(B.baseId)} ${esc(bus.base_id)}` : ""} · ${esc(B.access)}: ${esc(access || "–")} · ${esc(new Date().toLocaleString(lang))}</p>
+      ${cabinets ? `${cabinets}${this._bvLegend()}` : `<p class="sub">${esc(B.noCabinets)}</p>`}
+      <h2>${esc(B.printChannels)}</h2><table><thead><tr><th>${esc(B.cols.place)}</th><th>${esc(B.cols.device)}</th><th>${esc(B.cols.address)}</th><th>${esc(B.cols.feedback)}</th><th>${esc(B.cols.ha)}</th><th>${esc(B.circuitFuse)}</th></tr></thead><tbody>${rows}</tbody></table>
+      <h2>${esc(B.printChecks)}</h2>${open ? `<ul>${open}</ul>` : `<p class="sub">${esc(B.tiles.fine)}</p>`}
+      ${strips ? `<section class="labels"><h2>${esc(B.printLabels)}</h2><p class="sub">${esc(B.printLabelsHint)}</p>${strips}</section>` : ""}
+    </body></html>`;
+  },
+
+  _bvPrint() {
+    const v = this._bv();
+    if (!v.bus) return;
+    const page = this._bvPrintPage(v);
+    const win = window.open("", "_blank");
+    if (!win) {
+      this._download(page, "text/html", `enocean-bus-${new Date().toISOString().slice(0, 10)}.html`); // pop-ups blocked
+      this._notice(this._t.doc.popupBlocked, true);
+      return;
+    }
+    win.document.write(page);
+    win.document.close();
+    win.focus();
+    win.print();
   },
 
   // ---- the drawer ---------------------------------------------------------------------------------
@@ -610,7 +831,7 @@ export const busView = {
       const options = `<option value=""${value === "" ? " selected" : ""}>${esc(B.chUnknown)}</option><option value="unused"${value === "unused" ? " selected" : ""}>${esc(B.free)}</option><option value="doc"${value === "doc" ? " selected" : ""}>${esc(B.chDocumented)}</option>${manualOpt}${own}${candidates.map(([k, x]) => `<option value="ha|${esc(k)}"${value === `ha|${k}` ? " selected" : ""}>${esc(`${x.d.name}${x.d.model ? ` (${x.d.model})` : ""}`)}</option>`).join("")}`;
       return `<div class="bv-chedit" data-bvch="${n}"><span class="no">${esc(B.channelShort(n))}</span><select data-bvc-f="link" aria-label="${esc(B.channelN(n))}">${options}</select><input data-bvc-f="name" value="${esc(c.name)}" placeholder="${esc(B.chName)}" aria-label="${esc(B.chName)}" autocomplete="off"><input data-bvc-f="feedback_id" class="mono" value="${esc(c.feedback_id)}" placeholder="${esc(B.feedback)}" aria-label="${esc(B.feedback)}" maxlength="16" autocomplete="off"></div>`;
     }).join("");
-    const supplyFields = role === "supply" || role === "master" ? `${field("supply_watts", B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
+    const supplyFields = role === "foreign" ? "" : role === "supply" || role === "master" ? `${field("supply_watts", B.supplyWatts, m.supply_watts, `inputmode="decimal" placeholder="${esc(fmtNum(this._bvType(v, m)?.supply ?? 12))}"`)}${role === "supply" ? field("legacy_range", B.rangeField, m.legacy_range, 'placeholder="1-126"') : ""}` : field("power", B.powerField, m.power, `inputmode="decimal" placeholder="${esc(this._bvType(v, m)?.power != null ? fmtNum(this._bvType(v, m).power) : "W")}"`);
     const addr = this._bvCount(v, m) ? field("first_address", B.firstAddress, m.first_address ?? "", `type="number" min="1" max="${ADDRESSES}" placeholder="1–${ADDRESSES}"`) : "";
     const found = m.row ? v.rows.get(m.row) : null;
     return `<div class="bv-box edit" data-bv-form="${esc(isNew ? "new" : m.id)}"><h3>${esc(isNew ? B.newModule : B.edit)}</h3><div class="bv-form">
@@ -738,11 +959,16 @@ export const busView = {
     const v = this._bv();
     if (type === "view") return this._bvSub(id);
     let hl = id;
-    if (type === "place") hl = v.byId.get(id)?.row ?? "";
+    let cab = type === "cabinet" ? id : "";
+    if (type === "place") {
+      hl = id; // the tile itself
+      cab = v.rows.get(v.byId.get(id)?.row)?.cab.id ?? "";
+    }
+    if (type === "row") cab = v.rows.get(id)?.cab.id ?? "";
     if (type === "cabinet" || type === "row" || type === "place") {
-      Object.assign(state, { drawer: null, history: [], sub: "cabinets", hl });
+      Object.assign(state, { drawer: null, history: [], sub: "cabinets", hl, cab: cab || state.cab });
       this._renderInstallation();
-      this.shadowRoot.querySelector(`#installation [data-bv-row="${CSS.escape(hl)}"], #installation [data-bv-cab="${CSS.escape(hl)}"]`)?.scrollIntoView?.({ block: "center" });
+      this.shadowRoot.querySelector(`#installation [data-hl="${CSS.escape(hl)}"], #installation [data-bv-rail="${CSS.escape(hl)}"], #installation [data-bv-cab="${CSS.escape(hl)}"]`)?.scrollIntoView?.({ block: "center", inline: "center" });
       setTimeout(() => {
         if (state.hl === hl) {
           state.hl = "";
@@ -773,10 +999,12 @@ export const busView = {
     // true when the click was the bus view's
     const state = this._in.bus;
     if (e.target.closest("[data-in-goto], [data-in-snd]") && state.drawer) Object.assign(state, { drawer: null, history: [], draft: null });
-    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-mode], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel]");
+    const el = e.target.closest("[data-bv-go], [data-bv-sub], [data-bv-act], [data-bv-bus], [data-bv-mode], [data-bv-assign], [data-bv-rowadd], [data-bv-rowdel], [data-bv-cabsave], [data-bv-cabdel], [data-bv-move], [data-bv-cabsel]");
     if (!el || !this.shadowRoot.getElementById("installation")?.contains(el)) {
       const legacy = e.target.closest("details.bv-legacy > summary");
       if (legacy) state.legacyOpen = !legacy.parentElement.open;
+      const cabEdit = e.target.closest("details.bv-cabedit > summary");
+      if (cabEdit) state.cabEdit = !cabEdit.parentElement.open;
       return false;
     }
     if (el.disabled) return true;
@@ -793,6 +1021,13 @@ export const busView = {
       this._renderInstallation();
     } else if (d.bvAssign) this._bvAssign(d.bvAssign);
     else if (d.bvRowadd) this._bvRowAdd(d.bvRowadd);
+    else if (d.bvMove) {
+      const [id, dir] = d.bvMove.split("|");
+      this._bvMove(id, Number(dir));
+    } else if (d.bvCabsel) {
+      Object.assign(state, { cab: d.bvCabsel, error: "" });
+      this._renderInstallation();
+    }
     else if (d.bvRowdel) el.closest("[data-bv-row]")?.remove();
     else if (d.bvCabsave) this._bvSaveCabinet(d.bvCabsave);
     else if (d.bvCabdel) {
@@ -822,6 +1057,11 @@ export const busView = {
     else if (act === "bus-edit") this._bvOpen("bus", el.dataset.bvId);
     else if (act === "bus-save") this._bvSaveBus();
     else if (act === "bus-remove") this._bvRemove("bus", state.drawer?.id);
+    else if (act === "print") this._bvPrint();
+    else if (act === "arrange") {
+      Object.assign(state, { arrange: !state.arrange, error: "" });
+      this._renderInstallation();
+    } else if (act === "foreign-new") this._bvNewForeign(v);
     else if (act === "cabinet-new") this._bvSaveCabinet("", { name: this._t.inst.busv.cabinetDefault(v.data.cabinets.length + 1), note: "", rows: [{ name: this._t.inst.busv.rowDefault(1), te: 12 }] });
   },
 
@@ -982,6 +1222,44 @@ export const busView = {
     Object.assign(state, { drawer: null, history: [], cabinet: "" });
     if (kind === "bus") state.id = "";
     await this._bvReload();
+  },
+
+  async _bvMove(id, direction) {
+    // arrange: swap with the neighbour, or half a TE at the end of the row; the server checks it
+    const state = this._in.bus;
+    const v = this._bv();
+    state.cabinet = v.rows.get(v.byId.get(id)?.row)?.cab.id ?? "";
+    const result = await this._bvCall({ type: "enocean_eltako/installation/move", module_id: id, direction });
+    if (!result) return;
+    state.hl = id;
+    await this._bvReload();
+    const tile = this.shadowRoot.querySelector(`#installation [data-bv-move="${CSS.escape(id)}|${direction}"]`);
+    tile?.focus();
+    setTimeout(() => {
+      if (state.hl === id) {
+        state.hl = "";
+        this.shadowRoot.querySelectorAll("#installation .bvr-tile.hl").forEach((el) => el.classList.remove("hl"));
+      }
+    }, 1600);
+  },
+
+  _bvNewForeign(v) {
+    // a device on the rail that is not on the bus (circuit breaker, RCD, terminals): the first gap of the chosen cabinet
+    const state = this._in.bus;
+    const cab = v.data.cabinets.find((c) => c.id === state.cab) ?? v.data.cabinets[0];
+    let row = null;
+    let slot = null;
+    for (const r of cab?.rows ?? []) {
+      const taken = v.data.modules.filter((m) => m.row === r.id && m.slot != null).map((m) => [m.slot - (m.spacer_before ? 0.5 : 0), m.slot + this._bvTe(v, m)]);
+      for (let at = 1; at <= r.te; at += 0.5) if (!taken.some(([a, b]) => at < b && a < at + 1)) {
+        [row, slot] = [r.id, at];
+        break;
+      }
+      if (row) break;
+    }
+    const blank = { id: "", bus: v.bus?.id ?? "", type: "LS", role: "foreign", name: "", row, slot, te: 1, spacer_before: false, separator_after: false, terminator: false, first_address: null, supply_watts: "", legacy_range: "", legacy_location: "", placeholder: false, power: "", circuit: "", fuse: "", installed: "", revision: "", note: "", channels: [] };
+    state.draft = { key: "new", module: blank };
+    this._bvOpen("module", "new");
   },
 
   async _bvAssign(ref) {
