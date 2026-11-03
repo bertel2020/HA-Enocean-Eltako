@@ -119,7 +119,7 @@ async def test_version_4_manual_entries_get_the_fields_of_version_5(
     )
     assert [manual[k] for k in ("kind", "location", "power")] == ["", "", ""]
     await notes.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 7
 
 
 async def test_version_5_manual_entries_get_the_fields_of_version_6(
@@ -166,7 +166,7 @@ async def test_version_5_manual_entries_get_the_fields_of_version_6(
     )
     assert notes.manual[0]["installed"] == ""  # not a date
     await notes.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 7
 
 
 async def test_import_matches_manual_entries_by_address(
@@ -272,7 +272,7 @@ async def test_notes_are_saved_shown_and_kept(
 
     # unloading writes what waits for its delayed save; a reload reads it back
     await hass.config_entries.async_unload(entry.entry_id)
-    stored = await Store(hass, 6, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 7, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored == {
         "gateway": "Keller, rechts",
         "supplies": [],
@@ -285,6 +285,7 @@ async def test_notes_are_saved_shown_and_kept(
         "link_info": {},
         "signal": {},
         "heard": {},
+        "last": {},
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -506,7 +507,7 @@ async def test_version_3_supplies_get_the_fields_of_version_4(
     )
     assert [supply[k] for k in ("location", "circuit", "fuse", "note")] == ["", "", "", ""]
     await notes.async_flush()
-    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 6
+    assert hass_storage[f"enocean_eltako.notes.{entry.entry_id}"]["version"] == 7
 
 
 async def test_a_supply_keeps_its_place_circuit_fuse_and_note(
@@ -830,7 +831,7 @@ async def test_version_1_notes_are_migrated(hass: HomeAssistant, hass_storage, g
     assert notes.device("05-00-00-12")["location"] == ""
     # a stored version 2 is read as it is
     await notes.async_flush()
-    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 6
+    assert hass_storage["enocean_eltako.notes.legacy"]["version"] == 7
 
 
 @pytest.mark.parametrize(
@@ -983,8 +984,17 @@ async def test_signal_data_and_unknown_senders_survive_a_restart(
     assert notes.heard["00-21-63-43"]["rorg"] == "F6"
     await hass.config_entries.async_unload(entry.entry_id)
     assert notes._signal_timer is None
-    stored = await Store(hass, 6, f"enocean_eltako.notes.{entry.entry_id}").async_load()
+    stored = await Store(hass, 7, f"enocean_eltako.notes.{entry.entry_id}").async_load()
     assert stored["signal"]["05-00-00-12"]["other"]["direct"] == 3
+    # the last telegram of each sender is kept, also of the unknown one
+    assert stored["last"]["05-00-00-12"]["data"] == "0003090C"
+    assert (
+        stored["last"]["05-00-00-12"]["status"] == 1 and stored["last"]["05-00-00-12"]["dbm"] == -85
+    )
+    assert (
+        stored["last"]["00-21-63-43"]["rorg"] == "F6"
+        and stored["last"]["00-21-63-43"]["data"] == "70"
+    )
     assert stored["heard"]["00-21-63-43"]["dbm"] == -71
 
     # after the restart the gateways' view of the device and the unknown sender are still there

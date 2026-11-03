@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Last telegram of each sender**: the newest telegram of every known device and every unknown sender is kept across restarts (type, data bytes, status byte, signal, time; at most 300 senders per gateway, written with the signal data). The opened row of the Devices view shows it under **Radio** as **Last telegram**, with the bytes in hex and what they say, so a sensor that rarely sends always has something to show. Notes store version 7.
 - **Eltako bus view**: a power supply loaded above two thirds of its rated power (8 W of 12 W for the FSNT14-12V/12W, the cautious value of Eltako's manuals) shows **another supply recommended** and a highlighted bar; above the rated power it still shows overloaded.
 - **Eltako bus view**: **Add power supply** offers the 12 V supplies of Eltako with their rated power (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) and a custom supply to fill in yourself.
 - **Devices view (table)**: the device name opens the device in the Devices view.
@@ -76,6 +77,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Letztes Telegramm jedes Senders**: Das neueste Telegramm jedes bekannten Geräts und jedes unbekannten Senders bleibt über Neustarts erhalten (Typ, Datenbytes, Statusbyte, Signal, Zeit; höchstens 300 Sender je Gateway, geschrieben zusammen mit den Signaldaten). Die aufgeklappte Zeile der Geräte-Ansicht zeigt es unter **Funk** als **Letztes Telegramm**, mit den Bytes in hex und dem, was sie sagen; ein Sensor, der selten sendet, hat so immer etwas zu zeigen. Notizspeicher Version 7.
 - **Eltako-Bus-Ansicht**: Ein Netzteil, das über zwei Drittel seiner Nennleistung belastet ist (8 W von 12 W beim FSNT14-12V/12W, der vorsichtige Wert aus Eltakos Handbüchern), zeigt **weiteres Netzteil empfohlen** und einen hervorgehobenen Balken; über der Nennleistung bleibt es überlastet.
 - **Eltako-Bus-Ansicht**: **Netzteil hinzufügen** bietet die 12-V-Netzteile von Eltako mit ihrer Nennleistung an (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) und ein eigenes Netzteil zum selbst Ausfüllen.
 - **Geräteansicht (Tabelle)**: Der Gerätename öffnet das Gerät in der Ansicht Geräte.

@@ -582,7 +582,27 @@ def device_details(device: Any) -> dict[str, Any]:
             "latency_max": round(max(latencies), 1) if latencies else None,
         }
     gateway = device.entry
+    notes = gateway.runtime_data.hub.notes[gateway.entry_id]
+    labels = hass.data.get(LABELS, {}).get(hass.config.language, {})
+    last_telegrams = []
+    for radio_id in device.radio_ids:  # the newest telegram of each ID, also from before a restart
+        if (saved := notes.last.get(format_id(radio_id))) is None:
+            continue
+        item = {"sender": format_id(radio_id), **saved}
+        telegram = RadioTelegram(
+            int(saved["rorg"], 16),
+            bytes.fromhex(saved["data"]),
+            radio_id,
+            saved["status"],
+            dbm=saved["dbm"],
+        )
+        for ref in device.receive_refs(radio_id):
+            if values := decode_telegram(ref, telegram):
+                item["fields"] = readable_fields(device, values, labels)
+                break
+        last_telegrams.append(item)
     return {
+        "last_telegrams": last_telegrams,
         "key": device.subentry.subentry_id,
         "entry_id": gateway.entry_id,
         "gateway_name": gateway.title,
