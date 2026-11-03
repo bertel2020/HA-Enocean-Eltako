@@ -6,6 +6,7 @@
 
 const VERSION = new URL(import.meta.url).search;
 const { ICON, docBus, docTables, esc, foldFree, svg } = await import(`./shared.js${VERSION}`);
+const { BUS_STYLE, busState, busView } = await import(`./bus.js${VERSION}`);
 
 // the typed fields of a device, in table order; installed is a date
 export const INSTALLATION_FIELDS = ["location", "group", "circuit", "bus_address", "feedback_id", "bus_power", "fuse", "installed", "revision", "power", "note"];
@@ -104,7 +105,7 @@ const loadColumns = () => {
 
 // the view's state when the panel starts
 export const installationState = () => ({
-  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "",
+  doc: null, error: false, tab: "devices", view: "all", art: "all", miss: { loc: false, fuse: false }, folded: new Set(), colMenu: false, sheet: false, placeEdit: "", nameEdit: "", docDraft: {}, devSort: "name", devDir: 1, devPg: {}, devPs: 25, linkSort: "name", linkDir: 1, linkPg: 0, linkPs: 25, linkLearn: false, sid: {}, log: { kinds: new Set(), period: "all", dir: -1, pg: 0, ps: 25 }, funkCols: new Set(FUNK_DEFAULT), docForm: false, docError: "", hl: "", poolOpen: loadPoolOpen(), columns: loadColumns(), group: "", linkView: "actuator", linkFilter: "all", linkSource: "all", linkAdd: "", testing: new Set(), selected: new Set(), paste: "", pasteResult: "", q: "", bus: busState(),
 });
 
 export const INSTALLATION_STYLE = `
@@ -420,7 +421,7 @@ export const INSTALLATION_STYLE = `
   .installation .tag.ev-sender_assigned { --e: var(--k-bus); }
   .installation .tag.ev-teach_in { --e: var(--k-taster); }
   .installation .tag.ev-sender_test { --e: var(--k-sensor); }
-  .installation .tag.ev-import { --e: var(--k-psu); }`;
+  .installation .tag.ev-import { --e: var(--k-psu); }${BUS_STYLE}`;
 
 const gateways = (doc) => doc?.gateways ?? [];
 const label = (t, field) => t.inst.fields[field];
@@ -450,6 +451,8 @@ export function parseTable(text, t) {
 }
 
 export const installation = {
+  ...busView,
+
   _managing() {
     // the sender ID pools sit above the table of the gateway senders
     return this._view === "installation" && this._in.tab === "gwsenders";
@@ -720,6 +723,8 @@ export const installation = {
   },
 
   _instBus() {
+    // the bus as documented, by its master; a server without the installation store: per gateway as before
+    if (this._in.doc?.installation) return this._busView();
     const t = this._t;
     return `<p class="isub">${esc(t.doc.tbl.busIntro.replace(" (*)", ""))} ${esc(t.inst.editHint)}</p>` + this._instPerGateway((gw) => this._instBusOf(gw));
   },
@@ -874,7 +879,9 @@ export const installation = {
     const t = this._t.inst;
     const state = this._in;
     const all = gateways(state.doc).flatMap((gw) => [...gw.devices, ...this._instExtras(gw)]);
-    const count = (view) => all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length;
+    // the bus counts its documented devices (modules) once the server keeps them
+    const busDevices = (state.doc.installation?.modules ?? []).filter((m) => !["master", "supply", "foreign"].includes(m.role || state.doc.bus_types?.[String(m.type).replace(/\s+/g, "").toUpperCase()]?.role || "other"));
+    const count = (view) => (view === "bus" && state.doc.installation ? busDevices.length : all.filter((d) => !VIEW_KINDS[view] || VIEW_KINDS[view].includes(kindOf(d))).length);
     const seg = VIEWS.map((v) => `<button data-in-view="${v}" aria-pressed="${state.view === v}">${esc(t.views[v])}<span class="isub">${count(v)}</span></button>`).join("");
     this._artChips = "";
     const body = { all: () => this._instDevices(), virt: () => this._instVirt(), bus: () => this._instBus(), funk: () => this._instFunk() }[state.view]();
@@ -1257,6 +1264,7 @@ export const installation = {
   },
 
   _installationClick(e) {
+    if (this._busClick(e)) return;
     const state = this._in;
     if (state.colMenu && !e.target.closest(".colmenu")) {
       state.colMenu = false;
@@ -1582,6 +1590,7 @@ export const installation = {
   },
 
   _installationChange(e) {
+    if (this._busInput(e)) return;
     if (e.target.matches("select[data-in-doc-field]")) {
       // the kind decides which fields the form has: redraw, the draft keeps what was typed
       this._in.docDraft[e.target.dataset.inDocField] = e.target.value;
