@@ -691,7 +691,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = ["[data-sel]", ".expand", "[data-copy]", "[data-only]", "[data-hide]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".rowmore", "[data-sel]", ".expand", "[data-copy]", "[data-only]", "[data-hide]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -813,7 +813,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._onPointer = (e) => {
       const look = this.shadowRoot.querySelector(".look");
       if (look && !e.composedPath().includes(look) && !this.shadowRoot.getElementById("lookMenu").hidden) this._toggleLook(false);
-      if (!e.composedPath().some((el) => el.classList?.contains("addmenu") || el.classList?.contains("add"))) this._closeAddMenu();
+      if (!e.composedPath().some((el) => el.classList?.contains("addmenu") || el.classList?.contains("add") || el.classList?.contains("rowmore"))) this._closeAddMenu();
       const more = this.shadowRoot.querySelector(".more");
       if (more && !e.composedPath().includes(more) && !this.shadowRoot.getElementById("moreMenu").hidden) this._toggleMenu(false);
     };
@@ -1259,6 +1259,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (head) {
         const key = head.dataset.dsort;
         this._setDevSort(key, this._devSort.key === key ? !this._devSort.desc : DEV_DESC_FIRST.has(key));
+        return;
+      }
+      const rowMore = e.target.closest(".rowmore");
+      if (rowMore) {
+        this._rowMenu(rowMore);
         return;
       }
       const add = e.target.closest(".add");
@@ -1925,24 +1930,52 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _addMenu(button) {
     // the + of an unknown sender asks: set it up as a device in Home Assistant, or only write it down
+    const t = this._t;
+    this._popupMenu(
+      button,
+      button.dataset.id,
+      `<button role="menuitem" data-addact="device">${svg(ICON.plus)}<span>${esc(t.addAsDevice)}<small>${esc(t.addAsDeviceHint)}</small></span></button>
+      <button role="menuitem" data-addact="document">${svg(ICON.list)}<span>${esc(t.addDocOnly)}<small>${esc(t.addDocOnlyHint)}</small></span></button>`,
+      (act) => (act === "device" ? this._addDevice(button.dataset.id) : this._documentSender(button.dataset.gateway, button.dataset.id))
+    );
+  }
+
+  _rowMenu(button) {
+    // the ⋮ of a device row: what else can be done with it, so the row's buttons never move around
+    const t = this._t;
+    const d = button.dataset;
+    const item = (act, icon, label) => `<button role="menuitem" data-addact="${act}">${svg(icon)}<span>${esc(label)}</span></button>`;
+    this._popupMenu(
+      button,
+      d.rowmore,
+      (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : ""),
+      (act) => {
+        if (act === "teach") this._openTeach(d.mTeach);
+        else if (act === "page") this._navigate(`/config/devices/device/${d.mPage}`);
+        else {
+          this._setText(d.mOnly);
+          this._setView("telegrams");
+        }
+      }
+    );
+  }
+
+  _popupMenu(button, ref, items, onAct) {
     const open = this.shadowRoot.querySelector(".addmenu");
-    const again = open && open._for === button.dataset.id;
+    const again = open && open._for === ref;
     this._closeAddMenu();
     if (again) return;
-    const t = this._t;
     const menu = document.createElement("div");
     menu.className = "addmenu";
     menu.setAttribute("role", "menu");
-    menu._for = button.dataset.id;
-    menu.innerHTML = `<button role="menuitem" data-addact="device">${svg(ICON.plus)}<span>${esc(t.addAsDevice)}<small>${esc(t.addAsDeviceHint)}</small></span></button>
-      <button role="menuitem" data-addact="document">${svg(ICON.list)}<span>${esc(t.addDocOnly)}<small>${esc(t.addDocOnlyHint)}</small></span></button>`;
+    menu._for = ref;
+    menu.innerHTML = items;
     menu.addEventListener("click", (e) => {
       const act = e.target.closest("[data-addact]")?.dataset.addact;
       if (!act) return;
       e.stopPropagation();
       this._closeAddMenu();
-      if (act === "device") this._addDevice(button.dataset.id);
-      else this._documentSender(button.dataset.gateway, button.dataset.id);
+      onAct(act);
     });
     this.shadowRoot.appendChild(menu);
     const box = button.getBoundingClientRect();
@@ -3429,7 +3462,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
     // one state per device, the first that applies: a disabled device is not judged by its silence
     const state = d.disabled ? "disabled" : d.unknown ? "unknown" : d.silent ? "silent" : d.time == null ? "unheard" : "active";
-    const pill = `<span class="pill ${state}" title="${esc(t.statusHint[state])}">${esc(t.status[state])}</span>`;
+    const pill = `<span class="pill ${state}" title="${esc(t.deviceStateHint[state])}">${esc(t.deviceState[state])}</span>`;
     const hints =
       pill +
       (d.unknown
@@ -3445,14 +3478,15 @@ class EnOceanEltakoPanel extends HTMLElement {
         <span class="signal">${this._sparkline(d.trend)}${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}`;
     const only = d.name || d.id;
     const open = !!d.devKey && this._devOpen.has(d.devKey);
-    // the device's page in Home Assistant: an icon only, the row has buttons enough
-    const page = d.page ? `<button class="icon-btn" data-device-page="${esc(d.page)}" title="${esc(t.openDeviceHint)}" aria-label="${esc(t.openDeviceHint)}">${svg(ICON.open)}</button>` : "";
-    const teach = d.senders.length ? `<button class="icon-btn" data-teach="${esc(d.devKey)}" title="${esc(t.teachHint)}" aria-label="${esc(t.teachHint)}">${svg(ICON.teach)}</button>` : "";
-    const acts = d.quiet
-      ? teach + page
-      : `${teach}${page}<button class="icon-btn" data-only="${esc(only)}" title="${esc(t.showTelegrams)}" aria-label="${esc(t.showTelegrams)}">${svg(ICON.filter)}</button>${
-          d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : ""
-        }`;
+    // everything but the one main action sits in the ⋮ menu: the buttons of a row stay where they are
+    const add = d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : "";
+    const menuTeach = d.senders.length ? d.devKey : "";
+    const menuOnly = d.quiet && d.time == null ? "" : only;
+    const more =
+      menuTeach || d.page || menuOnly
+        ? `<button class="icon-btn rowmore" data-rowmore="${esc(d.devKey || d.key)}" data-m-teach="${esc(menuTeach)}" data-m-page="${esc(d.page || "")}" data-m-only="${esc(menuOnly)}" aria-haspopup="menu" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</button>`
+        : "";
+    const acts = add + more;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
     const picked = !!d.devKey && this._sel.has(d.devKey);
     const box = d.devKey ? `<input type="checkbox" class="selbox" data-sel="${esc(d.devKey)}"${picked ? " checked" : ""} aria-label="${esc(t.selBoxLabel(d.name || d.id))}">` : "";
