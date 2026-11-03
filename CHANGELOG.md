@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Panel header on a phone**: the palette and the integration link stay on the first line next to the logo (the link as an icon), the views scroll below.
 - **Devices view**: every device shows one **state pill** (active, silent, not heard, disabled, unknown) instead of a mix of tags; the first that applies counts, so a disabled device is not judged by its silence. The text names the state, the color only backs it up.
 - **Devices view**: the table keeps its widths: the action column has a fixed width, the *Last heard* header sits over its right-aligned values, every row is at least one height, and a device never heard no longer says so twice (the state pill does). On phones the kind tile is smaller.
 - **Devices view**: a device with no telegram in the monitor's buffer (after a restart, or one that rarely sends) shows what its entities hold, up to two values, instead of an empty column; unavailable and unknown values are left out, diagnostics and settings never count.
@@ -63,6 +64,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Kopfzeile des Panels auf dem Handy**: Farbwahl und Integrations-Link bleiben neben dem Logo in der ersten Zeile (der Link als Symbol), die Ansichten scrollen darunter.
 - **Geräteansicht**: Die Tabelle behält ihre Breiten: die Aktionsspalte hat eine feste Breite, die Überschrift *Zuletzt gehört* steht über den rechtsbündigen Werten, jede Zeile ist mindestens eine Höhe hoch, und ein nie gehörtes Gerät sagt das nicht mehr doppelt (die Statuspille tut es). Auf dem Handy ist die Kachel der Art kleiner.
 - **Geräteansicht**: Ein Gerät ohne Telegramm im Puffer des Monitors (nach einem Neustart oder weil es selten sendet) zeigt, was seine Entitäten halten, bis zu zwei Werte, statt einer leeren Spalte; nicht verfügbare und unbekannte Werte entfallen, Diagnose und Einstellungen zählen nie.
 - **Geräteansicht**: Die Statuschips (Alle Geräte, Eingerichtet, Unbekannt, Still, Schwaches Signal) zeigen, **wie viele Geräte** sie jeweils anzeigen würden, für das gewählte Gateway.
