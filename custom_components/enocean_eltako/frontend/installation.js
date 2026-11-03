@@ -118,6 +118,8 @@ export const INSTALLATION_STYLE = `
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 14px; padding-right: 4px; }
   .installation .itable td.name { min-width: 160px; }
+  .installation .namelink { all: unset; cursor: pointer; color: inherit; }
+  .installation .namelink:hover, .installation .namelink:focus-visible { color: var(--accent); text-decoration: underline; }
   .installation .itable input.cell { width: 100%; min-width: 90px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; }
   .installation .itable input.cell[data-in-field="location"], .installation .itable input.cell[data-in-field="note"] { min-width: 200px; }
   .installation .itable input.cell[data-in-field="group"] { min-width: 170px; }
@@ -847,7 +849,7 @@ export const installation = {
       const picked = state.selected.has(key(gw, d));
       const area = showArea ? `<td class="isub">${esc(d.area || "–")}</td>` : "";
       const pick = d.psu || d.manual ? "" : `<input type="checkbox" data-in-pick="${esc(key(gw, d))}" ${picked ? "checked" : ""} aria-label="${esc(d.name)}">`;
-      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
+      return `<tr data-in-row="${esc(d.key)}" data-k="${kindOf(d)}"><td>${pick}</td><td class="name">${d.key && !d.psu && !d.manual && this._inPanel(d.key) ? `<button class="namelink" data-in-device="${esc(d.key)}" title="${esc(t.inPanelHint)}">${esc(d.name)}</button>` : esc(d.name)}<div class="isub">${esc(d.psu ? d.model : d.id)}</div><div>${this._instKindTag(d)}${d.psu || d.manual ? "" : this._instSendTag(gw, d)}${d.manual ? ` <span class="tag">${esc(I.funk.documented)}</span>` : ""}</div></td>${area}${cells}</tr>`;
     };
     const sections = gateways(state.doc).map((gw) => {
       const found = [...gw.devices, ...psus(gw)].filter(pass);
@@ -1170,6 +1172,11 @@ export const installation = {
     if (state.colMenu && !e.target.closest(".colmenu")) {
       state.colMenu = false;
       this.shadowRoot.querySelector("#installation details.colmenu")?.removeAttribute("open");
+    }
+    const device = e.target.closest("[data-in-device]");
+    if (device) {
+      this._showDevice(device.dataset.inDevice);
+      return;
     }
     const sidf = e.target.closest("[data-in-sidf]");
     const sidfn = e.target.closest("[data-in-sidfn]");
