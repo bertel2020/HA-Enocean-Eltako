@@ -154,7 +154,7 @@ export const TEXT = {
     tkStepState: {
       open: (n) => (n === 1 ? "1 to take over" : `${n} to take over`), none: "nothing left", chosen: (n) => `${n} selected`, nothing: "nothing selected",
       later: (n) => (n === 1 ? "1 set-up device to complete" : `${n} set-up devices to complete`),
-      choose: "choose how", waiting: "nothing to do yet", progress: (a, b) => `${a} of ${b} done`,
+      choose: "choose how", waiting: "nothing to do yet", retired: "nothing to retire", progress: (a, b) => `${a} of ${b} done`,
     },
     tkInYaml: (n) => `${n} in configuration.yaml`, tkExisting: (n) => (n === 1 ? "1 set up →" : `${n} set up →`),
     tkNotCount: (n) => (n === 1 ? "1 cannot be taken over" : `${n} cannot be taken over`),
@@ -211,6 +211,7 @@ export const TEXT = {
     tkNoNew: "no counterpart", tkNotTaken: "not taken over", tkUnused: "not used",
     tkCopy: "Copy", tkCsv: "CSV", tkCopied: "Mapping copied",
     tkEmpty: "Nothing taken over yet",
+    tkNothingToRetire: "Nothing to retire: the old integration has no entities left for the devices taken over.",
     tkRelease: {
       title: "What happens to the old entity IDs?", choose: "Choose one: the steps below follow from it. You can change it later.",
       used: (n) => (n ? (n === 1 ? "1 place uses old IDs" : `${n} places use old IDs`) : "no place uses an old ID"),
@@ -572,7 +573,7 @@ export const TEXT = {
     tkStepState: {
       open: (n) => (n === 1 ? "1 zu übernehmen" : `${n} zu übernehmen`), none: "nichts mehr offen", chosen: (n) => `${n} gewählt`, nothing: "nichts gewählt",
       later: (n) => (n === 1 ? "1 eingerichtetes Gerät zu ergänzen" : `${n} eingerichtete Geräte zu ergänzen`),
-      choose: "Vorgehen wählen", waiting: "noch nichts zu tun", progress: (a, b) => `${a} von ${b} erledigt`,
+      choose: "Vorgehen wählen", waiting: "noch nichts zu tun", retired: "nichts abzulösen", progress: (a, b) => `${a} von ${b} erledigt`,
     },
     tkInYaml: (n) => `${n} in configuration.yaml`, tkExisting: (n) => (n === 1 ? "1 eingerichtet →" : `${n} eingerichtet →`),
     tkNotCount: (n) => (n === 1 ? "1 nicht übernehmbar" : `${n} nicht übernehmbar`),
@@ -629,6 +630,7 @@ export const TEXT = {
     tkNoNew: "kein Gegenstück", tkNotTaken: "nicht übernommen", tkUnused: "nicht verwendet",
     tkCopy: "Kopieren", tkCsv: "CSV", tkCopied: "Zuordnung kopiert",
     tkEmpty: "Noch nichts übernommen",
+    tkNothingToRetire: "Nichts abzulösen: Die alte Integration hat für die übernommenen Geräte keine Entitäten mehr.",
     tkRelease: {
       title: "Was passiert mit den alten Entity-IDs?", choose: "Wähle eins: die Schritte darunter ergeben sich daraus. Du kannst es später ändern.",
       used: (n) => (n ? (n === 1 ? "1 Fundstelle nutzt alte IDs" : `${n} Fundstellen nutzen alte IDs`) : "keine Fundstelle nutzt eine alte ID"),

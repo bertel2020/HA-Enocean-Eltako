@@ -350,6 +350,7 @@ export const takeover = {
     const rows = tk.mapping?.rows || [];
     const later = Object.values(tk.mapping?.missing || {}).filter((m) => m.length).length;
     const rel = this._tkRelease();
+    const taken = Object.keys(tk.mapping?.devices || {}).length > 0;
     const st = t.tkStepState;
     const steps = [
       { text: ready.length ? st.open(ready.length) : st.none, done: !ready.length && rows.length > 0 },
@@ -358,8 +359,8 @@ export const takeover = {
         off: !ready.length && !later,
       },
       {
-        text: !rows.length ? st.waiting : !rel.strategy ? st.choose : st.progress(rel.doneCount, 3),
-        done: rel.strategy && rel.doneCount === 3, warn: rows.length > 0 && !(rel.strategy && rel.doneCount === 3), off: !rows.length,
+        text: !rows.length ? (taken ? st.retired : st.waiting) : !rel.strategy ? st.choose : st.progress(rel.doneCount, 3),
+        done: !rows.length ? taken : rel.strategy && rel.doneCount === 3, warn: rows.length > 0 && !(rel.strategy && rel.doneCount === 3), off: !rows.length && !taken,
       },
     ];
     if (!STEPS.includes(tk.tab)) tk.tab = "select";
@@ -612,7 +613,10 @@ export const takeover = {
     const t = this._t;
     const tk = this._tk;
     const r = t.tkRelease;
-    if (!rel.rows.length) return `${select ? `<div class="toolbar">${select}</div>` : ""}${this._emptyState(ICON.check, t.tkEmpty, "", "", true)}`;
+    if (!rel.rows.length) {
+      const text = Object.keys(tk.mapping?.devices || {}).length ? t.tkNothingToRetire : t.tkEmpty;
+      return `${select ? `<div class="toolbar">${select}</div>` : ""}${this._emptyState(ICON.check, text, "", "", true)}`;
+    }
     const card = (key) => `<label class="stratcard"><input type="radio" name="tkStrategy" data-tk-strategy="${key}"${rel.strategy === key ? " checked" : ""}>
       <span><b>${esc(r[key].title)}</b><span class="sub">${esc(r[key].text)}</span></span></label>`;
     const strategy = `<div class="section">${select ? `<div style="margin-bottom:10px">${select}</div>` : ""}<h3>${esc(r.title)}</h3>
@@ -897,13 +901,11 @@ export const takeover = {
       this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
     }
     tk.busy = false;
-    // something taken over: on to retiring the old integration
+    // something taken over: on to retiring the old integration, even when it has nothing left to retire
     tk.tab = result?.count ? "release" : "select";
     tk.q = "";
     await this._refreshStatus();
     await this._loadTakeover();
-    // no old entity found for what was taken over: nothing to retire, stay with the selection
-    if (!(tk.mapping?.rows || []).length) tk.tab = "select";
     this._renderTakeover();
     this._checkTakeover();
     if (!result) return;
