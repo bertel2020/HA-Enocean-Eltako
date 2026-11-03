@@ -312,7 +312,12 @@ for (const lang of ["en", "de"]) {
     expect("rows with something to offer have a more-menu button", root.querySelectorAll(".dev .acts .rowmore").length, 4);
     expect("no loose icon buttons beside the menu", root.querySelectorAll(".dev .acts .icon-btn:not(.rowmore):not(.expand)").length, 0);
     row("Licht Diele").querySelector(".rowmore").click();
-    expect("the more menu lists teach in, open device and telegrams", root.querySelectorAll(".addmenu [data-addact]").length, 3);
+    expect("the more menu lists teach in, open device, telegrams and remove", root.querySelectorAll(".addmenu [data-addact]").length, 4);
+    root.querySelector('.addmenu [data-addact="remove"]').click();
+    expect("remove asks about the row's device only", root.getElementById("pickForm").hidden, false);
+    expect("remove selects only the row's device", root.getElementById("selBar").textContent.includes("1"), true);
+    root.querySelector('[data-sel-act="clear"]').click();
+    row("Licht Diele").querySelector(".rowmore").click();
     row("Licht Diele").querySelector(".rowmore").click();
     expect("the more button closes its menu again", root.querySelector(".addmenu"), null);
     // a set-up device opens in place, with what the server knows of it, and closes again
