@@ -286,6 +286,12 @@ class EnOceanDevice:
                     last=float(values.get("last", 0)),
                 ),
             )
+        # the last time any gateway heard it is also when the device was last seen
+        if self.stats.last_seen is None and self.stats.heard:
+            gateway, heard = max(self.stats.heard.items(), key=lambda item: item[1].last)
+            if heard.last > 0:
+                self.stats.last_seen = heard.last
+                self.stats.gateway = self.stats.gateway or gateway
 
     @callback
     def _on_wall_switch(self, received: ReceivedTelegram) -> None:
