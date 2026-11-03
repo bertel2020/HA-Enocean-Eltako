@@ -290,6 +290,8 @@ for (const lang of ["en", "de"]) {
     root.querySelector('#installation [data-in-tab="log"]').click();
     await settle();
     expect("log rows", root.querySelectorAll("#installation .log tbody tr:not(.logday)").length, 3);
+    await view("telegrams");
+    expect("the unknown chip counts the unknown senders", root.querySelector("#unknown .n")?.textContent, "1");
     await view("devices");
     expect("device rows", root.querySelectorAll(".dev").length, 5);
     const state = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name))?.querySelector(".pill")?.className.replace("pill ", "");

@@ -570,7 +570,7 @@ const STYLE = `
   .values .maybe { flex: 1 0 100%; min-width: 0; }
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   /* the state of a device: the text always names it, the color only backs it up */
-  .statusrow .chip .n { margin-left: 6px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: .75; }
+  .chip .n { margin-left: 6px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: .75; }
   .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; white-space: nowrap; background: var(--tag-bg); color: var(--tag-text); }
   .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .pill.active { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
@@ -2406,6 +2406,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       button.setAttribute("aria-pressed", String(button.dataset.dir === f.dir));
     }
     $("unknown").setAttribute("aria-pressed", String(f.unknown));
+    // the chip counts the unknown senders in the buffer, so it shows whether there is something to look at
+    const unknown = new Set(this._rows.filter((r) => !r.device && r.dir === "rx" && !this._isHidden(r.gateway, r.sender)).map((r) => `${r.gateway}|${r.sender}`)).size;
+    $("unknown").innerHTML = `${esc(this._t.unknownOnly)}${unknown ? ` <span class="n">${unknown}</span>` : ""}`;
     for (const button of $("devStatus").querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.status === f.devStatus));
     }
