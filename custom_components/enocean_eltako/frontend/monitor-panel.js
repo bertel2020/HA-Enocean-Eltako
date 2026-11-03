@@ -300,8 +300,7 @@ const STYLE = `
   .telegrams td:first-child { padding-left: 16px; }
   .telegrams tbody tr:first-child td { border-top: 0; }
   tr.row { cursor: pointer; }
-  tr.row.tx > td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
-  tr.row.tx > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  tr.row.noans > td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
   tr.row:hover > td { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   tr.row.open > td, tr.detail-row > td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   tr.row.fresh > td { animation: fresh 1.2s ease-out; }
@@ -313,6 +312,7 @@ const STYLE = `
   .time small { color: var(--muted); }
   .dir { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); background: var(--soft); }
   .dir svg { width: 16px; height: 16px; }
+  .dir.rx { color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
   .dir.tx { color: var(--accent); background: var(--accent-soft); }
   .who .line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .who .name { font-size: calc(14px * var(--fs)); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -618,7 +618,7 @@ const STYLE = `
       grid-template-areas: "dir who who time" "dir values signal end"; border-top: 1px solid var(--line); }
     .telegrams tbody tr:first-child { border-top: 0; }
     tr.row > td { display: block; padding: 0; border: 0; background: none !important; box-shadow: none !important; }
-    tr.row.tx { background: color-mix(in srgb, var(--accent) 5%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+    tr.row.noans { box-shadow: inset 3px 0 0 var(--warn); }
     tr.row:hover, tr.row.open { background: color-mix(in srgb, var(--soft) 60%, transparent); }
     tr.row.fresh { animation: fresh 1.2s ease-out; }
     tr.row > td.time { grid-area: time; font-size: calc(12px * var(--fs)); text-align: right; }
@@ -2644,7 +2644,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const name = r.device
       ? `<i class="mark known" aria-hidden="true"></i><span class="name">${sent ? `<span class="to">${esc(t.sentTo)}</span> ` : ""}${esc(r.device)}</span>`
       : `<i class="mark" aria-hidden="true"></i><span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
-    const tags = (sent ? `<span class="tag tx">${esc(t.tx)}</span>` : "") + (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
+    // the one case that asks for attention: a command nobody answered
+    const pairText = sent || expanded ? this._pairText(r) : "";
+    const unanswered = sent && pairText === t.noAnswer;
+    const tags = (sent ? `<span class="tag tx">${esc(t.tx)}</span>` : "") + (unanswered ? `<span class="tag warn" title="${esc(t.noAnswer)}">${esc(t.noAnswerTag)}</span>` : "") + (r.duplicate ? `<span class="tag">${esc(t.duplicate)}</span>` : "") +
       (hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "");
     const extra = r.teach_in ? `<span class="tag teach">${esc(t.teachIn)} ${esc(r.teach_in)}</span>` : "";
     const maybe = maybeTag(t, r.candidates);
@@ -2662,7 +2665,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           )
           .join("")
       : `<span class="raw mono">${esc(r.data)}</span>`;
-    const pair = expanded ? this._pairText(r) : "";
+    const pair = expanded ? pairText : "";
     const diff = expanded ? this._diff(r) : null;
     const copies = expanded && !r.duplicate ? this._repeats(r) : 0;
     const hops = parseInt(r.status, 16) & 0x0f; // low nibble of the status byte: repeater count
@@ -2698,10 +2701,10 @@ class EnOceanEltakoPanel extends HTMLElement {
           </dl>
         </div></td></tr>`
       : "";
-    const classes = ["row", r.dir === "tx" ? "tx" : "", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
+    const classes = ["row", r.dir === "tx" ? "tx" : "", unanswered ? "noans" : "", r.duplicate ? "dup" : "", expanded ? "open" : "", this._fresh.has(key) ? "fresh" : ""].filter(Boolean).join(" ");
     return `<tr class="${classes}" data-key="${esc(key)}">
       <td class="time">${clock}</td>
-      <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" title="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
+      <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" role="img" title="${esc(r.dir === "rx" ? t.rx : t.tx)}" aria-label="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
       <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
       <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
       <td class="content"><div class="values">${extra}${values}${maybe}</div></td>
