@@ -557,6 +557,13 @@ const STYLE = `
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
   .values .maybe { flex: 1 0 100%; min-width: 0; }
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
+  /* the state of a device: the text always names it, the color only backs it up */
+  .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; white-space: nowrap; background: var(--tag-bg); color: var(--tag-text); }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.active { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .pill.silent { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .pill.silent::before { background: var(--warn); }
+  .pill.unknown { background: var(--accent-soft); color: var(--accent); }
   @media (max-width: 760px) {
     .devices { grid-template-columns: 28px minmax(0, 1fr) auto; }
     .devices .dev-head { display: none; }
@@ -3420,10 +3427,15 @@ class EnOceanEltakoPanel extends HTMLElement {
           )
           .join("")
       : d.quiet ? "" : `<span class="raw mono">${esc(d.data)}</span>`;
-    const hints = d.unknown
-      ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
-        (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
-      : (d.silent ? `<span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "") + (d.disabled ? `<span class="tag">${esc(t.selDisabledTag)}</span>` : "");
+    // one state per device, the first that applies: a disabled device is not judged by its silence
+    const state = d.disabled ? "disabled" : d.unknown ? "unknown" : d.silent ? "silent" : d.time == null ? "unheard" : "active";
+    const pill = `<span class="pill ${state}" title="${esc(t.statusHint[state])}">${esc(t.status[state])}</span>`;
+    const hints =
+      pill +
+      (d.unknown
+        ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
+          (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
+        : "");
     const maybe = d.unknown ? maybeTag(t, d.candidates) : "";
     const weak = d.dbm != null && d.dbm < WEAK_DBM;
     const heard = d.time != null ? t.ago(Math.max(0, Math.round((now - d.time) / 1000))) : t.notHeard;
