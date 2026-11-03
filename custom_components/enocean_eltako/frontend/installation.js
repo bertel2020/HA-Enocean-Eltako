@@ -50,6 +50,13 @@ const SIGNAL_FRESH = 24 * 3600; // heard within a day: fine; within a week: late
 const SIGNAL_LATE = 7 * 24 * 3600;
 // a field of an entry written by hand, by the name the table gives it
 const MANUAL_FIELD = { location: "location", power: "power", note: "function", bus_address: "bus_address", feedback_id: "feedback_id", bus_power: "bus_power" };
+// 12 V DC supplies of Eltako for the bus, by their rated power (Eltako data sheets); the name is the type designation
+const SUPPLY_PRESETS = [
+  { name: "FSNT14-12V/12W", watts: "12" },
+  { name: "SNT12-230V/12V DC-1A", watts: "12" },
+  { name: "SNT15-12VDC/15W", watts: "15" },
+  { name: "WNT15-12VDC/24W", watts: "24" },
+];
 const SUPPLY_BLANK = { name: "", watts: "", first: "", last: "", location: "", circuit: "", fuse: "", note: "" };
 const wnum = (text) => (text && /^\d+([.,]\d+)?$/.test(String(text).trim()) ? Number(String(text).trim().replace(",", ".")) : null);
 const anum = (text) => (/^\d+$/.test(text ?? "") ? Number(text) : null);
@@ -287,6 +294,7 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu summary { list-style: none; cursor: pointer; }
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .installation details.supplymenu .items { left: 0; right: auto; justify-items: start; }
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
   .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
@@ -723,7 +731,8 @@ export const installation = {
     const own = gw.supplies ?? [];
     // devices of the bus series without an address yet: they get one in a group of their own
     const unaddressed = gw.devices.filter((d) => kindOf(d) === "bus" && !/^\d+$/.test(d.bus_address ?? ""));
-    const addButton = `<div><button class="chip" data-in-supply-add="${esc(gw.entry_id)}">${esc(t.doc.supplyAdd)}</button></div>`;
+    const addItem = (label, preset) => `<button class="chip" data-in-supply-add="${esc(gw.entry_id)}" data-in-preset="${preset}">${esc(label)}</button>`;
+    const addButton = `<div><details class="colmenu supplymenu"><summary class="chip">${esc(t.doc.supplyAdd)}</summary><div class="items">${SUPPLY_PRESETS.map((p, i) => addItem(`${p.name} · ${p.watts} W`, i)).join("")}${addItem(t.doc.supplyCustom, "")}</div></details></div>`;
     if (!bus.rows.length && !own.length && !unaddressed.length) return `<div class="none">${esc(T.busEmpty)}</div>${addButton}`;
     // a supply feeds the addresses in its range; a lone supply without a range feeds them all
     const supplies = own.map((s) => ({ s, first: anum(s.first), last: anum(s.last), capacity: wnum(s.watts) }));
@@ -1276,13 +1285,16 @@ export const installation = {
       this._instSaveManual(gw);
       return;
     }
+    for (const menu of this.shadowRoot.querySelectorAll("#installation details.supplymenu[open]")) if (!menu.contains(e.target)) menu.removeAttribute("open");
     const supplyAdd = e.target.closest("[data-in-supply-add]");
     if (supplyAdd) {
       const gw = gateways(state.doc).find((g) => g.entry_id === supplyAdd.dataset.inSupplyAdd);
       if (!gw) return;
-      gw.supplies = [...gw.supplies, { ...SUPPLY_BLANK, id: Math.random().toString(36).slice(2, 10) }];
+      const preset = SUPPLY_PRESETS[supplyAdd.dataset.inPreset];
+      gw.supplies = [...gw.supplies, { ...SUPPLY_BLANK, ...preset, id: Math.random().toString(36).slice(2, 10) }];
       this._renderInstallation();
-      [...this.shadowRoot.querySelectorAll('#installation [data-in-sfield="name"]')].pop()?.focus();
+      if (preset) this._instSaveSupplies(gw);
+      [...this.shadowRoot.querySelectorAll(`#installation [data-in-sfield="${preset ? "first" : "name"}"]`)].pop()?.focus();
       return;
     }
     const supplyDel = e.target.closest("[data-in-supply-del]");

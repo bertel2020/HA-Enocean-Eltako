@@ -10,6 +10,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Eltako bus view**: **Add power supply** offers the 12 V supplies of Eltako with their rated power (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) and a custom supply to fill in yourself.
 - **Devices view (table)**: the device name opens the device in the Devices view.
 - **Room controller with several IDs** (FUTH55ED, FUTH65D): one device for the four IDs a FUTH sends from, entered with its lowest ID (ending in `00`). Controller (`+01`: climate, setpoint, temperature, night setback), pump (`+10`), operating mode (`+11`) and hygrostat (`+12`: humidity, also on the climate entity). Read only. The Devices view lists every ID, the documentation each with its profile. The offsets are those of the old integration's table; the telegrams of a FUTH55ED confirm the controller and the hygrostat, pump and mode are read from the rocker codes `0x70/0x50` and `0x70/0x50/0x30/0x10`.
 - **Telegram log**: a command Home Assistant sent is now read like a received telegram: setpoint and night setback of a room controller (a temperature of 0 means the thermostat measures), switch on/off and dim value, shutter up/down/stop with run time, rocker button pressed or released, the status request. Only what the encoders build is read; other profiles still show the raw bytes.
@@ -64,6 +65,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Eltako-Bus-Ansicht**: **Netzteil hinzufügen** bietet die 12-V-Netzteile von Eltako mit ihrer Nennleistung an (FSNT14-12V/12W, SNT12-230V/12V DC-1A, SNT15-12VDC/15W, WNT15-12VDC/24W) und ein eigenes Netzteil zum selbst Ausfüllen.
 - **Geräteansicht (Tabelle)**: Der Gerätename öffnet das Gerät in der Ansicht Geräte.
 - **Raumregler mit mehreren IDs** (FUTH55ED, FUTH65D): ein Gerät für die vier IDs, von denen ein FUTH sendet, eingetragen mit seiner niedrigsten ID (endet auf `00`). Regler (`+01`: Klima, Sollwert, Temperatur, Nachtabsenkung), Pumpe (`+10`), Betriebsart (`+11`) und Hygrostat (`+12`: Luftfeuchte, auch an der Klima-Entität). Nur lesend. Die Geräteansicht listet jede ID, die Dokumentation jede mit ihrem Profil. Die Offsets stammen aus der Tabelle der alten Integration; die Telegramme eines FUTH55ED bestätigen Regler und Hygrostat, Pumpe und Betriebsart werden aus den Wippen-Codes `0x70/0x50` und `0x70/0x50/0x30/0x10` gelesen.
 - **Telegrammprotokoll**: Ein Befehl, den Home Assistant gesendet hat, wird jetzt wie ein empfangenes Telegramm gelesen: Sollwert und Nachtabsenkung eines Raumreglers (Temperatur 0 heißt: das Thermostat misst), Schalten Ein/Aus und Dimmwert, Rollladen auf/ab/Stopp mit Laufzeit, Wippentaste gedrückt oder losgelassen, die Statusanforderung. Gelesen wird nur, was die Encoder bauen; andere Profile zeigen weiter die Rohbytes.
