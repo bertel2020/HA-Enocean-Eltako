@@ -301,11 +301,11 @@ Ansicht mit diesem Filter, etwa von einem Dashboard aus.
 
 ### Ansicht Geräte
 
-Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Gerät: Name und ID, das
-EEP, den Bereich, die Zahl der Entitäten, die letzten Werte, wann es zuletzt gehört wurde,
-Telegramme in der Liste und pro Minute sowie eine Kurve der Signalstärke seiner letzten
-Telegramme, mit einem Hinweis bei schwachem Empfang (unter -85 dBm), dem ein Repeater oder ein
-besserer Gateway-Standort hilft. Auch deine Geräte ohne Telegramm im Puffer des Monitors stehen
+Der Schalter **Geräte** zeigt statt der Telegrammliste eine Zeile je Gerät: Name mit ID und EEP,
+die Art mit dem Bereich darunter, die letzten Werte und wann es zuletzt gehört wurde, mit
+Signalstärke und einem Hinweis bei schwachem Empfang (unter -85 dBm), dem ein Repeater oder ein
+besserer Gateway-Standort hilft. Der Pfeil öffnet die Details: Art, Labels, Entitäten,
+Telegramme in der Liste und pro Minute sowie eine Kurve der Signalstärke der letzten Telegramme. Auch deine Geräte ohne Telegramm im Puffer des Monitors stehen
 in der Liste (**nicht gehört**, und **still** bei einem Gerät, dessen üblicher Abstand dreimal
 verstrichen ist). Bei einem unbekannten Sender kommen der Telegrammtyp dazu und was seine
 Telegramme verraten: ein Lerntelegramm-Profil oder die Profile, die passen könnten.
@@ -462,14 +462,18 @@ Zentralbefehl und Taster), wählt man eine aus. Gesendet wird dasselbe wie mit d
 Einlern-Schaltfläche des Geräts; bei einem VLD-Aktor (UTE) erst senden und den Aktor dann
 innerhalb von 60 s in den Lernmodus bringen.
 
-Über der Liste zählt ein Hinweis die Sender mit schwachem Signal; ein Klick zeigt nur sie, das
-schwächste zuerst (auch als Status **Schwaches Signal**).
+Der Status-Tab **Schwaches Signal** (mit orangefarbenem Punkt) zeigt nur die Sender mit schwachem
+Signal, das schwächste zuerst.
+
+**Geräte gruppieren** (neben der Suche) ordnet die Liste unter Überschriften nach **Bereich** oder
+**Art** oder gar nicht; die Überschriften lassen sich einklappen und nennen die Anzahl und wie viele
+der Gruppe Aufmerksamkeit brauchen. Die Wahl merkt sich der Browser.
 
 Ein Klick auf eine Spaltenüberschrift sortiert danach (nochmal: umgekehrt); auf dem Handy
-übernimmt das eine Auswahl. Die Suche, die Status-Chips (**Alle Geräte /
-Eingerichtet / Unbekannt / Still / Schwaches Signal**, jeweils mit Zähler) und unter **Filter** das Gateway und der Bereich grenzen die Liste ein (**Filter** erscheint nur bei mehreren Gateways oder Bereichen), und sie wird seitenweise mit 25 bis 200 Zeilen
+übernimmt das eine Auswahl. Die Suche, die Status-Tabs unter den Werkzeugen (**Alle Geräte /
+Eingerichtet / Unbekannt / Still / Nie gehört / Schwaches Signal**, jeweils mit Zähler, leere gedimmt) und unter **Filter** das Gateway und der Bereich grenzen die Liste ein (**Filter** erscheint nur bei mehreren Gateways oder Bereichen), und sie wird seitenweise mit 25 bis 200 Zeilen
 gezeigt. Die Telegrammzahlen beziehen sich auf den Puffer des Monitors (die neuesten 1.000
-Telegramme), nicht auf die Zeit seit dem Start. Exportieren speichert die ganze gefilterte
+Telegramme), nicht auf die Zeit seit dem Start. Die Gerätezahl steht über der Liste, solange ein Filter sie einengt. Exportieren speichert die ganze gefilterte
 Liste als CSV; Senden und Leeren gehören zur Telegrammliste und fehlen hier. Jede Zeile zeigt einen Zustand (aktiv, still, nicht gehört, deaktiviert, unbekannt); ihr Menü **⋮** enthält Einlernen, das Gerät in Home Assistant öffnen, die Telegramme des Geräts und **Entfernen**, das vorher nachfragt.
 
 **Mehrere Geräte auswählen:** Jedes eingerichtete Gerät hat vorn ein Kästchen, **Alle auswählen**

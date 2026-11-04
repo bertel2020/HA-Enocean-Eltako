@@ -284,10 +284,11 @@ view with that filter, for example from a dashboard.
 
 ### Devices view
 
-The **Devices** switch shows one line per device instead of the telegram list: name and ID,
-the EEP, the area, the number of entities, the latest values, when it was last heard, telegrams
-in the list and per minute, and a curve of the signal of its last telegrams with a note for weak
-reception (below -85 dBm), which a repeater or a better gateway position helps. Your devices
+The **Devices** switch shows one line per device instead of the telegram list: name with ID and
+EEP, the type with the area below it, the latest values, and when it was last heard with the
+signal strength and a note for weak reception (below -85 dBm), which a repeater or a better
+gateway position helps. The arrow opens the details: type, labels, entities, telegrams in the
+list and per minute, and a curve of the signal of the last telegrams. Your devices
 without a telegram in the monitor's buffer are listed too (**not heard**, with **silent** for a
 device whose usual interval has passed three times). For an unknown sender the list adds the
 telegram type and what its telegrams tell: a teach-in profile or the profiles that could fit.
@@ -434,13 +435,17 @@ IDs (for example central command and rocker) offers a choice. It sends the same 
 teach-in button; for a VLD actuator (UTE) send first, then put the actuator into learn mode
 within 60 s.
 
-Above the list a hint counts the senders with a weak signal; a click shows only them, weakest
-first (also the status **Weak signal**).
+The status tab **Weak signal** (with an amber dot) shows only the senders with a weak signal,
+weakest first.
+
+**Group devices** (next to the search) sorts the list under headings by **area** or **type**, or
+not at all; the headings fold, name the count and how many in the group need a look. The choice is
+remembered in the browser.
 
 A click on a column header sorts by it (again: reverse); on a phone a selection does it. The
-search box, the status chips (**All devices / Set up / Unknown / Silent / Weak signal**, each with its count) and, under **Filter**, the gateway and the area narrow the list (**Filter** only shows with several gateways or areas),
+search box, the status tabs under the tools (**All devices / Set up / Unknown / Silent / Never heard / Weak signal**, each with its count, empty ones dimmed) and, under **Filter**, the gateway and the area narrow the list (**Filter** only shows with several gateways or areas),
 and it is shown in pages of 25 to 200 rows. Telegram counts refer to the monitor's buffer (the
-newest 1,000 telegrams), not to the time since the start. Export saves the whole filtered list
+newest 1,000 telegrams), not to the time since the start. The device count appears above the list while a filter narrows it. Export saves the whole filtered list
 as CSV; sending and clearing belong to the telegram list and are not offered here. Each row shows one state (active, silent, not heard, disabled, unknown); its **⋮** menu holds teach-in, opening the device in Home Assistant, the device's telegrams and **Remove**, which asks first.
 
 **Selecting several devices:** every set-up device has a box at the start of its row, **Select all**
