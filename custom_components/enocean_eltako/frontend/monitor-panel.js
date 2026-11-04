@@ -501,13 +501,17 @@ const STYLE = `
   .dev-detail .dgrid { display: grid; grid-auto-flow: dense; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 0; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
   .dev-detail .dgrid > div { padding: 11px 16px 12px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 3px; box-shadow: 1px 0 0 var(--line-2), 0 1px 0 var(--line-2); }
   .dev-detail .dgrid > div.wide { grid-column: span 2; }
+  .dev-detail .dgrid > div.full { grid-column: 1 / -1; }
+  .dev-detail .tg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+  .dev-detail .tg .raw { margin-top: 0; }
   .dev-detail .dgrid dt { font-size: calc(12px * var(--fs)); font-weight: 500; color: var(--muted); }
   .dev-detail .dgrid dd { margin: 0; overflow-wrap: anywhere; align-self: start; }
   .dev-detail .raw { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 2px; }
   .dev-detail .tag.mono, .dev-detail .raw .tag { font-family: ui-monospace, monospace; white-space: nowrap; }
   /* one row component for values, senders, settings and entities: inner space and fixed columns */
-  .dev-detail .rows { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
-  .dev-detail .rows .li { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(140px, 1fr) minmax(90px, auto); gap: 4px 16px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line-2); font-size: calc(13px * var(--fs)); }
+  .dev-detail .rows { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(140px, 1fr) auto; column-gap: 16px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+  .dev-detail .rows > * { grid-column: 1 / -1; }
+  .dev-detail .rows .li { display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line-2); font-size: calc(13px * var(--fs)); }
   .dev-detail .rows .li:first-child { border-top: 0; }
   .dev-detail .rows .li > :last-child { justify-self: end; text-align: right; }
   .dev-detail .rows .li > * { min-width: 0; overflow-wrap: anywhere; }
@@ -518,8 +522,8 @@ const STYLE = `
   .dev-detail .rows .foot .acts-row { margin: 0; }
   @media (max-width: 760px) {
     .dev-detail .dgrid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-    .dev-detail .dgrid > div.wide { grid-column: 1 / -1; }
-    .dev-detail .rows .li { grid-template-columns: minmax(0, 1fr) auto; }
+    .dev-detail .dgrid > div.wide, .dev-detail .dgrid > div.full { grid-column: 1 / -1; }
+    .dev-detail .rows { grid-template-columns: minmax(0, 1fr) auto; }
     .dev-detail .rows .li > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   }
   .dev-detail .dtbl, .dev-detail .vbox { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 4px 12px; }
@@ -980,10 +984,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     // the last telegram of a sender as stored: when, what kind, the bytes and what they say; it survives a restart
     const t = this._t;
     const bytes = l.data.match(/../g)?.join(" ") ?? "";
-    const fields = (l.fields ?? []).map((f) => `${esc(f.label)} <b>${esc(this._value(f.value))}${f.unit ? ` ${esc(f.unit)}` : ""}</b>`).join(" · ");
     const head = `${esc(t.ago(Math.max(0, Math.round(now / 1000 - l.time))))} · ${esc(RORG[l.rorg] || l.rorg)}${l.dbm != null ? ` · ${esc(l.dbm)} dBm` : ""}`;
-    // the bytes and the status byte as tags that never break; what they say below
-    return `<div>${head}</div><div class="raw"><span class="tag mono">${esc(bytes)}</span><span class="tag mono">${esc(t.status)} ${esc(l.status.toString(16).toUpperCase().padStart(2, "0"))}</span></div>${fields ? `<div class="sub">${fields}</div>` : ""}`;
+    // when and what kind, and the bytes and the status byte as tags that never break; what they say is under Last values
+    return `<div class="tg"><span>${head}</span><span class="raw"><span class="tag mono">${esc(bytes)}</span><span class="tag mono">${esc(t.status)} ${esc(l.status.toString(16).toUpperCase().padStart(2, "0"))}</span></span></div>`;
   }
 
   _watchConnection() {
@@ -3519,7 +3522,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.heardBy, this._heardBy(x.heard_by), "wide"),
       item(t.telegramsSinceStart, esc(x.telegrams.toLocaleString())),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
-      ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now), "wide")),
+      ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now), "full")),
     ]);
     // the last values: what the live telegram says, else what the server read from the last
     // telegram of each ID (a restart in between); raw bytes only when nothing could be read
@@ -3531,7 +3534,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       ...(live.length ? [] : (x.last_telegrams ?? []).map((l) => `<span class="tag mono">${esc(`${RORG[l.rorg] || l.rorg} ${l.data.match(/../g)?.join(" ") ?? ""}`)}</span>`)),
     ].filter(Boolean);
     const valueRows = [...live, ...stored];
-    const raw = rawTags.length ? `<span class="sub">${esc(t.rawData)}</span>${[...new Set(rawTags)].join("")}` : "";
+    const raw = rawTags.length && !x.last_telegrams?.length ? `<span class="sub">${esc(t.rawData)}</span>${[...new Set(rawTags)].join("")}` : "";
     const values = valueRows.length ? rows(valueRows, raw) : raw ? rows([], raw) : "";
     const test = this._senderTests.get(d.devKey) || {};
     const verdict = (profile) => {
@@ -3557,13 +3560,26 @@ class EnOceanEltakoPanel extends HTMLElement {
       ? rows(Object.entries(x.settings).map(([k, v]) => ({ cells: [`<span class="k">${esc(t.settingNames[k] || k)}</span>`, "", `<b>${esc(yes(v))}</b>`] })))
       : "";
     const entities = x.entities.length
-      ? rows(x.entities.map((e) => ({ cells: [esc(e.name), `<span class="mono sub">${esc(e.entity_id)}</span>`, e.state != null ? `<b>${esc(`${e.state}${e.unit ? ` ${e.unit}` : ""}`)}</b>` : ""] })))
+      ? rows(x.entities.map((e) => ({ cells: [esc(e.name), `<span class="mono sub">${esc(e.entity_id)}</span>`, e.state != null ? `<b>${esc(this._entityState(e, now))}</b>` : ""] })))
       : "";
     const only = d.name || d.id;
     const actions = `<div class="dact">${d.page ? `<button class="chip" data-device-page="${esc(d.page)}">${svg(ICON.open)}${esc(t.openDevice)}</button>` : ""}${
       d.quiet && d.time == null ? "" : `<button class="chip" data-only="${esc(only)}">${svg(ICON.filter)}${esc(t.showTelegrams)}</button>`
     }${d.senders.length ? `<button class="chip" data-teach="${esc(d.devKey)}">${svg(ICON.teach)}${esc(t.teach)}</button>` : ""}${d.name ? `<button class="chip" data-dev-links="${esc(d.name)}" title="${esc(t.showLinksHint)}">${svg(ICON.list)}${esc(t.showLinks)}</button>` : ""}</div>`;
     return `<div class="dev-detail">${group(t.dIdentity, identity)}${group(t.dRadio, radio)}${group(t.devCols.values, values)}${group(t.dSenders, senders, x.senders.length || "")}${group(t.dCommands, commands)}${group(t.dSettings, settings)}${group(t.dEntitiesTitle, entities, x.entities.length || "")}${group(t.doc.notes, `<input class="note" data-note-device="${esc(d.devKey)}" data-note-gateway="${esc(x.entry_id)}" value="${esc(x.note)}" maxlength="500" placeholder="${esc(t.doc.notePlaceholder)}" aria-label="${esc(t.doc.notes)}" autocomplete="off">`)}${actions}</div>`;
+  }
+
+  _entityState(e, now) {
+    // a state as people read it: a time as "ago", a number in the language's format, on / off translated
+    const t = this._t;
+    const lang = this._hass?.language || "en";
+    if (e.device_class === "timestamp" && !Number.isNaN(Date.parse(e.state))) {
+      return t.ago(Math.max(0, Math.round((now - Date.parse(e.state)) / 1000)));
+    }
+    if (t.stateWords[e.state] !== undefined) return t.stateWords[e.state];
+    const n = Number(e.state);
+    const shown = e.state !== "" && Number.isFinite(n) ? n.toLocaleString(lang, { maximumFractionDigits: 3 }) : e.state;
+    return `${shown}${e.unit ? ` ${e.unit}` : ""}`;
   }
 
   _modelPicker(key, x) {
