@@ -172,8 +172,8 @@ export const INSTALLATION_STYLE = `
   .installation .colgroup b { font-weight: 500; flex: 1; }
   .installation .colgroup .tag { cursor: pointer; border: 0; font: inherit; font-size: calc(11px * var(--fs)); }
   /* the counters of the devices view: text, not boxes */
-  .installation .stiles.quiet { gap: 4px 14px; }
-  .installation .stiles.quiet .stile { background: none; padding: 2px 4px; border-radius: 8px; }
+  .installation .stiles.quiet { gap: 6px 8px; }
+  .installation .stiles.quiet .stile { background: var(--soft); border-color: var(--line); padding: 3px 12px; border-radius: 999px; }
   .installation .stiles.quiet .stile b { font-size: calc(15px * var(--fs)); }
   .installation .stiles.quiet .stile[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; }
   /* an empty place: a quiet dash that turns into "+ add place" on hover or focus */
@@ -188,7 +188,10 @@ export const INSTALLATION_STYLE = `
   .installation .place .placeclr { opacity: 0; transition: opacity .15s; }
   .installation .itable tr:hover .place .placeclr, .installation .place:focus-within .placeclr, .installation .place .placeclr:focus-visible { opacity: 1; }
   .installation .place > i { opacity: .35; font-style: normal; }
-  .installation .stiles.quiet { padding: 4px 14px 8px; align-items: center; }
+  .installation .stiles.quiet { padding: 0; align-items: center; }
+  /* the views and the tools sit close together; the counters hang right under them */
+  .installation .ibody > .fbar { margin-bottom: -6px; }
+  .installation .ibody > .itools + .stiles.quiet { margin-top: -8px; }
   /* one quiet dash for an empty field, a field that does not apply and an empty place */
   .installation .itable input.cell::placeholder, .installation .itable td .dash { color: color-mix(in srgb, var(--muted) 70%, transparent); opacity: 1; }
   .installation .itable input.cell:focus::placeholder { opacity: 0; }
@@ -228,7 +231,7 @@ export const INSTALLATION_STYLE = `
     .installation .itools { justify-content: flex-start; align-items: center; }
     .installation .itools input.isearch { flex: 1 1 100%; max-width: none; }
     .installation .itools .chip { flex: 1 1 auto; justify-content: center; }
-    .installation .stiles.quiet { display: flex; flex-wrap: wrap; padding: 4px 4px 8px; }
+    .installation .stiles.quiet { display: flex; flex-wrap: wrap; }
     .installation .stiles.quiet .stile { flex: none; }
   }
   .installation .itab { font: inherit; font-size: calc(14px * var(--fs)); font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
