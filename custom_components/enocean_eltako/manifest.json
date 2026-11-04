@@ -8,6 +8,9 @@
     "lovelace",
     "panel_custom"
   ],
+  "categories": [
+    "hubs_protocols.wireless_protocols"
+  ],
   "codeowners": [
     "@bertel2020"
   ],
