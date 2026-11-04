@@ -1413,7 +1413,7 @@ export const installation = {
       const who = e.name ? (e.goto ? `<a data-in-goto="${esc(e.goto)}">${esc(e.name)}</a>` : esc(e.name)) : "";
       const parts = this._instLogText(e).map((p) => `${esc(p.text)}${p.id ? ` ${this._instSndLink(e.entry_id, p.id)}` : ""}${p.result ? ` <span class="lres ${p.tone}">${esc(p.result)}</span>` : ""}`).join(`<span class="isub"> · </span>`);
       const age = Math.max(0, Math.round((now - e.ts) / 1000));
-      const when = age < 86400 ? t.inst.funk.ago(age) : new Date(e.ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
+      const when = age < 86400 ? t.ago(age) : new Date(e.ts).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
       return `${sep}<tr><td class="logmain"><div class="logline"><span class="tag ev ev-${esc(e.kind)}">${esc(t.inst.events[e.kind] || e.kind)}</span>${who}${multi ? ` <span class="isub">${esc(e.gateway)}</span>` : ""}</div>${parts ? `<div class="logdetail">${parts}</div>` : ""}</td><td class="logwhen" title="${esc(new Date(e.ts).toLocaleString(lang))}">${esc(when)}</td></tr>`;
     }).join("");
     const from = list.length ? v.pg * v.ps + 1 : 0;
