@@ -527,8 +527,9 @@ for (const lang of ["en", "de"]) {
     // the opened row: one card grid, the last telegram over two columns with its raw bytes as tags,
     // one row component for values, senders, settings and entities
     const detail = root.querySelector(".dev-detail");
-    expect("the last telegram is a wide card with bytes and status as tags", !!detail.querySelector(".dgrid > div.wide .raw .tag.mono") && detail.querySelectorAll(".dgrid > div.wide .raw .tag").length, 2);
-    expect("the last values are read rows, the raw data below", detail.querySelectorAll(".rows .li.value").length > 0 && !!detail.querySelector(".rows .foot .tag.mono"), true);
+    expect("the last telegram is a full-width card with bytes and status as tags", !!detail.querySelector(".dgrid > div.full .tg .raw .tag.mono") && detail.querySelectorAll(".dgrid > div.full .raw .tag").length, 2);
+    expect("the last telegram does not repeat the values", detail.querySelector(".dgrid > div.full .sub"), null);
+    expect("the last values are read rows, the raw bytes only in the telegram card", detail.querySelectorAll(".rows .li.value").length > 0 && !detail.querySelector(".rows .foot .tag.mono"), true);
     expect("the senders are rows of the same component", detail.querySelectorAll(".dsec .rows .li").length > 4, true);
     expect("no tables are left in the opened row", detail.querySelectorAll("table").length, 0);
     expect("the section headings count their rows", [...detail.querySelectorAll(".dsec h4 .sub")].length >= 2, true);

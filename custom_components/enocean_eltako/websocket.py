@@ -567,18 +567,30 @@ def device_details(device: Any) -> dict[str, Any]:
         (DOMAIN, device.unique_prefix), device.entry.entry_id
     )
     registry = er.async_get(hass)
-    entities = []
+    entities: list[dict[str, Any]] = []
     for ent in er.async_entries_for_device(registry, entry.id) if entry else ():
         state = hass.states.get(ent.entity_id)
         entities.append(
             {
-                "name": ent.name or ent.original_name or ent.entity_id,
+                "name": ent.name
+                or ent.original_name
+                or (state.attributes.get("friendly_name") if state else None)
+                or ent.entity_id,
                 "entity_id": ent.entity_id,
                 "state": state.state if state else None,
                 "unit": state.attributes.get("unit_of_measurement") if state else None,
+                "device_class": ent.device_class or ent.original_device_class,
+                "diagnostic": ent.entity_category is not None,
             }
         )
-    entities.sort(key=lambda e: str(e["name"]).casefold())
+    # what the device does first, then its readings, the diagnostics last
+    entities.sort(
+        key=lambda e: (
+            e["diagnostic"],
+            str(e["entity_id"]).split(".")[0] not in ("switch", "light", "cover", "climate"),
+            str(e["name"]).casefold(),
+        )
+    )
     commands = None
     if model.actuator:
         latencies = list(stats.latencies)
