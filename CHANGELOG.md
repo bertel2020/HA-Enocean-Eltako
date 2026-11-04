@@ -85,6 +85,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Installation, Log**: the tab did not open as soon as an event was less than a day old (the display of "... s ago" failed, the tab stayed on the previous view).
 - **Installation views**: the summary tiles (Funk, Virtuell, Eltako-Bus) no longer overlap their text. The icon-tile style of the device list applied to them too and squeezed them to 36 px. The supply rows of the bus view now show the whole placeholder of the address fields.
 - **Telegram log**: the direction is the one marker of a row: a green arrow for received, a blue one for sent. The blue bar and tint on sent rows are gone; a bar now marks only a warning: a sent command without an answer within 3 s gets an amber bar and a tag.
 - **Takeover**: after taking devices over, the view always lands on step 3 (retire the old integration). When the old integration has no entities left for them, step 3 says so instead of the view falling back to step 1.
@@ -169,6 +170,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Installation, Protokoll**: Der Tab öffnete sich nicht, sobald ein Ereignis jünger als ein Tag war (die Anzeige „vor … s“ schlug fehl, der Tab blieb auf der vorigen Ansicht).
 - **Installationsansichten**: Die Kacheln mit den Zahlen (Funk, Virtuell, Eltako-Bus) überlappen ihren Text nicht mehr. Die Symbolkachel der Geräteliste galt auch für sie und presste sie auf 36 px. In den Netzteil-Zeilen der Bus-Ansicht passt jetzt der ganze Platzhalter in die Adressfelder.
 - **Telegrammprotokoll**: Die Richtung ist das eine Kennzeichen einer Zeile: grüner Pfeil für empfangen, blauer für gesendet. Der blaue Balken und die Tönung bei gesendeten Zeilen entfallen; ein Balken markiert nur noch eine Warnung: ein gesendeter Befehl ohne Antwort innerhalb von 3 s bekommt einen gelben Balken und ein Tag.
 - **Übernahme**: Nach der Übernahme landet die Ansicht immer bei Schritt 3 (Alte Integration ablösen). Hat die alte Integration für die Geräte keine Entitäten mehr, sagt Schritt 3 das, statt dass die Ansicht auf Schritt 1 zurückfällt.

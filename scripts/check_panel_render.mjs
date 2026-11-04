@@ -486,7 +486,8 @@ for (const lang of ["en", "de"]) {
     expect("the matrix has a row per actuator", root.querySelectorAll("#installation table.matrix tbody tr").length, 4);
     root.querySelector('#installation [data-in-tab="log"]').click();
     await settle();
-    expect("log rows", root.querySelectorAll("#installation .log tbody tr:not(.logday)").length, 3);
+    expect("log rows", root.querySelectorAll("#installation .log tbody tr:not(.logday)").length, 4);
+    expect("a recent event says how long ago it was", /\d+ s\b/.test(root.querySelector("#installation .log")?.textContent ?? ""), true);
     await view("telegrams");
     expect("the unknown chip counts the unknown senders", root.querySelector("#unknown .n")?.textContent, "1");
     await view("devices");

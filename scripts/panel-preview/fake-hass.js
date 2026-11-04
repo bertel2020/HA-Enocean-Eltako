@@ -196,6 +196,8 @@ export function fakeHass(params = new URLSearchParams()) {
                 { time: "2026-10-26T09:12:00+00:00", kind: "device_added", device: "05-10-A2-B3", detail: "Licht Diele" },
                 { time: "2026-10-26T09:14:00+00:00", kind: "teach_in", device: "05-10-A2-B3", detail: "Licht Diele: central" },
                 { time: "2026-10-26T09:15:00+00:00", kind: "sender_test", device: "05-10-A2-B3", detail: "Licht Diele: central=confirmed, rocker=unconfirmed" },
+                // a recent event: the log writes its age in words ("30 s ago") instead of a time of day
+                { time: new Date(Date.now() - 30000).toISOString().slice(0, 19) + "+00:00", kind: "teach_in", device: "05-10-A2-B3", detail: "Licht Diele: rocker" },
               ],
             }],
           };
