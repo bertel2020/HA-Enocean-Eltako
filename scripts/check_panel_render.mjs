@@ -495,7 +495,19 @@ for (const lang of ["en", "de"]) {
     const state = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name))?.querySelector(".pill")?.className.replace("pill ", "");
     expect("a heard device is active", state("Licht Diele"), "active");
     const chipCount = (status) => root.querySelector(`#devStatus [data-status="${status}"] .n`)?.textContent;
-    expect("the status chips count the devices", ["", "known", "unknown", "silent", "weak"].map(chipCount).join(","), "5,4,1,1,1");
+    expect("the status chips count the devices", ["", "known", "unknown", "silent", "unheard", "weak"].map(chipCount).join(","), "5,4,1,1,1,1");
+    // grouped by area: a heading per area with its count; a click folds the group away
+    const groups = () => [...root.querySelectorAll(".dgroup")];
+    expect("devices are grouped by area", groups().length > 1, true);
+    const first = groups()[0];
+    const before = root.querySelectorAll(".dev").length;
+    first.click();
+    expect("a folded group hides its rows", root.querySelectorAll(".dev").length < before, true);
+    root.querySelector(".dgroup").click();
+    expect("an unfolded group shows them again", root.querySelectorAll(".dev").length, before);
+    root.getElementById("devGroup").value = "";
+    root.getElementById("devGroup").dispatchEvent(new Event("change", { bubbles: true }));
+    expect("no grouping: no headings", root.querySelectorAll(".dgroup").length, 0);
     expect("the pill names its state", [...root.querySelectorAll(".dev .pill")].every((p) => p.textContent.trim().length > 0), true);
     expect("a device past its interval is silent", state("Temperatur Bad"), "silent");
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
@@ -536,7 +548,8 @@ for (const lang of ["en", "de"]) {
     expect("the section headings count their rows", [...detail.querySelectorAll(".dsec h4 .sub")].length >= 2, true);
     const opened = root.querySelector('.dev[data-dev="sub1"]');
     expect("the name keeps one line and has its full text as tooltip", opened.querySelector(".line1 .name").getAttribute("title"), "Licht Diele");
-    expect("last heard in two lines", !!opened.querySelector(".stats .l1") && !!opened.querySelector(".stats .l2"), true);
+    expect("last heard in one line", !!opened.querySelector(".stats .l1") && !opened.querySelector(".stats .l2"), true);
+    expect("the labels are in the opened row", detail.querySelector(".labels")?.textContent.trim(), "Battery");
     // the model is a pick from the kind's models; a typed one comes through "other"
     const picker = root.querySelector("[data-model-for]");
     picker.value = "FL62";
@@ -676,7 +689,7 @@ for (const lang of ["en", "de"]) {
     await settle();
     expect("bar after two ticks", root.getElementById("selBar").hidden, false);
     expect("the bar takes the place of the count line", root.getElementById("panel").hasAttribute("data-picked"), true);
-    expect("label chip on a row", root.querySelector('.dev[data-dev="sub1"] .labels').textContent.trim(), "Battery");
+    expect("labels stay out of the row", root.querySelector('.dev[data-dev="sub1"] .labels'), null);
     root.querySelector('[data-sel-act="area"]').click();
     await settle();
     root.getElementById("pickArea").value = "bad";
@@ -684,7 +697,7 @@ for (const lang of ["en", "de"]) {
     await settle();
     const updates = (key) => fake.sent.filter((m) => m.type === "config/device_registry/update" && key in m);
     expect("area set for both", updates("area_id").length, 2);
-    expect("area shows in the row", root.querySelector('.dev[data-dev="sub2"] .c-area').textContent.trim(), "Bad");
+    expect("area shows in the row under the type", root.querySelector('.dev[data-dev="sub2"] .c-area').textContent.includes("Bad"), true);
     root.querySelector('[data-sel-act="labels"]').click();
     await settle();
     const lbl = (id) => root.querySelector(`[data-label="${id}"]`);
