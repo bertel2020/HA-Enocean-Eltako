@@ -246,11 +246,22 @@ const STYLE = `
   .chip.set svg { width: 14px; height: 14px; color: var(--muted); }
   .chip.set:hover svg { color: var(--text); }
   .filters:has(+ .statusrow) { border-bottom: 0; }
+  .meta:not(:has(> :not([hidden], :empty))) { display: none; }
+  #tkReport { margin-left: auto; }
   .filters[hidden], .statusrow[hidden] { display: none; }
   .statusrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
-  .filters > .statusrow { padding: 0; border: 0; }
   .statusrow .chip { min-height: 32px; color: var(--text); }
   .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); }
+  /* the status filter: a calm tab strip under the tools, the pressed one underlined */
+  .filters > .statusrow { order: 10; flex: 1 0 calc(100% + 32px); gap: 2px; flex-wrap: nowrap; margin: 4px -16px -12px; padding: 0 8px; border-top: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  .filters > .statusrow::-webkit-scrollbar { display: none; }
+  .filters > .statusrow .chip { position: relative; flex: none; min-height: 42px; padding: 0 12px; border: 0; border-radius: 0; background: none; color: var(--muted); }
+  .filters > .statusrow .chip:hover:not(:disabled) { background: none; color: var(--text); }
+  .filters > .statusrow .chip[aria-pressed="true"] { color: var(--accent); }
+  .filters > .statusrow .chip[aria-pressed="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px; background: var(--accent); }
+  .filters > .statusrow .chip.zero { opacity: .55; }
+  .filters > .statusrow .chip[data-status="weak"]:not(.zero) { color: var(--warn); }
+  .filters > .statusrow .chip[data-status="weak"]:not(.zero)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
   /* the filter menu */
   .chip.on { border-color: var(--accent); }
   #filterBtn[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-hover); }
@@ -672,12 +683,11 @@ const STYLE = `
     #view.fade-start { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
     #view.fade-start.fade-end { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
     .filters .chip { padding: 0 12px; font-size: calc(12px * var(--fs)); }
+    .filters #tkReport { padding: 0 8px; }
     /* the status chips scroll in one line, sorting and grouping share a row: the list starts higher */
-    .filters > .statusrow { flex-basis: calc(100% + 32px); margin: 0 -16px; padding: 0 16px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-    .filters > .statusrow::-webkit-scrollbar { display: none; }
-    .filters > .statusrow .chip { flex: none; white-space: nowrap; }
     .filters .select { flex: 1 1 0; min-width: 0; }
-    .meta #weakHint { display: none; }
+    .filters .select { padding-right: 24px; background-position: calc(100% - 12px) 55%, calc(100% - 7px) 55%; }
+    .filters #tkReport .lbl { display: none; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
   }
@@ -1149,6 +1159,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
             <select class="select m-only dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}"></select>
             <select class="select dev-only" id="devGroup" aria-label="${esc(t.devGroup)}" title="${esc(t.devGroup)}">${Object.entries(t.devGroups).map(([v, label]) => `<option value="${v}">${esc(label)}</option>`).join("")}</select>
+            <button class="chip text dev-only" id="tkReport" hidden title="${esc(t.tkReportButton)}" aria-label="${esc(t.tkReportButton)}">${svg(ICON.download)}<span class="lbl">${esc(t.tkReportButton)}</span></button>
           </div>
           <div class="filtermenu list-only" id="filterMenu" role="group" aria-label="${esc(t.filters)}" hidden>
             <label class="field" id="gatewayRow" hidden><span>${esc(t.gateway)}</span><select class="select" id="gatewayFilter"></select></label>
@@ -1171,7 +1182,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text warn dev-only" id="weakHint" hidden></button><button class="chip text dev-only" id="tkReport" hidden>${esc(t.tkReportButton)}</button><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
@@ -1425,13 +1436,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("devStatus").addEventListener("click", (e) => {
       const button = e.target.closest("[data-status]");
-      if (button) this._set("devStatus", button.dataset.status);
+      if (!button) return;
+      this._set("devStatus", button.dataset.status);
+      // the weak-signal tab lists the weakest first
+      if (button.dataset.status === "weak") this._setDevSort("signal", false);
     });
     $("tkReport").addEventListener("click", () => this._openReport());
-    $("weakHint").addEventListener("click", () => {
-      this._set("devStatus", "weak");
-      this._setDevSort("signal", false);
-    });
     $("devGroup").addEventListener("change", (e) => {
       this._devGroup = e.target.value;
       try {
@@ -3145,7 +3155,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._newAbove = 0;
     if (this._offset >= total) this._offset = total ? Math.floor((total - 1) / this._pageSize) * this._pageSize : 0;
     const page = devices.slice(this._offset, this._offset + this._pageSize);
-    this.shadowRoot.getElementById("count").textContent = t.devCount(total, all.length);
+    // the count only says something when a filter narrows the list
+    this.shadowRoot.getElementById("count").textContent = total === all.length ? "" : t.devCount(total, all.length);
     this._renderSel(all, devices);
     this._renderPager(total, page.length);
     // the area filter offers the areas in use (and a chosen one that has just emptied)
@@ -3160,13 +3171,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       const n = all.filter((d) => this._inStatus(d, status)).length;
       const html = `${esc(t.devStatus[status])}<span class="n">${n}</span>`;
       if (button.innerHTML !== html) button.innerHTML = html;
+      button.classList.toggle("zero", !n && !!status);
     }
-    // senders at the edge of the range, at a glance: a click shows only them, weakest first
-    const weak = all.filter((d) => d.dbm != null && d.dbm < WEAK_DBM).length;
-    const weakHint = this.shadowRoot.getElementById("weakHint");
-    weakHint.hidden = !weak || this._filter.devStatus === "weak";
-    weakHint.innerHTML = `${svg(ICON.signal)}${esc(t.weakCount(weak))}`;
-    weakHint.title = t.weakHint;
     if (this._hold("devices", container, background) || this._editing()) return;
     if (!page.length) {
       const filtered = all.length > 0;

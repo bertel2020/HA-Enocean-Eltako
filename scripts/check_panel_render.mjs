@@ -579,7 +579,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('.dev[data-dev="sub1"] .expand').click();
     await settle();
     expect("device details closed", root.querySelectorAll(".dev-detail").length, 0);
-    root.getElementById("weakHint").click();
+    root.querySelector('#devStatus [data-status="weak"]').click();
     await settle();
     expect("weak-signal devices", root.querySelectorAll(".dev").length, 1);
     expect("weak status chip pressed", root.querySelector('#devStatus [data-status="weak"]').getAttribute("aria-pressed"), "true");
