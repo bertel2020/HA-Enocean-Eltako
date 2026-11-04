@@ -30,6 +30,8 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Devices view on phones**: the status chips scroll in one line, search, sorting and grouping share one row, and the weak-signal hint is left out (its chip says the same), so the list starts about 200 px higher.
+- **Installation, sender IDs**: the tile "In use" counts the same rows its filter shows (including the gateway).
 - **Devices view**: one row per device, read at a glance: name with ID and model on the left, type over area in one cell, state with its values, last heard with the signal on the right. The EEP chip, the entities column, the labels and the telegram trend are gone from the row (labels, entities and telegram counts are in the opened row). Devices are grouped by area (or by type, or not at all) under foldable headings that say how many in them need a look; a new status filter shows devices never heard.
 - **Device row**: the columns of values, senders, settings and entities line up in every row, also with long values. The last telegram spans the full width and shows only time, type, signal and bytes; the values read from it stand once under Last values. Entity states are readable (a time as "... ago", numbers in the language's format, on / off translated). Entities are listed as control, readings, diagnostics; one without a name of its own is called like its device, not by its ID.
 - **Permundo plug (PSC132, PSC234)**: the rocker can be chosen as a sender next to the central command. A plug taught in as a wall switch is thus switched from Home Assistant; one sender is enough. The buttons default to AI for on and A0 for off, as the plug expects them.
@@ -116,6 +118,8 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Geräte-Ansicht auf dem Handy**: die Status-Chips laufen in einer Zeile zum Wischen, Sortierung und Gruppierung teilen sich eine Zeile, der Hinweis auf schwaches Signal entfällt (sein Chip sagt dasselbe); die Liste beginnt etwa 200 px weiter oben.
+- **Anlage, Sender-IDs**: die Kachel „In Gebrauch“ zählt jetzt dieselben Zeilen, die ihr Filter zeigt (mit dem Gateway).
 - **Geräte-Ansicht**: eine Zeile je Gerät, auf einen Blick lesbar: links Name mit ID und Modell, Typ über Bereich in einer Zelle, Zustand mit Werten, rechts zuletzt gehört mit Signal. EEP-Chip, Entitäten-Spalte, Labels und Telegramm-Verlauf sind aus der Zeile verschwunden (Labels, Entitäten und Telegrammzahl stehen in der geöffneten Zeile). Geräte sind nach Bereich gruppiert (oder nach Art, oder gar nicht) unter einklappbaren Überschriften, die zeigen, wie viele davon Aufmerksamkeit brauchen; ein neuer Statusfilter zeigt nie gehörte Geräte.
 - **Gerätezeile**: Die Spalten von Werten, Sendern, Einstellungen und Entitäten stehen in allen Zeilen untereinander, auch bei langen Werten. „Letztes Telegramm“ geht über die ganze Breite und zeigt nur Zeit, Typ, Signal und Bytes; die gelesenen Werte stehen einmal unter „Letzte Werte“. Zustände der Entitäten sind lesbar (Zeit als „vor …“, Zahlen mit Komma, ein/aus übersetzt). Die Entitäten stehen in der Reihenfolge Steuerung, Messwerte, Diagnose; ohne eigenen Namen heißt eine Entität wie ihr Gerät, nicht wie ihre ID.
 - **Permundo-Stecker (PSC132, PSC234)**: Der Taster (Wippe) ist als Sender wählbar, neben dem Zentralbefehl. Ein Stecker, der als Taster eingelernt ist, wird damit aus Home Assistant geschaltet; mindestens ein Sender genügt. Die Tasten stehen vorbelegt auf AI für Ein und A0 für Aus, wie der Stecker sie erwartet.
