@@ -30,6 +30,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Devices view, filter bar**: search, filter, grouping and the Takeover reports now share one row of tools; the status filter is a quiet tab strip under it (pressed tab underlined, empty ones dimmed, weak signal with an amber dot). The line with the device count and the weak-signal hint is gone: the count shows only while a filter narrows the list, the weak-signal tab sorts the weakest first. Grouping reads "No groups / By area / By type".
 - **Devices view, opened row**: the cards of the radio section no longer leave a lone card in a row: "heard by" has the full width and the telegram count sits with the other figures. On phones the tabs of the installation fade out at the menu instead of being cut off by it.
 - **Installation, sender IDs**: a line under the pool map says what it counts (what Home Assistant has assigned) and that the table below also lists IDs that are only documented.
 - **Telegrams view**: calmer rows: no dot before the sender name, the telegram type is plain text instead of a chip, and a sent telegram is laid out like a received one (device name with the "Sent" tag, sender ID below).
@@ -123,6 +124,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Geräte-Ansicht, Filterleiste**: Suche, Filter, Gruppierung und die Übernahme-Berichte stehen jetzt in einer Zeile; der Status-Filter ist darunter eine ruhige Tab-Leiste (aktiver Tab unterstrichen, leere gedimmt, schwaches Signal mit orangefarbenem Punkt). Die Zeile mit Gerätezahl und Hinweis auf schwache Signale entfällt: Die Zahl erscheint nur, solange ein Filter die Liste einengt, der Tab „Schwaches Signal“ sortiert die schwächsten zuerst. Die Gruppierung heißt „Keine Gruppen / Nach Bereich / Nach Art“.
 - **Geräte-Ansicht, geöffnete Zeile**: die Karten des Funk-Abschnitts lassen keine einzelne Karte mehr allein in einer Reihe: „Gehört von“ hat die volle Breite, die Telegrammzahl steht bei den anderen Werten. Auf dem Handy laufen die Tabs der Anlage am Menü weich aus, statt davon abgeschnitten zu werden.
 - **Anlage, Sender-IDs**: eine Zeile unter der Pool-Karte sagt, was sie zählt (was Home Assistant vergeben hat) und dass die Tabelle darunter auch nur dokumentierte IDs führt.
 - **Telegramm-Ansicht**: ruhigere Zeilen: kein Punkt vor dem Sendernamen, der Telegrammtyp ist schlichter Text statt Chip, und ein gesendetes Telegramm ist wie ein empfangenes aufgebaut (Gerätename mit der Markierung „Gesendet“, darunter die Sender-ID).
