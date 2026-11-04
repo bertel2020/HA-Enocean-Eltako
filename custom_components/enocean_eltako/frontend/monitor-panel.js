@@ -318,8 +318,7 @@ const STYLE = `
   .dir.tx { color: var(--accent); background: var(--accent-soft); }
   .who .line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .who .name { font-size: calc(14px * var(--fs)); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .who .mark { flex: none; width: 8px; height: 8px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid var(--muted); }
-  .who .mark.known { border-color: var(--accent); background: var(--accent); }
+  .rorg { font-size: calc(12px * var(--fs)); color: var(--muted); }
   .who .name.unknown { font-weight: 400; color: var(--muted); }
   .who .line2 { font-size: calc(12px * var(--fs)); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
   .tag { flex: none; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; background: var(--tag-bg); color: var(--tag-text); white-space: nowrap; }
@@ -2765,8 +2764,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     // a telegram we sent is addressed to the device, it did not come from it
     const sent = r.dir === "tx";
     const name = r.device
-      ? `<i class="mark known" aria-hidden="true"></i><span class="name">${sent ? `<span class="to">${esc(t.sentTo)}</span> ` : ""}${esc(r.device)}</span>`
-      : `<i class="mark" aria-hidden="true"></i><span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
+      ? `<span class="name">${esc(r.device)}</span>`
+      : `<span class="name unknown">${esc(unknown ? t.unknownDevice : r.sender)}</span>`;
     // the one case that asks for attention: a command nobody answered
     const pairText = sent || expanded ? this._pairText(r) : "";
     const unanswered = sent && pairText === t.noAnswer;
@@ -2830,7 +2829,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       <td class="time">${clock}</td>
       <td class="dirc"><span class="dir ${r.dir === "rx" ? "rx" : "tx"}" role="img" title="${esc(r.dir === "rx" ? t.rx : t.tx)}" aria-label="${esc(r.dir === "rx" ? t.rx : t.tx)}">${svg(r.dir === "rx" ? ICON.rx : ICON.tx)}</span></td>
       <td class="who" title="${esc([r.device, r.sender, r.gateway_name].filter(Boolean).join(" · "))}"><div class="line1">${name}${tags}</div><div class="line2">${line2}</div></td>
-      <td class="type"><span class="tag mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
+      <td class="type"><span class="rorg mono" title="${esc(r.rorg)}">${esc(type)}</span></td>
       <td class="content"><div class="values">${extra}${values}${maybe}</div></td>
       <td class="sig"><span class="signal">${bars(r.dbm)}<span class="dbm">${r.dbm != null ? `${esc(r.dbm)} dBm` : ""}</span></span></td>
       ${this._multi ? `<td class="gwc"><div class="gw">${esc(r.gateway_name)}</div></td>` : ""}
