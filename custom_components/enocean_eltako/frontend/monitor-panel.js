@@ -422,6 +422,7 @@ const STYLE = `
   .senders .map .row-id .lh { display: none; }
   .senders .map button.sel { outline: 2px solid var(--text); outline-offset: 1px; }
   .senders .map button[data-goto]:hover { transform: scale(1.25); }
+  .senders .mapscope { margin: -6px 16px 12px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .senders .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0 16px 14px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .senders .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .senders .legend i { width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--line); }
@@ -2934,7 +2935,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       ${note}
       <div class="map" role="group" aria-label="${esc(t.mapLabel)}">${tiles}</div>
       <div class="pread" aria-live="polite">${readout}</div>
-      <div class="legend" aria-hidden="true">${legend}</div>`);
+      <div class="legend" aria-hidden="true">${legend}</div>
+      <p class="mapscope">${esc(t.mapScope)}</p>`);
     // the release asks first: for one ID or for all blocked ones
     const confirm = this._freeing?.all
       ? `<b>${esc(t.freeAllConfirmTitle(this._freeing.ids.length))}</b><p>${esc(t.freeAllConfirmText)}</p>`
