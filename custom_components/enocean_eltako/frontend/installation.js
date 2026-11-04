@@ -154,7 +154,7 @@ export const INSTALLATION_STYLE = `
   .installation table.itable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
   .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 14px; padding-right: 4px; }
+  .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 18px; padding-right: 4px; }
   .installation .tabwarn { color: var(--warn); font-weight: 500; }
   .installation .itable td.name { min-width: 160px; }
   .installation .unnamed { font-style: italic; color: var(--muted); }
@@ -184,6 +184,11 @@ export const INSTALLATION_STYLE = `
   .installation .place select { flex: 1.5 1 0; min-width: 0; font: inherit; font-size: calc(12px * var(--fs)); padding: 4px 4px; border: 0; background: transparent; color: inherit; }
   .installation .place .placeclr { flex: none; all: unset; cursor: pointer; color: var(--muted); padding: 0 8px; font-size: calc(12px * var(--fs)); }
   .installation .place .placeclr:hover, .installation .place .placeclr:focus-visible { color: var(--bad); }
+  /* the clear button and the separators of a place stay quiet until the row is looked at */
+  .installation .place .placeclr { opacity: 0; transition: opacity .15s; }
+  .installation .itable tr:hover .place .placeclr, .installation .place:focus-within .placeclr, .installation .place .placeclr:focus-visible { opacity: 1; }
+  .installation .place > i { opacity: .35; font-style: normal; }
+  .installation .stiles.quiet { padding: 4px 14px 8px; align-items: center; }
   /* one quiet dash for an empty field, a field that does not apply and an empty place */
   .installation .itable input.cell::placeholder, .installation .itable td .dash { color: color-mix(in srgb, var(--muted) 70%, transparent); opacity: 1; }
   .installation .itable input.cell:focus::placeholder { opacity: 0; }
@@ -1152,7 +1157,8 @@ export const installation = {
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${Object.entries(COLUMN_GROUPS).map(([g, fields]) => `<div class="colgroup"><b>${esc(I.columnGroups[g])}</b><button class="tag" data-in-colgroup="${g}|all">${esc(I.colAll)}</button><button class="tag" data-in-colgroup="${g}|none">${esc(I.colNone)}</button></div>${fields.map((f) => `<label><input type="checkbox" data-in-col="${f}" ${state.columns.has(f) ? "checked" : ""}>${esc(colName(f))}</label>`).join("")}`).join("")}<span class="isub">${esc(I.columnsHint)}</span></div></details>`;
     const present = gateways(state.doc).flatMap((gw) => [...gw.devices, ...psus(gw)]);
     const kindList = kinds ?? ["bus", "sensor", "taster", "aktor", "virt", "psu"];
-    const artChips = kindList.length > 1
+    // the whole list has the views above it for coarse filtering; the finer kinds appear inside a view
+    const artChips = kindList.length > 1 && kinds
       ? `<div class="chips"><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${present.filter((d) => !kinds || kinds.includes(kindOf(d))).length}</b></button>${kindList.filter((k) => state.art === k || present.some((d) => kindOf(d) === k)).map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${present.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`
       : "";
     const placeable = present.filter((d) => !isVirtual(d));

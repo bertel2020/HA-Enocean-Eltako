@@ -30,6 +30,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Installation, devices**: the list of all devices has one filter row (the views) instead of two; the kinds are offered inside a view. The clear button of a place shows only when the row is looked at, the checkbox no longer touches the colour bar, and the counters over the table have room of their own.
 - **Devices view on phones**: the status chips scroll in one line, search, sorting and grouping share one row, and the weak-signal hint is left out (its chip says the same), so the list starts about 200 px higher.
 - **Installation, sender IDs**: the tile "In use" counts the same rows its filter shows (including the gateway).
 - **Devices view**: one row per device, read at a glance: name with ID and model on the left, type over area in one cell, state with its values, last heard with the signal on the right. The EEP chip, the entities column, the labels and the telegram trend are gone from the row (labels, entities and telegram counts are in the opened row). Devices are grouped by area (or by type, or not at all) under foldable headings that say how many in them need a look; a new status filter shows devices never heard.
@@ -118,6 +119,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Anlage, Geräte**: die Liste aller Geräte hat eine Filterreihe (die Ansichten) statt zwei; die Arten gibt es innerhalb einer Ansicht. Der Löschknopf eines Ortes erscheint erst, wenn man die Zeile ansieht, das Auswahlkästchen klebt nicht mehr an der Farbleiste, und die Zähler über der Tabelle haben eigenen Platz.
 - **Geräte-Ansicht auf dem Handy**: die Status-Chips laufen in einer Zeile zum Wischen, Sortierung und Gruppierung teilen sich eine Zeile, der Hinweis auf schwaches Signal entfällt (sein Chip sagt dasselbe); die Liste beginnt etwa 200 px weiter oben.
 - **Anlage, Sender-IDs**: die Kachel „In Gebrauch“ zählt jetzt dieselben Zeilen, die ihr Filter zeigt (mit dem Gateway).
 - **Geräte-Ansicht**: eine Zeile je Gerät, auf einen Blick lesbar: links Name mit ID und Modell, Typ über Bereich in einer Zelle, Zustand mit Werten, rechts zuletzt gehört mit Signal. EEP-Chip, Entitäten-Spalte, Labels und Telegramm-Verlauf sind aus der Zeile verschwunden (Labels, Entitäten und Telegrammzahl stehen in der geöffneten Zeile). Geräte sind nach Bereich gruppiert (oder nach Art, oder gar nicht) unter einklappbaren Überschriften, die zeigen, wie viele davon Aufmerksamkeit brauchen; ein neuer Statusfilter zeigt nie gehörte Geräte.
