@@ -672,6 +672,12 @@ const STYLE = `
     #view.fade-start { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
     #view.fade-start.fade-end { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
     .filters .chip { padding: 0 12px; font-size: calc(12px * var(--fs)); }
+    /* the status chips scroll in one line, sorting and grouping share a row: the list starts higher */
+    .filters > .statusrow { flex-basis: calc(100% + 32px); margin: 0 -16px; padding: 0 16px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .filters > .statusrow::-webkit-scrollbar { display: none; }
+    .filters > .statusrow .chip { flex: none; white-space: nowrap; }
+    .filters .select { flex: 1 1 0; min-width: 0; }
+    .meta #weakHint { display: none; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
   }

@@ -648,7 +648,7 @@ export const installation = {
       const count = (st) => all.filter((r) => st.includes(r.st)).length;
       const key = esc(gw.entry_id);
       const tile = (f, label, n, cls) => `<button class="stile ${cls}" data-in-sidf="${key}|${f}" aria-pressed="${v.f === f}"><b>${n}</b><span>${esc(label)}</span></button>`;
-      const tiles = `<div class="stiles">${tile("used", S.used, count("uwx"), "u")}${tile("w", S.blocked, count("w"), "w")}${tile("f", S.free, count("f"), "f")}${tile("all", S.all, all.length, "")}</div>`;
+      const tiles = `<div class="stiles">${tile("used", S.used, count("uwxg"), "u")}${tile("w", S.blocked, count("w"), "w")}${tile("f", S.free, count("f"), "f")}${tile("all", S.all, all.length, "")}</div>`;
       const free = all.find((r) => r.st === "f");
       const next = free
         ? `<div class="snext"><span>${esc(S.next)} <b class="mono">${esc(S.nr)} ${free.nr} · ${esc(free.id)}</b></span><button class="chip" data-in-act="copy-id" data-id="${esc(free.id)}">${esc(S.copy)}</button></div>`
