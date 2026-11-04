@@ -401,7 +401,7 @@ const STYLE = `
     .devices .dev:hover .acts .icon-btn, .devices .dev .acts .icon-btn:focus-visible { opacity: 1; }
   }
   .devices .dev.picked { background: var(--accent-soft); }
-  .devices .dev .labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .dev-detail .labels { display: flex; flex-wrap: wrap; gap: 4px; }
   .panel[data-view="devices"] .tg-only, .panel[data-view="senders"] .tg-only, .panel[data-view="senders"] .list-only,
   .panel[data-view="takeover"] .tg-only, .panel[data-view="takeover"] .list-only,
   .panel[data-view="installation"] .tg-only, .panel[data-view="installation"] .list-only { display: none !important; }
@@ -447,7 +447,7 @@ const STYLE = `
   .senders .pick { padding: 12px 16px 0; }
   /* one grid for all senders (subgrid): names, values and numbers line up in columns */
   .panel:not([data-view="devices"]) .dev-only { display: none !important; }
-  .devices { display: grid; grid-template-columns: 28px minmax(220px, 1.6fr) 96px 72px 64px minmax(0, 1.2fr) minmax(190px, auto) 128px; column-gap: 16px; }
+  .devices { display: grid; grid-template-columns: 28px minmax(220px, 1.8fr) minmax(130px, 1fr) minmax(0, 1.5fr) minmax(150px, auto) 96px; column-gap: 16px; }
   .devices > .empty { grid-column: 1 / -1; }
   .devices .dev-head, .devices .dev { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; gap: 4px 16px; align-items: center; padding: 12px 16px; }
   .devices .dev-head { padding-top: 8px; padding-bottom: 8px; font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
@@ -479,9 +479,17 @@ const STYLE = `
   .devices .tile.climate { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
   .devices .tile.sensors { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
   .devices .tile.unknown { background: none; border: 1px dashed var(--line); color: var(--muted); }
-  .devices .dev .c-area, .devices .dev .c-ent { font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
-  .devices .dev .c-ent { text-align: right; padding-right: 12px; font-variant-numeric: tabular-nums; }
-  .devices .dev-head .h-ent { text-align: right; padding-right: 12px; }
+  /* type over area in one cell: the area is the second line, not a column of its own */
+  .devices .dev .c-area { display: grid; min-width: 0; font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
+  .devices .dev .c-area .sub svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; }
+  .devices .dgroup { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; padding: 9px 16px; background: var(--soft); border-top: 1px solid var(--line); cursor: pointer; font-size: calc(13px * var(--fs)); }
+  .devices .dgroup:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .devices .dgroup .chev { align-self: center; width: 14px; height: 14px; color: var(--muted); transition: transform .15s; }
+  .devices .dgroup[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+  .devices .dgroup .sub { color: var(--muted); font-size: calc(12px * var(--fs)); }
+  .devices .dgroup .attn { color: var(--warn); }
+  .devices .dgroup b { white-space: nowrap; }
+  .devices .dgroup { flex-wrap: wrap; }
   .devices .dev-head .h-heard { text-align: right; }
   .devices .dev .none { color: var(--muted); }
   .devices .dev .msub { display: none; }
@@ -545,8 +553,6 @@ const STYLE = `
   .devices .dev .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: calc(12px * var(--fs)); color: var(--muted); white-space: nowrap; min-width: 0; }
   /* last heard in two lines: when, signal and dBm; then the telegrams with their trend */
   .devices .dev .stats .l1 { display: inline-flex; align-items: center; gap: 8px; font-size: calc(13px * var(--fs)); color: var(--text); }
-  .devices .dev .stats .l2 { display: inline-flex; align-items: center; gap: 8px; }
-  .devices .dev .stats .l2 .spark { width: 64px; height: 18px; }
   /* the name in one line; the whole name is its tooltip */
   .devices .dev .line1 .name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* long hints ("could be A5-02-05, A5-10-06") wrap inside their column instead of running into the next */
@@ -566,13 +572,13 @@ const STYLE = `
     .devices .c-sel { grid-column: 1; grid-row: 1 / span 2; align-items: flex-start; padding-top: 4px; }
     .selall:not([hidden]) { display: inline-flex; }
     .devices .dev { grid-template-columns: subgrid; }
-    .devices .dev .c-type, .devices .dev .c-area, .devices .dev .c-ent { display: none; }
+    .devices .dev .c-area { display: none; }
     .devices .dev .msub { display: block; }
     .devices .dev .ident { gap: 10px; }
     .devices .tile { width: 30px; height: 30px; border-radius: 8px; }
     .devices .tile svg { width: 17px; height: 17px; }
     .devices .dev .sub { overflow-wrap: break-word; }
-    .devices .dev .stats .l2, .devices .dev .stats .tag { display: none; }
+    .devices .dev .stats .tag { display: none; }
     .devices .dev .values { min-width: 0; flex-wrap: wrap; }
     .devices .dev .values { grid-column: 2; grid-row: 2; }
     .devices .dev .acts { grid-column: 3; grid-row: 2; flex-wrap: nowrap; }
@@ -712,6 +718,7 @@ const DEV_SORTERS = {
   name: byName,
   type: (a, b) => collator.compare(a.eep || "\uffff", b.eep || "\uffff") || byName(a, b),
   area: (a, b) => collator.compare(a.area || "\uffff", b.area || "\uffff") || byName(a, b),
+  kind: (a, b) => collator.compare(a.category || "\uffff", b.category || "\uffff") || collator.compare(a.area || "\uffff", b.area || "\uffff") || byName(a, b),
   entities: (a, b) => (a.entities ?? -1) - (b.entities ?? -1) || byName(a, b),
   heard: (a, b) => (a.time ?? -1) - (b.time ?? -1) || byName(a, b),
   signal: (a, b) => (a.dbm ?? 0) - (b.dbm ?? 0) || byName(a, b), // no signal (bus): as the strongest
@@ -720,7 +727,9 @@ const DEV_SORTERS = {
 const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
 // ICON is bound after the parts have loaded, so the table is built when it is first needed
 const categoryIcon = (category) => ({ lighting: ICON.bulb, covers: ICON.slats, climate: ICON.thermometer, buttons: ICON.button, sensors: ICON.thermometer, meters: ICON.flash, virtual: ICON.cloud })[category];
-const DEV_STATUS = ["", "known", "unknown", "silent", "weak"];
+const DEV_STATUS = ["", "known", "unknown", "silent", "unheard", "weak"];
+const DEV_GROUPS = ["", "area", "kind"];
+const GROUP_KEY = "enocean_eltako_dev_group";
 
 const NO_FILTER = { gateway: "", text: "", dir: "", type: "", repeats: false, unknown: false, devStatus: "", area: "" };
 
@@ -786,6 +795,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._filter = view.filter;
     this._sort = view.sort;
     this._devSort = view.devSort;
+    try {
+      const saved = localStorage.getItem(GROUP_KEY);
+      this._devGroup = DEV_GROUPS.includes(saved) ? saved : "area"; // grouped by area unless chosen otherwise
+    } catch (err) {
+      this._devGroup = "area";
+    }
+    this._devCollapsed = new Set(); // groups folded in this session
     this._pageSize = view.pageSize;
     this._offset = 0; // first row of the page within the sorted, filtered rows
     this._pageFirst = null; // that row: new rows sorting before it keep the page in place
@@ -1126,6 +1142,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <button class="chip" id="filterBtn" aria-expanded="false" aria-controls="filterMenu">${svg(ICON.filter)}<span>${esc(t.filters)}</span><b class="count" id="filterCount" hidden></b></button>
             <select class="select m-only tg-only" id="sortSelect" aria-label="${esc(t.sortLabel)}"></select>
             <select class="select m-only dev-only" id="devSort" aria-label="${esc(t.devSort)}" title="${esc(t.devSort)}"></select>
+            <select class="select dev-only" id="devGroup" aria-label="${esc(t.devGroup)}" title="${esc(t.devGroup)}">${Object.entries(t.devGroups).map(([v, label]) => `<option value="${v}">${esc(label)}</option>`).join("")}</select>
           </div>
           <div class="filtermenu list-only" id="filterMenu" role="group" aria-label="${esc(t.filters)}" hidden>
             <label class="field" id="gatewayRow" hidden><span>${esc(t.gateway)}</span><select class="select" id="gatewayFilter"></select></label>
@@ -1284,6 +1301,14 @@ class EnOceanEltakoPanel extends HTMLElement {
         this._resetFilters();
         return;
       }
+      const group = e.target.closest("[data-dgroup]");
+      if (group) {
+        const key = group.dataset.dgroup;
+        if (this._devCollapsed.has(key)) this._devCollapsed.delete(key);
+        else this._devCollapsed.add(key);
+        this._render();
+        return;
+      }
       const head = e.target.closest("[data-dsort]");
       if (head) {
         const key = head.dataset.dsort;
@@ -1400,6 +1425,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("weakHint").addEventListener("click", () => {
       this._set("devStatus", "weak");
       this._setDevSort("signal", false);
+    });
+    $("devGroup").addEventListener("change", (e) => {
+      this._devGroup = e.target.value;
+      try {
+        localStorage.setItem(GROUP_KEY, this._devGroup);
+      } catch (err) {
+        // blocked storage: the choice just is not remembered
+      }
+      this._offset = 0;
+      this._render();
     });
     $("devArea").addEventListener("change", (e) => this._set("area", e.target.value));
     $("sortSelect").addEventListener("change", (e) => {
@@ -3017,6 +3052,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (status === "known") return !d.unknown;
     if (status === "unknown") return d.unknown && !d.hidden;
     if (status === "silent") return !!d.silent;
+    if (status === "unheard") return !d.unknown && !d.disabled && d.time == null;
     if (status === "weak") return d.dbm != null && d.dbm < WEAK_DBM;
     return true;
   }
@@ -3040,8 +3076,13 @@ class EnOceanEltakoPanel extends HTMLElement {
     const { key, desc } = this._devSort;
     const sorter = DEV_SORTERS[key];
     const items = this._deviceItems().filter((d) => this._devMatches(d)).sort((a, b) => (desc ? sorter(b, a) : sorter(a, b)));
+    // grouped: the groups in name order (the ones without a name last), the chosen order inside each
+    if (this._devGroup) {
+      const name = (d) => this._groupOf(d) || "\uffff";
+      items.sort((a, b) => collator.compare(name(a), name(b)));
+    }
     // an open row keeps its place: the order is frozen until the last one closes or the sort or filter changes
-    const signature = JSON.stringify([this._devSort, this._filter]);
+    const signature = JSON.stringify([this._devSort, this._filter, this._devGroup]);
     if (!this._devOpen.size) {
       this._devOrder = null;
       return items;
@@ -3053,6 +3094,21 @@ class EnOceanEltakoPanel extends HTMLElement {
     const at = new Map(this._devOrder.keys.map((k, i) => [k, i]));
     const fresh = items.filter((d) => !at.has(d.key));
     return [...items.filter((d) => at.has(d.key)).sort((a, b) => at.get(a.key) - at.get(b.key)), ...fresh];
+  }
+
+  _kindName(d) {
+    // the kind of device in words: its category, or "unknown sender" for what is not set up
+    const t = this._t;
+    return d.unknown ? t.unknownDevice : t.doc.tbl.categories[d.category] || t.kindOther;
+  }
+
+  _groupOf(d) {
+    // the heading a device is listed under; empty: the group of those without one
+    return this._devGroup === "area" ? d.area || "" : this._devGroup === "kind" ? this._kindName(d) : "";
+  }
+
+  _needsAttention(d) {
+    return d.unknown || !!d.silent || (d.dbm != null && d.dbm < WEAK_DBM) || (!d.unknown && !d.disabled && d.time == null);
   }
 
   _setDevSort(key, desc) {
@@ -3113,7 +3169,8 @@ class EnOceanEltakoPanel extends HTMLElement {
       return;
     }
     const now = this._now();
-    const cols = [["name", t.devCols.name], ["type", t.devCols.type], ["area", t.devCols.area], ["entities", t.devCols.entities, "h-ent"], ["values", t.devCols.values], ["heard", t.devCols.heard, "h-heard"]];
+    const cols = [["name", t.devCols.name], ["kind", t.devCols.kind], ["values", t.devCols.state], ["heard", t.devCols.heard, "h-heard"]];
+    this.shadowRoot.getElementById("devGroup").value = this._devGroup;
     const listed = devices.filter((d) => d.devKey);
     const ticked = listed.filter((d) => this._sel.has(d.devKey)).length;
     const all_ = `<span class="c-sel">${listed.length ? `<input type="checkbox" class="selbox" data-sel-all${listed.length && ticked === listed.length ? " checked" : ""} aria-label="${esc(t.selAll)}">` : ""}</span>`;
@@ -3124,7 +3181,27 @@ class EnOceanEltakoPanel extends HTMLElement {
         return `<span class="${cls || ""}"><button data-dsort="${key}"${state} aria-label="${esc(`${t.sortHint}: ${label}`)}">${esc(label)}${svg(ICON.chevron, "sort")}</button></span>`;
       })
       .join("")}<span></span></div>`;
-    this._replace(container, head + page.map((d) => this._deviceRow(d, now)).join(""));
+    // the page in groups: a heading per group with its count and how many there need a look
+    let body = "";
+    if (this._devGroup) {
+      const groups = new Map();
+      for (const d of page) {
+        const name = this._groupOf(d);
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(d);
+      }
+      for (const [name, list] of groups) {
+        const key = `${this._devGroup}:${name}`;
+        const folded = this._devCollapsed.has(key);
+        const attention = list.filter((d) => this._needsAttention(d)).length;
+        const title = name || (this._devGroup === "area" ? t.noArea : t.kindOther);
+        body += `<div class="dgroup" role="button" tabindex="0" data-dgroup="${esc(key)}" aria-expanded="${!folded}">${svg(ICON.chevron, "chev")}<b>${esc(title)}</b><span class="sub">${esc(t.devicesN(list.length))}${attention ? ` · <span class="attn">${esc(t.needAttention(attention))}</span>` : ""}</span></div>`;
+        if (!folded) body += list.map((d) => this._deviceRow(d, now)).join("");
+      }
+    } else {
+      body = page.map((d) => this._deviceRow(d, now)).join("");
+    }
+    this._replace(container, head + body);
     const headBox = container.querySelector("[data-sel-all]");
     if (headBox) headBox.indeterminate = ticked > 0 && ticked < listed.length;
   }
@@ -3425,12 +3502,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const none = `<span class="none">${esc(t.noValue)}</span>`;
     // a model that is not fixed (one EEP, several devices) names the candidates instead of nothing
     const model = d.model || (d.models.length ? d.models.join(" / ") : "");
-    const sub = [`<span class="mono">${esc(d.id)}</span>`, model ? esc(model) : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    const sub = [`<span class="mono">${esc(d.id)}</span>`, model ? esc(model) : d.eep ? `<span class="mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
     const kind = d.unknown ? "unknown" : categoryIcon(d.category) ? d.category : "other";
     const kindName = kind === "unknown" ? t.unknownDevice : t.doc.tbl.categories[kind] || "";
     const tile = `<span class="tile ${kind}" title="${esc(kindName)}" aria-hidden="true">${svg(kind === "unknown" ? ICON.help : categoryIcon(kind) || ICON.tower)}</span>`;
-    // phones have no columns: type, area and entities go below the ID
-    const msub = [d.eep ? `<span class="mono">${esc(d.eep)}</span>` : "", d.area ? esc(d.area) : "", d.entities != null ? esc(t.entitiesN(d.entities)) : ""].filter(Boolean).join(" · ");
+    // phones have no columns: the type and the area go below the ID
+    const msub = [esc(this._kindName(d)), d.area ? esc(d.area) : ""].filter(Boolean).join(" · ");
     const values = d.fields && d.fields.length
       ? d.fields
           .map((f) =>
@@ -3456,7 +3533,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const stats = d.quiet
       ? `<span${d.time == null ? ' class="quiet-note"' : ""} title="${esc(t.quietHint)}">${esc(heard)}</span>`
       : `<span class="l1"><span>${esc(heard)}</span><span class="signal">${bars(d.dbm)}<span class="dbm">${d.dbm != null ? `${esc(d.dbm)} dBm` : ""}</span></span>${weak ? `<span class="tag warn" title="${esc(t.weakHint)}">${esc(t.weak)}</span>` : ""}</span>
-        <span class="l2" title="${esc(t.bufferHint)}">${this._sparkline(d.trend)}<span>${esc(t.telegramsCount(d.count))} · ${esc(d.perMinute)}/min</span></span>`;
+        `;
     const only = d.name || d.id;
     const open = !!d.devKey && this._devOpen.has(d.devKey);
     // everything but the one main action sits in the ⋮ menu: the buttons of a row stay where they are
@@ -3471,13 +3548,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";
     const picked = !!d.devKey && this._sel.has(d.devKey);
     const box = d.devKey ? `<input type="checkbox" class="selbox" data-sel="${esc(d.devKey)}"${picked ? " checked" : ""} aria-label="${esc(t.selBoxLabel(d.name || d.id))}">` : "";
-    const labels = this._labelNames(d);
     return `<div class="dev${d.quiet ? " quiet" : ""}${open ? " open" : ""}${picked ? " picked" : ""}${d.devKey ? " expandable" : ""}" data-key="${esc(d.key)}" data-only="${esc(only)}"${d.devKey ? ` data-dev="${esc(d.devKey)}" data-gateway="${esc(d.gateway)}"` : ""}>
       <div class="c-sel">${box}</div>
-      <div class="ident">${tile}<div class="idtext"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}${labels.length ? `<div class="labels">${labels.map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""}</div></div>
-      <div class="c-type">${d.eep ? `<span class="tag mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : none}</div>
-      <div class="c-area">${d.area ? esc(d.area) : none}</div>
-      <div class="c-ent">${d.entities != null ? esc(d.entities) : none}</div>
+      <div class="ident">${tile}<div class="idtext"><div class="line1">${name}</div><div class="sub">${sub}</div>${msub ? `<div class="sub msub">${msub}</div>` : ""}</div></div>
+      <div class="c-area"><span>${esc(this._kindName(d))}</span><span class="sub">${d.area ? `${svg(ICON.pin)}${esc(d.area)}` : `<span class="none">${esc(t.noArea)}</span>`}</span></div>
       <div class="values">${hints}${values}${maybe}</div>
       <div class="stats">${stats}</div>
       <div class="acts">${acts}${chevron}</div>
@@ -3511,7 +3585,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     const identity = list([
       item(t.model, x.models.length ? this._modelPicker(d.devKey, x) : x.model ? esc(x.model) : ""),
       item(t.eep, x.eep ? mono([x.eep, ...x.eep_extra].join(", ")) : ""),
+      item(t.devCols.kind, esc(this._kindName(d))),
       item(t.devCols.area, d.area ? esc(d.area) : ""),
+      item(t.selLabel, this._labelNames(d).length ? `<div class="labels">${this._labelNames(d).map((l) => `<span class="tag">${esc(l)}</span>`).join("")}</div>` : ""),
       item(t.gateway, esc(x.gateway_name)),
       item(t.devId, mono(d.id)),
     ]);
@@ -3520,7 +3596,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.signal, sig.rssi != null ? `${esc(sig.rssi)} dBm${sig.min != null ? ` <span class="sub">${esc(t.signalRange(sig.min, sig.max))}</span>` : ""}` : ""),
       item(t.repeater, x.repeat != null ? esc(x.repeat) : ""),
       item(t.heardBy, this._heardBy(x.heard_by), "wide"),
-      item(t.telegramsSinceStart, esc(x.telegrams.toLocaleString())),
+      item(t.telegramsSinceStart, `${esc(x.telegrams.toLocaleString())}${d.perMinute ? ` <span class="sub">${esc(d.perMinute)}/min</span>` : ""}`),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
       ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now), "full")),
     ]);
