@@ -30,6 +30,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Installation on phones**: the tabs scroll in one line with the menu beside them instead of wrapping into three rows, and the search and the buttons over a list use the full width.
 - **Installation, devices**: the list of all devices has one filter row (the views) instead of two; the kinds are offered inside a view. The clear button of a place shows only when the row is looked at, the checkbox no longer touches the colour bar, and the counters over the table have room of their own.
 - **Devices view on phones**: the status chips scroll in one line, search, sorting and grouping share one row, and the weak-signal hint is left out (its chip says the same), so the list starts about 200 px higher.
 - **Installation, sender IDs**: the tile "In use" counts the same rows its filter shows (including the gateway).
@@ -119,6 +120,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Anlage auf dem Handy**: die Tabs laufen in einer Zeile zum Wischen, das Menü steht daneben (statt drei Reihen), und Suche und Knöpfe über einer Liste nutzen die ganze Breite.
 - **Anlage, Geräte**: die Liste aller Geräte hat eine Filterreihe (die Ansichten) statt zwei; die Arten gibt es innerhalb einer Ansicht. Der Löschknopf eines Ortes erscheint erst, wenn man die Zeile ansieht, das Auswahlkästchen klebt nicht mehr an der Farbleiste, und die Zähler über der Tabelle haben eigenen Platz.
 - **Geräte-Ansicht auf dem Handy**: die Status-Chips laufen in einer Zeile zum Wischen, Sortierung und Gruppierung teilen sich eine Zeile, der Hinweis auf schwaches Signal entfällt (sein Chip sagt dasselbe); die Liste beginnt etwa 200 px weiter oben.
 - **Anlage, Sender-IDs**: die Kachel „In Gebrauch“ zählt jetzt dieselben Zeilen, die ihr Filter zeigt (mit dem Gateway).

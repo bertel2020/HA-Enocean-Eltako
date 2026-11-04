@@ -217,6 +217,19 @@ export const INSTALLATION_STYLE = `
   .installation .itop .itab { font-size: calc(15px * var(--fs)); padding: 10px 14px 12px; }
   .installation .itop .itools { padding-bottom: 8px; }
   .installation .itop .groups { display: flex; gap: 4px; flex: 1 1 340px; flex-wrap: wrap; }
+  /* phones: the tabs scroll in one line with the menu beside them, the tools of a list use the width */
+  @media (max-width: 720px) {
+    .installation .itop { flex-wrap: nowrap; gap: 4px; }
+    .installation .itop .groups { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .installation .itop .groups::-webkit-scrollbar { display: none; }
+    .installation .itop .itab { flex: none; white-space: nowrap; padding: 10px 10px 12px; }
+    .installation .itop .itools { flex: none; }
+    .installation .itools { justify-content: flex-start; align-items: center; }
+    .installation .itools input.isearch { flex: 1 1 100%; max-width: none; }
+    .installation .itools .chip { flex: 1 1 auto; justify-content: center; }
+    .installation .stiles.quiet { display: flex; flex-wrap: wrap; padding: 4px 4px 8px; }
+    .installation .stiles.quiet .stile { flex: none; }
+  }
   .installation .itab { font: inherit; font-size: calc(14px * var(--fs)); font-weight: 500; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; margin-bottom: -1px; cursor: pointer; }
   .installation .itab:hover { color: var(--text); }
   .installation .itab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
