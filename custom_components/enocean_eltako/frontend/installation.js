@@ -222,6 +222,7 @@ export const INSTALLATION_STYLE = `
     .installation .itop { flex-wrap: nowrap; gap: 4px; }
     .installation .itop .groups { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
     .installation .itop .groups::-webkit-scrollbar { display: none; }
+    .installation .itop .groups { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-right: 12px; }
     .installation .itop .itab { flex: none; white-space: nowrap; padding: 10px 10px 12px; }
     .installation .itop .itools { flex: none; }
     .installation .itools { justify-content: flex-start; align-items: center; }

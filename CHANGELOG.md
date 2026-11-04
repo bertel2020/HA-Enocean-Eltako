@@ -30,6 +30,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Devices view, opened row**: the cards of the radio section no longer leave a lone card in a row: "heard by" has the full width and the telegram count sits with the other figures. On phones the tabs of the installation fade out at the menu instead of being cut off by it.
 - **Installation, sender IDs**: a line under the pool map says what it counts (what Home Assistant has assigned) and that the table below also lists IDs that are only documented.
 - **Telegrams view**: calmer rows: no dot before the sender name, the telegram type is plain text instead of a chip, and a sent telegram is laid out like a received one (device name with the "Sent" tag, sender ID below).
 - **Installation on phones**: the tabs scroll in one line with the menu beside them instead of wrapping into three rows, and the search and the buttons over a list use the full width.
@@ -122,6 +123,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Geändert
 
+- **Geräte-Ansicht, geöffnete Zeile**: die Karten des Funk-Abschnitts lassen keine einzelne Karte mehr allein in einer Reihe: „Gehört von“ hat die volle Breite, die Telegrammzahl steht bei den anderen Werten. Auf dem Handy laufen die Tabs der Anlage am Menü weich aus, statt davon abgeschnitten zu werden.
 - **Anlage, Sender-IDs**: eine Zeile unter der Pool-Karte sagt, was sie zählt (was Home Assistant vergeben hat) und dass die Tabelle darunter auch nur dokumentierte IDs führt.
 - **Telegramm-Ansicht**: ruhigere Zeilen: kein Punkt vor dem Sendernamen, der Telegrammtyp ist schlichter Text statt Chip, und ein gesendetes Telegramm ist wie ein empfangenes aufgebaut (Gerätename mit der Markierung „Gesendet“, darunter die Sender-ID).
 - **Anlage auf dem Handy**: die Tabs laufen in einer Zeile zum Wischen, das Menü steht daneben (statt drei Reihen), und Suche und Knöpfe über einer Liste nutzen die ganze Breite.

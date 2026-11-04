@@ -3602,9 +3602,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       item(t.devCols.heard, esc(heard) + (x.silent ? ` <span class="tag warn" title="${esc(t.silentHint)}">${esc(t.silent)}</span>` : "")),
       item(t.signal, sig.rssi != null ? `${esc(sig.rssi)} dBm${sig.min != null ? ` <span class="sub">${esc(t.signalRange(sig.min, sig.max))}</span>` : ""}` : ""),
       item(t.repeater, x.repeat != null ? esc(x.repeat) : ""),
-      item(t.heardBy, this._heardBy(x.heard_by), "wide"),
       item(t.telegramsSinceStart, `${esc(x.telegrams.toLocaleString())}${d.perMinute ? ` <span class="sub">${esc(d.perMinute)}/min</span>` : ""}`),
       item(t.interval, x.interval ? esc(t.minutes(Math.round(x.interval / 60))) : ""),
+      item(t.heardBy, this._heardBy(x.heard_by), "full"),
       ...(x.last_telegrams ?? []).map((l) => item(x.last_telegrams.length > 1 ? `${t.lastTelegram} ${l.sender}` : t.lastTelegram, this._lastTelegram(l, now), "full")),
     ]);
     // the last values: what the live telegram says, else what the server read from the last
