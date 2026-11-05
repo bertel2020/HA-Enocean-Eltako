@@ -559,8 +559,8 @@ export const takeover = {
     if (missing.some((m) => m.length)) {
       const summary = CARRY_OPTIONS.filter((o) => laterBy[o]).map((o) => t.tkCarryCount(t.tkCarryOpt[o], laterBy[o])).join(", ");
       laterHtml = `<div class="section"><h3>${esc(t.tkLater.title)} <span class="sub">· ${esc(summary)}</span></h3>
-        <p class="lead">${esc(t.tkLater.text)}</p>
-        <button class="chip primary" data-tk-later-run ${laterDevices && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : laterDevices ? t.tkLater.run(laterDevices) : t.tkLater.pick)}</button></div>`;
+        <p class="lead">${esc(t.tkLater.text)}${laterDevices ? "" : ` ${esc(t.tkLater.pick)}`}</p>
+        <button class="chip primary" data-tk-later-run ${laterDevices && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : t.tkLater.run(laterDevices || missing.filter((m) => m.length).length))}</button></div>`;
     }
     const bar = `<div class="stepbar"><span class="left">${ready.length ? `<button class="chip" data-tk-tab="select">${esc(t.tkBack)}</button>` : ""}</span>
       <span class="left">${(tk.mapping?.rows || []).length ? `<button class="link" data-tk-tab="release">${esc(t.tkNext.release)}</button>` : ""}
