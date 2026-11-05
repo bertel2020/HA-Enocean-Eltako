@@ -228,7 +228,8 @@ async def _with_usage(hass: HomeAssistant, rows: list[dict[str, Any]]) -> dict[s
     usage = await async_usage(hass, [r["old"] for r in rows])
     for row in rows:
         row["usage"] = usage[row["old"]]
-    return {kind: len({n for u in usage.values() for n in u[kind]}) for kind in KINDS}
+    # a place is a dict (name, path): counted by its name
+    return {kind: len({n["name"] for u in usage.values() for n in u[kind]}) for kind in KINDS}
 
 
 @websocket_api.websocket_command(

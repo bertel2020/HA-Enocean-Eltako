@@ -10,12 +10,14 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Takeover**: the view after a takeover failed ("nothing to do") when an old entity was used in an automation, script, scene or dashboard.
 - **Gateway card**: the "Connected" status no longer takes the look of the device state pills (grey, with two dots).
 
 **Deutsch**
 
 #### Behoben
 
+- **Übernahme**: Die Ansicht nach einer Übernahme schlug fehl („nichts zu tun“), wenn eine alte Entität in einer Automation, einem Skript, einer Szene oder einem Dashboard verwendet wurde.
 - **Gateway-Karte**: Der Status „Verbunden“ übernimmt nicht mehr das Aussehen der Gerätestatus-Pillen (grau, mit zwei Punkten).
 
 ### [1.6.0] - 2026-11-04
