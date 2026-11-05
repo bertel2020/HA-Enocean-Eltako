@@ -874,3 +874,24 @@ async def test_takeover_unknown_reports_are_not_found(
     for i, type_ in enumerate(("report", "report_delete"), start=1):
         reply = await _ws(hass_ws_client, hass, i, type_, run_id="nope")
         assert reply["error"]["code"] == "not_found", type_
+
+
+async def test_with_usage_counts_places_by_name(hass: HomeAssistant) -> None:
+    """Places are dicts (name, path): the totals count them, they must not be put into a set."""
+    from custom_components.enocean_eltako.takeover_ws import _with_usage
+
+    place = {"name": "Kitchen", "path": "/config/automation/edit/1"}
+    usage = {
+        "light.a": {
+            "automation": [place],
+            "script": [],
+            "scene": [],
+            "dashboard": [{"name": "Home", "path": "/lovelace"}],
+        },
+        "light.b": {"automation": [place], "script": [], "scene": [], "dashboard": []},
+    }
+    rows = [{"old": "light.a"}, {"old": "light.b"}]
+    with patch("custom_components.enocean_eltako.takeover_ws.async_usage", return_value=usage):
+        totals = await _with_usage(hass, rows)
+    assert totals == {"automation": 1, "script": 0, "scene": 0, "dashboard": 1}
+    assert rows[0]["usage"] is usage["light.a"]
