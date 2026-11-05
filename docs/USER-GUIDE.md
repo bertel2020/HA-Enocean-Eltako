@@ -518,10 +518,12 @@ IDs, names and sender IDs, so the actuators need no new teach-in. Three steps ac
 show where you are; the view opens on the first one with something left to do. **Reports**
 next to the steps keeps what each takeover did (see below).
 
-1. **Select** lists the devices not set up yet, grouped by area, each with its old platform
-   and EEP and the number of places using it. Counters above show how many are in
-   `configuration.yaml`, how many are set up already (a click leads to them in step 2) and how
-   many cannot be taken over (folded away at the end, with the reason).
+1. **Select** lists the devices grouped by area, each with its old platform and EEP and the
+   number of places using it. New devices carry the tag *new*. Devices already set up that still
+   lack values of the old integration are in the same list, tagged *already set up* with what
+   is missing (for example *Labels missing*). Counters above show how many are in
+   `configuration.yaml`, how many are already complete and how many cannot be taken over
+   (folded away at the end, with the reason).
 2. **Review & take over** shows what comes along from the old integration as cards: **Area**,
    **Labels**, **Voice assistants**, **Own names** (names given in Home Assistant), **Icons** and
    **Hidden / disabled**, each with its values and for how many of the chosen devices it is
@@ -533,9 +535,11 @@ next to the steps keeps what each takeover did (see below).
    probably get (Home Assistant gives the ID only when the entity is added; for the main entity
    and the ID sensor it is predicted, a taken ID gets "_2") with the name, icon, labels,
    visibility and voice settings that go to it. Of the other entities only some have a
-   counterpart, so their values are marked "if a counterpart exists". Nothing is written before
-   **Take over n devices now**. Devices already set up that still lack values of the old
-   integration are completed at the bottom (**Devices already set up**), with the same options.
+   counterpart, so their values are marked "if a counterpart exists". Devices already set up show the
+   values that would be added in the preview. Nothing is written before **Take over (n
+   devices)**; this one button sets up the new devices and completes the chosen ones already
+   set up, with the same options. A result page then shows what was done and leads on to the
+   last step, which is optional: until then the old integration keeps running unchanged.
 3. **Retire the old integration** starts with one choice, because the old entity IDs can be
    dealt with in two ways that exclude each other (you can change it later):
    - **Keep the old IDs:** delete the old integration, then **Restore old IDs** gives the new

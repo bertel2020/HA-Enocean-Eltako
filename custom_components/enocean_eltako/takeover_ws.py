@@ -305,6 +305,7 @@ async def ws_takeover_mapping(
         vol.Required("type"): "enocean_eltako/takeover/carry",
         vol.Required("entry_id"): str,
         vol.Required("carry"): CARRY,
+        vol.Optional("devices"): [vol.All(str, parse_id)],
     }
 )
 @websocket_api.require_admin
@@ -318,8 +319,11 @@ async def ws_takeover_carry(
         return
     planned, _ = await _plan(hass, entry)
     ids = new_ids(planned)
+    only = set(msg["devices"]) if "devices" in msg else None
     carried = {
-        ids.get(i, i): carried_from(hass, entries) for i, entries in old_entities(hass).items()
+        ids.get(i, i): carried_from(hass, entries)
+        for i, entries in old_entities(hass).items()
+        if only is None or i in only
     }
     connection.send_result(
         msg["id"], {"carried": apply_carried(hass, entry, carried, set(msg["carry"]))}

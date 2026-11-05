@@ -8,6 +8,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 **English**
 
+#### Changed
+
+- **Takeover workflow**: one button per step. Devices already set up that still lack values of the old integration are now rows of the list in step 1 (tagged with what is missing) instead of a section of their own with a second button. Step 2 previews what happens to each device and has the single **Take over (n devices)** button, which sets up the new devices and completes the chosen set-up ones. A result page then shows what was done and leads to the optional last step, which it explains. The small "Next: retire" link is gone. The websocket command `takeover/carry` takes an optional list of devices.
+
 #### Fixed
 
 - **Takeover**: the view after a takeover failed ("nothing to do") when an old entity was used in an automation, script, scene or dashboard.
@@ -15,6 +19,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Takeover, devices already set up**: the hint "choose above what should come along" is now plain text; the disabled button no longer carries it as its label.
 
 **Deutsch**
+
+#### Geändert
+
+- **Ablauf der Übernahme**: ein Knopf je Schritt. Schon eingerichtete Geräte, denen noch Werte der alten Integration fehlen, sind jetzt Zeilen der Liste in Schritt 1 (mit der Marke, was fehlt) statt eines eigenen Abschnitts mit zweitem Knopf. Schritt 2 zeigt vorab, was mit jedem Gerät geschieht, und hat den einen Knopf **Übernehmen (n Geräte)**: Er legt die neuen Geräte an und ergänzt die gewählten eingerichteten. Danach zeigt eine Ergebnisseite, was getan wurde, und führt zum optionalen letzten Schritt, den sie erklärt. Der kleine Link „Weiter: Ablösen“ entfällt. Der Websocket-Befehl `takeover/carry` nimmt eine optionale Geräteliste.
 
 #### Behoben
 
