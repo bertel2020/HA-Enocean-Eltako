@@ -3,8 +3,12 @@
 [English](quality_scale.md)
 
 Selbsteinschätzung nach der [Integration Quality Scale von Home Assistant](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
-(Phase 5). Home Assistant bewertet Custom Integrations nicht; diese Liste hält fest, was
-erledigt ist und was fehlt.
+(Phase 5). Home Assistant bewertet Custom Integrations nicht, und hassfest prüft die Regeln
+nur für Core-Integrationen: Das ist eine Selbsteinschätzung, keine offizielle Einstufung.
+Diese Liste hält fest, was erledigt ist und was fehlt. Derselbe Stand steht maschinenlesbar
+in [`quality_scale.yaml`](../custom_components/enocean_eltako/quality_scale.yaml).
+
+Zuletzt geprüft gegen Version 1.6.0.
 
 Stand: **Bronze, Silber, Gold und Platin vollständig** (Selbsteinschätzung).
 
@@ -19,10 +23,10 @@ Stand: **Bronze, Silber, Gold und Platin vollständig** (Selbsteinschätzung).
 | config-flow-test-coverage | erledigt | `tests/test_config_flow.py`, `tests/test_devices.py` |
 | config-flow | erledigt | Gateway-Eintrag, Geräte-Untereinträge, Optionen |
 | dependency-transparency | erledigt | keine Requirements, eigene Protokollschicht |
-| docs-actions | erledigt | README „Actions“ |
-| docs-high-level-description | erledigt | README-Einleitung |
-| docs-installation-instructions | erledigt | README „Installation“ |
-| docs-removal-instructions | erledigt | README „Removal“ |
+| docs-actions | erledigt | Benutzerhandbuch „Blueprints und Aktionen“ |
+| docs-high-level-description | erledigt | README-Einleitung, Benutzerhandbuch „Was die Integration tut“ |
+| docs-installation-instructions | erledigt | README „Installation“, Benutzerhandbuch „Installation“ |
+| docs-removal-instructions | erledigt | Benutzerhandbuch „Installation“ (Abschnitt Entfernen) |
 | entity-event-setup | erledigt | Listener in `async_added_to_hass` |
 | entity-unique-id | erledigt | Base-ID + Geräte-ID + Schlüssel |
 | has-entity-name | erledigt | alle Entitäten |
@@ -37,8 +41,8 @@ Stand: **Bronze, Silber, Gold und Platin vollständig** (Selbsteinschätzung).
 | --- | --- | --- |
 | action-exceptions | erledigt | übersetzte `HomeAssistantError` bei Offline-Gateway und Positionen |
 | config-entry-unloading | erledigt | `async_unload_entry` schließt Gateway und Queue |
-| docs-configuration-parameters | erledigt | README „Gateway options and repairs“ |
-| docs-installation-parameters | erledigt | README „Supported devices“ und die Flow-Texte |
+| docs-configuration-parameters | erledigt | Benutzerhandbuch „Gateway-Einstellungen und Reparaturen“ |
+| docs-installation-parameters | erledigt | Benutzerhandbuch „Geräte hinzufügen“, `docs/devices.md` und die Flow-Texte |
 | entity-unavailable | erledigt | Option pro Gerät: nicht verfügbar bei Stille (E5) |
 | integration-owner | erledigt | `codeowners` im Manifest |
 | log-when-unavailable | erledigt | eine Warnung pro Gateway-Ausfall, Info bei Rückkehr |
@@ -56,11 +60,11 @@ Stand: **Bronze, Silber, Gold und Platin vollständig** (Selbsteinschätzung).
 | discovery-update-info | erledigt | ein bekanntes MGW-ETH mit neuer Adresse oder ein Proxy-Gateway mit neuem Port wird über die Base-ID erkannt und ohne Rückfrage aktualisiert |
 | docs-data-update | erledigt | lokal, Push; Gateway-Zähler alle 30 s |
 | docs-examples | erledigt | Blueprints |
-| docs-known-limitations | erledigt | README „Known limitations“ |
+| docs-known-limitations | erledigt | Benutzerhandbuch „Bekannte Einschränkungen“ |
 | docs-supported-devices | erledigt | `docs/devices.md` (erzeugt) |
-| docs-supported-functions | erledigt | README, `docs/devices.md` |
-| docs-troubleshooting | erledigt | README „Troubleshooting“ |
-| docs-use-cases | erledigt | README, virtuelle Sensoren, Blueprints |
+| docs-supported-functions | erledigt | Benutzerhandbuch, `docs/devices.md` |
+| docs-troubleshooting | erledigt | Benutzerhandbuch „Fehlersuche“ |
+| docs-use-cases | erledigt | Benutzerhandbuch (virtuelle Sensoren, Blueprints) |
 | dynamic-devices | erledigt | Untereinträge zur Laufzeit hinzufügen und entfernen |
 | entity-category | erledigt | Diagnose- und Konfigurationsentitäten |
 | entity-device-class | erledigt | wo es eine Geräteklasse gibt |

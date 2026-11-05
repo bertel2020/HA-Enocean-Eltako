@@ -1,0 +1,159 @@
+# Machine-readable form of docs/quality_scale.md (self-assessment, same content).
+# Custom integrations are not graded by Home Assistant; keep both files in step.
+rules:
+  action-setup:
+    status: done
+    comment: "services registered in `async_setup` (`services.py`)"
+  appropriate-polling:
+    status: done
+    comment: "local push; only the gateway counters poll"
+  brands:
+    status: done
+    comment: "`brand/`"
+  common-modules:
+    status: done
+    comment: "`entity.py`, `device.py`, `hub.py`, `gateway_entity.py`"
+  config-flow-test-coverage:
+    status: done
+    comment: "`tests/test_config_flow.py`, `tests/test_devices.py`"
+  config-flow:
+    status: done
+    comment: "gateway entry, device subentries, options"
+  dependency-transparency:
+    status: done
+    comment: "no requirements, own protocol layer"
+  docs-actions:
+    status: done
+    comment: "User Guide 'Blueprints and actions'"
+  docs-high-level-description:
+    status: done
+    comment: "README intro, User Guide 'What the integration does'"
+  docs-installation-instructions:
+    status: done
+    comment: "README 'Installation', User Guide 'Installation'"
+  docs-removal-instructions:
+    status: done
+    comment: "User Guide 'Removal'"
+  entity-event-setup:
+    status: done
+    comment: "listeners in `async_added_to_hass`"
+  entity-unique-id:
+    status: done
+    comment: "base ID + device ID + key"
+  has-entity-name:
+    status: done
+    comment: "all entities"
+  runtime-data:
+    status: done
+    comment: "`GatewayRuntime` in `entry.runtime_data`"
+  test-before-configure:
+    status: done
+    comment: "connection test and base ID in the config flow"
+  test-before-setup:
+    status: done
+    comment: "`ConfigEntryNotReady` when the gateway does not answer"
+  unique-config-entry:
+    status: done
+    comment: "base ID as unique ID"
+  action-exceptions:
+    status: done
+    comment: "translated `HomeAssistantError` for offline gateways and positions"
+  config-entry-unloading:
+    status: done
+    comment: "`async_unload_entry` closes gateway and queue"
+  docs-configuration-parameters:
+    status: done
+    comment: "User Guide 'Gateway settings and repairs'"
+  docs-installation-parameters:
+    status: done
+    comment: "User Guide 'Adding devices', `docs/devices.md` and the flow texts"
+  entity-unavailable:
+    status: done
+    comment: "option per device: unavailable when silent (E5)"
+  integration-owner:
+    status: done
+    comment: "`codeowners` in the manifest"
+  log-when-unavailable:
+    status: done
+    comment: "one warning per gateway outage, info when it is back"
+  parallel-updates:
+    status: done
+    comment: "`PARALLEL_UPDATES = 0` on every platform (send queue serialises)"
+  reauthentication-flow:
+    status: exempt
+    comment: "no credentials"
+  test-coverage:
+    status: done
+    comment: "over 95 %; CI fails below 95 % (`pytest --cov=custom_components/enocean_eltako --cov-fail-under=95`)"
+  devices:
+    status: done
+    comment: "one device per gateway and per subentry, via the gateway"
+  diagnostics:
+    status: done
+    comment: "`diagnostics.py`"
+  discovery:
+    status: done
+    comment: "zeroconf (MGW-ETH), Device Proxy app (Supervisor), discovered EnOcean senders (listed under Add device)"
+  discovery-update-info:
+    status: done
+    comment: "a known MGW-ETH with a new address, or a proxied gateway on a new port, is identified by its base ID and updated without confirmation (`test_zeroconf_new_address_updates_entry`, `test_device_proxy_app_port_change_updates_entry`)"
+  docs-data-update:
+    status: done
+    comment: "local push, gateway counters every 30 s"
+  docs-examples:
+    status: done
+    comment: "blueprints"
+  docs-known-limitations:
+    status: done
+    comment: "User Guide 'Known limitations'"
+  docs-supported-devices:
+    status: done
+    comment: "`docs/devices.md` (generated)"
+  docs-supported-functions:
+    status: done
+    comment: "User Guide, `docs/devices.md`"
+  docs-troubleshooting:
+    status: done
+    comment: "User Guide 'Troubleshooting'"
+  docs-use-cases:
+    status: done
+    comment: "User Guide (virtual sensors, blueprints)"
+  dynamic-devices:
+    status: done
+    comment: "subentries added and removed at runtime"
+  entity-category:
+    status: done
+    comment: "diagnostics and config entities"
+  entity-device-class:
+    status: done
+    comment: "where a device class exists"
+  entity-disabled-by-default:
+    status: done
+    comment: "noisy diagnostics disabled"
+  entity-translations:
+    status: done
+    comment: "`translations/`"
+  exception-translations:
+    status: done
+    comment: "`exceptions` in the translations"
+  icon-translations:
+    status: done
+    comment: "`icons.json` for every translated entity, states and actions"
+  reconfiguration-flow:
+    status: done
+    comment: "gateway and device reconfigure"
+  repair-issues:
+    status: done
+    comment: "disconnected gateway, silent device, base ID, slow bus, telegrams that do not fit the profile"
+  stale-devices:
+    status: done
+    comment: "removing a subentry removes its device and releases its senders"
+  async-dependency:
+    status: done
+    comment: "asyncio streams, `serialx`"
+  inject-websession:
+    status: exempt
+    comment: "no HTTP"
+  strict-typing:
+    status: done
+    comment: "`mypy --strict` in CI (`pyproject.toml`), Home Assistant re-exports allowed"
