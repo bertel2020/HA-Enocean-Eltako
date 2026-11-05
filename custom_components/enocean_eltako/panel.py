@@ -41,7 +41,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         hass,
         frontend_url_path=PANEL_PATH,
         webcomponent_name="enocean-eltako-monitor",
-        sidebar_title="EnOcean",
+        sidebar_title="EnOcean Eltako",
         sidebar_icon="mdi:radio-tower",
         module_url=f"{STATIC_URL}/monitor-panel.js?v={version}",
         require_admin=True,
