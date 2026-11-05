@@ -268,7 +268,7 @@ export const TEXT = {
     tkColOldEntity: "Old entity ID", tkColNewProbable: "New entity ID (probably)",
     tkNewLater: "known afterwards", tkNoOldEntities: "No entities of the old integration",
     tkBack: "← Selection", tkRun: (n) => (n === 1 ? "Take over (1 device)" : `Take over (${n} devices)`), tkRunNone: "Take over", tkRunHint: "Choose above what should come along.",
-    tkTagNew: "new", tkTagLater: (what) => (what ? `already set up · ${what} missing` : "already set up"), tkLaterNothing: "nothing to add with these options",
+    tkTagNew: "new", tkTagLater: (what) => (what ? `already set up · missing: ${what}` : "already set up"), tkLaterNothing: "nothing to add with these options",
     tkResult: {
       counts: (c, e) => [c ? (c === 1 ? "1 device set up" : `${c} devices set up`) : "", e ? (e === 1 ? "1 completed" : `${e} completed`) : ""].filter(Boolean).join(", ") || "Nothing changed",
       text: "The old integration keeps running unchanged. Old and new devices exist side by side until you do the last step: it replaces the old IDs in automations and dashboards and removes the old integration. You can do it later.",
@@ -778,7 +778,7 @@ export const TEXT = {
     tkColOldEntity: "Alte Entity-ID", tkColNewProbable: "Neue Entity-ID (voraussichtlich)",
     tkNewLater: "steht danach fest", tkNoOldEntities: "Keine Entitäten der alten Integration",
     tkBack: "← Auswahl", tkRun: (n) => (n === 1 ? "Übernehmen (1 Gerät)" : `Übernehmen (${n} Geräte)`), tkRunNone: "Übernehmen", tkRunHint: "Wähle oben, was mitkommen soll.",
-    tkTagNew: "neu", tkTagLater: (what) => (what ? `schon da · ${what} fehlt` : "schon da"), tkLaterNothing: "mit diesen Optionen nichts zu ergänzen",
+    tkTagNew: "neu", tkTagLater: (what) => (what ? `schon da · fehlt: ${what}` : "schon da"), tkLaterNothing: "mit diesen Optionen nichts zu ergänzen",
     tkResult: {
       counts: (c, e) => [c ? (c === 1 ? "1 Gerät angelegt" : `${c} Geräte angelegt`) : "", e ? (e === 1 ? "1 ergänzt" : `${e} ergänzt`) : ""].filter(Boolean).join(", ") || "Nichts geändert",
       text: "Die alte Integration läuft unverändert weiter. Alte und neue Geräte bestehen nebeneinander, bis du den letzten Schritt ausführst: Er ersetzt die alten IDs in Automationen und Dashboards und entfernt die alte Integration. Das kannst du auch später tun.",

@@ -951,7 +951,6 @@ export const takeover = {
     if (tk.result) tk.tab = "carry";
     this._renderTakeover();
     this._checkTakeover();
-    if (tk.result) this._notice(t.tkResult.counts(created, carried), !failed);
   },
 
   async _tkSetStrategy(strategy) {
