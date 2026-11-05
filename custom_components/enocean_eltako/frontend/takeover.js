@@ -38,7 +38,7 @@ function saveCarry(carry) {
 // the view's state when the panel starts
 export const takeoverState = () => ({
   entry: "", tab: "", section: "", loading: false, available: false, reports: 0, preview: null, previewError: "", mapping: null,
-  selected: new Set(), carry: loadCarry(), open: new Set(), busy: false, q: "", folded: new Set(), showNot: false,
+  selected: new Set(), result: null, carry: loadCarry(), open: new Set(), busy: false, q: "", folded: new Set(), showNot: false,
   runs: null, run: "", runData: null, openRun: new Set(), confirm: "",
 });
 
@@ -252,7 +252,7 @@ export const takeover = {
     tk.previewError = preview.status === "rejected" ? preview.reason?.code || "unknown" : "";
     tk.mapping = mapping.status === "fulfilled" ? mapping.value : null;
     tk.loading = false;
-    const ready = this._tkDevices().filter((d) => d.ready);
+    const ready = this._tkPickable();
     tk.selected = new Set(ready.map((d) => d.id));
     // opened: the first step with something left to do
     if (!STEPS.includes(tk.tab)) tk.tab = ready.length ? "select" : (tk.mapping?.rows || []).length ? "release" : "select";
@@ -276,6 +276,12 @@ export const takeover = {
     const seen = new Map();
     for (const d of this._tk.preview?.devices || []) if (!seen.has(d.id)) seen.set(d.id, d);
     return [...seen.values()];
+  },
+
+  _tkPickable() {
+    // what step 1 offers: devices to take over, and devices already set up that still lack values of the old integration
+    const missing = this._tk.mapping?.missing || {};
+    return this._tkDevices().filter((d) => d.ready || (d.reason === "takeover_exists" && missing[d.id]?.length));
   },
 
   _tkBlocks(rows) {
@@ -347,19 +353,15 @@ export const takeover = {
     if (!this._tkGateways().length) return this._noGateway();
     const select = this._tkGatewaySelect();
     const devices = this._tkDevices();
-    const ready = devices.filter((d) => d.ready);
+    const ready = this._tkPickable();
     const chosen = ready.filter((d) => tk.selected.has(d.id));
     const rows = tk.mapping?.rows || [];
-    const later = Object.values(tk.mapping?.missing || {}).filter((m) => m.length).length;
     const rel = this._tkRelease();
     const taken = Object.keys(tk.mapping?.devices || {}).length > 0;
     const st = t.tkStepState;
     const steps = [
-      { text: ready.length ? st.open(ready.length) : st.none, done: !ready.length && rows.length > 0 },
-      {
-        text: ready.length ? (chosen.length ? st.chosen(chosen.length) : st.nothing) : later ? st.later(later) : st.waiting,
-        off: !ready.length && !later,
-      },
+      { text: ready.length ? (chosen.length ? st.chosen(chosen.length) : st.nothing) : st.none, done: !ready.length && (rows.length > 0 || taken) },
+      { text: chosen.length ? st.review : taken ? st.done : st.waiting, done: !ready.length && taken, off: !chosen.length && !taken },
       {
         text: !rows.length ? (taken ? st.retired : st.waiting) : !rel.strategy ? st.choose : st.progress(rel.doneCount, 3),
         done: !rows.length ? taken : rel.strategy && rel.doneCount === 3, warn: rows.length > 0 && !(rel.strategy && rel.doneCount === 3), off: !rows.length && !taken,
@@ -414,11 +416,12 @@ export const takeover = {
       const text = t.tkErrors[tk.previewError] || t.tkErrors.unknown;
       return `${select ? `<div class="toolbar">${select}</div>` : ""}${this._emptyState(ICON.check, text, "", "", true)}`;
     }
-    // devices already set up are not offered here: step 2 completes them
-    const exists = devices.filter((d) => d.reason === "takeover_exists").length;
+    // devices already set up are listed when they still lack values of the old integration
+    const missing = tk.mapping?.missing || {};
+    const exists = devices.filter((d) => d.reason === "takeover_exists" && !ready.some((r) => r.id === d.id)).length;
     const not = devices.filter((d) => !d.ready && d.reason !== "takeover_exists");
     const counts = `<div class="counts"><span class="chip-s">${esc(t.tkInYaml(devices.length))}</span>${
-      exists ? `<button class="chip-s ok" data-tk-tab="carry">${esc(t.tkExisting(exists))}</button>` : ""
+      exists ? `<span class="chip-s ok">${esc(t.tkExisting(exists))}</span>` : ""
     }${not.length ? `<span class="chip-s">${esc(t.tkNotCount(not.length))}</span>` : ""}</div>`;
     const toolbar = `<div class="toolbar">${select}${this._tkSearch()}</div>`;
     const visible = ready.filter((d) => this._tkMatches(d.name, d.id, d.area, d.old, ...(d.labels || [])));
@@ -438,6 +441,7 @@ export const takeover = {
             : g.items
                 .map((d) => `<label class="pickrow"><input type="checkbox" data-tk-pick="${esc(d.id)}"${tk.selected.has(d.id) ? " checked" : ""}>
                   <span class="pick-name">${esc(d.name)} <span class="sub mono">${esc(d.id)}</span><br><span class="sub">${esc(d.old || "")}</span></span>
+                  ${d.ready ? `<span class="chip-s">${esc(t.tkTagNew)}</span>` : `<span class="chip-s ok">${esc(t.tkTagLater(missing[d.id].map((o) => t.tkCarryOpt[o]).join(", ")))}</span>`}
                   ${d.used ? `<span class="chip-s used">${esc(t.tkPlaces(d.used))}</span>` : `<span class="chip-s">${esc(t.tkUnused)}</span>`}</label>`)
                 .join("");
           return `<div class="group"><input type="checkbox" data-tk-group="${esc(g.area)}" aria-label="${esc(g.area || t.tkNoArea)}"${picked === g.items.length ? " checked" : ""}${picked && picked < g.items.length ? " data-partial" : ""}>
@@ -521,18 +525,25 @@ export const takeover = {
   _renderCarry(chosen, ready, select) {
     const t = this._t;
     const tk = this._tk;
-    const missing = Object.values(tk.mapping?.missing || {});
+    const miss = tk.mapping?.missing || {};
+    const news = chosen.filter((d) => d.ready);
+    const laters = chosen.filter((d) => !d.ready);
+    const missing = laters.map((d) => miss[d.id] || []);
     const laterBy = Object.fromEntries(CARRY_OPTIONS.map((o) => [o, missing.filter((m) => m.includes(o)).length]));
-    if (!chosen.length && !missing.some((m) => m.length)) {
+    // what happens to the devices already set up with the options chosen now
+    const extend = laters.filter((d) => (miss[d.id] || []).some((o) => tk.carry.has(o)));
+    const total = news.length + extend.length;
+    if (tk.result) return this._tkResult(select);
+    if (!chosen.length) {
       return this._emptyState(ICON.check, t.tkNoneChosen, "", `<button class="chip" data-tk-tab="select">${esc(t.tkBack)}</button>`, true);
     }
     const cards = CARRY_OPTIONS.map((o) => {
-      const having = chosen.filter((d) => (d.carry || []).includes(o));
+      const having = news.filter((d) => (d.carry || []).includes(o));
       const values = [...new Set(having.flatMap((d) => optionValues(t, d, o)))];
       const n = having.length;
       const k = laterBy[o];
       const detail = [
-        n ? [listed(values, 3), t.tkCarryOf(n, chosen.length)].filter(Boolean).join(" · ") : chosen.length ? t.tkCarryNone : "",
+        n ? [listed(values, 3), t.tkCarryOf(n, news.length)].filter(Boolean).join(" · ") : news.length ? t.tkCarryNone : "",
         k ? t.tkCarryAlso(k) : "",
       ].filter(Boolean).join(" · ");
       const usable = n || k;
@@ -541,31 +552,47 @@ export const takeover = {
     }).join("");
     let preview = "";
     if (chosen.length) {
-      const entities = chosen.reduce((n, d) => n + (d.entities || []).length, 0);
-      const places = new Set(chosen.flatMap((d) => d.places || [])).size;
-      const shown = chosen
+      const entities = news.reduce((n, d) => n + (d.entities || []).length, 0);
+      const places = new Set(news.flatMap((d) => d.places || [])).size;
+      const extRows = laters
+        .filter((d) => this._tkMatches(d.name, d.id, d.area, d.old))
+        .map((d) => {
+          const what = (miss[d.id] || []).filter((o) => tk.carry.has(o)).map((o) => t.tkCarryOpt[o]);
+          return `<div class="devblock"><div class="devhead"><b>${esc(d.name)}</b> <span class="sub mono">${esc(d.id)}</span>
+            <span class="devchips">${what.length ? what.map((w) => `<span class="chip-s val">${esc(w)}</span>`).join("") : `<span class="sub">${esc(t.tkLaterNothing)}</span>`}</span>
+            <span class="devstate"><span class="chip-s ok">${esc(t.tkTagLater(""))}</span></span></div></div>`;
+        })
+        .join("");
+      const shown = news
         .filter((d) => this._tkMatches(d.name, d.id, d.area, d.old, ...(d.labels || []), ...(d.details?.labels || []), ...(d.entities || []).flatMap((e) => [e.old, e.new, e.name, ...(e.labels || [])])))
         .sort((x, y) => x.name.localeCompare(y.name));
-      const all = chosen.every((d) => tk.open.has(d.id));
+      const all = news.every((d) => tk.open.has(d.id));
       preview = `<div class="section"><h3>${esc(t.tkPreview)} <span class="sub">· ${esc(t.tkPreviewSum(chosen.length, entities, places))}</span></h3>
         <p class="lead">${esc(t.tkAfterwards)}</p></div>
-        <div class="toolbar">${this._tkSearch()}<button class="chip" data-tk-expand="${all ? "none" : "all"}">${esc(all ? t.tkCollapseAll : t.tkExpandAll)}</button></div>
-        ${shown.length ? shown.map((d) => this._tkPreviewDevice(d)).join("") : this._emptyState(ICON.search, t.tkNoMatch, "", "", true)}
-        <p class="note" style="padding:0 16px">${esc(t.tkEntityNote)}</p>`;
+        <div class="toolbar">${this._tkSearch()}${news.length ? `<button class="chip" data-tk-expand="${all ? "none" : "all"}">${esc(all ? t.tkCollapseAll : t.tkExpandAll)}</button>` : ""}</div>
+        ${shown.length || extRows ? shown.map((d) => this._tkPreviewDevice(d)).join("") + extRows : this._emptyState(ICON.search, t.tkNoMatch, "", "", true)}
+        ${news.length ? `<p class="note" style="padding:0 16px">${esc(t.tkEntityNote)}</p>` : ""}`;
     }
-    // devices already set up: what the old integration has and they still lack
-    let laterHtml = "";
-    const laterDevices = missing.filter((m) => m.some((o) => tk.carry.has(o))).length;
-    if (missing.some((m) => m.length)) {
-      const summary = CARRY_OPTIONS.filter((o) => laterBy[o]).map((o) => t.tkCarryCount(t.tkCarryOpt[o], laterBy[o])).join(", ");
-      laterHtml = `<div class="section"><h3>${esc(t.tkLater.title)} <span class="sub">· ${esc(summary)}</span></h3>
-        <p class="lead">${esc(t.tkLater.text)}${laterDevices ? "" : ` ${esc(t.tkLater.pick)}`}</p>
-        <button class="chip primary" data-tk-later-run ${laterDevices && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : t.tkLater.run(laterDevices || missing.filter((m) => m.length).length))}</button></div>`;
-    }
-    const bar = `<div class="stepbar"><span class="left">${ready.length ? `<button class="chip" data-tk-tab="select">${esc(t.tkBack)}</button>` : ""}</span>
-      <span class="left">${(tk.mapping?.rows || []).length ? `<button class="link" data-tk-tab="release">${esc(t.tkNext.release)}</button>` : ""}
-      ${chosen.length ? `<button class="chip primary" data-tk-confirm ${tk.busy ? "disabled" : ""}>${esc(tk.busy ? t.tkBusy : t.tkRun(chosen.length))}</button>` : ""}</span></div>`;
-    return `<div class="section"><h3>${esc(t.tkCarryTitle)}</h3><div class="optcards">${cards}</div><p class="note">${esc(t.tkCarryNote)}</p></div>${preview}${laterHtml}${bar}`;
+    const bar = `<div class="stepbar"><span class="left"><button class="chip" data-tk-tab="select">${esc(t.tkBack)}</button>${total ? "" : `<span class="sub">${esc(t.tkRunHint)}</span>`}</span>
+      <button class="chip primary" data-tk-confirm ${total && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : total ? t.tkRun(total) : t.tkRunNone)}</button></div>`;
+    return `<div class="section"><h3>${esc(t.tkCarryTitle)}</h3><div class="optcards">${cards}</div><p class="note">${esc(t.tkCarryNote)}</p></div>${preview}${bar}`;
+  },
+
+  _tkResult(select) {
+    // after the takeover: what was done, and the way on to the optional last step
+    const t = this._t;
+    const r = this._tk.result;
+    const rows = this._tk.mapping?.rows || [];
+    const stillUsed = rows.filter(isUsed).length;
+    const lines = [t.tkResult.counts(r.created, r.extended), r.skipped.length ? `${t.tkSkipped}: ${r.skipped.join("; ")}` : ""].filter(Boolean);
+    const next = rows.length
+      ? `<button class="chip primary" data-tk-tab="release">${esc(t.tkNext.release)}</button>`
+      : "";
+    return `${select ? `<div class="toolbar">${select}</div>` : ""}<div class="section"><h3><span style="color:var(--ok)">✓</span> ${esc(lines[0])}</h3>
+      ${lines.slice(1).map((l) => `<p class="lead">${esc(l)}</p>`).join("")}
+      <p class="lead">${esc(t.tkResult.text)}${stillUsed ? ` ${esc(t.tkStillUsed(stillUsed))}.` : ""}</p>
+      <p class="lead"><button class="link" data-tk-reports>${esc(t.tkResult.report)}</button></p></div>
+      <div class="stepbar"><span class="left sub">${esc(t.tkResult.note)}</span>${next}</div>`;
   },
 
   // ---- step 3: retire the old integration -------------------------------------------------
@@ -778,6 +805,7 @@ export const takeover = {
     if (e.target.id === "tkGateway") {
       tk.entry = e.target.value;
       tk.tab = "";
+      tk.result = null;
       this._loadTakeover();
     } else if (e.target.dataset.tkStrategy) {
       this._tkSetStrategy(e.target.dataset.tkStrategy);
@@ -792,8 +820,8 @@ export const takeover = {
       this._renderTakeover();
     } else if (e.target.dataset.tkGroup !== undefined) {
       const area = e.target.dataset.tkGroup;
-      for (const d of this._tkDevices()) {
-        if (!d.ready || (d.area || "") !== area || !this._tkMatches(d.name, d.id, d.area, d.old, ...(d.labels || []))) continue;
+      for (const d of this._tkPickable()) {
+        if ((d.area || "") !== area || !this._tkMatches(d.name, d.id, d.area, d.old, ...(d.labels || []))) continue;
         if (e.target.checked) tk.selected.add(d.id);
         else tk.selected.delete(d.id);
       }
@@ -810,6 +838,7 @@ export const takeover = {
       this._navigate(hit("[data-tk-go]").dataset.tkGo);
     } else if (tab) {
       if (tk.tab !== tab.dataset.tkTab) tk.q = "";
+      if (tab.dataset.tkTab === "select") tk.result = null;
       tk.tab = tab.dataset.tkTab;
       this._renderTakeover();
       this.shadowRoot.getElementById("takeover").scrollIntoView?.({ block: "nearest" });
@@ -852,7 +881,7 @@ export const takeover = {
       this._renderTakeover();
     } else if (hit("[data-tk-all]")) {
       const all = hit("[data-tk-all]").dataset.tkAll === "all";
-      tk.selected = new Set(all ? this._tkDevices().filter((d) => d.ready).map((d) => d.id) : []);
+      tk.selected = new Set(all ? this._tkPickable().map((d) => d.id) : []);
       this._renderTakeover();
     } else if (hit("[data-tk-expand]")) {
       const all = hit("[data-tk-expand]").dataset.tkExpand === "all";
@@ -860,8 +889,6 @@ export const takeover = {
       this._renderTakeover();
     } else if (hit("[data-tk-confirm]")) {
       this._takeOver();
-    } else if (hit("[data-tk-later-run]")) {
-      this._tkCarryLater();
     } else if (hit("[data-tk-recheck]")) {
       this._tkRecheck();
     } else if (hit("[data-tk-copy]")) {
@@ -886,53 +913,45 @@ export const takeover = {
   // ---- actions ----------------------------------------------------------------------------
 
   async _takeOver() {
+    // one action: take over the chosen new devices and complete the chosen ones already set up
     const t = this._t;
     const tk = this._tk;
-    if (tk.busy || !tk.selected.size) return;
+    if (tk.busy) return;
+    const chosen = this._tkPickable().filter((d) => tk.selected.has(d.id));
+    const news = chosen.filter((d) => d.ready).map((d) => d.id);
+    const missing = tk.mapping?.missing || {};
+    const laters = chosen.filter((d) => !d.ready && (missing[d.id] || []).some((o) => tk.carry.has(o))).map((d) => d.id);
+    if (!news.length && !laters.length) return;
     tk.busy = true;
     this._renderTakeover();
-    let result = null;
+    let created = 0;
+    let carried = 0;
+    let skipped = [];
+    let failed = false;
     try {
-      result = await this._hass.callWS({
-        type: "enocean_eltako/takeover/run",
-        entry_id: tk.entry,
-        devices: [...tk.selected],
-        carry: [...tk.carry],
-      });
+      if (news.length) {
+        const result = await this._hass.callWS({ type: "enocean_eltako/takeover/run", entry_id: tk.entry, devices: news, carry: [...tk.carry] });
+        created = result.count;
+        skipped = result.skipped;
+      }
+      if (laters.length) {
+        ({ carried } = await this._hass.callWS({ type: "enocean_eltako/takeover/carry", entry_id: tk.entry, carry: [...tk.carry], devices: laters }));
+      }
     } catch (err) {
+      failed = true;
       this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
     }
     tk.busy = false;
-    // something taken over: on to retiring the old integration, even when it has nothing left to retire
-    tk.tab = result?.count ? "release" : "select";
     tk.q = "";
+    // the result page, also after a partial failure: what was done is shown, the rest stays selected
+    tk.result = created || carried || skipped.length ? { created, extended: carried, skipped } : null;
+    tk.tab = tk.result ? "carry" : failed ? tk.tab : "select";
     await this._refreshStatus();
     await this._loadTakeover();
+    if (tk.result) tk.tab = "carry";
     this._renderTakeover();
     this._checkTakeover();
-    if (!result) return;
-    const stillUsed = result.count ? (tk.mapping?.rows || []).filter(isUsed).length : 0;
-    this._notice(
-      t.tkDone(result.count, result.carried) +
-        (stillUsed ? `. ${t.tkStillUsed(stillUsed)}` : "") +
-        (result.skipped.length ? `. ${t.tkSkipped}: ${result.skipped.join("; ")}` : "")
-    );
-  },
-
-  async _tkCarryLater() {
-    const t = this._t;
-    const tk = this._tk;
-    if (tk.busy || !tk.carry.size) return;
-    tk.busy = true;
-    this._renderTakeover();
-    try {
-      const { carried } = await this._hass.callWS({ type: "enocean_eltako/takeover/carry", entry_id: tk.entry, carry: [...tk.carry] });
-      this._notice(t.tkCarried(carried), true);
-    } catch (err) {
-      this._notice(t.tkErrors[err.code] || t.tkErrors.unknown);
-    }
-    tk.busy = false;
-    await this._tkRecheck();
+    if (tk.result) this._notice(t.tkResult.counts(created, carried), !failed);
   },
 
   async _tkSetStrategy(strategy) {

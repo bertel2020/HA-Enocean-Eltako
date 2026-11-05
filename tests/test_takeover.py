@@ -466,11 +466,35 @@ async def test_takeover_view(hass: HomeAssistant, gateway, old_yaml, hass_ws_cli
     assert id_row["usage"] == {"automation": [], "script": [], "scene": [], "dashboard": []}
     assert mapping["missing"]["FF-C2-4A-8F"] == ["icons", "names"]
 
-    # carried over later: what is missing gets filled in, set values stay
+    # carried over later: what is missing gets filled in, set values stay; a device list limits it
+    reply = await _ws(
+        hass_ws_client,
+        hass,
+        40,
+        "carry",
+        entry_id=entry.entry_id,
+        carry=["names", "icons"],
+        devices=["FF-00-00-01"],
+    )
+    assert reply["result"] == {"carried": 0}  # not a chosen device
+    reply = await _ws(
+        hass_ws_client, hass, 41, "carry", entry_id=entry.entry_id, carry=["names"], devices=["x"]
+    )
+    assert reply["error"]["code"] == "invalid_format"
+    reply = await _ws(
+        hass_ws_client,
+        hass,
+        42,
+        "carry",
+        entry_id=entry.entry_id,
+        carry=["names", "icons"],
+        devices=["FF-C2-4A-8F"],
+    )
+    assert reply["result"] == {"carried": 1}
     reply = await _ws(
         hass_ws_client, hass, 4, "carry", entry_id=entry.entry_id, carry=["names", "icons"]
     )
-    assert reply["result"] == {"carried": 1}
+    assert reply["result"] == {"carried": 0}  # the device list already did it
     assert dr.async_get(hass).async_get(registered.id).name_by_user == "Schreibtisch"
     assert er.async_get(hass).async_get(main.entity_id).icon == "mdi:desk-lamp"
     mapping = (await _ws(hass_ws_client, hass, 5, "mapping", entry_id=entry.entry_id))["result"]

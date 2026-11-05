@@ -549,10 +549,12 @@ IDs, Namen und Sender-IDs ein; die Aktoren brauchen kein neues Einlernen. Drei S
 zeigen, wo du stehst; die Ansicht öffnet beim ersten Schritt, in dem noch etwas offen ist.
 **Berichte** neben den Schritten hält fest, was jede Übernahme getan hat (siehe unten).
 
-1. **Auswählen** listet die noch nicht eingerichteten Geräte nach Bereich, jedes mit alter
-   Plattform und EEP und der Zahl seiner Fundstellen. Zähler darüber zeigen, wie viele in der
-   `configuration.yaml` stehen, wie viele schon eingerichtet sind (ein Klick führt zu ihnen in
-   Schritt 2) und wie viele nicht übernehmbar sind (am Ende eingeklappt, mit Grund).
+1. **Auswählen** listet die Geräte nach Bereich, jedes mit alter Plattform und EEP und der Zahl
+   seiner Fundstellen. Neue Geräte tragen die Marke *neu*. Schon eingerichtete Geräte, denen
+   noch Werte der alten Integration fehlen, stehen in derselben Liste mit der Marke *schon da*
+   und dem, was fehlt (zum Beispiel *Labels fehlt*). Zähler darüber zeigen, wie viele in der
+   `configuration.yaml` stehen, wie viele schon vollständig sind und wie viele nicht
+   übernehmbar sind (am Ende eingeklappt, mit Grund).
 2. **Prüfen & übernehmen** zeigt als Kacheln, was aus der alten Integration mitkommt:
    **Bereich**, **Labels**, **Sprachsteuerung**, **Eigene Namen** (in Home Assistant vergebene
    Namen), **Symbole** und **Ausgeblendet / deaktiviert**, jeweils mit den Werten und bei wie
@@ -565,9 +567,11 @@ zeigen, wo du stehst; die Ansicht öffnet beim ersten Schritt, in dem noch etwas
    die ID erst beim Anlegen; für die Hauptentität und den ID-Sensor wird sie vorhergesagt, eine
    belegte ID bekommt „_2“), mit Name, Symbol, Labels, Sichtbarkeit und Sprachsteuerung, die an
    sie gehen. Von den übrigen Entitäten haben nur einige ein Gegenstück; ihre Werte sind mit
-   „falls es ein Gegenstück gibt“ markiert. Vor **n Geräte jetzt übernehmen** wird nichts
-   geschrieben. Schon eingerichtete Geräte, denen noch Werte der alten Integration fehlen,
-   ergänzt der Abschnitt unten (**Schon eingerichtete Geräte**) mit denselben Optionen.
+   „falls es ein Gegenstück gibt“ markiert. Schon eingerichtete Geräte stehen mit den Werten
+   in der Vorschau, die ergänzt würden. Vor **Übernehmen (n Geräte)** wird nichts geschrieben;
+   dieser eine Knopf legt die neuen Geräte an und ergänzt die gewählten schon eingerichteten
+   mit denselben Optionen. Danach zeigt eine Ergebnisseite, was getan wurde, und führt zum
+   letzten Schritt, der optional ist: Bis dahin läuft die alte Integration unverändert weiter.
 3. **Alte Integration ablösen** beginnt mit einer Wahl, weil sich die alten Entity-IDs auf zwei
    Wegen behandeln lassen, die sich ausschließen (du kannst sie später ändern):
    - **Alte IDs behalten:** alte Integration löschen, dann gibt **Alte IDs wiederherstellen**
