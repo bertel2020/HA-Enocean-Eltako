@@ -6,6 +6,8 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 ### [Unreleased]
 
+### [1.7.0] - 2026-11-05
+
 **English**
 
 #### Changed
