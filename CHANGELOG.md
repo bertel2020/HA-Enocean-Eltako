@@ -8,15 +8,15 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 **English**
 
-#### Changed
+#### Fixed
 
-- **Quality scale**: the self-assessment in [docs/quality_scale.md](docs/quality_scale.md) points to the User Guide instead of the README sections that moved there, says that it is not an official rating and is also kept in `quality_scale.yaml` (machine-readable).
+- **Gateway card**: the "Connected" status no longer takes the look of the device state pills (grey, with two dots).
 
 **Deutsch**
 
-#### Geändert
+#### Behoben
 
-- **Quality Scale**: Die Selbsteinschätzung in [docs/quality_scale.de.md](docs/quality_scale.de.md) verweist auf das Benutzerhandbuch statt auf README-Abschnitte, die dorthin gezogen sind, sagt, dass sie keine offizielle Einstufung ist, und steht zusätzlich maschinenlesbar in `quality_scale.yaml`.
+- **Gateway-Karte**: Der Status „Verbunden“ übernimmt nicht mehr das Aussehen der Gerätestatus-Pillen (grau, mit zwei Punkten).
 
 ### [1.6.0] - 2026-11-04
 

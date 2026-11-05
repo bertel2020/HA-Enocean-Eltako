@@ -22,8 +22,8 @@
 
 <p align="center"><em><a href="README.de.md">Deutsche Version</a></em></p>
 
-> The existing `eltako` integration keeps running in parallel; this one uses its own domain
-> `enocean_eltako`. Known limitations: [User guide](docs/USER-GUIDE.md#known-limitations).
+> [!IMPORTANT]
+> **Device Proxy app (recommended):** the [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app for Home Assistant OS and Supervised keeps the gateway's serial port and shares it: Home Assistant, the old `eltako` integration, eo_man or PCT14 can use one gateway at the same time. After a restart it replays the telegrams Home Assistant missed, and it can stand in with a fallback gateway. The integration finds the app's gateways by itself. See the [User Guide](docs/USER-GUIDE.md#device-proxy-app).
 
 EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOcean devices into Home Assistant. It is written from scratch, needs no third-party EnOcean library and is configured entirely in the UI: one entry per gateway, one sub-entry per device, no YAML.
 
@@ -34,7 +34,7 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 - **Covers** with controller and direction-rocker senders in parallel, position tracking, vent slots, slat tilt and a travel time assistant.
 - **Virtual sensors:** Home Assistant entities sent as EnOcean contact, motion, temperature, brightness, weather or rocker, e.g. to feed the shading automatic of an actuator.
 - **Teach-in, discovery and a live telegram monitor** in the **EnOcean** sidebar panel, plus capture and diagnostics for bug reports. Three colour schemes (light/dark) and three font sizes are selectable.
-- **Device Proxy app:** shares one gateway between Home Assistant and other programs, replays the telegrams missed during a restart and is set up from its announcement.
+- **[Device Proxy app](https://github.com/bertel2020/HA-Device-Proxy):** shares one gateway between Home Assistant and other programs, replays the telegrams missed during a restart and is set up from its announcement.
 - **Takeover** of the devices of the old `eltako` integration without teaching the actuators in again.
 - **Installation documentation** in the panel: places, circuits, fuses, sender IDs and links, and the **Eltako bus** by its master (FAM14) with each DIN rail device and its channels, cabinets drawn as DIN rails to scale with label strips to print, the address plan 1–126, the load of the power supplies and checks (duplicate addresses, missing ones, devices not in Home Assistant); an experimental reading of the bus by listening compares the addresses that answer with the documentation.
 - **Safety stays in the actuator:** wind, rain, frost and lock-out protection are never replaced.
@@ -63,7 +63,7 @@ The screenshots show sample data from the **EnOcean** sidebar panel.
 | --- | --- |
 | ![Device details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/device-details-desktop-light.png) | ![Installation documentation](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/documentation-print.png) |
 
-| Gateway notes and further devices |
+| Gateway details |
 | --- |
 | ![Gateway details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase-en/gateway-details-desktop-light.png) |
 
@@ -102,18 +102,6 @@ Every step, all device types, the panel, the takeover, blueprints, known limitat
 - [Learn functions of Eltako series 14 actuators](docs/teach_in.md)
 - [Quality scale](docs/quality_scale.md)
 - [Changelog](CHANGELOG.md)
-
-## Development
-
-```bash
-python -m pip install -r requirements_test.txt
-ruff check custom_components tests scripts
-mypy
-python scripts/check_protocol_imports.py
-python -m pytest
-```
-
-`python scripts/gen_device_docs.py` regenerates [docs/devices.md](docs/devices.md) from the device catalog. `python scripts/fetch_eep.py --generated` followed by `python scripts/generate_eep.py` regenerates the standard profiles; `python scripts/fetch_eep.py` downloads the official EEP definitions into `.eep_cache/`. These files belong to the EnOcean Alliance and are never committed (see [NOTICE](NOTICE)).
 
 ## Thanks
 

@@ -22,8 +22,8 @@
 
 <p align="center"><em><a href="README.md">English version</a></em></p>
 
-> Die bestehende Integration `eltako` läuft parallel weiter; diese hier hat die eigene Domain
-> `enocean_eltako`. Bekannte Einschränkungen: [Benutzerhandbuch](docs/USER-GUIDE.de.md#bekannte-einschränkungen).
+> [!IMPORTANT]
+> **App Device Proxy (empfohlen):** Die App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) für Home Assistant OS und Supervised behält die serielle Schnittstelle des Gateways und teilt sie: Home Assistant, die alte Integration `eltako`, eo_man oder PCT14 können ein Gateway gleichzeitig nutzen. Nach einem Neustart liefert sie die verpassten Telegramme nach und kann mit einem Ersatz-Gateway einspringen. Die Integration findet die Gateways der App von selbst. Siehe [Benutzerhandbuch](docs/USER-GUIDE.de.md#app-device-proxy).
 
 EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere EnOcean-Geräte in Home Assistant ein. Die Integration ist neu geschrieben, braucht keine fremde EnOcean-Bibliothek und wird komplett über die Oberfläche eingerichtet: ein Eintrag pro Gateway, ein Untereintrag pro Gerät, kein YAML.
 
@@ -34,7 +34,7 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 - **Rollläden** mit Controller- und Richtungstaster-Sender parallel, Positionsverfolgung, Lüftungsschlitzen, Lamellenstellung und Laufzeit-Assistent.
 - **Virtuelle Sensoren:** Home-Assistant-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur, -Helligkeit, -Wetter oder -Taster senden, z. B. für die Beschattungsautomatik eines Aktors.
 - **Anlernen, Discovery und ein Live-Telegramm-Monitor** im Seitenleisten-Panel **EnOcean**, dazu Mitschnitt und Diagnosedaten für Fehlerberichte. Drei Farbschemata (hell/dunkel) und drei Schriftgrößen sind wählbar.
-- **App Device Proxy:** teilt ein Gateway zwischen Home Assistant und anderen Programmen, liefert die beim Neustart verpassten Telegramme nach und wird anhand ihrer Meldung eingerichtet.
+- **[App Device Proxy](https://github.com/bertel2020/HA-Device-Proxy):** teilt ein Gateway zwischen Home Assistant und anderen Programmen, liefert die beim Neustart verpassten Telegramme nach und wird anhand ihrer Meldung eingerichtet.
 - **Übernahme** der Geräte der alten Integration `eltako`, ohne die Aktoren neu einzulernen.
 - **Installationsdokumentation** im Panel: Einbauorte, Stromkreise, Sicherungen, Sender-IDs und Verbindungen, dazu der **Eltako-Bus** nach seinem Master (FAM14) mit jedem Reiheneinbaugerät und seinen Kanälen, Schränken als maßstäbliche Hutschienen mit Etikettenstreifen zum Drucken, dem Adressplan 1–126, der Last der Netzteile und Prüfungen (doppelte und fehlende Adressen, Geräte, die nicht in Home Assistant sind); ein experimentelles Lesen des Busses durch Mithören gleicht die antwortenden Adressen mit der Dokumentation ab.
 - **Sicherheit bleibt im Aktor:** Wind-, Regen-, Frost- und Aussperrschutz werden nie ersetzt.
@@ -63,7 +63,7 @@ Die Screenshots zeigen Beispieldaten aus dem Seitenleisten-Panel **EnOcean**.
 | --- | --- |
 | ![Gerätedetails](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/device-details-desktop-light.png) | ![Installationsdokumentation](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/documentation-print.png) |
 
-| Gateway-Notizen und weitere Geräte |
+| Gateway-Details |
 | --- |
 | ![Gateway-Details](https://raw.githubusercontent.com/bertel2020/HA-Enocean-Eltako/main/screenshots/showcase/gateway-details-desktop-light.png) |
 
@@ -105,18 +105,6 @@ Jeder Schritt, alle Gerätearten, das Panel, die Übernahme, Blueprints, bekannt
 - [Einlernfunktionen der Eltako-Aktoren Baureihe 14](docs/teach_in.de.md)
 - [Quality Scale](docs/quality_scale.de.md)
 - [Änderungsprotokoll](CHANGELOG.md) (Englisch und Deutsch)
-
-## Entwicklung
-
-```bash
-python -m pip install -r requirements_test.txt
-ruff check custom_components tests scripts
-mypy
-python scripts/check_protocol_imports.py
-python -m pytest
-```
-
-`python scripts/gen_device_docs.py` erzeugt [docs/devices.de.md](docs/devices.de.md) und [docs/devices.md](docs/devices.md) aus dem Gerätekatalog neu. `python scripts/fetch_eep.py --generated` und danach `python scripts/generate_eep.py` erzeugen die Standardprofile neu; `python scripts/fetch_eep.py` lädt die offiziellen EEP-Definitionen nach `.eep_cache/`. Diese Dateien gehören der EnOcean Alliance und werden nie eingecheckt (siehe [NOTICE](NOTICE)).
 
 ## Dank
 

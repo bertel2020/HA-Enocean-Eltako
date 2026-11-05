@@ -571,12 +571,12 @@ const STYLE = `
   .values .tag { flex: 0 1 auto; min-width: 0; white-space: normal; overflow-wrap: break-word; }
   /* the state of a device: the text always names it, the color only backs it up */
   .chip .n { margin-left: 6px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: .75; }
-  .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; white-space: nowrap; background: var(--tag-bg); color: var(--tag-text); }
-  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-  .pill.active { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
-  .pill.silent { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
-  .pill.silent::before { background: var(--warn); }
-  .pill.unknown { background: var(--accent-soft); color: var(--accent); }
+  .devices .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: calc(12px * var(--fs)); font-weight: 500; padding: 2px 10px; border-radius: 12px; white-space: nowrap; background: var(--tag-bg); color: var(--tag-text); }
+  .devices .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .devices .pill.active { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .devices .pill.silent { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--text); }
+  .devices .pill.silent::before { background: var(--warn); }
+  .devices .pill.unknown { background: var(--accent-soft); color: var(--accent); }
   @media (max-width: 760px) {
     .devices { grid-template-columns: 28px minmax(0, 1fr) auto; }
     .devices .dev-head { display: none; }

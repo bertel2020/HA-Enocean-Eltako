@@ -72,14 +72,14 @@ for (const lang of ["en", "de"]) {
   await check(`lang=${lang}`, async ({ root, fake, view, expect }) => {
     await view("telegrams");
     expect("telegram rows", root.querySelectorAll("tr.row").length, 4);
-    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele", device_key: "sub1" });
+    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-00-00-01", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele", device_key: "sub1" });
     await settle();
     expect("telegram rows after a new one", root.querySelectorAll("tr.row").length, 5);
     root.querySelector("tr.row").click();
     await settle();
     expect("open details", root.querySelectorAll("tr.detail-row").length, 1);
     // an open telegram holds new ones back; closing it lets them in
-    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-10-A2-B3", rorg: "F6", data: "70", status: "30", dbm: -61, device: "Licht Diele", device_key: "sub1" });
+    fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-00-00-01", rorg: "F6", data: "70", status: "30", dbm: -61, device: "Licht Diele", device_key: "sub1" });
     await settle();
     expect("telegram rows while one is open", root.querySelectorAll("tr.row").length, 5);
     expect("held back while one is open", root.getElementById("live").classList.contains("paused"), true);
@@ -106,7 +106,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector("[data-resend]").click();
     await settle();
     const resent = fake.sent.filter((m) => m.type === "enocean_eltako/send").map((m) => `${m.sender} ${m.rorg} ${m.data} ${m.status}`);
-    expect("sent again", resent.join(", "), "FF-B7-44-81 F6 70 30, FF-B7-44-81 F6 00 20");
+    expect("sent again", resent.join(", "), "FF-00-11-81 F6 70 30, FF-00-11-81 F6 00 20");
     root.getElementById("filterBtn").click();
     expect("filter row open", root.getElementById("filterMenu").hidden, false);
     // the Installation view: devices by area, a table with fields edited in place, the event log
@@ -464,12 +464,12 @@ for (const lang of ["en", "de"]) {
     learn.value = "Funktion 45";
     learn.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
-    expect("a learn position is saved", fake.sent.filter((m) => m.type === "enocean_eltako/set_link_learn").map((m) => `${m.link_key}=${m.learn}`).join(), "assigned|05-10-A2-B3|central=Funktion 45");
+    expect("a learn position is saved", fake.sent.filter((m) => m.type === "enocean_eltako/set_link_learn").map((m) => `${m.link_key}=${m.learn}`).join(), "assigned|05-00-00-01|central=Funktion 45");
     // a sender test of an actuator, and a link written down from the card of an actuator
     root.querySelector("#installation [data-in-test]").click();
     await settle();
     expect("the sender test is asked for the actuator", fake.sent.some((m) => m.type === "enocean_eltako/sender_test" && m.device === "sub1"), true);
-    root.querySelector('#installation [data-in-linkadd="a|05-10-A2-B5"]').click();
+    root.querySelector('#installation [data-in-linkadd="a|05-00-00-03"]').click();
     await settle();
     const linkForm = root.querySelector("#installation [data-in-linkform]");
     const pick = linkForm.querySelector('[data-in-new="other"]');
@@ -481,7 +481,7 @@ for (const lang of ["en", "de"]) {
     linkForm.querySelector('[data-in-new="role"]').value = "linke Wippe";
     root.querySelector('#installation [data-in-act="link-add"]').click();
     await settle();
-    expect("a link written down is sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_links").some((m) => m.links.some((l) => l.from_id === "FE-F3-B0-02" && l.to_key === "05-10-A2-B5" && l.role === "linke Wippe")), true);
+    expect("a link written down is sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_links").some((m) => m.links.some((l) => l.from_id === "FE-F3-B0-02" && l.to_key === "05-00-00-03" && l.role === "linke Wippe")), true);
     root.querySelector('#installation [data-in-linkview="sender"]').click();
     await settle();
     expect("link cards by sender", root.querySelectorAll("#installation .lcard").length >= 4, true);
@@ -515,13 +515,13 @@ for (const lang of ["en", "de"]) {
     expect("the pill names its state", [...root.querySelectorAll(".dev .pill")].every((p) => p.textContent.trim().length > 0), true);
     expect("a device past its interval is silent", state("Temperatur Bad"), "silent");
     expect("a device never heard is not heard", state("Fensterkontakt Küche"), "unheard");
-    expect("a sender that is not set up is unknown", state("01-99-88-77"), "unknown");
+    expect("a sender that is not set up is unknown", state("01-00-00-99"), "unknown");
     const row = (name) => [...root.querySelectorAll(".dev")].find((d) => d.textContent.includes(name));
     expect("a quiet device shows what its entities hold, not an unavailable one", row("Temperatur Bad").querySelector(".values").textContent.includes("21.5 °C") && !row("Temperatur Bad").querySelector(".values").textContent.includes("%"), true);
     expect("a device never heard shows no time beside its pill", row("Fensterkontakt Küche").querySelector(".stats").textContent.trim(), "–");
     expect("every row has a kind tile", root.querySelectorAll(".dev .ident .tile").length, 5);
     expect("a light gets the light tile", !!row("Licht Diele").querySelector(".tile.lighting"), true);
-    expect("a sender that is not set up gets the question mark tile", !!row("01-99-88-77").querySelector(".tile.unknown"), true);
+    expect("a sender that is not set up gets the question mark tile", !!row("01-00-00-99").querySelector(".tile.unknown"), true);
     expect("a model that is not fixed names its candidates", row("Dimmer Flur").textContent.includes("FUD14 / FUD61 / FD62"), true);
     expect("rows with something to offer have a more-menu button", root.querySelectorAll(".dev .acts .rowmore").length, 4);
     expect("no loose icon buttons beside the menu", root.querySelectorAll(".dev .acts .icon-btn:not(.rowmore):not(.expand)").length, 0);
@@ -538,7 +538,7 @@ for (const lang of ["en", "de"]) {
     root.querySelector('.dev[data-dev="sub1"]').click();
     await settle();
     expect("device details open", root.querySelectorAll(".dev-detail").length, 1);
-    expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-B7-44-81"), true);
+    expect("device details load", root.querySelector(".dev-detail").textContent.includes("FF-00-11-81"), true);
     expect("an opened device leads to its links", !!root.querySelector('.dev-detail [data-dev-links="Licht Diele"]'), true);
     expect("device rows while one is open", root.querySelectorAll(".dev").length, 5);
     // the opened row: one card grid, the last telegram over two columns with its raw bytes as tags,
@@ -609,11 +609,11 @@ for (const lang of ["en", "de"]) {
     }
     expect("blocked note", !!root.querySelector(".pnote"), true);
     expect("the Sender IDs tab counts the blocked IDs", !!root.querySelector('#installation [data-in-tab="gwsenders"] .tabwarn'), true);
-    root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
+    root.querySelector('.map button[data-tile="FF-00-11-81"]').click();
     await settle();
     expect("chosen square is read out", root.querySelector(".pread").textContent.includes("Licht Diele"), true);
     expect("chosen square marked", root.querySelectorAll(".map button.sel").length, 1);
-    root.querySelector('.map button[data-tile="FF-B7-44-81"]').click();
+    root.querySelector('.map button[data-tile="FF-00-11-81"]').click();
     await settle();
     expect("square unchosen", root.querySelectorAll(".map button.sel").length, 0);
     await view("senders");
