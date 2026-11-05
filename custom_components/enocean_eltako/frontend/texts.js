@@ -12,7 +12,7 @@ function span(s, days) {
 
 export const TEXT = {
   en: {
-    title: "EnOcean",
+    title: "EnOcean Eltako",
     gateways: "Gateways",
     sender: "Sender", content: "Content", unavailable: "Not available",
     direction: "Direction", allTypes: "All types", sortHint: "Sort by this column", sortLabel: "Sort",
@@ -521,7 +521,7 @@ export const TEXT = {
     },
   },
   de: {
-    title: "EnOcean",
+    title: "EnOcean Eltako",
     gateways: "Gateways",
     sender: "Sender", content: "Inhalt", unavailable: "Nicht verfügbar",
     direction: "Richtung", allTypes: "Alle Typen", sortHint: "Nach dieser Spalte sortieren", sortLabel: "Sortieren",

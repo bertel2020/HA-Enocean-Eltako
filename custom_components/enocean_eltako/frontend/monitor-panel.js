@@ -98,7 +98,7 @@ const STYLE = `
     padding: 0 max(24px, calc((100% - 1200px) / 2 + 24px)); }
   .brand { display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 60px; }
   .brand ha-menu-button { margin-left: -12px; color: var(--text); }
-  .brand b { display: block; font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }
+  .brand b { display: block; font-size: calc(18px * var(--fs)); font-weight: 600; line-height: 1.1; }
   .brand small { display: block; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .header .logo { width: 36px; height: 36px; flex: none; }
   /* the view tabs: their own look, not the segmented filter buttons */
@@ -1094,7 +1094,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}${TAKEOVER_STYLE}${INSTALLATION_STYLE}</style>
       <header class="header">
-        <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title)}</b></div></div>
+        <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title).replace(" ", "<br>")}</b></div></div>
         <div class="header-end">
         <nav role="tablist" id="view" aria-label="${esc(t.title)}">
           <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
