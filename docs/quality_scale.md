@@ -3,8 +3,12 @@
 [Deutsch](quality_scale.de.md)
 
 Self-assessment against the [Home Assistant integration quality scale](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
-(phase 5). Custom integrations are not graded by Home Assistant; this list tracks what is
-done and what is left.
+(phase 5). Custom integrations are not graded by Home Assistant, and hassfest checks the
+rules only for core integrations: this is a self-assessment, not an official rating. This
+list tracks what is done and what is left. The same status is kept machine-readable in
+[`quality_scale.yaml`](../custom_components/enocean_eltako/quality_scale.yaml).
+
+Last reviewed against version 1.6.0.
 
 Status: **Bronze, Silver, Gold and Platinum complete** (self-assessment).
 
@@ -19,10 +23,10 @@ Status: **Bronze, Silver, Gold and Platinum complete** (self-assessment).
 | config-flow-test-coverage | done | `tests/test_config_flow.py`, `tests/test_devices.py` |
 | config-flow | done | gateway entry, device subentries, options |
 | dependency-transparency | done | no requirements, own protocol layer |
-| docs-actions | done | README "Actions" |
-| docs-high-level-description | done | README intro |
-| docs-installation-instructions | done | README "Installation" |
-| docs-removal-instructions | done | README "Removal" |
+| docs-actions | done | User Guide "Blueprints and actions" |
+| docs-high-level-description | done | README intro, User Guide "What the integration does" |
+| docs-installation-instructions | done | README "Installation", User Guide "Installation" |
+| docs-removal-instructions | done | User Guide "Removal" |
 | entity-event-setup | done | listeners in `async_added_to_hass` |
 | entity-unique-id | done | base ID + device ID + key |
 | has-entity-name | done | all entities |
@@ -37,8 +41,8 @@ Status: **Bronze, Silver, Gold and Platinum complete** (self-assessment).
 | --- | --- | --- |
 | action-exceptions | done | translated `HomeAssistantError` for offline gateways and positions |
 | config-entry-unloading | done | `async_unload_entry` closes gateway and queue |
-| docs-configuration-parameters | done | README "Gateway options and repairs" |
-| docs-installation-parameters | done | README "Supported devices" and the flow texts |
+| docs-configuration-parameters | done | User Guide "Gateway settings and repairs" |
+| docs-installation-parameters | done | User Guide "Adding devices", `docs/devices.md` and the flow texts |
 | entity-unavailable | done | option per device: unavailable when silent (E5) |
 | integration-owner | done | `codeowners` in the manifest |
 | log-when-unavailable | done | one warning per gateway outage, info when it is back |
@@ -56,11 +60,11 @@ Status: **Bronze, Silver, Gold and Platinum complete** (self-assessment).
 | discovery-update-info | done | a known MGW-ETH with a new address, or a proxied gateway on a new port, is identified by its base ID and updated without confirmation (`test_zeroconf_new_address_updates_entry`, `test_device_proxy_app_port_change_updates_entry`) |
 | docs-data-update | done | local push, gateway counters every 30 s |
 | docs-examples | done | blueprints |
-| docs-known-limitations | done | README "Known limitations" |
+| docs-known-limitations | done | User Guide "Known limitations" |
 | docs-supported-devices | done | `docs/devices.md` (generated) |
-| docs-supported-functions | done | README, `docs/devices.md` |
-| docs-troubleshooting | done | README "Troubleshooting" |
-| docs-use-cases | done | README, virtual sensors, blueprints |
+| docs-supported-functions | done | User Guide, `docs/devices.md` |
+| docs-troubleshooting | done | User Guide "Troubleshooting" |
+| docs-use-cases | done | User Guide (virtual sensors, blueprints) |
 | dynamic-devices | done | subentries added and removed at runtime |
 | entity-category | done | diagnostics and config entities |
 | entity-device-class | done | where a device class exists |
