@@ -150,6 +150,7 @@ class EnOceanDevice:
         self._ute_until = 0.0  # ... until this time.monotonic()
         self.last_values: dict[str, Any] = {}  # the last decoded values of the device's channel
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
+        self.state_heard = False  # a status telegram of the actuator itself has arrived
         # a device sending from several IDs (FUTH): the ID it listens to -> what that ID means
         self.linked: dict[int, LinkedId] = {
             (self.device_id + link.offset) & 0xFFFFFFFF: link for link in self.model.linked
@@ -392,6 +393,7 @@ class EnOceanDevice:
         self.last_values = values
         if "on" in values:
             self.wall_state = bool(values["on"])
+            self.state_heard = True
         for listener in list(self._listeners):
             listener(values)
 
@@ -476,8 +478,14 @@ class EnOceanDevice:
         Covers are not tested: every command moves them or interrupts a run."""
         if self.model.kind not in ("switch", "dimmer") or not self.senders:
             return "unsupported"
-        if self.wall_state is None or (
-            self.model.kind == "dimmer" and self.wall_state and "brightness" not in self.last_values
+        if (
+            not self.state_heard
+            or self.wall_state is None
+            or (
+                self.model.kind == "dimmer"
+                and self.wall_state
+                and "brightness" not in self.last_values
+            )
         ):
             return "state_unknown"
         return None
