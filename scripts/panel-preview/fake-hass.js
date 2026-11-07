@@ -70,7 +70,7 @@ export function fakeHass(params = new URLSearchParams()) {
   const labels = [{ label_id: "lbl_battery", name: "Battery" }, { label_id: "lbl_window", name: "Window" }];
   const gateways = empty ? [] : [gateway];
   if (params.has("two") && !empty) {
-    gateways.push({ ...gateway, entry_id: "gw2", title: "MGW Garage", base_id: "FF-00-33-80", radio_devices: [], connected: false, disconnected_since: now - 4000 });
+    gateways.push({ ...gateway, entry_id: "gw2", title: "MGW Garage", base_id: "FF-00-33-80", radio_devices: params.has("shared") ? [{ id: "05-00-00-01", device: "Licht Garage", category: "lighting", last_seen: now - 10, silent: false, eep: "M5-38-08:eltako", key: "sub9", teach: [] }] : [], connected: false, disconnected_since: now - 4000 });
   }
   const at = (s) => new Date(Date.now() - s * 1000).toISOString();
   const history = empty ? [] : [

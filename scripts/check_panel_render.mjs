@@ -756,6 +756,19 @@ for (const lang of ["en", "de"]) {
     expect("gateway cards", root.querySelectorAll(".card").length, 2);
     await view("devices");
   });
+  // the same sender ID set up on two gateways: each row keeps the device and the gateway it belongs to
+  await check(`lang=${lang}&two&shared`, async ({ root, fake, view, expect, panel }) => {
+    await view("devices");
+    const at = new Date().toISOString();
+    for (const [gw, name] of [["gw1", "FAM-USB Keller"], ["gw2", "MGW Garage"]]) {
+      fake.push({ time: at, dir: "rx", sender: "05-00-00-01", rorg: "F6", data: "70", status: "30", dbm: -60, device: "x", gateway: gw, gateway_name: name });
+    }
+    await settle();
+    const rows = panel._deviceItems().filter((d) => d.id === "05-00-00-01");
+    expect("one row per gateway for a shared sender ID", rows.map((d) => d.gateway).sort().join(), "gw1,gw2");
+    expect("each row has the device set up on its own gateway", rows.sort((a, b) => a.gateway.localeCompare(b.gateway)).map((d) => d.devKey).join(), "sub1,sub9");
+    expect("no set-up device is listed as quiet while its gateway heard it", panel._deviceItems().filter((d) => d.quiet && d.id === "05-00-00-01").length, 0);
+  });
   await check(`lang=${lang}&empty`, async ({ root, view, expect }) => {
     await view("telegrams");
     expect("add-a-gateway action", !!root.querySelector("#cards [data-open-integration]"), true);
