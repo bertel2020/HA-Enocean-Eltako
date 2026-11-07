@@ -1280,7 +1280,9 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("installation").addEventListener("change", (e) => this._installationChange(e));
     $("installation").addEventListener("input", (e) => this._installationInput(e));
-    $("installation").addEventListener("keydown", (e) => this._busKey(e)); // Esc closes the bus view's drawer
+    $("installation").addEventListener("keydown", (e) => {
+      if (!this._instTabKey(e)) this._busKey(e); // Esc closes the bus view's drawer
+    });
     // the empty state without a gateway and the gateway details: to the integration
     this.shadowRoot.addEventListener("click", (e) => {
       const link = e.target.closest("[data-open-integration]");
