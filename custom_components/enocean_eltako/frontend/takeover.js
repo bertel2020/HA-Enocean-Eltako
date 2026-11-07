@@ -244,10 +244,12 @@ export const takeover = {
       return;
     }
     tk.previewError = "";
+    const asked = tk.entry;
     const [preview, mapping] = await Promise.allSettled([
       this._hass.callWS({ type: "enocean_eltako/takeover/preview", entry_id: tk.entry }),
       this._hass.callWS({ type: "enocean_eltako/takeover/mapping", entry_id: tk.entry }),
     ]);
+    if (tk.entry !== asked) return; // another gateway was chosen meanwhile: its own load answers
     tk.preview = preview.status === "fulfilled" ? preview.value : null;
     tk.previewError = preview.status === "rejected" ? preview.reason?.code || "unknown" : "";
     tk.mapping = mapping.status === "fulfilled" ? mapping.value : null;
