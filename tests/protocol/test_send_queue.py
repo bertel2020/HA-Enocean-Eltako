@@ -180,3 +180,30 @@ async def test_stop_while_writing_does_not_retry() -> None:
     release.set()
     assert await asyncio.wait_for(future, 1) == SendResult.CANCELLED
     worker.cancel()
+
+
+async def test_replaced_command_no_longer_waits_for_its_answer(queue: SendQueue) -> None:
+    """'on' was sent and waits for the status; 'off' replaces it: the status that follows does
+    not confirm 'on' a second time."""
+    answer = RadioTelegram(Rorg.RPS, b"\x70", 0x0510A2C1)
+    on = queue.submit(tg(1), key="k", expect=lambda t: t.sender == 0x0510A2C1, timeout=5)
+    queue.start()
+    for _ in range(50):
+        if queue.rec.sent:
+            break
+        await asyncio.sleep(0.01)
+    assert len(queue._waiting) == 1
+    queue.pause()  # 'off' stays queued
+    off = queue.submit(tg(2), key="k", expect=lambda t: t.sender == 0x0510A2C1, timeout=5)
+    assert await on == SendResult.REPLACED
+    assert queue._waiting == []
+    queue.on_telegram(answer)
+    assert queue.stats.confirmed == 0
+    queue.resume()
+    for _ in range(50):
+        if len(queue.rec.sent) == 2:
+            break
+        await asyncio.sleep(0.01)
+    queue.on_telegram(answer)
+    assert await off == SendResult.CONFIRMED
+    assert queue.stats.confirmed == 1
