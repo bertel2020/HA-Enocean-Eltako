@@ -167,6 +167,11 @@ class SendQueue:
             if (old := self._by_key.get(key)) is not None and not old.done:
                 old.finish(SendResult.REPLACED)
                 self.stats.replaced += 1
+                # a replaced command that was already sent no longer waits for its answer: the
+                # answer would count as the confirmation of a command it never belonged to
+                for waiting, handle in [w for w in self._waiting if w[0] is old]:
+                    handle.cancel()
+                    self._waiting.remove((waiting, handle))
             self._by_key[key] = job
         self._push(job)
         return future
