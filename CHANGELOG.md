@@ -19,6 +19,12 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Devices view with several gateways**: a sender ID set up on two gateways keeps the device and the gateway of each row.
 - **Installation**: leaving the bus drawer by Back, a link or a bus change asks first when it holds unsaved input.
 - **Documentation import**: each unmatched gateway is reported with its own base ID.
+- **Sender IDs**: a failed device save restores every touched ID exactly as it was; a removed gateway keeps its IDs blocked for a gateway added again with the same base ID; the learn step ignores our own pool IDs.
+- **Restored switches and lights**: the device keeps the raw relay state, and the sender test waits for a real status telegram (an inverted switch could be switched by the test).
+- **Add as device** uses the gateway that was clicked, not the gateway that heard the sender last.
+- **Gateway**: closing during a connection attempt no longer leaves the port or socket open; a send queued behind a base ID or repeater command no longer fails with it; a replaced command that was already sent stops waiting for its answer.
+- **Telegram history** survives a gateway reload (every device change); the notes object of an unloaded entry is dropped after its flush.
+- **Panel**: recording uses the server clock, a takeover answer for another gateway is dropped, the Installation tabs and the popup menus work with the arrow keys, a double click on Save in the bus view creates one item, and the power supply autosave no longer pulls the cursor back.
 
 **Deutsch**
 
@@ -33,6 +39,12 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Geräteansicht mit mehreren Gateways**: Eine auf zwei Gateways eingerichtete Sender-ID behält je Zeile Gerät und Gateway.
 - **Anlage**: Das Verlassen des Bus-Drawers per Zurück, Link oder Bus-Wechsel fragt bei ungespeicherter Eingabe zuerst nach.
 - **Dokumentationsimport**: Jedes nicht zugeordnete Gateway wird mit seiner eigenen Base-ID gemeldet.
+- **Sender-IDs**: Ein fehlgeschlagenes Speichern eines Geräts stellt jede berührte ID genau wieder her; ein entferntes Gateway hält seine IDs für ein später mit gleicher Base-ID neu angelegtes Gateway gesperrt; der Lern-Schritt ignoriert unsere eigenen Pool-IDs.
+- **Wiederhergestellte Schalter und Lichter**: Das Gerät behält den rohen Relaiszustand, und der Sendertest wartet auf ein echtes Status-Telegramm (ein invertierter Schalter konnte vom Test geschaltet werden).
+- **Als Gerät anlegen** nutzt das angeklickte Gateway, nicht das Gateway, das den Sender zuletzt gehört hat.
+- **Gateway**: Schließen während des Verbindungsaufbaus lässt Port oder Socket nicht mehr offen; ein Senden hinter einem Base-ID- oder Repeater-Befehl scheitert nicht mehr mit ihm; ein ersetzter, schon gesendeter Befehl wartet nicht mehr auf seine Antwort.
+- **Telegramm-Verlauf** übersteht ein Neuladen des Gateways (jede Geräteänderung); das Notizobjekt eines entladenen Eintrags wird nach dem Flush verworfen.
+- **Panel**: Die Aufnahme nutzt die Serveruhr, eine Takeover-Antwort für ein anderes Gateway wird verworfen, die Tabs der Anlage und die Popup-Menüs funktionieren mit den Pfeiltasten, ein Doppelklick auf Speichern im Bus legt nur einen Eintrag an, und das Autospeichern der Netzteile zieht den Cursor nicht mehr zurück.
 
 ### [1.7.0] - 2026-11-05
 
