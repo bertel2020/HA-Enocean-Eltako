@@ -59,7 +59,7 @@ const saveCols = (cols) => {
   }
 };
 
-export const busState = () => ({ id: "", sub: "list", list: loadList(), cols: loadCols(), drawer: null, history: [], error: "", legacyOpen: false, draft: null, dirty: false, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
+export const busState = () => ({ id: "", sub: "list", list: loadList(), cols: loadCols(), drawer: null, history: [], error: "", legacyOpen: false, draft: null, dirty: false, saving: false, cabinet: "", hl: "", cab: "", arrange: false, cabEdit: false, optIn: false, seconds: 60, listening: null, left: 0 });
 
 // the DIN rail drawn to scale in TE (one grid column is half a TE): in the panel and in the print
 export const RAIL_CSS = `
@@ -1498,6 +1498,10 @@ export const busView = {
 
   async _bvCall(msg) {
     const state = this._in.bus;
+    // a second click while a write is on its way would create the new item twice
+    const write = msg.type === "enocean_eltako/installation/set";
+    if (write && state.saving) return null;
+    if (write) state.saving = true;
     try {
       const result = await this._hass.callWS(msg);
       state.error = "";
@@ -1506,6 +1510,8 @@ export const busView = {
       state.error = this._t.inst.busv.errors[err?.code] ?? this._t.inst.busv.errors.other;
       this._renderInstallation();
       return null;
+    } finally {
+      if (write) state.saving = false;
     }
   },
 
