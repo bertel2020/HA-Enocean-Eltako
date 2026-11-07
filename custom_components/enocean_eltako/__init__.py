@@ -528,12 +528,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
         return False
     await entry.runtime_data.queue.stop()
     await entry.runtime_data.gateway.close()
-    entry.runtime_data.hub.monitor.clear(entry.entry_id)
-    return True
+    return True  # the telegram history stays: a reload (every device change) must not lose it
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
     """Retire the sender pool; delete the bus pool with the last member of its group."""
+    async_get_hub(hass).monitor.clear(entry.entry_id)
     # the IDs stay blocked for a gateway added again with this base ID
     await async_retire_pool(hass, entry.entry_id, parse_id(entry.data[CONF_BASE_ID]))
     await async_remove_hidden(hass, entry.entry_id)

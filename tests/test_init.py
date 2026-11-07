@@ -275,3 +275,25 @@ async def test_removed_gateway_keeps_its_sender_ids_blocked(hass: HomeAssistant)
     assert pool.next_free() == 0xFFB74483
     assert await hass.config_entries.async_unload(again.entry_id)
     await server.stop()
+
+
+async def test_telegram_history_survives_a_reload_but_not_the_removal(hass: HomeAssistant) -> None:
+    from .test_devices import _push, _settle
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await server.connected.wait()
+    hub = entry.runtime_data.hub
+    _push(server, 0x05, b"\x70", 0x0510A2C1, 0x30)
+    await _settle(hass)
+    assert hub.monitor.history()
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hub.monitor.history()  # a device change reloads the entry: the panel keeps its list
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert not hub.monitor.history()
+    await server.stop()
