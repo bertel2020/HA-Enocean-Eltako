@@ -11,6 +11,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 #### Changed
 
 - **Monitor panel on phones**: the view switch (Telegrams, Devices, Installation, Takeover) is now a bottom bar with icons. The Integration link in the header shows only its icon.
+- **Monitor panel naming**: inside Installation the group and tab formerly called Devices is now **Documentation**, so it no longer shares its name with the Devices view.
 - **Monitor panel header**: the palette and the Integration link are now round 24 px icon buttons in the same look as in the Fritzbox Network panel.
 
 #### Fixed
@@ -24,6 +25,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 #### Geändert
 
 - **Monitor-Panel am Handy**: Die Ansichten (Telegramme, Geräte, Anlage, Übernahme) sind jetzt eine untere Leiste mit Icons. Der Integration-Link im Header zeigt nur noch das Icon.
+- **Monitor-Panel-Benennung**: In der Anlage heißt die bisherige Gruppe und der Tab Geräte jetzt **Dokumentation**, damit der Name nicht mehr mit der Ansicht Geräte übereinstimmt.
 - **Monitor-Panel-Header**: Palette und Integration-Link sind jetzt runde 24-px-Icon-Buttons im gleichen Look wie im Fritzbox-Network-Panel.
 
 #### Behoben
