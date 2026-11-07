@@ -265,3 +265,27 @@ async def test_flapping_connection_warns_once_and_backs_off(monkeypatch, caplog)
     assert len(warnings) == 1
     assert not any("restored" in r.getMessage() for r in caplog.records)
     assert 3 <= accepted <= 10  # backoff: no tight reconnect loop
+
+
+@pytest.mark.parametrize("fake", [Protocol.ESP2], indirect=True)
+async def test_close_while_connecting_keeps_no_connection(fake: FakeGateway) -> None:
+    """An unload during a reconnect must not leave the port or socket open."""
+    from custom_components.enocean_eltako.protocol.transport import open_connection
+
+    opened: list[asyncio.StreamWriter] = []
+    gate = asyncio.Event()
+
+    async def slow_opener(connection):
+        await gate.wait()
+        reader, writer = await open_connection(connection)
+        opened.append(writer)
+        return reader, writer
+
+    gw = Gateway(fake.protocol, TcpConnection("127.0.0.1", fake.port), opener=slow_opener)
+    running = asyncio.create_task(gw.run())
+    await asyncio.sleep(0.05)  # run() is inside the opener
+    await gw.close()
+    gate.set()
+    await asyncio.wait_for(running, 2)  # run() ends by itself
+    assert not gw.connected
+    assert opened and opened[0].is_closing()

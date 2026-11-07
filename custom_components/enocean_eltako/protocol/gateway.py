@@ -137,7 +137,13 @@ class Gateway:
         """Open the connection; raises OSError or TimeoutError."""
         self._codec = _Codec(self.protocol)
         async with asyncio.timeout(timeout):
-            reader, self._writer = await self._opener(self.connection)
+            reader, writer = await self._opener(self.connection)
+        if self._closing:  # close() came while the stream was opening: do not keep it
+            writer.close()
+            with contextlib.suppress(OSError):
+                await writer.wait_closed()
+            raise ConnectionError("gateway closed while connecting")
+        self._writer = writer
         if self._hello:
             self._writer.write(self._hello)
         self._disconnected.clear()
@@ -157,6 +163,8 @@ class Gateway:
                 try:
                     await self.connect()
                 except (OSError, TimeoutError) as err:
+                    if self._closing:
+                        break
                     delay = RECONNECT_DELAYS[min(attempt, len(RECONNECT_DELAYS) - 1)]
                     attempt += 1
                     self._log_outage(
