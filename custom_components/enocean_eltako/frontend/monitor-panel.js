@@ -1988,7 +1988,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     // listen to one sender for a minute, so the telegrams of what the user does with the device are
     // in the report; the copy needs a click again (browsers want a gesture for the clipboard)
     if (this._recordings.has(sender) && !this._recordings.get(sender).rows) return;
-    const start = Date.now();
+    const start = this._now(); // the server's clock: the rows carry its timestamps
     this._recordings.set(sender, { start });
     this._notice(this._t.recordStarted(RECORD_SECONDS), true);
     this._render(true);
