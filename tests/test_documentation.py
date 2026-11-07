@@ -708,6 +708,27 @@ async def test_import_maps_a_swapped_gateway_and_keeps_the_second_channel(
     assert notes.log[-1]["kind"] == "import"
 
 
+async def test_import_reports_each_unmatched_gateway_with_its_own_base_id(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    doc = {
+        "version": 1,
+        "gateways": [
+            {"title": "Eins", "base_id": "FF-80-00-80", "devices": []},
+            {"title": "Zwei", "base_id": "FF-80-00-90", "devices": []},
+        ],
+    }
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "enocean_eltako/import_documentation", "doc": doc})
+    result = (await client.receive_json())["result"]["gateways"]
+    assert [(g["title"], g["base_id"], g["matched"]) for g in result] == [
+        ("Eins", "FF-80-00-80", False),
+        ("Zwei", "FF-80-00-90", False),
+    ]
+
+
 def test_the_event_log_notes_what_changed_between_loads() -> None:
     from custom_components.enocean_eltako.notes import MAX_LOG, Notes
 
