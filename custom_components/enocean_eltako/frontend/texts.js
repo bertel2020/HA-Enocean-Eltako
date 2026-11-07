@@ -354,6 +354,7 @@ export const TEXT = {
     dEntities: (n) => `Entities (${n})`,
     showLinks: "Links", showLinksHint: "Who is taught into it, and what it controls", dEntitiesTitle: "Entities", devState: "State", rawData: "Raw data", senderUntested: "not tested",
     doc: {
+      importTitle: "Import into another gateway?", importYes: "Import",
       importMap: (from, to) => `Gateway "${from}" of the file is not set up here. Import its notes into "${to}"?`,
       importItem: "Import notes from JSON", importUnsupported: "That is not a documentation export of this integration.", importFailed: "The notes could not be imported.",
       importDone: (gateways) => {
@@ -864,6 +865,7 @@ export const TEXT = {
     dEntities: (n) => `Entitäten (${n})`,
     showLinks: "Verbindungen", showLinksHint: "Wer eingelernt ist und was es steuert", dEntitiesTitle: "Entitäten", devState: "Zustand", rawData: "Rohdaten", senderUntested: "nicht getestet",
     doc: {
+      importTitle: "In ein anderes Gateway importieren?", importYes: "Importieren",
       importMap: (from, to) => `Das Gateway „${from}“ der Datei ist hier nicht eingerichtet. Seine Notizen in „${to}“ importieren?`,
       importItem: "Notizen aus JSON importieren", importUnsupported: "Das ist kein Dokumentations-Export dieser Integration.", importFailed: "Die Notizen konnten nicht importiert werden.",
       importDone: (gateways) => {

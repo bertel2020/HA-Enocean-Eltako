@@ -2599,7 +2599,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const lost = reply.gateways.filter((g) => !g.matched);
       const matched = new Set(reply.gateways.filter((g) => g.matched).map((g) => g.title));
       const free = this._gateways.filter((g) => g.loaded && !matched.has(g.title));
-      if (lost.length === 1 && free.length === 1 && lost[0].base_id && window.confirm(t.importMap(lost[0].title, free[0].title))) {
+      if (lost.length === 1 && free.length === 1 && lost[0].base_id && (await this._bvAsk({ title: t.importTitle, text: t.importMap(lost[0].title, free[0].title), ok: t.importYes, cancel: this._t.inst.busv.cancel }))) {
         reply = await this._hass.callWS({ type: "enocean_eltako/import_documentation", doc, gateway_map: { [lost[0].base_id]: free[0].entry_id } });
       }
     } catch (err) {

@@ -223,6 +223,9 @@ export function fakeHass(params = new URLSearchParams()) {
         case "enocean_eltako/set_supplies":
           gateway.supplies = msg.supplies;
           return {};
+        case "enocean_eltako/import_documentation":
+          // a gateway of the file is matched when the call maps its base ID to a gateway set up here
+          return { gateways: msg.doc.gateways.map((g) => ({ title: g.title, base_id: g.base_id, matched: !!msg.gateway_map?.[g.base_id], notes: 0, manual: 0 })) };
         case "enocean_eltako/set_fields":
           return { saved: msg.items.length, rejected: [] };
         case "enocean_eltako/sender_pools":

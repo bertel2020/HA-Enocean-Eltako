@@ -756,6 +756,22 @@ for (const lang of ["en", "de"]) {
     expect("gateway cards", root.querySelectorAll(".card").length, 2);
     await view("devices");
   });
+  // a documentation export of a swapped gateway: the panel asks before it maps it to the free one
+  await check(`lang=${lang}`, async ({ root, fake, expect, panel }) => {
+    const file = { text: async () => JSON.stringify({ version: 1, gateways: [{ title: "Altes Gateway", base_id: "FF-80-00-80", devices: [] }] }) };
+    const imports = () => fake.sent.filter((m) => m.type === "enocean_eltako/import_documentation");
+    let run = panel._importDocumentation(file);
+    await settle();
+    expect("the import asks in a panel dialog, not in the browser", !!root.querySelector(".bv-ask"), true);
+    root.querySelector('.bv-ask [data-ask="no"]').click();
+    await run;
+    expect("declining sends no gateway map", imports().length === 1 && !imports()[0].gateway_map, true);
+    run = panel._importDocumentation(file);
+    await settle();
+    root.querySelector('.bv-ask [data-ask="yes"]').click();
+    await run;
+    expect("accepting maps the old base ID to the gateway set up here", JSON.stringify(imports().at(-1).gateway_map), '{"FF-80-00-80":"gw1"}');
+  });
   // the same sender ID set up on two gateways: each row keeps the device and the gateway it belongs to
   await check(`lang=${lang}&two&shared`, async ({ root, fake, view, expect, panel }) => {
     await view("devices");
