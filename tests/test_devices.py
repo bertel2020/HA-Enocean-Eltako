@@ -917,6 +917,21 @@ async def test_learn_device_id_from_telegram(hass: HomeAssistant, gateway) -> No
     assert device_id.description["suggested_value"] == "01-00-00-99"
 
 
+async def test_learn_ignores_our_own_sender_ids(hass: HomeAssistant, gateway) -> None:
+    """A telegram of one of our pool IDs, heard back through another gateway, is no new device."""
+    entry, server = gateway
+    result = await _start_device_flow(hass, entry, "contact")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "learn"}
+    )
+    _push(server, 0x06, b"\x09", 0xFFB74481)  # our own sender, base ID + 1
+    _push(server, 0x06, b"\x09", 0x01000099)  # the contact
+    await _settle(hass)
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"])
+    device_id = next(k for k in result["data_schema"].schema if k == "device_id")
+    assert device_id.description["suggested_value"] == "01-00-00-99"
+
+
 async def test_learn_timeout_offers_retry(hass: HomeAssistant, gateway, monkeypatch) -> None:
     from custom_components.enocean_eltako import subentry_flow
 

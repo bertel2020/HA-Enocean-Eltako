@@ -939,10 +939,13 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
 
     async def _async_wait_for_telegram(self) -> ReceivedTelegram | None:
         rorgs = expected_rorgs(self._device_model) if self._device_model is not None else set()
-        dispatcher = self._get_entry().runtime_data.hub.dispatcher
+        hub = self._get_entry().runtime_data.hub
+        dispatcher = hub.dispatcher
         future: asyncio.Future[ReceivedTelegram] = self.hass.loop.create_future()
 
         def heard(received: ReceivedTelegram) -> None:
+            if hub.senders.in_pool(received.telegram.sender):
+                return  # one of our own sender IDs, heard back through another gateway or repeater
             if not future.done() and (not rorgs or received.telegram.rorg in rorgs):
                 future.set_result(received)
 
