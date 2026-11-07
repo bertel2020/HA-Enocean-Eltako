@@ -611,6 +611,7 @@ class DeviceForm:
             if (p not in wanted or format_id(wanted[p]) != s) and parse_id(s) not in moved
         }
         assigned: list[int] = []
+        before = {sender: pool.get(sender) for sender in wanted.values()}  # for the roll back
         for profile, sender in wanted.items():
             if current.get(profile) == format_id(sender):
                 continue
@@ -624,9 +625,8 @@ class DeviceForm:
                 continue
             assigned.append(sender)
         if errors:
-            for sender in assigned:  # roll back this attempt
-                pool.release(sender)
-                pool.confirm_teach_out(sender)
+            for sender in assigned:  # roll back this attempt: every ID as it was before
+                pool.restore(sender, before[sender])
             return None
         for sender in released.values():
             pool.release(sender)  # blocked until the teach-out is confirmed

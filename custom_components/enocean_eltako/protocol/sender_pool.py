@@ -103,6 +103,13 @@ class SenderPool:
         if current is not None and current.state is SenderState.ASSIGNED:
             self._allocations[sender] = Allocation(current.owner, SenderState.BLOCKED)
 
+    def restore(self, sender: int, allocation: Allocation | None) -> None:
+        """Put an ID back exactly as it was (a rolled-back change); None: it was not allocated."""
+        if allocation is None:
+            self._allocations.pop(sender, None)
+        else:
+            self._allocations[sender] = allocation
+
     def confirm_teach_out(self, sender: int) -> None:
         current = self._allocations.get(sender)
         if current is not None and current.state is SenderState.BLOCKED:

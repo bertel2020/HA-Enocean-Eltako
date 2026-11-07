@@ -190,6 +190,52 @@ async def test_switch_actuator_with_rocker_only(hass: HomeAssistant, gateway) ->
     ],
     indirect=True,
 )
+async def test_failed_reconfigure_keeps_a_moved_sender_assigned(
+    hass: HomeAssistant, gateway
+) -> None:
+    """The rocker ID moves to the central command, the new rocker ID belongs to another device:
+    the save fails and the moved ID must stay with the device exactly as it was."""
+    entry, _ = gateway
+    pool = entry.runtime_data.senders.pool
+    pool.assign(0xFFB74481, "device:05-10-A2-B5:central")
+    pool.assign(0xFFB7448F, "device:05-10-A2-B5:rocker")
+    pool.assign(0xFFB74482, "device:05-10-A2-B6:central")  # another device
+    subentry_id = next(iter(entry.subentries))
+    result = await entry.start_subentry_reconfigure_flow(hass, subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            "name": "Licht Büro",
+            "sender_central": "FF-B7-44-8F",
+            "sender_rocker": "FF-B7-44-82",
+            "platform": "light",
+        },
+    )
+    assert result["type"] == "form" and result["errors"]
+    moved = pool.get(0xFFB7448F)
+    assert (moved.owner, moved.state) == ("device:05-10-A2-B5:rocker", "assigned")
+    assert pool.get(0xFFB74481).owner == "device:05-10-A2-B5:central"
+    assert pool.next_free() not in (0xFFB7448F, 0xFFB74481, 0xFFB74482)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B5",
+                "Licht Büro",
+                senders=[
+                    {"profile": "central", "sender_id": "FF-B7-44-81"},
+                    {"profile": "rocker", "sender_id": "FF-B7-44-8F"},
+                ],
+                platform="light",
+            )
+        ]
+    ],
+    indirect=True,
+)
 async def test_reconfigure_drops_central_command(hass: HomeAssistant, gateway) -> None:
     entry, _ = gateway
     pool = entry.runtime_data.senders.pool
