@@ -1635,7 +1635,7 @@ export const installation = {
       const gw = gateways(state.doc).find((g) => g.entry_id === entryId);
       const entry = gw?.manual.find((x) => x.id === mid);
       if (!entry) return;
-      if (act === "device") this._addDevice(entry.address);
+      if (act === "device") this._addDevice(entry.address, entryId);
       else {
         gw.manual = gw.manual.filter((x) => x.id !== mid);
         this._renderInstallation();

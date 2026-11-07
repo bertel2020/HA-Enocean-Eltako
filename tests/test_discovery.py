@@ -125,9 +125,24 @@ async def test_panel_offers_sender(hass: HomeAssistant, gateway, hass_ws_client)
     assert (await client.receive_json())["result"] == {"entry_id": entry.entry_id}
     assert 0x01000077 in entry.runtime_data.hub.discovered
 
-    await client.send_json({"id": 3, "type": "enocean_eltako/discover", "sender": "01-99-99-99"})
+    # the clicked gateway counts: only a telegram it heard offers the sender
+    await client.send_json(
+        {"id": 2, "type": "enocean_eltako/discover", "sender": "01-00-00-77", "entry_id": "other"}
+    )
     assert (await client.receive_json())["error"]["code"] == "not_found"
-    await client.send_json({"id": 4, "type": "enocean_eltako/discover", "sender": "no ID"})
+    await client.send_json(
+        {
+            "id": 3,
+            "type": "enocean_eltako/discover",
+            "sender": "01-00-00-77",
+            "entry_id": entry.entry_id,
+        }
+    )
+    assert (await client.receive_json())["result"] == {"entry_id": entry.entry_id}
+
+    await client.send_json({"id": 4, "type": "enocean_eltako/discover", "sender": "01-99-99-99"})
+    assert (await client.receive_json())["error"]["code"] == "not_found"
+    await client.send_json({"id": 5, "type": "enocean_eltako/discover", "sender": "no ID"})
     assert (await client.receive_json())["error"]["code"] == "invalid_id"
 
 
