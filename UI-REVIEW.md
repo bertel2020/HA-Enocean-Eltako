@@ -12,7 +12,8 @@ Stand der Befunde nach dem Code-Review vom 7. November 2026 (`CODE-REVIEW.md`):
 | P2 Ungespeicherte Drawer-Eingaben | Erledigt: `_bvGuard()` fragt nach; seit dem Review auch bei Zurück, Links und Bus-Wechsel. |
 | P2 Drawer nicht vollständig modal | Erledigt: Hintergrund wird inert, der Fokus kehrt zum Auslöser zurück. |
 | Navigation 4: native `confirm()` | Größtenteils erledigt: der Bus nutzt Panel-Dialoge; offen bleibt `window.confirm` beim Dokumentationsimport (`monitor-panel.js`). |
-| Navigation 1–3 (Begriffe, Übernahme, Aktionsmuster) | Offen. |
+| Navigation 1: zwei Bedeutungen von „Geräte“ | Erledigt: In der Anlage heißen Gruppe und Tab jetzt „Dokumentation“. |
+| Navigation 2–3 (Übernahme, Aktionsmuster) | Offen. |
 | Optische Empfehlungen 1–5 | Offen. |
 
 ## Umfang und Gesamteindruck
