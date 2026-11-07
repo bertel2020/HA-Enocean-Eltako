@@ -110,7 +110,9 @@ const STYLE = `
   #view button[hidden] { display: none; }
   #view button svg { display: none; }
   .header-end { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .integration-link { color: var(--accent); padding: 0; width: 36px; }
+  /* palette and integration link as in the Fritzbox Network panel: round 24px icon buttons */
+  .header-end .icon-btn svg { width: 24px; height: 24px; }
+  .integration-link svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
   main > section { min-width: 0; }
@@ -1115,7 +1117,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <button class="icon-btn" id="lookBtn" title="${esc(t.look.title)}" aria-label="${esc(t.look.title)}" aria-haspopup="true" aria-expanded="false" aria-controls="lookMenu">${svg(ICON.palette)}</button>
           <div class="menu look-menu" id="lookMenu" aria-label="${esc(t.look.title)}" hidden></div>
         </span>
-        <button class="chip integration-link" data-open-integration title="${esc(t.integration)}" aria-label="${esc(t.integration)}">${svg(ICON.open)}</button>
+        <button class="icon-btn integration-link" data-open-integration title="${esc(t.integration)}" aria-label="${esc(t.integration)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg></button>
         </div>
       </header>
       <main>
