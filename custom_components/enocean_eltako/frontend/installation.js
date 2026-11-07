@@ -1449,6 +1449,12 @@ export const installation = {
 
   _installationClick(e) {
     const state = this._in;
+    // every way out of an open drawer asks first when it holds unsaved input; the guard clears
+    // the flag on "discard", so the click is then handled again as usual
+    if (state.bus.dirty && state.bus.drawer && e.target.closest("[data-in-goto], [data-in-snd], [data-in-back], [data-in-busgo], [data-bv-bus]")) {
+      this._bvGuard().then((go) => go && this._installationClick(e));
+      return;
+    }
     const back = e.target.closest("[data-in-back]");
     if (back) {
       // back to where the last jump came from

@@ -61,7 +61,7 @@ async function check(query, run) {
     if (actual !== wanted) fail(`${query}: ${what} is ${actual}, expected ${wanted}`);
   };
   try {
-    await run({ root, fake, view, expect });
+    await run({ root, fake, view, expect, panel });
   } catch (err) {
     fail(`${query}: ${err.stack || err}`);
   }
@@ -69,7 +69,7 @@ async function check(query, run) {
 }
 
 for (const lang of ["en", "de"]) {
-  await check(`lang=${lang}`, async ({ root, fake, view, expect }) => {
+  await check(`lang=${lang}`, async ({ root, fake, view, expect, panel }) => {
     await view("telegrams");
     expect("telegram rows", root.querySelectorAll("tr.row").length, 4);
     fake.push({ time: new Date().toISOString(), dir: "rx", sender: "05-00-00-01", rorg: "F6", data: "50", status: "30", dbm: -60, device: "Licht Diele", device_key: "sub1" });
@@ -133,8 +133,19 @@ for (const lang of ["en", "de"]) {
     busTag.click();
     await settle();
     expect("the channel opens in the bus tab", !!root.querySelector("#installation aside.bv-drawer") && root.querySelector('#installation [data-in-view="bus"]').getAttribute("aria-pressed"), "true");
+    // unsaved input in the drawer: leaving by Back asks first; keeping the input stays, discarding goes
+    panel._in.bus.dirty = true;
     root.querySelector("#installation [data-in-back]").click();
     await settle();
+    expect("Back with unsaved drawer input asks first", !!root.querySelector(".bv-ask") && !!root.querySelector("#installation aside.bv-drawer"), true);
+    root.querySelector('.bv-ask [data-ask="no"]').click();
+    await settle();
+    expect("keeping the input stays in the drawer", !!root.querySelector("#installation aside.bv-drawer") && panel._in.bus.dirty, true);
+    root.querySelector("#installation [data-in-back]").click();
+    await settle();
+    root.querySelector('.bv-ask [data-ask="yes"]').click();
+    await settle();
+    expect("discarding leaves the drawer", !root.querySelector("#installation aside.bv-drawer") && !panel._in.bus.dirty, true);
     expect("Back returns to the devices table", root.querySelector('#installation [data-in-view="all"]').getAttribute("aria-pressed") === "true" && !root.querySelector("#installation [data-in-back]"), true);
     expect("every row ends in the menu column", [...deviceRows()].every((r) => r.lastElementChild.matches("td.rmenu")) && !!root.querySelector("#installation .itable thead th.rmenu:last-child"), true);
     expect("entries by hand and power supplies have their menu there", root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length, 5);
