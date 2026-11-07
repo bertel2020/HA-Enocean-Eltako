@@ -2159,9 +2159,10 @@ export const installation = {
     if (input && ["watts", "first", "last"].includes(input.dataset.inSfield)) {
       // the load bars follow; the cursor stays in the field
       const selector = `[data-in-sfield="${input.dataset.inSfield}"][data-in-sid="${CSS.escape(input.dataset.inSid)}"]`;
+      const hadFocus = this.shadowRoot.activeElement === input; // not when the user tabbed on meanwhile
       this._renderInstallation();
       const again = this.shadowRoot.querySelector(`#installation ${selector}`);
-      if (again) {
+      if (again && hadFocus) {
         again.focus();
         again.setSelectionRange(again.value.length, again.value.length);
       }
