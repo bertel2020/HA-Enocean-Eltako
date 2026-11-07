@@ -2083,6 +2083,18 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._closeAddMenu();
       onAct(act);
     });
+    menu.addEventListener("keydown", (e) => {
+      // arrow keys move through the items, like the menu of the header
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      const items = [...menu.querySelectorAll("button")];
+      const at = items.indexOf(this.shadowRoot.activeElement);
+      items[(at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+    });
+    menu.addEventListener("focusout", (e) => {
+      // Tab away closes it; focus going to the button that opened it is its own toggle
+      if (e.relatedTarget && !menu.contains(e.relatedTarget) && e.relatedTarget !== button) this._closeAddMenu();
+    });
     this.shadowRoot.appendChild(menu);
     const box = button.getBoundingClientRect();
     const width = menu.offsetWidth;

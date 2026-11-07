@@ -547,6 +547,12 @@ for (const lang of ["en", "de"]) {
     expect("no loose icon buttons beside the menu", root.querySelectorAll(".dev .acts .icon-btn:not(.rowmore):not(.expand)").length, 0);
     row("Licht Diele").querySelector(".rowmore").click();
     expect("the more menu lists teach in, open device, telegrams and remove", root.querySelectorAll(".addmenu [data-addact]").length, 4);
+    const menuItems = () => [...root.querySelectorAll(".addmenu button")];
+    expect("the first item has the focus", root.activeElement, menuItems()[0]);
+    root.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, composed: true }));
+    expect("ArrowDown moves to the next item", root.activeElement, menuItems()[1]);
+    root.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true, composed: true }));
+    expect("ArrowUp moves back", root.activeElement, menuItems()[0]);
     root.querySelector('.addmenu [data-addact="remove"]').click();
     expect("remove asks about the row's device only", root.getElementById("pickForm").hidden, false);
     expect("remove selects only the row's device", root.getElementById("selBar").textContent.includes("1"), true);
