@@ -246,3 +246,32 @@ async def test_proxy_replay_request_after_connect(hass: HomeAssistant) -> None:
     assert "proxy_replay" in result["data_schema"].schema  # TCP gateways only
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_removed_gateway_keeps_its_sender_ids_blocked(hass: HomeAssistant) -> None:
+    """Delete and add a gateway again: the old actuators still react to its sender IDs."""
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    pool = entry.runtime_data.senders.pool
+    pool.assign(0xFFB74481, "device:05-10-A2-B5:central")
+    pool.assign(0xFFB74482, "device:05-10-A2-B5:rocker")
+    pool.release(0xFFB74482)  # blocked already
+    await entry.runtime_data.senders.async_save()
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+
+    again = _entry(server.port)  # a new entry ID, the same base ID
+    again.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(again.entry_id)
+    await hass.async_block_till_done()
+    pool = again.runtime_data.senders.pool
+    assert [(pool.get(s).owner, pool.get(s).state) for s in (0xFFB74481, 0xFFB74482)] == [
+        ("device:05-10-A2-B5:central", "blocked"),
+        ("device:05-10-A2-B5:rocker", "blocked"),
+    ]
+    assert pool.next_free() == 0xFFB74483
+    assert await hass.config_entries.async_unload(again.entry_id)
+    await server.stop()

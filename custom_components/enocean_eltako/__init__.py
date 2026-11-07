@@ -82,7 +82,14 @@ from .protocol.sender_pool import RADIO_POOL_SIZE, SenderState
 from .protocol.telegram import RadioTelegram
 from .protocol.transport import connection_from_dict
 from .proxy_status import async_setup_proxy_status
-from .senders import SenderStore, async_remove_store, bus_key, radio_key
+from .senders import (
+    SenderStore,
+    async_adopt_retired,
+    async_remove_store,
+    async_retire_pool,
+    bus_key,
+    radio_key,
+)
 from .services import async_setup_services
 from .subentry_flow import sender_owner
 from .virtual import VirtualSensor
@@ -274,6 +281,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     entry.async_on_unload(lambda: hub.senders.remove_pool(radio_key(entry.entry_id)))
     senders = SenderStore(hass, radio_key(entry.entry_id), pool)
     await senders.async_load()
+    await async_adopt_retired(hass, senders, base_id)
     for subentry in entry.subentries.values():
         if any(parse_id(s[CONF_SENDER_ID]) == base_id for s in subentry.data.get(CONF_SENDERS, ())):
             _LOGGER.warning(
@@ -525,8 +533,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Delete the stored sender pools (the bus pool with the last member of its group)."""
-    await async_remove_store(hass, radio_key(entry.entry_id))
+    """Retire the sender pool; delete the bus pool with the last member of its group."""
+    # the IDs stay blocked for a gateway added again with this base ID
+    await async_retire_pool(hass, entry.entry_id, parse_id(entry.data[CONF_BASE_ID]))
     await async_remove_hidden(hass, entry.entry_id)
     await Notes(hass, entry.entry_id).async_remove()
     (await async_get_installation(hass)).remove_entry(entry.entry_id)
