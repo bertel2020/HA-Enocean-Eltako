@@ -3018,19 +3018,19 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _deviceItems() {
-    // one entry per sender: the latest telegram of each sender heard, joined with the set-up device
-    // of that ID (area, entities, model), plus the set-up devices without a telegram in the buffer
+    // one entry per sender and gateway: the latest telegram of each sender heard, joined with the
+    // set-up device of that ID on the same gateway (area, entities, model), plus the set-up devices without a telegram in the buffer
     const f = this._filter;
     const since = this._now() - 60000;
     const setup = new Map();
     for (const g of this._gateways) {
-      for (const d of g.radio_devices || []) setup.set(d.id, { ...d, gateway: g.entry_id, gateway_name: g.title });
+      for (const d of g.radio_devices || []) setup.set(`${g.entry_id}|${d.id}`, { ...d, gateway: g.entry_id, gateway_name: g.title });
     }
     const heard = new Map();
-    const heardIds = new Set();
+    const heardKeys = new Set();
     for (const r of this._rows) {
       if (r.dir !== "rx" || r.duplicate) continue;
-      heardIds.add(r.sender);
+      heardKeys.add(`${r.gateway}|${r.sender}`);
       if (f.gateway && r.gateway !== f.gateway) continue;
       const key = `${r.gateway}|${r.sender}`;
       let d = heard.get(key);
@@ -3049,7 +3049,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const items = [];
     for (const [key, d] of heard) {
       const r = d.last;
-      const info = setup.get(r.sender);
+      const info = setup.get(`${r.gateway}|${r.sender}`);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
         hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
@@ -3060,9 +3060,9 @@ class EnOceanEltakoPanel extends HTMLElement {
       });
     }
     for (const d of setup.values()) {
-      if (heardIds.has(d.id) || (f.gateway && d.gateway !== f.gateway)) continue;
+      if (heardKeys.has(`${d.gateway}|${d.id}`) || (f.gateway && d.gateway !== f.gateway)) continue;
       items.push({
-        key: `quiet|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
+        key: `quiet|${d.gateway}|${d.id}`, id: d.id, name: d.device, unknown: false, silent: d.silent, quiet: true, page: d.ha_device || null, devKey: d.key || null, senders: d.teach || [],
         category: d.category || "", models: d.models || [], entityIds: d.entity_ids || [], eepFull: d.eep || "", eep: this._eepLabel(d.eep || ""), model: d.model || "", area: d.area, entities: d.entities, labels: d.labels || [], disabled: !!d.disabled,
         gateway: d.gateway, gateway_name: d.gateway_name, time: d.last_seen != null ? d.last_seen * 1000 : null, count: 0, perMinute: 0,
         dbm: null, trend: [], fields: null, data: "", teach: null, candidates: null, rorg: "",
