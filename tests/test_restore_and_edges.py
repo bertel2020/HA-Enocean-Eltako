@@ -240,3 +240,38 @@ async def test_blind_tilt_and_stop(hass: HomeAssistant, gateway) -> None:  # noq
     assert _sent(server, Rorg.BS4, shutter.encode_command(shutter.STOP), 0xFFB74491)
     await call("cover", "open_cover_tilt", {"entity_id": entity_id}, blocking=True)
     await _settle(hass)
+
+
+@pytest.fixture
+def restored_inverted(hass: HomeAssistant) -> None:
+    mock_restore_cache(hass, [State("switch.freigabe", "on")])  # inverted: the relay is off
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _sub(
+                "switch",
+                "05-00-00-0A",
+                "Freigabe",
+                [("central", "FF-B7-44-8B")],
+                platform="switch",
+                invert=True,
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_restored_state_of_an_inverted_switch_is_not_used_by_the_sender_test(
+    hass: HomeAssistant,
+    restored_inverted,
+    gateway,  # noqa: F811
+) -> None:
+    """The entity shows 'on' (relay off); the device keeps the raw relay state, and the sender
+    test waits for a real status telegram instead of repeating a restored guess."""
+    entry, _server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    assert hass.states.get("switch.freigabe").state == "on"
+    assert device.wall_state is False
+    assert device.sender_test_error() == "state_unknown"
