@@ -337,6 +337,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     for device in entry.runtime_data.devices.values():
         device.seed_signal(notes.signal.get(device_key(device.subentry), {}))
     entry.async_on_unload(notes.async_flush)  # what waits for its delayed save is written now
+    # after the flush: no late telegram of a reload may arm the old object's timer again
+    hub_notes = entry.runtime_data.hub.notes
+
+    def drop_notes() -> None:
+        hub_notes.pop(entry.entry_id, None)
+
+    entry.async_on_unload(drop_notes)
     installation = await async_get_installation(hass)
     installation.absorb_entry(entry, notes)  # the bus fields of notes version 7, taken over once
     installation.sync_places(entry, notes)  # notes version 9: places of bus devices from the store

@@ -37,10 +37,13 @@ async def test_setup_and_unload(hass: HomeAssistant) -> None:
     assert entry.state is ConfigEntryState.LOADED
     gateway = entry.runtime_data.gateway
     assert gateway.connected
+    hub = entry.runtime_data.hub
+    assert entry.entry_id in hub.notes
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.NOT_LOADED
     assert not gateway.connected
+    assert entry.entry_id not in hub.notes  # no stale object that could write over the store
     await server.stop()
 
 
