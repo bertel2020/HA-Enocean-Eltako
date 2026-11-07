@@ -13,12 +13,24 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Monitor panel on phones**: the view switch (Telegrams, Devices, Installation, Takeover) is now a bottom bar with icons. The Integration link in the header shows only its icon.
 - **Monitor panel header**: the palette and the Integration link are now round 24 px icon buttons in the same look as in the Fritzbox Network panel.
 
+#### Fixed
+
+- **Devices view with several gateways**: a sender ID set up on two gateways keeps the device and the gateway of each row.
+- **Installation**: leaving the bus drawer by Back, a link or a bus change asks first when it holds unsaved input.
+- **Documentation import**: each unmatched gateway is reported with its own base ID.
+
 **Deutsch**
 
 #### Geändert
 
 - **Monitor-Panel am Handy**: Die Ansichten (Telegramme, Geräte, Anlage, Übernahme) sind jetzt eine untere Leiste mit Icons. Der Integration-Link im Header zeigt nur noch das Icon.
 - **Monitor-Panel-Header**: Palette und Integration-Link sind jetzt runde 24-px-Icon-Buttons im gleichen Look wie im Fritzbox-Network-Panel.
+
+#### Behoben
+
+- **Geräteansicht mit mehreren Gateways**: Eine auf zwei Gateways eingerichtete Sender-ID behält je Zeile Gerät und Gateway.
+- **Anlage**: Das Verlassen des Bus-Drawers per Zurück, Link oder Bus-Wechsel fragt bei ungespeicherter Eingabe zuerst nach.
+- **Dokumentationsimport**: Jedes nicht zugeordnete Gateway wird mit seiner eigenen Base-ID gemeldet.
 
 ### [1.7.0] - 2026-11-05
 
