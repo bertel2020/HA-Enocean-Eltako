@@ -289,3 +289,38 @@ async def test_close_while_connecting_keeps_no_connection(fake: FakeGateway) -> 
     await asyncio.wait_for(running, 2)  # run() ends by itself
     assert not gw.connected
     assert opened and opened[0].is_closing()
+
+
+@pytest.mark.parametrize("fake", [Protocol.ESP3], indirect=True)
+async def test_queued_send_waits_behind_a_command_without_failing(fake: FakeGateway) -> None:
+    """A base ID request without answer holds the command lock; a send queued behind it still
+    goes out once the lock is free instead of timing out with the command."""
+    from custom_components.enocean_eltako.protocol.send_queue import SendQueue, SendResult
+
+    fake.base_id = None
+    gw = Gateway(fake.protocol, TcpConnection("127.0.0.1", fake.port))
+    await gw.connect()
+    queue = SendQueue(gw.send, delay=0)
+    queue.start()
+    command = asyncio.create_task(gw.read_base_id(timeout=0.5))
+    await asyncio.sleep(0.05)  # the command holds the lock
+    result = queue.submit(RadioTelegram(Rorg.RPS, b"\x30", 0xFFB74481))
+    assert await asyncio.wait_for(result, 3) == SendResult.SENT
+    assert await command is None
+    await queue.stop()
+    await gw.close()
+
+
+@pytest.mark.parametrize("fake", [Protocol.ESP2], indirect=True)
+async def test_a_hanging_write_fails(fake: FakeGateway, monkeypatch) -> None:
+    monkeypatch.setattr(gateway, "WRITE_TIMEOUT", 0.1)
+    gw = Gateway(fake.protocol, TcpConnection("127.0.0.1", fake.port))
+    await gw.connect()
+
+    async def hang(data: bytes) -> None:
+        await asyncio.sleep(10)
+
+    monkeypatch.setattr(gw, "_write", hang)
+    with pytest.raises(TimeoutError):
+        await gw.send(RadioTelegram(Rorg.RPS, b"\x30", 0xFFB74481))
+    await gw.close()
