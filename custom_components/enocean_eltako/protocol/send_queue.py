@@ -22,7 +22,9 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_DELAY = 0.01  # seconds between two telegrams
 DEFAULT_CONFIRM_TIMEOUT = 1.0
 MAX_RETRIES = 2
-SEND_TIMEOUT = 5.0  # a write that hangs (blocked serial port) fails instead of stalling the queue
+# a send that hangs fails instead of stalling the queue. The gateway bounds its own write; this
+# is the net below it and must outlast the command a send can wait behind (base ID, repeater)
+SEND_TIMEOUT = 30.0
 
 
 class Priority(IntEnum):

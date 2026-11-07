@@ -31,6 +31,7 @@ REPLAY_MAX_WAIT = 30.0
 # ESP3 answers every radio telegram with a RESPONSE; a command waits this long after the last
 # one so that answer cannot be taken for the command's
 RESPONSE_SETTLE = 0.3
+WRITE_TIMEOUT = 5.0  # a write that hangs (blocked serial port) fails; the lock wait is not counted
 
 
 class _Codec:
@@ -215,7 +216,8 @@ class Gateway:
     async def send(self, telegram: RadioTelegram) -> None:
         """Write one radio telegram; raises ConnectionError when not connected."""
         async with self._command_lock:
-            await self._write(self._codec.encode_radio(telegram))
+            async with asyncio.timeout(WRITE_TIMEOUT):
+                await self._write(self._codec.encode_radio(telegram))
             self._last_radio = time.monotonic()
 
     async def close(self) -> None:
