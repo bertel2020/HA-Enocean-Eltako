@@ -765,6 +765,15 @@ for (const lang of ["en", "de"]) {
     expect("gateway cards", root.querySelectorAll(".card").length, 2);
     await view("devices");
   });
+  // a double click on Save sends one write, not two
+  await check(`lang=${lang}&double`, async ({ root, fake, view, expect, panel }) => {
+    await view("installation");
+    const writes = () => fake.sent.filter((m) => m.type === "enocean_eltako/installation/set").length;
+    const writesBefore = writes();
+    const cabinetItem = { type: "enocean_eltako/installation/set", kind: "cabinet", item: { name: "Doppelt", note: "", rows: [] } };
+    await Promise.all([panel._bvCall(cabinetItem), panel._bvCall(cabinetItem)]);
+    expect("a second write while one is on its way is dropped", writes() - writesBefore, 1);
+  });
   // a documentation export of a swapped gateway: the panel asks before it maps it to the free one
   await check(`lang=${lang}`, async ({ root, fake, expect, panel }) => {
     const file = { text: async () => JSON.stringify({ version: 1, gateways: [{ title: "Altes Gateway", base_id: "FF-80-00-80", devices: [] }] }) };
