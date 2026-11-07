@@ -6,6 +6,7 @@ them into .eep_cache/ (CI fetches them). Without the cache these tests are skipp
 
 from __future__ import annotations
 
+import json
 import math
 import re
 import xml.etree.ElementTree as ET
@@ -34,48 +35,18 @@ KNOWN_CONTAINER_ERRORS = {
 }
 
 
-# Phase 5 generates every profile. In these the official containers and the generic decoder
-# disagree: several cases that the data cannot tell apart (A5-3F-00 radio link test, A5-20
-# valves: direction), or container errors like those above. None is used by the catalog;
-# they decode generically and stay marked until a profile is checked by hand.
-UNVERIFIED_PROFILES = frozenset(
-    (
-        "A5-02-20",
-        "A5-02-30",
-        "A5-06-01",
-        "A5-06-03",
-        "A5-06-05",
-        "A5-07-02",
-        "A5-08-02",
-        "A5-08-03",
-        "A5-09-02",
-        "A5-09-0A",
-        "A5-09-0B",
-        "A5-10-01",
-        "A5-10-15",
-        "A5-10-16",
-        "A5-10-17",
-        "A5-11-02",
-        "A5-12-00",
-        "A5-12-10",
-        "A5-13-03",
-        "A5-13-06",
-        "A5-13-07",
-        "A5-13-10",
-        "A5-14-01",
-        "A5-14-02",
-        "A5-14-03",
-        "A5-14-04",
-        "A5-14-06",
-        "A5-14-09",
-        "A5-14-0A",
-        "A5-20-04",
-        "A5-20-10",
-        "A5-20-12",
-        "A5-30-05",
-        "A5-3F-00",
-    )
-)
+# Phase 5 generates every profile. In these cases the official containers and the generic decoder
+# disagree: several cases that the data cannot tell apart (A5-3F-00 radio link test, A5-20 valves:
+# direction), or container errors like those above. None of these profiles is used by the catalog;
+# they decode generically. Exactly the failing cases are listed (profile -> position of the case
+# in its container, no container text) and marked as strict xfail: a case that starts to pass
+# must be taken out of the file, and a new failure in any other case fails the suite.
+KNOWN_FAILURES = {
+    eep: frozenset(names)
+    for eep, names in json.loads(
+        Path(__file__).with_name("eep_official_known_failures.json").read_text()
+    ).items()
+}
 
 
 def _hex(text: str) -> int:
@@ -91,6 +62,7 @@ def _masked(ignored: bytes, offset: int, size: int) -> bool:
 
 def _cases() -> list:
     cases = []
+    seen: dict[str, int] = {}
     for eep in sorted(PROFILES):
         path = CACHE / f"{eep}_test.xml"
         if not path.exists():
@@ -114,13 +86,18 @@ def _cases() -> list:
                     if shortcut and value:
                         expected[ALIASES.get(shortcut, shortcut)] = value
                 if expected:
-                    name = f"{eep}-{test.findtext('Name').strip()}-{n}"
+                    case = f"{test.findtext('Name').strip()}-{n}"
+                    index = seen[eep] = seen.get(eep, -1) + 1  # position within the profile
                     marks = (
-                        pytest.mark.xfail(reason="unverified profile", strict=False)
-                        if eep in UNVERIFIED_PROFILES
+                        pytest.mark.xfail(reason="known container mismatch", strict=True)
+                        if index in KNOWN_FAILURES.get(eep, ())
                         else ()
                     )
-                    cases.append(pytest.param(eep, data, expected, ignored, id=name, marks=marks))
+                    cases.append(
+                        pytest.param(
+                            eep, data, expected, ignored, id=f"{eep}-{case}~{index}", marks=marks
+                        )
+                    )
     return cases
 
 
