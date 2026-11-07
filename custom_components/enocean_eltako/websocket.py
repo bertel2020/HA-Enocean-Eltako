@@ -765,7 +765,7 @@ async def ws_import_documentation(
             result.append(
                 {
                     "title": str(gateway.get("title", "")),
-                    "base_id": base_id,
+                    "base_id": gateway.get("base_id"),
                     "matched": False,
                 }
             )
