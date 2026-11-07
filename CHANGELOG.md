@@ -6,6 +6,18 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 ### [Unreleased]
 
+**English**
+
+#### Changed
+
+- **Monitor panel on phones**: the view switch (Telegrams, Devices, Installation, Takeover) is now a bottom bar with icons. The Integration link in the header shows only its icon.
+
+**Deutsch**
+
+#### Geändert
+
+- **Monitor-Panel am Handy**: Die Ansichten (Telegramme, Geräte, Anlage, Übernahme) sind jetzt eine untere Leiste mit Icons. Der Integration-Link im Header zeigt nur noch das Icon.
+
 ### [1.7.0] - 2026-11-05
 
 **English**

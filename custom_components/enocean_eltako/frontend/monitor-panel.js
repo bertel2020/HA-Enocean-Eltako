@@ -108,8 +108,9 @@ const STYLE = `
   #view button:hover { color: var(--text); background: var(--neutral-soft); }
   #view button[aria-selected="true"] { color: var(--accent-hover); background: var(--accent-soft); }
   #view button[hidden] { display: none; }
+  #view button svg { display: none; }
   .header-end { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .integration-link { color: var(--accent); }
+  .integration-link { color: var(--accent); padding: 0; width: 36px; }
   main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
     grid-template-columns: minmax(0, 1fr); gap: 16px; }
   main > section { min-width: 0; }
@@ -630,8 +631,7 @@ const STYLE = `
     .header-end { display: contents; }
     .brand { order: -2; }
     .look { order: -1; margin-left: auto; }
-    .integration-link { order: -1; padding: 0 10px; }
-    .integration-link span { display: none; }
+    .integration-link { order: -1; }
     .card { gap: 12px; }
     .gateway-title { flex-basis: calc(100% - 60px); }
     .rate { border: 0; padding: 0; flex: 1; }
@@ -682,6 +682,15 @@ const STYLE = `
     #view.fade-end { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
     #view.fade-start { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
     #view.fade-start.fade-end { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+    /* the view switch becomes a bottom bar, like on a phone app */
+    #view, #view.fade-start, #view.fade-end { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0; padding: 0 0 env(safe-area-inset-bottom, 0); gap: 0;
+      flex-basis: auto; overflow: visible; mask-image: none; background: var(--surface); border-top: 1px solid var(--line); }
+    #view button { flex: 1 1 0; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; padding: 6px 2px; border-radius: 0;
+      font-size: calc(11px * var(--fs)); background: none; }
+    #view button[aria-selected="true"] { background: none; }
+    #view button svg { display: block; width: 22px; height: 22px; padding: 3px 14px; box-sizing: content-box; border-radius: 14px; transition: background .15s; }
+    #view button[aria-selected="true"] svg { background: var(--accent-soft); }
+    main { padding-bottom: 88px; }
     .filters .chip { padding: 0 12px; font-size: calc(12px * var(--fs)); }
     .filters #tkReport { padding: 0 8px; }
     /* the status chips scroll in one line, sorting and grouping share a row: the list starts higher */
@@ -1097,16 +1106,16 @@ class EnOceanEltakoPanel extends HTMLElement {
         <div class="brand"><ha-menu-button></ha-menu-button>${LOGO}<div><b>${esc(t.title).replace(" ", "<br>")}</b></div></div>
         <div class="header-end">
         <nav role="tablist" id="view" aria-label="${esc(t.title)}">
-          <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${esc(t.viewTelegrams)}</button>
-          <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewDevices)}</button>
-          <button role="tab" data-view="installation" aria-controls="panel" aria-selected="false" tabindex="-1">${esc(t.viewInstallation)}</button>
-          <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${esc(t.viewTakeover)}</button>
+          <button role="tab" data-view="telegrams" aria-controls="panel" aria-selected="true">${svg(ICON.signal)}<span>${esc(t.viewTelegrams)}</span></button>
+          <button role="tab" data-view="devices" aria-controls="panel" aria-selected="false" tabindex="-1">${svg(ICON.bulb)}<span>${esc(t.viewDevices)}</span></button>
+          <button role="tab" data-view="installation" aria-controls="panel" aria-selected="false" tabindex="-1">${svg(ICON.tower)}<span>${esc(t.viewInstallation)}</span></button>
+          <button role="tab" data-view="takeover" aria-controls="panel" aria-selected="false" tabindex="-1" hidden>${svg(ICON.upload)}<span>${esc(t.viewTakeover)}</span></button>
         </nav>
         <span class="more look">
           <button class="icon-btn" id="lookBtn" title="${esc(t.look.title)}" aria-label="${esc(t.look.title)}" aria-haspopup="true" aria-expanded="false" aria-controls="lookMenu">${svg(ICON.palette)}</button>
           <div class="menu look-menu" id="lookMenu" aria-label="${esc(t.look.title)}" hidden></div>
         </span>
-        <button class="chip integration-link" data-open-integration title="${esc(t.integration)}" aria-label="${esc(t.integration)}">${svg(ICON.open)}<span>${esc(t.integration)}</span></button>
+        <button class="chip integration-link" data-open-integration title="${esc(t.integration)}" aria-label="${esc(t.integration)}">${svg(ICON.open)}</button>
         </div>
       </header>
       <main>
