@@ -2,6 +2,19 @@
 
 Stand: 3. November 2026
 
+## Status (7. November 2026)
+
+Stand der Befunde nach dem Code-Review vom 7. November 2026 (`CODE-REVIEW.md`):
+
+| Befund | Status |
+| --- | --- |
+| P3 Gerätetyp geht beim Leeren verloren | Erledigt: `bus.js` stellt den vorherigen Wert bei leerem Feld wieder her. |
+| P2 Ungespeicherte Drawer-Eingaben | Erledigt: `_bvGuard()` fragt nach; seit dem Review auch bei Zurück, Links und Bus-Wechsel. |
+| P2 Drawer nicht vollständig modal | Erledigt: Hintergrund wird inert, der Fokus kehrt zum Auslöser zurück. |
+| Navigation 4: native `confirm()` | Größtenteils erledigt: der Bus nutzt Panel-Dialoge; offen bleibt `window.confirm` beim Dokumentationsimport (`monitor-panel.js`). |
+| Navigation 1–3 (Begriffe, Übernahme, Aktionsmuster) | Offen. |
+| Optische Empfehlungen 1–5 | Offen. |
+
 ## Umfang und Gesamteindruck
 
 Geprüft wurden vor allem das eigene Home-Assistant-Panel, die Konfigurationsoberflächen, die deutschen Texte und die vorhandenen Showcase-Screenshots. Der Schwerpunkt liegt auf Bedienbarkeit, visueller Gestaltung, Navigation und Konsistenz. Es handelt sich um ein Code- und Screenshot-Review, nicht um einen Test an einer laufenden Home-Assistant-Instanz.
