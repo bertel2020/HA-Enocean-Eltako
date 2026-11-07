@@ -1094,7 +1094,7 @@ export const busView = {
       const docs = documented.get(Number(a)) ?? [];
       const as = docs.length ? docs.map(({ m, c }) => this._bvL("channel", `${m.id}:${c.n}`, esc(`${m.type} ${B.channelShort(c.n)} · ${this._bvChannel(v, m, c).name}`))).join("<br>") : `<span class="tag warn">${esc(B.notDocumented)}</span> <button class="chip small" data-bv-docaddr="${esc(a)}">${esc(B.document)}</button>`;
       const inHa = known.has(x.sender) || docs.some(({ c }) => c.device_key);
-      const add = inHa ? `<span class="tag ok">${esc(B.inHaShort)}</span>` : `<button class="chip small" data-bv-adddev="${esc(x.sender)}">${esc(this._t.addAsDevice)}</button>`;
+      const add = inHa ? `<span class="tag ok">${esc(B.inHaShort)}</span>` : `<button class="chip small" data-bv-adddev="${esc(x.sender)}" data-bv-gw="${esc(x.gateway ?? "")}">${esc(this._t.addAsDevice)}</button>`;
       return `<tr><td class="mono">${esc(a)}</td><td class="mono">${esc(x.sender)}</td><td class="bv-hide-s">${esc(x.wired ? B.viaWire : B.viaRadio)}</td><td>${esc(B.kinds[x.kind] ?? x.kind)}</td><td class="isub">${esc(ago(x.time))}</td><td>${as}</td><td>${add}</td></tr>`;
     }).join("");
     const base = v.bus.base_id
@@ -1351,7 +1351,7 @@ export const busView = {
     else if (d.bvTakebase) {
       const v = this._bv();
       this._bvCall({ type: "enocean_eltako/installation/set", kind: "bus", item: { ...v.bus, base_id: d.bvTakebase } }).then((r) => r && this._bvReload());
-    } else if (d.bvAdddev) this._addDevice(d.bvAdddev);
+    } else if (d.bvAdddev) this._addDevice(d.bvAdddev, d.bvGw || undefined);
     else if (d.bvDocaddr) {
       this._bvAct("module-new", el);
       state.draft.module.first_address = Number(d.bvDocaddr);

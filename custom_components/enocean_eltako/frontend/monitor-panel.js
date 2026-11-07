@@ -2034,7 +2034,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       button.dataset.id,
       `<button role="menuitem" data-addact="device">${svg(ICON.plus)}<span>${esc(t.addAsDevice)}<small>${esc(t.addAsDeviceHint)}</small></span></button>
       <button role="menuitem" data-addact="document">${svg(ICON.list)}<span>${esc(t.addDocOnly)}<small>${esc(t.addDocOnlyHint)}</small></span></button>`,
-      (act) => (act === "device" ? this._addDevice(button.dataset.id) : this._documentSender(button.dataset.gateway, button.dataset.id))
+      (act) => (act === "device" ? this._addDevice(button.dataset.id, button.dataset.gateway) : this._documentSender(button.dataset.gateway, button.dataset.id))
     );
   }
 
@@ -2134,11 +2134,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
   }
 
-  async _addDevice(sender) {
+  async _addDevice(sender, gateway) {
     this._notice("");
     let result;
     try {
-      result = await this._hass.callWS({ type: "enocean_eltako/discover", sender });
+      result = await this._hass.callWS({ type: "enocean_eltako/discover", sender, ...(gateway ? { entry_id: gateway } : {}) });
     } catch (err) {
       this._notice(this._t.addResult[err.code] || this._t.addResult.failed);
       return;

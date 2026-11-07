@@ -436,7 +436,12 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "enocean_eltako/discover", vol.Required("sender"): str}
+    {
+        vol.Required("type"): "enocean_eltako/discover",
+        vol.Required("sender"): str,
+        # the gateway the user clicked on: several gateways can hear the same sender
+        vol.Optional("entry_id"): str,
+    }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
@@ -458,7 +463,9 @@ async def ws_discover(
         (
             e
             for e in reversed(hub.monitor.history())
-            if e.direction == "rx" and e.telegram.sender == sender
+            if e.direction == "rx"
+            and e.telegram.sender == sender
+            and msg.get("entry_id") in (None, e.gateway)
         ),
         None,
     )
