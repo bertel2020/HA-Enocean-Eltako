@@ -1447,6 +1447,22 @@ export const installation = {
     return `<div class="itools" style="align-items:center">${search}<span class="seg" role="group">${period}</span><span style="flex:1"></span><button class="chip" data-in-act="log-csv">${svg(ICON.download)}${esc(L.csv)}</button></div><div class="chips" style="margin-bottom:10px">${chips}</div><div class="swrap"><div class="logbar"><span>${esc(L.count(list.length, all.length))}</span><button data-in-logsort="1">${esc(t.time)} ${v.dir < 0 ? "↓" : "↑"} ${esc(v.dir < 0 ? L.newest : L.oldest)}</button></div><div class="tablewrap"><table class="itable log"><tbody>${body || empty}</tbody></table></div>${pager}</div>`;
   },
 
+  _instTabKey(e) {
+    // the tabs of the installation have a roving tabindex: the arrow keys move between them
+    const current = e.target.closest?.('[role="tab"][data-in-tab]');
+    if (!current) return false;
+    const tabs = [...current.parentElement.querySelectorAll('[role="tab"][data-in-tab]')];
+    const at = tabs.indexOf(current);
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (to === undefined) return false;
+    e.preventDefault();
+    const name = tabs[(to + tabs.length) % tabs.length].dataset.inTab;
+    this._in.tab = name;
+    this._renderInstallation();
+    this.shadowRoot.querySelector(`#installation [data-in-tab="${name}"]`)?.focus();
+    return true;
+  },
+
   _installationClick(e) {
     const state = this._in;
     // every way out of an open drawer asks first when it holds unsaved input; the guard clears

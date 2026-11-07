@@ -128,6 +128,15 @@ for (const lang of ["en", "de"]) {
     expect("installation table rows (10 devices, 2 power supplies, 3 entries by hand)", deviceRows().length, 15);
     expect("the table is grouped by place (cabinet · row) at first", root.querySelectorAll("#installation .itable tr.grp").length > 0 && root.querySelector("#installation [data-in-groupsel] option[selected]")?.value, "location");
     expect("the gateway is a tag of the row only with several gateways; its name opens the gateway elsewhere", root.querySelectorAll("#installation [data-in-gwopen]").length >= 0, true);
+    // the tabs of the installation by keyboard
+    const tabNow = () => root.querySelector('#installation [role="tab"][aria-selected="true"]').dataset.inTab;
+    const firstTab = tabNow();
+    root.querySelector('#installation [role="tab"][aria-selected="true"]').dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, composed: true }));
+    await settle();
+    expect("ArrowRight moves to the next installation tab", tabNow() !== firstTab && root.activeElement?.dataset.inTab === tabNow(), true);
+    root.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true, composed: true }));
+    await settle();
+    expect("Home goes back to the first tab", tabNow(), firstTab);
     const busTag = root.querySelector('#installation .itable [data-in-busgo^="channel|m_fsr"]');
     expect("a bus device's kind tag leads to its channel in the bus tab", !!busTag, true);
     busTag.click();
