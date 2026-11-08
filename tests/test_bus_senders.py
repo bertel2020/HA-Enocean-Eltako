@@ -6,10 +6,12 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.enocean_eltako.const import DOMAIN
+from custom_components.enocean_eltako.protocol import esp2
 from custom_components.enocean_eltako.protocol.models import Protocol
+from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
 
 from .fake_gateway import FakeGateway
-from .test_devices import _choose_model, _subentry
+from .test_devices import _choose_model, _entity, _settle, _subentry
 
 pytestmark = pytest.mark.usefixtures("socket_enabled")
 
@@ -37,6 +39,7 @@ async def bus(hass: HomeAssistant, request):
     """An FGW14-USB (always on) and a FAM14 (on demand) in one bus group."""
     fgw = await FakeGateway(Protocol.ESP2).start()
     fam = await FakeGateway(Protocol.ESP2).start()
+    request.node.fgw_server = fgw
     own, other = getattr(request, "param", ((), ()))
     e_fgw = _entry("FGW14-USB", "fgw14_usb", "FF-AA-80-00", fgw.port, "always", own)
     e_fam = _entry("FAM14", "fam14", "FF-80-80-00", fam.port, "on_demand", other)
@@ -135,3 +138,40 @@ async def test_reload_keeps_ids_of_devices_on_other_group_members(hass: HomeAssi
     pool = e_fgw.runtime_data.bus.senders.pool
     assert pool.get(B0 + 3).state == "assigned"
     assert pool.get(B0 + 4).state == "blocked"
+
+
+@pytest.mark.parametrize(
+    "bus",
+    [
+        (
+            (
+                _subentry(
+                    "switch",
+                    "05-10-A2-B5",
+                    "Bus light",
+                    senders=[
+                        {"profile": "central", "sender_id": "00-00-B0-03"},
+                        {"profile": "rocker", "sender_id": "FF-AA-80-0F"},
+                    ],
+                    platform="light",
+                ),
+            ),
+            (),
+        )
+    ],
+    indirect=True,
+)
+async def test_command_from_a_bus_id_goes_over_the_bus_group(
+    hass: HomeAssistant, bus, request
+) -> None:
+    """A device sends from its bus ID through the group's gateway, with the bus ID as sender."""
+    e_fgw, _ = bus
+    server = request.node.fgw_server
+    await server.connected.wait()
+    device = next(iter(e_fgw.runtime_data.devices.values()))
+    assert device.senders["central"] in e_fgw.runtime_data.bus.senders.pool
+    light = _entity(hass, "light", f"{e_fgw.unique_id}_05-10-A2-B5_1_light")
+    await hass.services.async_call("light", "turn_on", {"entity_id": light})
+    await _settle(hass)
+    sent = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("01000009"), 0x0000B003, 0))
+    assert sent in bytes(server.received)
