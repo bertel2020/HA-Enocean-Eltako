@@ -1,6 +1,8 @@
 """Sender IDs of a bus group (00-00-B0-xx): suggested, assigned, rolled back and released like
 the radio ones, and shared by every gateway of the group."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -175,3 +177,55 @@ async def test_command_from_a_bus_id_goes_over_the_bus_group(
     await _settle(hass)
     sent = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("01000009"), 0x0000B003, 0))
     assert sent in bytes(server.received)
+
+
+@pytest.mark.parametrize(
+    "bus",
+    [
+        (
+            (
+                _subentry(
+                    "switch",
+                    "05-10-A2-B5",
+                    "Bus light",
+                    senders=[{"profile": "central", "sender_id": "00-00-B0-03"}],
+                    platform="light",
+                ),
+            ),
+            (),
+        )
+    ],
+    indirect=True,
+)
+async def test_swapping_the_only_bus_gateway_keeps_the_bus_ids(
+    hass: HomeAssistant, bus, request
+) -> None:
+    """The group's pool is dropped with its last member and read again from the store when the
+    reconfigured gateway joins: the devices keep their IDs, which stay assigned."""
+    e_fgw, e_fam = bus
+    await hass.config_entries.async_unload(e_fam.entry_id)  # the FGW14-USB is the only member
+    store = e_fgw.runtime_data.bus.senders
+    store.pool.assign(B0 + 3, "device:05-10-A2-B5:central")
+    await store.async_save()
+
+    server = request.node.fgw_server
+    result = await e_fgw.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"model": "fgw14_usb"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway",
+        AsyncMock(return_value=0xFFAA8000),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": "127.0.0.1", "port": server.port}
+        )
+    assert result["reason"] == "reconfigure_successful"
+    await hass.async_block_till_done()
+
+    pool = e_fgw.runtime_data.bus.senders.pool
+    allocation = pool.get(B0 + 3)
+    assert (allocation.owner, allocation.state) == ("device:05-10-A2-B5:central", "assigned")
