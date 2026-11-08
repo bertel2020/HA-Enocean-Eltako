@@ -14,6 +14,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Monitor panel naming**: inside Installation the group and tab formerly called Devices is now **Documentation**, so it no longer shares its name with the Devices view.
 - **Monitor panel header**: the palette and the Integration link are now round 24 px icon buttons in the same look as in the Fritzbox Network panel.
 
+#### Added
+
+- **Bus sender IDs**: devices on a gateway of a bus group (FGW14-USB, FAM14) get their sender ID suggested from the bus pool (00-00-B0-xx) instead of the radio pool. The pool is shared by the group; a reload of one member no longer blocks the IDs of devices on another.
+
 #### Fixed
 
 - **Devices view with several gateways**: a sender ID set up on two gateways keeps the device and the gateway of each row.
@@ -33,6 +37,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Monitor-Panel am Handy**: Die Ansichten (Telegramme, Geräte, Anlage, Übernahme) sind jetzt eine untere Leiste mit Icons. Der Integration-Link im Header zeigt nur noch das Icon.
 - **Monitor-Panel-Benennung**: In der Anlage heißt die bisherige Gruppe und der Tab Geräte jetzt **Dokumentation**, damit der Name nicht mehr mit der Ansicht Geräte übereinstimmt.
 - **Monitor-Panel-Header**: Palette und Integration-Link sind jetzt runde 24-px-Icon-Buttons im gleichen Look wie im Fritzbox-Network-Panel.
+
+#### Hinzugefügt
+
+- **Bus-Sender-IDs**: Geräte an einem Gateway einer Bus-Gruppe (FGW14-USB, FAM14) bekommen ihre Sender-ID aus dem Bus-Pool (00-00-B0-xx) vorgeschlagen statt aus dem Funk-Pool. Der Pool gehört der ganzen Gruppe; ein Neuladen eines Mitglieds sperrt die IDs der Geräte eines anderen nicht mehr.
 
 #### Behoben
 

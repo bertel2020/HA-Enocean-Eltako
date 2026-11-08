@@ -1,0 +1,137 @@
+"""Sender IDs of a bus group (00-00-B0-xx): suggested, assigned, rolled back and released like
+the radio ones, and shared by every gateway of the group."""
+
+import pytest
+from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.enocean_eltako.const import DOMAIN
+from custom_components.enocean_eltako.protocol.models import Protocol
+
+from .fake_gateway import FakeGateway
+from .test_devices import _choose_model, _subentry
+
+pytestmark = pytest.mark.usefixtures("socket_enabled")
+
+B0 = 0x0000B000
+
+
+def _entry(title: str, model: str, base: str, port: int, mode: str, subentries=()):
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title=title,
+        unique_id=base,
+        data={
+            "model": model,
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": port},
+            "base_id": base,
+            "bus_group": "b1",
+        },
+        options={"message_delay": 0, "mode": mode},
+        subentries_data=list(subentries),
+    )
+
+
+@pytest.fixture
+async def bus(hass: HomeAssistant, request):
+    """An FGW14-USB (always on) and a FAM14 (on demand) in one bus group."""
+    fgw = await FakeGateway(Protocol.ESP2).start()
+    fam = await FakeGateway(Protocol.ESP2).start()
+    own, other = getattr(request, "param", ((), ()))
+    e_fgw = _entry("FGW14-USB", "fgw14_usb", "FF-AA-80-00", fgw.port, "always", own)
+    e_fam = _entry("FAM14", "fam14", "FF-80-80-00", fam.port, "on_demand", other)
+    e_fgw.add_to_hass(hass)
+    e_fam.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(e_fgw.entry_id)
+    await hass.async_block_till_done()
+    yield e_fgw, e_fam
+    await hass.config_entries.async_unload(e_fam.entry_id)
+    await hass.config_entries.async_unload(e_fgw.entry_id)
+    await fgw.stop()
+    await fam.stop()
+
+
+async def _add_switch(hass: HomeAssistant, entry, device_id: str, **fields):
+    configure = hass.config_entries.subentries.async_configure
+    result = await hass.config_entries.subentries.async_init(
+        (entry.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "switch")
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    return result, await configure(
+        result["flow_id"],
+        {"name": "Licht", "device_id": device_id, "platform": "switch", **fields},
+    )
+
+
+async def test_new_device_is_suggested_a_bus_id(hass: HomeAssistant, bus) -> None:
+    e_fgw, _ = bus
+    result = await hass.config_entries.subentries.async_init(
+        (e_fgw.entry_id, "device"), context={"source": "user"}
+    )
+    result = await _choose_model(hass, result["flow_id"], "switch")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "device"}
+    )
+    schema = result["data_schema"].schema
+    first = next(k for k in schema if str(k).startswith("sender_"))  # the rocker gets it
+    assert first.description["suggested_value"] == "00-00-B0-00"
+
+
+async def test_device_assigns_and_removal_blocks_a_bus_id(hass: HomeAssistant, bus) -> None:
+    e_fgw, _ = bus
+    pool = e_fgw.runtime_data.bus.senders.pool
+    _, result = await _add_switch(hass, e_fgw, "05-10-A2-B3", sender_central="00-00-B0-05")
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    assert pool.get(B0 + 5).owner == "device:05-10-A2-B3:central"
+    assert e_fgw.runtime_data.senders.pool.get(B0 + 5) is None  # not the radio pool
+
+    assert hass.config_entries.async_remove_subentry(e_fgw, next(iter(e_fgw.subentries)))
+    await hass.async_block_till_done()
+    assert pool.get(B0 + 5).state == "blocked"
+    assert pool.next_free() == B0
+
+
+async def test_failed_save_restores_the_bus_pool(hass: HomeAssistant, bus) -> None:
+    e_fgw, _ = bus
+    pool = e_fgw.runtime_data.bus.senders.pool
+    pool.assign(B0 + 1, "device:05-10-A2-B6:central")  # another device
+    _, result = await _add_switch(
+        hass, e_fgw, "05-10-A2-B3", sender_central="00-00-B0-02", sender_rocker="00-00-B0-01"
+    )
+    assert result["type"] == "form" and result["errors"]
+    assert pool.get(B0 + 2) is None  # the first ID of the failed attempt was rolled back
+    assert pool.get(B0 + 1).owner == "device:05-10-A2-B6:central"
+
+
+@pytest.mark.parametrize(
+    "bus",
+    [
+        (
+            (),
+            (
+                _subentry(
+                    "switch",
+                    "05-10-A2-B5",
+                    "Licht Büro",
+                    senders=[{"profile": "central", "sender_id": "00-00-B0-03"}],
+                    platform="switch",
+                ),
+            ),
+        )
+    ],
+    indirect=True,
+)
+async def test_reload_keeps_ids_of_devices_on_other_group_members(hass: HomeAssistant, bus) -> None:
+    """The device sits on the FAM14, the pool is shared: the FGW14-USB reloading must not
+    block the ID of a device it does not own."""
+    e_fgw, e_fam = bus
+    pool = e_fgw.runtime_data.bus.senders.pool
+    pool.assign(B0 + 3, "device:05-10-A2-B5:central")
+    pool.assign(B0 + 4, "device:05-10-A2-B9:central")  # a device nobody has any more
+    assert await hass.config_entries.async_reload(e_fgw.entry_id)
+    await hass.async_block_till_done()
+    pool = e_fgw.runtime_data.bus.senders.pool
+    assert pool.get(B0 + 3).state == "assigned"
+    assert pool.get(B0 + 4).state == "blocked"

@@ -453,18 +453,34 @@ def _async_setup_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -
             entry.async_on_unload(device.virtual.start())
         owners.update(sender_owner(device.device_id, p, device.channel) for p in device.senders)
     _async_remove_stale_entities(hass, entry)
-    pool = runtime.senders.pool
+    _release_unowned(runtime.senders, owners)
+    if runtime.bus is not None:
+        # the members of a bus group share one pool: a device of any member keeps its IDs
+        group = entry.data[CONF_BUS_GROUP]
+        for other in hass.config_entries.async_entries(DOMAIN):
+            if other.data.get(CONF_BUS_GROUP) != group:
+                continue
+            for subentry in other.subentries.values():
+                owners.update(
+                    f"device:{subentry.unique_id}:{s[CONF_PROFILE]}"
+                    for s in subentry.data.get(CONF_SENDERS, ())
+                )
+        _release_unowned(runtime.bus.senders, owners)
+
+
+def _release_unowned(store: SenderStore, owners: set[str]) -> None:
+    """Block the IDs of devices that no longer exist (until their teach-out is confirmed)."""
     released = False
-    for sender, allocation in pool.allocations():
+    for sender, allocation in store.pool.allocations():
         if (
             allocation.state is SenderState.ASSIGNED
             and allocation.owner.startswith("device:")
             and allocation.owner not in owners
         ):
-            pool.release(sender)  # blocked until the teach-out is confirmed
+            store.pool.release(sender)
             released = True
     if released:
-        runtime.senders.async_schedule_save()
+        store.async_schedule_save()
 
 
 def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

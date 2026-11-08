@@ -366,7 +366,17 @@ class DeviceForm:
         )
 
     def _pool(self) -> SenderPool:
-        return cast(SenderPool, self._get_entry().runtime_data.senders.pool)
+        """The pool new IDs are suggested from: the bus group's on a bus gateway, else radio."""
+        runtime = self._get_entry().runtime_data
+        store = runtime.bus.senders if runtime.bus is not None else runtime.senders
+        return cast(SenderPool, store.pool)
+
+    def _pool_of(self, sender: int) -> SenderPool:
+        """The pool an ID belongs to (an ID in neither range is checked against the radio one)."""
+        runtime = self._get_entry().runtime_data
+        if runtime.bus is not None and sender in runtime.bus.senders.pool:
+            return cast(SenderPool, runtime.bus.senders.pool)
+        return cast(SenderPool, runtime.senders.pool)
 
     def _fields(
         self, model: DeviceModel, current: dict[str, str], *, new: bool = False
@@ -569,7 +579,6 @@ class DeviceForm:
         assert self._device_model is not None
         user_input = flatten_sections(user_input)
         model = self._device_model
-        pool = self._pool()
         wanted: dict[str, int] = {}
         for sender_profile in model.senders:
             field = sender_field(sender_profile.id)
@@ -611,27 +620,33 @@ class DeviceForm:
             if (p not in wanted or format_id(wanted[p]) != s) and parse_id(s) not in moved
         }
         assigned: list[int] = []
-        before = {sender: pool.get(sender) for sender in wanted.values()}  # for the roll back
+        before = {
+            sender: self._pool_of(sender).get(sender) for sender in wanted.values()
+        }  # for the roll back
         for profile, sender in wanted.items():
             if current.get(profile) == format_id(sender):
                 continue
             if sender in moved:
-                pool.release(sender)
-                pool.confirm_teach_out(sender)
+                self._pool_of(sender).release(sender)
+                self._pool_of(sender).confirm_teach_out(sender)
             try:
-                pool.assign(sender, sender_owner(device_id, profile, status_channel(user_input)))
+                owner = sender_owner(device_id, profile, status_channel(user_input))
+                self._pool_of(sender).assign(sender, owner)
             except SenderIdError as err:
                 errors[sender_field(profile)] = f"sender_{err.reason}"
                 continue
             assigned.append(sender)
         if errors:
             for sender in assigned:  # roll back this attempt: every ID as it was before
-                pool.restore(sender, before[sender])
+                self._pool_of(sender).restore(sender, before[sender])
             return None
         for sender in released.values():
-            pool.release(sender)  # blocked until the teach-out is confirmed
-        # saved now: changing subentries reloads the entry and the pool with it
-        await self._get_entry().runtime_data.senders.async_save()
+            self._pool_of(sender).release(sender)  # blocked until the teach-out is confirmed
+        # saved now: changing subentries reloads the entry and the pools with it
+        runtime = self._get_entry().runtime_data
+        await runtime.senders.async_save()
+        if runtime.bus is not None:
+            await runtime.bus.senders.async_save()
         data: dict[str, Any] = {
             "schema": SUBENTRY_SCHEMA,
             CONF_MODEL: model.id,
