@@ -884,7 +884,7 @@
         },
         "discovered": {
           "title": "Discovered devices",
-          "description": "Senders this gateway heard that are not set up yet.",
+          "description": "Strongest signal first. Devices nearby are usually yours.",
           "data": {
             "device_id": "Sender",
             "hide": "Hide this sender"

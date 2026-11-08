@@ -884,7 +884,7 @@
         },
         "discovered": {
           "title": "Entdeckte Geräte",
-          "description": "Sender, die dieses Gateway gehört hat und die noch nicht eingerichtet sind.",
+          "description": "Stärkstes Signal zuerst. Geräte in der Nähe sind meist deine.",
           "data": {
             "device_id": "Sender",
             "hide": "Diesen Sender ausblenden"
