@@ -71,6 +71,11 @@ _KINDS = {
 }
 
 
+def kind_name(hass: HomeAssistant, rorg: int) -> str:
+    """The telegram type in words: "sensors", "Taster" (language of the instance)."""
+    return _KINDS.get(hass.config.language, _KINDS["en"]).get(rorg, "RORG")
+
+
 def kinds_summary(hass: HomeAssistant, heard: list[ReceivedTelegram]) -> str:
     """ "15 sensors (A5), 9 rockers (F6)": what was heard, by telegram type, most first."""
     names = _KINDS.get(hass.config.language, _KINDS["en"])
