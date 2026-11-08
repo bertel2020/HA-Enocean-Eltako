@@ -164,7 +164,7 @@ class Gateway:
                 try:
                     await self.connect()
                 except (OSError, TimeoutError) as err:
-                    if self._closing:
+                    if self._closed():  # close() during connect(): no backoff
                         break
                     delay = RECONNECT_DELAYS[min(attempt, len(RECONNECT_DELAYS) - 1)]
                     attempt += 1
