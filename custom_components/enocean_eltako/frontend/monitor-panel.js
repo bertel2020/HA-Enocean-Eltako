@@ -696,8 +696,16 @@ const STYLE = `
     .filters .chip { padding: 0 12px; font-size: calc(12px * var(--fs)); }
     .filters #tkReport { padding: 0 8px; }
     /* the status chips scroll in one line, sorting and grouping share a row: the list starts higher */
-    .filters .select { flex: 1 1 0; min-width: 0; }
+    /* each select keeps room for its label (the report button wraps instead of squeezing them) */
+    .filters .select { flex: 1 1 130px; min-width: 0; }
     .filters .select { padding-right: 24px; background-position: calc(100% - 12px) 55%, calc(100% - 7px) 55%; }
+    /* names may use two lines on a phone */
+    .devices .dev .line1 .name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    /* larger tick boxes for a finger */
+    input[type="checkbox"] { width: 22px; height: 22px; }
+    input[type="checkbox"]:checked::after { width: 11px; height: 6px; }
+    /* a candidate profile ("A5-10-06") never breaks inside its code */
+    .values .tag .code { white-space: nowrap; }
     .filters #tkReport .lbl { display: none; }
     .who .line1 { flex-wrap: wrap; row-gap: 4px; }
     .who .name { flex: 1 1 100%; }
@@ -709,9 +717,9 @@ const STYLE = `
 const MAYBE_SHOWN = 2;
 function maybeTag(t, candidates, label = t.maybe, hint = t.maybeHint) {
   if (!candidates?.length) return "";
-  const shown = candidates.slice(0, MAYBE_SHOWN).join(", ");
+  const shown = candidates.slice(0, MAYBE_SHOWN).map((c) => `<span class="code">${esc(c)}</span>`).join(", ");
   const more = candidates.length > MAYBE_SHOWN ? ` +${candidates.length - MAYBE_SHOWN}` : "";
-  return `<div class="maybe"><span class="tag" title="${esc(`${hint}: ${candidates.join(", ")}`)}">${esc(label)} ${esc(shown)}${more}</span></div>`;
+  return `<div class="maybe"><span class="tag" title="${esc(`${hint}: ${candidates.join(", ")}`)}">${esc(label)} ${shown}${more}</span></div>`;
 }
 
 function bars(dbm) {

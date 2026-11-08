@@ -20,6 +20,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Monitor panel on phones**: the Takeover list keeps IDs and types whole and shows its tags on their own line instead of over the text. The sort and group selects of the Devices view are fully readable, device names may use two lines, tick boxes are larger and a profile hint like "A5-10-06" no longer breaks inside its code.
 - **Switching confirmations**: a status that reports the other relay state than the command asked for (the late answer to a command that was replaced) no longer confirms the new command.
 - **Devices view with several gateways**: a sender ID set up on two gateways keeps the device and the gateway of each row.
 - **Installation**: leaving the bus drawer by Back, a link or a bus change asks first when it holds unsaved input.
@@ -45,6 +46,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Monitor-Panel auf dem Handy**: Die Übernahme-Liste hält IDs und Typen zusammen und zeigt ihre Marken in einer eigenen Zeile statt über dem Text. Die Sortier- und Gruppierungsauswahl der Geräte-Ansicht ist vollständig lesbar, Gerätenamen dürfen zwei Zeilen belegen, Häkchenfelder sind größer und ein Profilhinweis wie „A5-10-06“ bricht nicht mehr mitten im Code um.
 - **Schaltbestätigungen**: Ein Status, der den anderen Relaiszustand meldet als der Befehl verlangt (die späte Antwort auf einen ersetzten Befehl), bestätigt den neuen Befehl nicht mehr.
 - **Geräteansicht mit mehreren Gateways**: Eine auf zwei Gateways eingerichtete Sender-ID behält je Zeile Gerät und Gateway.
 - **Anlage**: Das Verlassen des Bus-Drawers per Zurück, Link oder Bus-Wechsel fragt bei ungespeicherter Eingabe zuerst nach.
