@@ -37,9 +37,9 @@ def switch_actuator(device: EnOceanDevice, on: bool) -> None:
     for profile_id in device.senders:
         profile = device.model.sender_profile(profile_id)
         if profile.switch_fn is not None:
-            device.send(profile.switch_fn(on), profile=profile_id, key="switch")
+            device.send(profile.switch_fn(on), profile=profile_id, key="switch", target_on=on)
             return
-    device.press(ROCKER.id, device.rocker_button(on))
+    device.press(ROCKER.id, device.rocker_button(on), target_on=on)
 
 
 def on_state(values: dict[str, Any]) -> bool | None:

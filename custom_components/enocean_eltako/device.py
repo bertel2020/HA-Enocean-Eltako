@@ -117,6 +117,14 @@ class RadioStats:
         return round(100 * self.confirmed / self.commands, 1) if self.commands else None
 
 
+def _reports(telegram: RadioTelegram, target_on: bool | None) -> bool:
+    """False for a switching status that reports the other relay state than the one asked for."""
+    if target_on is None or telegram.rorg != Rorg.RPS or not telegram.data:
+        return True
+    state = switching.STATUS_CODES.get(telegram.data[0])
+    return state is None or state[1] == target_on
+
+
 class EnOceanDevice:
     def __init__(
         self, hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, subentry: ConfigSubentry
@@ -430,8 +438,12 @@ class EnOceanDevice:
         status: int = 0,
         destination: int = BROADCAST,
         rorg: int | None = None,
+        target_on: bool | None = None,
     ) -> None:
         """Queue a telegram from the sender ID of a profile without waiting for the actuator.
+
+        target_on: the relay state the command asks for. A switching status that reports the
+        other state (the late answer to an earlier, replaced command) does not confirm it.
 
         profile None = the first configured sender. The queue waits for the actuator's status
         telegram in the background and repeats the command if it does not come; raises
@@ -447,7 +459,15 @@ class EnOceanDevice:
         sender_id = self.senders[profile]
         rorg = rorg or self.model.sender_profile(profile).rorg
         telegram = RadioTelegram(rorg, data, sender_id, status, destination)
-        expect = (lambda t: t.sender == self.device_id and self.own_channel(t)) if confirm else None
+        expect = (
+            (
+                lambda t: (
+                    t.sender == self.device_id and self.own_channel(t) and _reports(t, target_on)
+                )
+            )
+            if confirm
+            else None
+        )
         runtime = self.entry.runtime_data
         queue_key = (self.unique_prefix, key) if key else None
         started = time.monotonic()
@@ -549,9 +569,17 @@ class EnOceanDevice:
         return await runtime.queue.submit(telegram, Priority.BACKGROUND, expect=expect)
 
     @callback
-    def press(self, profile: str, button: bytes, *, confirm: bool = True) -> None:
+    def press(
+        self, profile: str, button: bytes, *, confirm: bool = True, target_on: bool | None = None
+    ) -> None:
         """Rocker profile: press and release, like a PTM switch."""
-        self.send(button, profile=profile, status=ROCKER_STATUS_PRESSED, confirm=confirm)
+        self.send(
+            button,
+            profile=profile,
+            status=ROCKER_STATUS_PRESSED,
+            confirm=confirm,
+            target_on=target_on,
+        )
         self.send(bytes(1), profile=profile, status=ROCKER_STATUS_RELEASED, confirm=False)
 
     def rocker_button(self, on: bool) -> bytes:
