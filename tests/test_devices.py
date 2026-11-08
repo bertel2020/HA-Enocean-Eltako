@@ -2843,3 +2843,37 @@ async def test_the_monitor_names_the_futh_for_each_of_its_ids(hass: HomeAssistan
         telegram = RadioTelegram(rorg, bytes.fromhex(data), sender, 0x30 if rorg == Rorg.RPS else 0)
         shown = describe(hass, MonitorEntry(0.0, entry.entry_id, "rx", telegram))
         assert shown["device"] == "FUTH Bad" and shown["eep"] == eep, sender
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B5",
+                "Licht Büro",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-81"}],
+                platform="light",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_late_answer_to_a_replaced_command_does_not_confirm_the_new_one(
+    hass: HomeAssistant, gateway
+) -> None:
+    """On is sent, then off replaces it. The actuator's answer to "on" arrives after "off"
+    went out: it reports the other state and must not count as the confirmation of "off"."""
+    entry, server = gateway
+    stats = entry.runtime_data.queue.stats
+    light = _entity(hass, "light", f"{BASE}_05-10-A2-B5_1_light")
+    await hass.services.async_call("light", "turn_on", {"entity_id": light})
+    await hass.services.async_call("light", "turn_off", {"entity_id": light})
+    await _settle(hass)
+    _push(server, 0x05, b"\x70", 0x05_10_A2_B5, 0x30)  # the answer to "on"
+    await _settle(hass)
+    assert stats.confirmed == 0
+    _push(server, 0x05, b"\x50", 0x05_10_A2_B5, 0x30)  # the answer to "off"
+    await _settle(hass)
+    assert stats.confirmed == 1

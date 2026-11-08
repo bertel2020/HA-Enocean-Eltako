@@ -20,6 +20,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Switching confirmations**: a status that reports the other relay state than the command asked for (the late answer to a command that was replaced) no longer confirms the new command.
 - **Devices view with several gateways**: a sender ID set up on two gateways keeps the device and the gateway of each row.
 - **Installation**: leaving the bus drawer by Back, a link or a bus change asks first when it holds unsaved input.
 - **Documentation import**: each unmatched gateway is reported with its own base ID.
@@ -44,6 +45,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Schaltbestätigungen**: Ein Status, der den anderen Relaiszustand meldet als der Befehl verlangt (die späte Antwort auf einen ersetzten Befehl), bestätigt den neuen Befehl nicht mehr.
 - **Geräteansicht mit mehreren Gateways**: Eine auf zwei Gateways eingerichtete Sender-ID behält je Zeile Gerät und Gateway.
 - **Anlage**: Das Verlassen des Bus-Drawers per Zurück, Link oder Bus-Wechsel fragt bei ungespeicherter Eingabe zuerst nach.
 - **Dokumentationsimport**: Jedes nicht zugeordnete Gateway wird mit seiner eigenen Base-ID gemeldet.
