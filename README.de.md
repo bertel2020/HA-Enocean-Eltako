@@ -29,7 +29,7 @@ EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere En
 
 ## Highlights
 
-- **Gateways:** Eltako FGW14-USB und FAM14 (RS485-Bus, als Bus-Gruppe mit Failover), FAM-USB, PioTek MGW-ETH, Symcon EnOcean LAN Gateway sowie generische ESP2-/ESP3-Gateways; jedes USB-Gateway auch über ser2net (TCP).
+- **Gateways:** Eltako FGW14-USB (RS485-Bus der Baureihe 14; ein FAM14 mit eigener Schnittstelle kommt in dieselbe Bus-Gruppe mit Failover), FAM-USB, PioTek MGW-ETH, Symcon EnOcean LAN Gateway sowie generische ESP2-/ESP3-Gateways; jedes USB-Gateway auch über ser2net (TCP).
 - **Geräte:** Schaltaktoren, Dimmer, Rollläden, Heizungsaktoren und Raumregler, Fenstergriffe, Kontakte, Taster, Zähler, Sensoren, Permundo-Zwischenstecker und VLD-Aktoren. Jedes Standardprofil von EnOcean lässt sich als generisches Gerät anlegen. Vollständige Liste: [docs/devices.de.md](docs/devices.de.md).
 - **Rollläden** mit Controller- und Richtungstaster-Sender parallel, Positionsverfolgung, Lüftungsschlitzen, Lamellenstellung und Laufzeit-Assistent.
 - **Virtuelle Sensoren:** Home-Assistant-Entitäten als EnOcean-Kontakt, -Bewegungsmelder, -Temperatur, -Helligkeit, -Wetter oder -Taster senden, z. B. für die Beschattungsautomatik eines Aktors.

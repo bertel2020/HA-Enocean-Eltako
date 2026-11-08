@@ -29,7 +29,7 @@ EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOc
 
 ## Highlights
 
-- **Gateways:** Eltako FGW14-USB and FAM14 (RS485 bus, as a bus group with failover), FAM-USB, PioTek MGW-ETH, Symcon EnOcean LAN Gateway and generic ESP2/ESP3 gateways; every USB gateway also over ser2net (TCP).
+- **Gateways:** Eltako FGW14-USB (RS485 bus of the series 14; a FAM14 with an interface of its own joins the same bus group with failover), FAM-USB, PioTek MGW-ETH, Symcon EnOcean LAN Gateway and generic ESP2/ESP3 gateways; every USB gateway also over ser2net (TCP).
 - **Devices:** switching actuators, dimmers, shutters, heating actuators and room controllers, window handles, contacts, rockers, meters, sensors, Permundo plugs and VLD actuators. Any of the standard EnOcean profiles can be added as a generic device. Full list: [docs/devices.md](docs/devices.md).
 - **Covers** with controller and direction-rocker senders in parallel, position tracking, vent slots, slat tilt and a travel time assistant.
 - **Virtual sensors:** Home Assistant entities sent as EnOcean contact, motion, temperature, brightness, weather or rocker, e.g. to feed the shading automatic of an actuator.

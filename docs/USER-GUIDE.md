@@ -84,8 +84,10 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
 - **Network gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, Device Proxy app) are added by
   host and port. A MGW-ETH and the Device Proxy's gateways are found automatically and show up as
   discovered; a MGW-ETH that gets a new IP address is updated by itself.
-- **FGW14-USB and FAM14 on the same bus** form a bus group with failover. The FAM14 can stay
-  disconnected until it is needed.
+- **FGW14-USB** (Eltako bus of the series 14): see [Eltako bus with the FGW14-USB](#eltako-bus-with-the-fgw14-usb).
+  A FAM14 is the bus master and has no connection of its own to the computer; it needs a
+  gateway entry only when it is reached through an interface of its own. Gateways on the same
+  bus form a bus group with failover.
 - **Swapping a gateway:** the gateway's menu → **Reconfigure** asks for the model and the
   connection. A defective gateway or a FAM-USB can be replaced by another model, for example
   a network gateway; devices, sender IDs and the actuators' teach-in stay as they are. This
@@ -96,6 +98,36 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
   second asks for confirmation and stores it as `<base ID>#2`. Sender IDs are never assigned
   twice across them. A discovered gateway with a known base ID counts as moved only if the
   known one is not connected; otherwise it is offered as another gateway.
+
+### Eltako bus with the FGW14-USB
+
+The FAM14 is the master of the bus; the FGW14-USB sits on that bus like any other device and
+connects it to Home Assistant over USB (or over ser2net). You add **one** gateway, the
+FGW14-USB. Actuators on the bus (FSR14, FUD14, ...) are devices of that gateway.
+
+- **Sender IDs** of devices on a bus gateway come from the bus pool
+  **00-00-B0-00 ... 00-00-B0-7F**, not from base ID + 1...127. The pool belongs to the bus
+  group. Enter the ID in the actuator with the PCT14 (or teach it in, see
+  [teach_in.md](teach_in.md)).
+- **Confirmations:** an actuator answers with a confirmation only when it has a device address
+  and the upper rotary switch of the FAM14 is at position 2 while teaching in. Without it,
+  commands are repeated and reported as unconfirmed.
+- **Not built yet:** reading and writing the bus memory of the FAM14 (see Known limitations).
+
+Commissioning, in this order:
+
+1. Connect the FGW14-USB to the bus and to the computer. Add the gateway; the base ID it reports
+   is shown, check that it matches what you expect.
+2. Open the Telegrams view and **only listen**: telegrams of bus devices must appear. Do not add
+   devices yet.
+3. Add **one** uncritical actuator (a lamp). Take the suggested bus ID, enter it in the actuator
+   and switch it from Home Assistant. Check that the state follows and that the telegram list
+   shows the command once, not repeated.
+4. If the command is repeated: check the FAM14 rotary switch and the device address (see above).
+5. Add the other actuators one by one, and look at **Installation → Sender IDs**: every ID
+   should show its device.
+6. Download the diagnostics of the gateway (it contains the bus group and the bus pool) and
+   keep it with your installation notes.
 
 ## Adding devices
 
