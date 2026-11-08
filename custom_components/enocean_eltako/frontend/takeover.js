@@ -155,6 +155,13 @@ export const TAKEOVER_STYLE = `
     .takeover .stepbar .chip.primary { flex: 1; justify-content: center; }
     .takeover .check { flex-wrap: wrap; }
     .takeover .check > .chip { margin-left: 34px; }
+    /* a pick row: the name takes the line (ids and types stay whole), the tags wrap below it */
+    .takeover .pickrow { flex-wrap: wrap; padding-left: 16px; min-height: 44px; }
+    .takeover .pickrow .pick-name { flex: 1 1 calc(100% - 40px); }
+    .takeover .pickrow .pick-name .sub { white-space: nowrap; }
+    .takeover .pickrow .chip-s { margin-left: 30px; }
+    .takeover .pickrow .chip-s + .chip-s { margin-left: 0; }
+    .takeover .skiprow { padding-left: 16px; }
   }
 `;
 
