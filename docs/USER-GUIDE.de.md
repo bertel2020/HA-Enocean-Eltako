@@ -90,8 +90,10 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
 - **Netzwerk-Gateways** (ser2net, PioTek MGW-ETH, Symcon LAN, App Device Proxy) werden mit
   Host und Port angelegt. Ein MGW-ETH und die Gateways des Device Proxy werden automatisch
   gefunden und erscheinen als entdeckt; ein MGW-ETH mit neuer IP-Adresse wird selbst angepasst.
-- **FGW14-USB und FAM14 am selben Bus** bilden eine Bus-Gruppe mit Failover. Der FAM14 kann
-  getrennt bleiben, bis er gebraucht wird.
+- **FGW14-USB** (Eltako-Bus der Baureihe 14): siehe [Eltako-Bus mit dem FGW14-USB](#eltako-bus-mit-dem-fgw14-usb).
+  Der FAM14 ist der Bus-Master und hat keine eigene Verbindung zum Rechner; er braucht nur
+  dann einen Gateway-Eintrag, wenn er über eine eigene Schnittstelle erreichbar ist. Gateways
+  am selben Bus bilden eine Bus-Gruppe mit Failover.
 - **Gateway tauschen:** Menü des Gateways → **Neu konfigurieren** fragt Modell und
   Verbindung ab. Ein defektes Gateway oder ein FAM-USB lässt sich durch ein anderes Modell
   ersetzen, z. B. ein Netzwerk-Gateway; Geräte, Sender-IDs und das Einlernen der Aktoren
@@ -102,6 +104,37 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
   wird nach einer Rückfrage als `<Basis-ID>#2` angelegt. Sender-IDs werden über beide hinweg nie
   doppelt vergeben. Ein gefundenes Gateway mit bekannter Base-ID gilt nur dann als umgezogen,
   wenn das bekannte nicht verbunden ist; sonst wird es als weiteres Gateway angeboten.
+
+### Eltako-Bus mit dem FGW14-USB
+
+Der FAM14 ist der Master des Busses; der FGW14-USB hängt wie jedes andere Gerät an diesem Bus
+und verbindet ihn per USB (oder ser2net) mit Home Assistant. Du legst **ein** Gateway an, den
+FGW14-USB. Aktoren am Bus (FSR14, FUD14, ...) sind Geräte dieses Gateways.
+
+- **Sender-IDs** von Geräten an einem Bus-Gateway kommen aus dem Bus-Pool
+  **00-00-B0-00 ... 00-00-B0-7F**, nicht aus Base-ID + 1...127. Der Pool gehört der Bus-Gruppe.
+  Die ID trägst du mit dem PCT14 in den Aktor ein (oder lernst sie ein, siehe
+  [teach_in.de.md](teach_in.de.md)).
+- **Bestätigungen:** Ein Aktor antwortet nur dann mit einer Bestätigung, wenn er eine
+  Geräteadresse hat und der obere Drehschalter des FAM14 beim Einlernen auf Position 2 steht.
+  Sonst werden Befehle wiederholt und als unbestätigt gemeldet.
+- **Noch nicht gebaut:** Lesen und Schreiben des Bus-Speichers des FAM14 (siehe Bekannte
+  Einschränkungen).
+
+Inbetriebnahme, in dieser Reihenfolge:
+
+1. FGW14-USB an Bus und Rechner anschließen. Gateway anlegen; die gemeldete Base-ID wird
+   angezeigt, prüfe, ob sie zu deiner Anlage passt.
+2. In der Telegrammansicht **nur zuhören**: Telegramme von Bus-Geräten müssen erscheinen.
+   Noch keine Geräte anlegen.
+3. **Einen** unkritischen Aktor (eine Lampe) anlegen. Die vorgeschlagene Bus-ID nehmen, im
+   Aktor eintragen und aus Home Assistant schalten. Prüfen, ob der Zustand folgt und die
+   Telegrammliste den Befehl einmal zeigt, nicht wiederholt.
+4. Wird der Befehl wiederholt: Drehschalter am FAM14 und Geräteadresse prüfen (siehe oben).
+5. Die übrigen Aktoren einzeln anlegen und unter **Anlage → Sender-IDs** prüfen, dass jede ID
+   ihr Gerät zeigt.
+6. Die Diagnose des Gateways herunterladen (sie enthält Bus-Gruppe und Bus-Pool) und zu den
+   Anlagenunterlagen legen.
 
 ## Geräte hinzufügen
 
