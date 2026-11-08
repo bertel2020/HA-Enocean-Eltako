@@ -460,10 +460,17 @@ for (const lang of ["en", "de"]) {
     watts.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect("a wrong value is marked and not sent", fake.sent.filter((m) => m.type === "enocean_eltako/set_supplies").length, 0);
+    watts.focus();
     watts.value = "24";
     watts.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect("the supplies are sent as a list", fake.sent.filter((m) => m.type === "enocean_eltako/set_supplies").length, 1);
+    expect("the cursor stays in the field the autosave re-rendered", root.activeElement?.dataset?.inSfield, "watts");
+    root.querySelector('#installation [data-in-sfield="watts"]').value = "25";
+    root.querySelector('#installation [data-in-sfield="watts"]').dispatchEvent(new Event("input", { bubbles: true }));
+    root.querySelector('#installation [data-in-sfield="name"]').focus(); // the user tabbed on
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect("the autosave does not pull the cursor back once the user moved on", root.activeElement?.dataset?.inSfield !== "watts", true);
     root.querySelector("#installation [data-in-supply-add]").click();
     await settle();
     expect("a supply is added", root.querySelectorAll('#installation [data-in-sfield="name"]').length, 3);
@@ -808,6 +815,40 @@ for (const lang of ["en", "de"]) {
     expect("one row per gateway for a shared sender ID", rows.map((d) => d.gateway).sort().join(), "gw1,gw2");
     expect("each row has the device set up on its own gateway", rows.sort((a, b) => a.gateway.localeCompare(b.gateway)).map((d) => d.devKey).join(), "sub1,sub9");
     expect("no set-up device is listed as quiet while its gateway heard it", panel._deviceItems().filter((d) => d.quiet && d.id === "05-00-00-01").length, 0);
+  });
+  await check(`lang=${lang}&two`, async ({ fake, view, expect, panel }) => {
+    // the takeover of the gateway chosen first answers late: it must not overwrite the second one
+    const original = fake.hass.callWS;
+    let release;
+    const gate = new Promise((resolve) => (release = resolve));
+    fake.hass.callWS = async (msg) => {
+      if (msg.type === "enocean_eltako/takeover/preview") {
+        const answer = await original(msg);
+        if (msg.entry_id === "gw1") await gate;
+        return { ...answer, asked: msg.entry_id };
+      }
+      return original(msg);
+    };
+    await view("telegrams");
+    const tk = panel._tk;
+    tk.entry = "gw1";
+    const first = panel._loadTakeover();
+    await settle();
+    tk.entry = "gw2";
+    await panel._loadTakeover();
+    expect("the second gateway's takeover is shown", tk.preview?.asked, "gw2");
+    release();
+    await first;
+    expect("the late answer of the first gateway is dropped", tk.preview?.asked, "gw2");
+    fake.hass.callWS = original;
+  });
+  await check(`lang=${lang}&skew=-7200`, async ({ view, expect, panel }) => {
+    // the recording starts on the server's clock (the rows carry its timestamps), not the browser's
+    await view("telegrams");
+    panel._skew = -7200000;
+    panel._startRecording("05-00-00-01");
+    const start = panel._recordings.get("05-00-00-01").start;
+    expect("the recording starts on the server's clock", Math.abs(start - (Date.now() - 7200000)) < 2000, true);
   });
   await check(`lang=${lang}&empty`, async ({ root, view, expect }) => {
     await view("telegrams");
