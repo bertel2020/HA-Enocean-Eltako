@@ -10,12 +10,14 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Changed
 
+- **Discovered devices, card**: "Add" on the card in Home Assistant's "Discovered" area now shows the heard senders right there (strongest signal first, with type and dBm) instead of only pointing to the gateway. Pick one and "Add device" at the gateway continues straight with it, without the menu and the second list. Senders that are not yours can be hidden in the card; it stays open until the list is empty.
 - **Discovered devices**: the list shows the strongest signal first, with the type in words (for example `FF-C2-4A-C5 · Sensors (A5) · -69 dBm`) or the profile from a teach-in. From 7 entries on it is a dropdown instead of a long list, and the description is shorter. Hiding a sender returns to the list while others are left.
 
 **Deutsch**
 
 #### Geändert
 
+- **Entdeckte Geräte, Karte**: „Hinzufügen" auf der Karte im Bereich „Entdeckt" zeigt jetzt gleich die gehörten Sender (stärkstes Signal zuerst, mit Art und dBm), statt nur auf das Gateway zu verweisen. Ein gewählter Sender wird beim „Gerät hinzufügen" am Gateway direkt weitergeführt, ohne Menü und zweite Liste. Sender, die nicht dir gehören, lassen sich in der Karte ausblenden; sie bleibt offen, bis die Liste leer ist.
 - **Entdeckte Geräte**: Die Liste zeigt das stärkste Signal zuerst, mit der Art im Klartext (zum Beispiel `FF-C2-4A-C5 · Sensoren (A5) · -69 dBm`) oder dem Profil aus einem Teach-in. Ab 7 Einträgen ist sie ein Dropdown statt einer langen Liste, und die Beschreibung ist kürzer. Beim Ausblenden eines Senders geht es zur Liste zurück, solange noch weitere übrig sind.
 
 ### [1.8.0] - 2026-11-08

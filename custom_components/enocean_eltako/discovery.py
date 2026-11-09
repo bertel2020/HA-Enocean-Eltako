@@ -17,11 +17,14 @@ from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import discovery_flow
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.selector import SelectOptionDict
 from homeassistant.helpers.storage import Store
 
 from .const import CONF_DISCOVERY, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
+from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
+from .protocol.telegram import Rorg
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
@@ -42,7 +45,10 @@ async def async_load_hidden(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
 
 
 async def async_set_hidden(
-    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, senders: set[int]
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    senders: set[int],
+    refresh: bool = True,
 ) -> None:
     """Replace the hidden senders of this gateway and refresh the notification."""
     hub = entry.runtime_data.hub
@@ -50,7 +56,8 @@ async def async_set_hidden(
     for sender in senders:
         hub.discovered.pop(sender, None)
     await _store(hass, entry.entry_id).async_save({"ids": sorted(format_id(s) for s in senders)})
-    async_update_notification(hass, entry)
+    if refresh:
+        async_update_notification(hass, entry)
 
 
 async def async_remove_hidden(hass: HomeAssistant, entry_id: str) -> None:
@@ -76,16 +83,25 @@ def kind_name(hass: HomeAssistant, rorg: int) -> str:
     return _KINDS.get(hass.config.language, _KINDS["en"]).get(rorg, "RORG")
 
 
-def kinds_summary(hass: HomeAssistant, heard: list[ReceivedTelegram]) -> str:
-    """ "15 sensors (A5), 9 rockers (F6)": what was heard, by telegram type, most first."""
-    names = _KINDS.get(hass.config.language, _KINDS["en"])
-    counts: dict[int, int] = {}
-    for t in heard:
-        counts[t.telegram.rorg] = counts.get(t.telegram.rorg, 0) + 1
-    return ", ".join(
-        f"{n} {names.get(rorg, 'RORG')} ({rorg:02X})"
-        for rorg, n in sorted(counts.items(), key=lambda item: -item[1])
+def sender_options(
+    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
+) -> tuple[dict[str, ReceivedTelegram], list[SelectOptionDict]]:
+    """The pending senders, strongest signal first (devices close by are usually the user's)."""
+    ordered = sorted(
+        pending(entry),
+        key=lambda t: t.telegram.dbm if t.telegram.dbm is not None else -999,
+        reverse=True,
     )
+    heard = {format_id(t.sender): t for t in ordered}
+    options = []
+    for sender_id, t in heard.items():
+        data = t.telegram.data
+        teach_in = decode_teach_in_4bs(data) if t.telegram.rorg == Rorg.BS4 else None
+        dbm = f"{t.telegram.dbm} dBm" if t.telegram.dbm is not None else "- dBm"
+        kind = f"{kind_name(hass, t.telegram.rorg)} ({t.telegram.rorg:02X})"
+        label = f"{sender_id} · {teach_in.eep if teach_in else kind} · {dbm}"
+        options.append(SelectOptionDict(value=sender_id, label=label))
+    return heard, options
 
 
 def card_unique_id(entry: EnOceanEltakoConfigEntry) -> str:
