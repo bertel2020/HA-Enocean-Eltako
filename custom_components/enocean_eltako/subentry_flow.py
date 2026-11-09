@@ -105,7 +105,7 @@ from .const import (
     SUBENTRY_SCHEMA,
 )
 from .custom_devices import DEFINITIONS
-from .discovery import async_set_hidden, kind_name, pending
+from .discovery import async_set_hidden, pending, sender_options
 from .hub import HANDOVER_SECONDS
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
@@ -723,13 +723,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """Pick one of the senders this gateway heard; the kind is suggested from its telegram."""
-        # strongest signal first: the devices close by are usually the user's own
-        ordered = sorted(
-            pending(self._get_entry()),
-            key=lambda t: t.telegram.dbm if t.telegram.dbm is not None else -999,
-            reverse=True,
-        )
-        heard = {format_id(t.sender): t for t in ordered}
+        heard, options = sender_options(self.hass, self._get_entry())
         if user_input is not None:
             self._learned = heard.get(user_input[CONF_DEVICE_ID])
             if self._learned is None:
@@ -744,14 +738,6 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             return await self.async_step_learned()
         if not heard:
             return self.async_abort(reason="no_discovered")
-        options = []
-        for sender_id, t in heard.items():
-            data = t.telegram.data
-            teach_in = decode_teach_in_4bs(data) if t.telegram.rorg == Rorg.BS4 else None
-            dbm = f"{t.telegram.dbm} dBm" if t.telegram.dbm is not None else "- dBm"
-            kind = f"{kind_name(self.hass, t.telegram.rorg)} ({t.telegram.rorg:02X})"
-            label = f"{sender_id} · {teach_in.eep if teach_in else kind} · {dbm}"
-            options.append(SelectOptionDict(value=sender_id, label=label))
         mode = SelectSelectorMode.LIST if len(options) <= 6 else SelectSelectorMode.DROPDOWN
         return self.async_show_form(
             step_id="discovered",

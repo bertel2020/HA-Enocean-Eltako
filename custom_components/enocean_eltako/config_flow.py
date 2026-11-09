@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 from uuid import uuid4
 
@@ -44,6 +45,7 @@ from .const import (
     CONF_BAUDRATE,
     CONF_BUS_GROUP,
     CONF_DEVICE,
+    CONF_DEVICE_ID,
     CONF_DISCOVERY,
     CONF_ENTITY_PREFIX,
     CONF_GATEWAY_NUMBER,
@@ -62,7 +64,7 @@ from .const import (
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
-from .discovery import async_set_hidden, card_title, card_unique_id, kinds_summary, pending
+from .discovery import async_set_hidden, card_title, card_unique_id, pending, sender_options
 from .entity_ids import free_gateway_number, rename_entities, taken_gateway_numbers
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
@@ -70,6 +72,7 @@ from .protocol.models import MODELS, GatewayModel, Protocol
 from .protocol.transport import Connection, SerialConnection, TcpConnection
 from .proxy_status import CONF_PROXY_STATUS_PORT, DEFAULT_STATUS_PORT, TIMEOUT
 from .subentry_flow import (
+    CONF_HIDE,
     SUBENTRY_FLOWS,
     DeviceForm,
 )
@@ -349,26 +352,51 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     async def async_step_discovered_senders(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Who was heard; the devices are added at the gateway, which this points to."""
+        """Pick a heard sender or hide it; a picked sender waits for "Add device" at the gateway."""
         entry = self._gateway_entry
         assert entry is not None
-        heard = pending(entry) if getattr(entry, "runtime_data", None) is not None else []
+        if getattr(entry, "runtime_data", None) is None:
+            return self.async_abort(reason="no_discovered")
+        heard, options = sender_options(self.hass, entry)
         if not heard:
             return self.async_abort(reason="no_discovered")
         gateway_page = f"/config/integrations/integration/{DOMAIN}#config_entry={entry.entry_id}"
+        hub = entry.runtime_data.hub
         if user_input is not None:
+            picked = heard.get(user_input[CONF_DEVICE_ID])
+            if picked is None:
+                return self.async_abort(reason="no_discovered")
+            if user_input.get(CONF_HIDE):
+                hidden = hub.hidden.get(entry.entry_id, set())
+                # no card refresh while the list is open: it would replace this very dialog
+                await async_set_hidden(
+                    self.hass, entry, {*hidden, picked.sender}, refresh=len(heard) == 1
+                )
+                if len(heard) > 1:
+                    return await self.async_step_discovered_senders()
+                return self.async_abort(reason="sender_hidden")
+            # the same hand-over as the panel's "add as device": "Add device" goes straight to it
+            hub.handed_over = (picked.sender, time.monotonic())
             return self.async_abort(
-                reason="discovered_hint",
-                description_placeholders={"name": entry.title, "url": gateway_page},
+                reason="discovered_picked",
+                description_placeholders={
+                    "name": entry.title,
+                    "url": gateway_page,
+                    "sender": format_id(picked.sender),
+                },
             )
+        mode = SelectSelectorMode.LIST if len(options) <= 6 else SelectSelectorMode.DROPDOWN
         return self.async_show_form(
             step_id="discovered_senders",
-            description_placeholders={
-                "name": entry.title,
-                "count": str(len(heard)),
-                "kinds": kinds_summary(self.hass, heard),
-                "url": gateway_page,
-            },
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_ID, default=options[0]["value"]): SelectSelector(
+                        SelectSelectorConfig(options=options, mode=mode)
+                    ),
+                    vol.Required(CONF_HIDE, default=False): BooleanSelector(),
+                }
+            ),
+            description_placeholders={"name": entry.title, "count": str(len(heard))},
         )
 
     async def async_step_proxy_confirm(

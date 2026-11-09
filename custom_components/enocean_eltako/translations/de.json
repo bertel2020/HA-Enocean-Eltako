@@ -92,7 +92,14 @@
       },
       "discovered_senders": {
         "title": "Entdeckte Geräte",
-        "description": "**{name}** hat {count} Sender gehört, die noch nicht eingerichtet sind: {kinds}.\n\n[Gateway öffnen]({url}) und **Gerät hinzufügen → Entdeckte Geräte** wählen. Dort einen Sender einrichten oder die ausblenden, die nicht dir gehören."
+        "description": "**{name}** hat {count} Sender gehört, die noch nicht eingerichtet sind. Das stärkste Signal steht oben, Geräte in der Nähe sind meist deine.",
+        "data": {
+          "device_id": "Sender",
+          "hide": "Diesen Sender ausblenden"
+        },
+        "data_description": {
+          "hide": "Nicht deiner (z. B. vom Nachbarn)? Blende ihn aus statt ihn hinzuzufügen; er wird nicht mehr aufgelistet. In den Einstellungen des Gateways kannst du ihn wieder einblenden."
+        }
       }
     },
     "error": {
@@ -116,7 +123,8 @@
       "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
       "invalid_discovery_info": "Die Device-Proxy-App hat Gateway-Angaben gesendet, die diese Version nicht lesen kann. Integration und App aktualisieren.",
       "no_discovered": "Es gibt keine entdeckten Geräte (mehr).",
-      "discovered_hint": "Füge die Geräte bei [{name}]({url}) unter **Gerät hinzufügen → Entdeckte Geräte** hinzu."
+      "discovered_picked": "Der Sender **{sender}** ist vorgemerkt. Öffne [{name}]({url}) und wähle **Gerät hinzufügen**: Es geht direkt mit diesem Sender weiter.",
+      "sender_hidden": "Der Sender ist ausgeblendet."
     }
   },
   "selector": {

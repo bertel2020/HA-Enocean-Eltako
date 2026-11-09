@@ -40,19 +40,18 @@ async def test_unknown_rocker_becomes_device(hass: HomeAssistant, gateway) -> No
     result = await hass.config_entries.flow.async_configure(cards[0]["flow_id"])
     assert result["step_id"] == "discovered_senders"
     assert result["description_placeholders"]["count"] == "1"
-    assert "(F6)" in result["description_placeholders"]["kinds"]
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["reason"] == "discovered_hint"
-    assert not await _cards(hass)  # seen: the card goes until something new is heard
-
-    result = await _menu(hass, entry)
-    assert result["menu_options"][0] == "discovered"
-    configure = hass.config_entries.subentries.async_configure
-    result = await configure(result["flow_id"], {"next_step_id": "discovered"})
-    assert result["step_id"] == "discovered"
     (option,) = result["data_schema"].schema["device_id"].config["options"]
     assert option["value"] == "00-2A-0B-0C"
-    result = await configure(result["flow_id"], {"device_id": "00-2A-0B-0C"})
+    # picked in the card: handed over, "Add device" goes straight to the sender
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"device_id": "00-2A-0B-0C", "hide": False}
+    )
+    assert result["reason"] == "discovered_picked"
+    assert result["description_placeholders"]["sender"] == "00-2A-0B-0C"
+    assert not await _cards(hass)  # seen: the card goes until something new is heard
+
+    configure = hass.config_entries.subentries.async_configure
+    result = await _menu(hass, entry)
     assert result["step_id"] == "learned"
     result = await configure(result["flow_id"], {"model": "rocker"})
     assert result["step_id"] == "device"
@@ -271,3 +270,26 @@ async def test_card_follows_the_count(hass: HomeAssistant, gateway) -> None:  # 
     await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert not await _cards(hass)
+
+
+async def test_card_hides_senders_and_keeps_the_dialog(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, server = gateway
+    _push(server, 0x05, b"\x70", 0x002A0B21, 0x30)
+    _push(server, 0x05, b"\x70", 0x002A0B22, 0x30)
+    await _settle(hass)
+    (card,) = await _cards(hass)
+    result = await hass.config_entries.flow.async_configure(card["flow_id"])
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"device_id": "00-2A-0B-21", "hide": True}
+    )
+    assert result["step_id"] == "discovered_senders"  # one left: back to the list
+    (option,) = result["data_schema"].schema["device_id"].config["options"]
+    assert option["value"] == "00-2A-0B-22"
+    # the card is not replaced while its dialog is open
+    assert [f["flow_id"] for f in await _cards(hass)] == [card["flow_id"]]
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"device_id": "00-2A-0B-22", "hide": True}
+    )
+    assert result["reason"] == "sender_hidden"
+    assert not await _cards(hass)
+    assert entry.runtime_data.hub.hidden[entry.entry_id] == {0x002A0B21, 0x002A0B22}

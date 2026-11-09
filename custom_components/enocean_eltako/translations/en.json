@@ -92,7 +92,14 @@
       },
       "discovered_senders": {
         "title": "Discovered devices",
-        "description": "**{name}** heard {count} senders that are not set up yet: {kinds}.\n\n[Open the gateway]({url}) and choose **Add device → Discovered devices**. Pick a sender to set it up, or hide the ones that are not yours."
+        "description": "**{name}** heard {count} senders that are not set up yet. The strongest signal comes first; devices nearby are usually yours.",
+        "data": {
+          "device_id": "Sender",
+          "hide": "Hide this sender"
+        },
+        "data_description": {
+          "hide": "Not yours (a neighbour's, for example)? Hide it instead of adding it; it is not listed again. Show it again in the gateway's settings."
+        }
       }
     },
     "error": {
@@ -116,7 +123,8 @@
       "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
       "invalid_discovery_info": "The Device Proxy app sent gateway information this version cannot read. Update the integration and the app.",
       "no_discovered": "There are no discovered devices (any more).",
-      "discovered_hint": "Add the devices at [{name}]({url}) under **Add device → Discovered devices**."
+      "discovered_picked": "Sender **{sender}** is noted. Open [{name}]({url}) and choose **Add device**: it continues straight with this sender.",
+      "sender_hidden": "The sender is hidden."
     }
   },
   "selector": {
