@@ -527,6 +527,11 @@ def _user_hidden(entry: er.RegistryEntry) -> bool:
     )
 
 
+# old entities without a device class, by the suffix of their unique ID: the new entity's
+# translation key (the old window handle sensor shows closed / open / tilted as text)
+_BY_SUFFIX = {"windowhandle": "handle"}
+
+
 def new_entity(
     old: er.RegistryEntry, old_primary: er.RegistryEntry | None, new: list[er.RegistryEntry]
 ) -> er.RegistryEntry | None:
@@ -535,6 +540,8 @@ def new_entity(
         return primary_entity(new)
     if old_suffix(old) == "id":
         return next((e for e in new if e.translation_key == "enocean_id"), None)
+    if (key := _BY_SUFFIX.get(old_suffix(old) or "")) is not None:
+        return next((e for e in new if e.domain == old.domain and e.translation_key == key), None)
     same = [
         e
         for e in new
