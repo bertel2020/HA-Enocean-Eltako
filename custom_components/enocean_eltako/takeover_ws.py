@@ -14,6 +14,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_BASE_ID, DOMAIN
+from .entity_ids import gateway_prefix
 from .hub import async_get_hub
 from .protocol.ids import format_id, parse_id
 from .takeover import (
@@ -161,7 +162,13 @@ async def ws_takeover_preview(
             }
         )
     connection.send_result(
-        msg["id"], {"devices": result, "old_active": old_active(hass), "old_devices": len(old)}
+        msg["id"],
+        {
+            "devices": result,
+            "old_active": old_active(hass),
+            "old_devices": len(old),
+            "prefix": gateway_prefix(entry.options),
+        },
     )
 
 
@@ -176,6 +183,7 @@ def _places(usages: list[Usage]) -> list[str]:
         vol.Required("entry_id"): str,
         vol.Required("devices"): [str],
         vol.Optional("carry", default=[]): CARRY,
+        vol.Optional("prefix_ids", default=False): bool,
     }
 )
 @websocket_api.require_admin
@@ -193,7 +201,9 @@ async def ws_takeover_run(
         return
     chosen = set(msg["devices"])
     ready = [d for d in devices if d.model is not None and format_id(d.device_id) in chosen]
-    result = await async_take_over(hass, entry, ready, carry=set(msg["carry"]))
+    result = await async_take_over(
+        hass, entry, ready, carry=set(msg["carry"]), prefix_ids=msg["prefix_ids"]
+    )
     if entry.state is ConfigEntryState.LOADED:
         taken = {d.device_id: msg["carry"] for d in ready}
         await async_record(hass, entry, devices, taken)

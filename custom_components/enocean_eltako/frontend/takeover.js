@@ -38,7 +38,7 @@ function saveCarry(carry) {
 // the view's state when the panel starts
 export const takeoverState = () => ({
   entry: "", tab: "", section: "", loading: false, available: false, reports: 0, preview: null, previewError: "", mapping: null,
-  selected: new Set(), result: null, carry: loadCarry(), open: new Set(), busy: false, q: "", folded: new Set(), showNot: false,
+  selected: new Set(), result: null, carry: loadCarry(), prefixIds: false, open: new Set(), busy: false, q: "", folded: new Set(), showNot: false,
   runs: null, run: "", runData: null, openRun: new Set(), confirm: "",
 });
 
@@ -559,6 +559,11 @@ export const takeover = {
       return `<label class="optcard${usable ? "" : " off"}" title="${esc(values.join(", "))}"><input type="checkbox" data-tk-carry="${o}"${tk.carry.has(o) && usable ? " checked" : ""}${usable ? "" : " disabled"}>
         <span><b>${esc(t.tkCarryOpt[o])}</b><span class="sub">${esc(detail || t.tkCarryNone)}</span></span></label>`;
     }).join("");
+    const prefix = tk.preview?.prefix;
+    const prefixCard = prefix && news.length
+      ? `<label class="optcard"><input type="checkbox" data-tk-prefix${tk.prefixIds ? " checked" : ""}>
+        <span><b>${esc(t.tkPrefixOpt)}</b><span class="sub">${esc(t.tkPrefixHint(prefix))}</span></span></label>`
+      : "";
     let preview = "";
     if (chosen.length) {
       const entities = news.reduce((n, d) => n + (d.entities || []).length, 0);
@@ -584,7 +589,7 @@ export const takeover = {
     }
     const bar = `<div class="stepbar"><span class="left"><button class="chip" data-tk-tab="select">${esc(t.tkBack)}</button>${total ? "" : `<span class="sub">${esc(t.tkRunHint)}</span>`}</span>
       <button class="chip primary" data-tk-confirm ${total && !tk.busy ? "" : "disabled"}>${esc(tk.busy ? t.tkBusy : total ? t.tkRun(total) : t.tkRunNone)}</button></div>`;
-    return `<div class="section"><h3>${esc(t.tkCarryTitle)}</h3><div class="optcards">${cards}</div><p class="note">${esc(t.tkCarryNote)}</p></div>${preview}${bar}`;
+    return `<div class="section"><h3>${esc(t.tkCarryTitle)}</h3><div class="optcards">${cards}${prefixCard}</div><p class="note">${esc(t.tkCarryNote)}</p></div>${preview}${bar}`;
   },
 
   _tkResult(select) {
@@ -818,6 +823,9 @@ export const takeover = {
       this._loadTakeover();
     } else if (e.target.dataset.tkStrategy) {
       this._tkSetStrategy(e.target.dataset.tkStrategy);
+    } else if (e.target.dataset.tkPrefix !== undefined) {
+      tk.prefixIds = e.target.checked;
+      this._renderTakeover();
     } else if (e.target.dataset.tkCarry) {
       if (e.target.checked) tk.carry.add(e.target.dataset.tkCarry);
       else tk.carry.delete(e.target.dataset.tkCarry);
@@ -939,7 +947,7 @@ export const takeover = {
     let failed = false;
     try {
       if (news.length) {
-        const result = await this._hass.callWS({ type: "enocean_eltako/takeover/run", entry_id: tk.entry, devices: news, carry: [...tk.carry] });
+        const result = await this._hass.callWS({ type: "enocean_eltako/takeover/run", entry_id: tk.entry, devices: news, carry: [...tk.carry], prefix_ids: !!(tk.prefixIds && tk.preview?.prefix) });
         created = result.count;
         skipped = result.skipped;
       }
