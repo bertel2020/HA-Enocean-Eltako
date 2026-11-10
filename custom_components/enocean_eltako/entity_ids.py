@@ -8,7 +8,7 @@ request (rename_entities), since automations and dashboards are not adapted with
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -76,13 +76,21 @@ class PrefixedEntityId(Entity):
 
 
 @callback
-def rename_entities(hass: HomeAssistant, entry: ConfigEntry, options: Mapping[str, Any]) -> int:
-    """Rename the gateway's entities to the scheme of options; the number renamed."""
+def rename_entities(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    options: Mapping[str, Any],
+    only: Callable[[er.RegistryEntry], bool] | None = None,
+) -> int:
+    """Rename the gateway's entities (only those `only` accepts) to the scheme of options;
+    the number renamed."""
     entities = er.async_get(hass)
     devices = dr.async_get(hass)
     prefix = gateway_prefix(options)
     renamed = 0
     for reg in er.async_entries_for_config_entry(entities, entry.entry_id):
+        if only is not None and not only(reg):
+            continue
         device = devices.async_get(reg.device_id) if reg.device_id else None
         device_name = (device.name_by_user or device.name) if device else None
         wanted = object_id(prefix, device_name, reg.name or reg.original_name)

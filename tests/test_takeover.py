@@ -919,3 +919,41 @@ async def test_with_usage_counts_places_by_name(hass: HomeAssistant) -> None:
         totals = await _with_usage(hass, rows)
     assert totals == {"automation": 1, "script": 0, "scene": 0, "dashboard": 1}
     assert rows[0]["usage"] is usage["light.a"]
+
+
+@pytest.mark.parametrize("prefix_ids", [False, True])
+async def test_takeover_again_keeps_old_ids_unless_prefix_is_applied(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    old_yaml,
+    hass_ws_client,
+    prefix_ids: bool,
+) -> None:
+    """Home Assistant gives a returning entity its former ID: the option applies the prefix."""
+    entry, server = gateway
+    old_yaml["config"] = {"eltako": OLD_CONFIG}
+    old = MockConfigEntry(domain="eltako", state=ConfigEntryState.LOADED)
+    old.add_to_hass(hass)
+    _old_device(hass, old, "Knopf", "FF-C2-4A-8F", "Flur")
+    run = {"entry_id": entry.entry_id, "devices": ["FF-C2-4A-8F"], "carry": []}
+    assert (await _ws(hass_ws_client, hass, 1, "run", **run))["result"]["count"] == 1
+    await hass.async_block_till_done()
+    for subentry_id in [
+        s.subentry_id for s in entry.subentries.values() if s.unique_id == "FF-C2-4A-8F"
+    ]:
+        hass.config_entries.async_remove_subentry(entry, subentry_id)
+    await hass.async_block_till_done()
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, "entity_prefix": True, "gateway_number": 1}
+    )
+    await hass.async_block_till_done()
+    reply = await _ws(hass_ws_client, hass, 2, "run", **run, prefix_ids=prefix_ids)
+    assert reply["result"]["count"] == 1
+    await hass.async_block_till_done()
+    ids = {
+        e.entity_id
+        for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if e.unique_id.startswith(f"{BASE}_FF-C2-4A-8F_")
+    }
+    assert ids
+    assert all(i.split(".")[1].startswith("eno_gw1_") for i in ids) is prefix_ids, ids

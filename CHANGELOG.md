@@ -6,6 +6,18 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 ### [Unreleased]
 
+**English**
+
+#### Added
+
+- **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
+
+**Deutsch**
+
+#### Hinzugefügt
+
+- **Übernahme, Gateway-Präfix**: Bei eingeschaltetem Gateway-Präfix bietet der Schritt „Mitnehmen“ die Option „Gateway-Präfix in Entitäts-IDs“. Home Assistant gibt einer Entität, die es schon gab (Gerät übernommen, gelöscht und erneut übernommen), ihre frühere ID zurück, das Präfix wurde dann nicht angewendet; die Option benennt die Entitäten der gerade übernommenen Geräte nach dem Präfix-Schema um.
+
 ### [1.9.0] - 2026-11-09
 
 **English**

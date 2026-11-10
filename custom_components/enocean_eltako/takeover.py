@@ -59,7 +59,7 @@ from .const import (
     SUBENTRY_DEVICE,
     SUBENTRY_SCHEMA,
 )
-from .entity_ids import gateway_prefix, object_id
+from .entity_ids import gateway_prefix, object_id, rename_entities
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.ids import format_id, parse_id
@@ -669,6 +669,7 @@ async def async_take_over(
     devices: list[TakeoverDevice],
     *,
     carry: set[str],
+    prefix_ids: bool = False,
 ) -> TakeoverResult:
     """Subentries with the old sender IDs, one reload, then what is chosen to carry over."""
     if not devices:
@@ -708,6 +709,13 @@ async def async_take_over(
     finally:  # what was added stays: its senders saved, the entry set up again
         await runtime.senders.async_save()
         await hass.config_entries.async_reload(entry.entry_id)
+    if prefix_ids and entry.state is ConfigEntryState.LOADED and gateway_prefix(entry.options):
+        # Home Assistant gives a returning entity the ID it had before; the prefix is applied
+        # to the taken-over devices' entities now, before names are carried over
+        taken = tuple(f"{entry.unique_id}_{format_id(d.target_id)}_" for d in devices)
+        rename_entities(
+            hass, entry, entry.options, only=lambda reg: reg.unique_id.startswith(taken)
+        )
     done = 0
     if carry and entry.state is ConfigEntryState.LOADED:
         try:
