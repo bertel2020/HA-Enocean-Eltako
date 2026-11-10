@@ -957,3 +957,27 @@ async def test_takeover_again_keeps_old_ids_unless_prefix_is_applied(
     }
     assert ids
     assert all(i.split(".")[1].startswith("eno_gw1_") for i in ids) is prefix_ids, ids
+
+
+def test_old_window_handle_sensor_finds_the_new_handle_sensor() -> None:
+    from custom_components.enocean_eltako.takeover import new_entity
+
+    def entry(domain, unique_id, key=None, device_class=None):
+        return SimpleNamespace(
+            domain=domain,
+            unique_id=unique_id,
+            translation_key=key,
+            original_device_class=device_class,
+            entity_id=f"{domain}.{unique_id}",
+        )
+
+    main = entry("binary_sensor", "eltako_gw1_00_21_1a_ad")
+    handle = entry("sensor", "eltako_gw1_00_21_1a_ad_windowhandle")
+    new = [
+        entry("binary_sensor", "n_window", "window"),
+        entry("sensor", "n_id", "enocean_id"),
+        entry("sensor", "n_handle", "handle", "enum"),
+    ]
+    assert new_entity(handle, main, new) is new[2]
+    other = entry("sensor", "eltako_gw1_00_21_1a_ad_unknown")
+    assert new_entity(other, main, new) is None
