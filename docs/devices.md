@@ -52,7 +52,7 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 | Sensors | Multisensor with contact (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor | - |
 | Sensors | CO2 sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor | - |
 | Sensors | Weather station (FWS61, FWG14MS) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor | - |
-| Meters | Energy meter (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor | - |
+| Meters | Energy meter (F3Z14D, FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor | - |
 | Meters | Gas meter (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor | - |
 | Meters | Water meter (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor | - |
 | Lighting and switching | Permundo PSC132 / PSC234 plug | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std`<br>`rocker: F6-02-01:std` | switch, light, sensor | - |

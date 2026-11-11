@@ -52,7 +52,7 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 | Sensoren | Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor | - |
 | Sensoren | CO2-Sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor | - |
 | Sensoren | Wetterstation (FWS61, FWG14MS) | Eltako | `A5-13-01:eltako` | - | sensor, binary_sensor | - |
-| Zähler | Energiezähler (FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor | - |
+| Zähler | Energiezähler (F3Z14D, FWZ12, FSDG14, DSZ14 …) | Eltako | `A5-12-01:eltako` | - | sensor | - |
 | Zähler | Gaszähler (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor | - |
 | Zähler | Wasserzähler (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor | - |
 | Licht und Schalten | Permundo PSC132 / PSC234 Zwischenstecker | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std`<br>`rocker: F6-02-01:std` | switch, light, sensor | - |
