@@ -24,6 +24,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Unknown senders**: they are kept across restarts (the panel's devices view and "Add device" list them again) and dropped after a number of days without a telegram: new gateway setting "Forget unknown senders after" (default 30 days, 0 keeps them). The devices view has a "Forget all" button on the Unknown tab.
 - **Panel**: a reload button in the header of every view reloads the data from Home Assistant; its tooltip says when it was last reloaded.
 - **Panel, devices view**: the row of a set-up actuator shows its sender ID (the first one; the tooltip lists all of them).
 - **Device flow**: the device form and the kind list of a heard sender have a "Back" switch that returns to the previous step (address menu, discovered list or start) without saving.
@@ -49,6 +50,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Unbekannte Sender**: Sie bleiben über Neustarts erhalten (Geräteansicht des Panels und „Gerät hinzufügen“ listen sie wieder auf) und fallen nach einer Anzahl Tage ohne Telegramm heraus: neue Gateway-Einstellung „Unbekannte Sender vergessen nach“ (Standard 30 Tage, 0 behält sie). Die Geräteansicht hat auf dem Reiter Unbekannt einen Button „Alle vergessen“.
 - **Panel**: Ein Aktualisieren-Button im Kopf jeder Ansicht lädt die Daten neu aus Home Assistant; der Tooltip nennt den Zeitpunkt der letzten Aktualisierung.
 - **Panel, Geräteansicht**: Die Zeile eines eingerichteten Aktors zeigt seine Sender-ID (die erste; der Tooltip listet alle).
 - **Geräte-Dialog**: Das Geräteformular und die Auswahl der Geräteart eines gehörten Senders haben einen Schalter „Zurück“, der ohne Speichern zum vorigen Schritt führt (Adressmenü, Liste der entdeckten Geräte oder Start).

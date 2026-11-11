@@ -48,6 +48,7 @@ from .const import (
     CONF_DEVICE_ID,
     CONF_DISCOVERY,
     CONF_ENTITY_PREFIX,
+    CONF_FORGET_DAYS,
     CONF_GATEWAY_NUMBER,
     CONF_MESSAGE_DELAY,
     CONF_MODE,
@@ -57,6 +58,7 @@ from .const import (
     CONF_PROXY_REPLAY,
     CONF_RENAME_ENTITIES,
     CONF_REPEATER,
+    DEFAULT_FORGET_DAYS,
     DEFAULT_MESSAGE_DELAY,
     DOMAIN,
     MODE_ALWAYS,
@@ -770,7 +772,11 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            data = {**user_input, CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY])}
+            data = {
+                **user_input,
+                CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY]),
+                CONF_FORGET_DAYS: int(user_input[CONF_FORGET_DAYS]),
+            }
             data[CONF_GATEWAY_NUMBER] = int(data[CONF_GATEWAY_NUMBER])
             rename = data.pop(CONF_RENAME_ENTITIES, False)
             if data[CONF_ENTITY_PREFIX] and data[CONF_GATEWAY_NUMBER] in taken_gateway_numbers(
@@ -789,6 +795,11 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
             )
         }
         schema[vol.Required(CONF_DISCOVERY, default=True)] = BooleanSelector()
+        schema[vol.Required(CONF_FORGET_DAYS, default=DEFAULT_FORGET_DAYS)] = NumberSelector(
+            NumberSelectorConfig(
+                min=0, max=3650, step=1, unit_of_measurement="d", mode=NumberSelectorMode.BOX
+            )
+        )
         if self.config_entry.data.get(CONF_DEVICE, {}).get("type") == "tcp":
             schema[vol.Required(CONF_PROXY_REPLAY, default=False)] = BooleanSelector()
         if MODELS[self.config_entry.data[CONF_MODEL]].bus:
