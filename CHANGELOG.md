@@ -6,6 +6,18 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 ### [Unreleased]
 
+**Deutsch**
+
+#### Geändert
+
+- **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
+
+**English**
+
+#### Changed
+
+- **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
+
 ### [1.10.0] - 2026-11-11
 
 **Deutsch**
