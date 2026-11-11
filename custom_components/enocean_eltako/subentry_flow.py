@@ -55,6 +55,7 @@ from .catalog import (
     OPT_LONG_PRESS,
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
+    OPT_PART_OF,
     OPT_PLATFORM,
     OPT_PRIORITY,
     OPT_RAIN_HOLD,
@@ -63,8 +64,6 @@ from .catalog import (
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
     OPT_SOURCE,
-    OPT_MEASURED_ENERGY,
-    OPT_MEASURED_POWER,
     OPT_STATUS_CHANNEL,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
@@ -226,8 +225,7 @@ OPTION_KEYS = (
     OPT_ROCKER_ON,
     OPT_ROCKER_OFF,
     OPT_STATUS_CHANNEL,
-    OPT_MEASURED_POWER,
-    OPT_MEASURED_ENERGY,
+    OPT_PART_OF,
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
@@ -477,13 +475,18 @@ class DeviceForm:
                     translation_key=OPT_ROUTING,
                 )
             )
-        if OPT_MEASURED_POWER in model.options:
-            schema[vol.Optional(OPT_MEASURED_POWER)] = EntitySelector(
-                EntitySelectorConfig(domain="sensor", device_class="power")
-            )
-            schema[vol.Optional(OPT_MEASURED_ENERGY)] = EntitySelector(
-                EntitySelectorConfig(domain="sensor", device_class="energy")
-            )
+        if OPT_PART_OF in model.options:
+            entry = self._get_entry()
+            own = getattr(self, "_own_subentry_id", None)
+            others = [
+                SelectOptionDict(value=sid, label=sub.title)
+                for sid, sub in entry.subentries.items()
+                if sid != own and sub.subentry_type == "device" and not sub.data.get(OPT_PART_OF)
+            ]
+            if others:
+                schema[vol.Optional(OPT_PART_OF)] = SelectSelector(
+                    SelectSelectorConfig(options=others, mode=SelectSelectorMode.DROPDOWN)
+                )
         if OPT_TEMPERATURE_SENSOR in model.options:
             schema[vol.Optional(OPT_TEMPERATURE_SENSOR)] = EntitySelector(
                 EntitySelectorConfig(domain="sensor", device_class="temperature")
@@ -1057,6 +1060,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
         subentry = self._get_reconfigure_subentry()
+        self._own_subentry_id = subentry.subentry_id
         data = dict(subentry.data)
         stored = model_for(data)
         self._device_model = model = self._retyped or stored

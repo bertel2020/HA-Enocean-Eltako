@@ -63,8 +63,7 @@ OPT_STATUS_CHANNEL = "status_channel"  # switch: "1" reports 0x70/0x50, "2" 0x30
 OPT_TENTHS = "run_time_tenths"  # cover: controller run times in 100 ms (newer firmware)
 OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for on / up
 OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
-OPT_MEASURED_POWER = "measured_power"  # switch: power sensor of a meter on the same load (display)
-OPT_MEASURED_ENERGY = "measured_energy"  # switch: energy sensor of that meter (display)
+OPT_PART_OF = "part_of"  # meter: subentry ID of the device it hangs under ("connected via")
 OPT_BUTTONS = "buttons"  # virtual rocker: the buttons it offers (all four when absent)
 
 
@@ -224,8 +223,6 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_WALL_SWITCH,
                 OPT_ROCKER_ON,
                 OPT_STATUS_CHANNEL,
-                OPT_MEASURED_POWER,
-                OPT_MEASURED_ENERGY,
             ),
             examples="FSR61, FSR14, FL62, FSR71",
             models=(
@@ -338,6 +335,7 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SENSOR,),
             category="meters",
             interval=600,
+            options=(OPT_PART_OF,),
             examples="F3Z14D, FWZ12, FSDG14, DSZ14",
             models=("F3Z14D", "FWZ12-65A", "FWZ14-65A", "FSDG14", "DSZ14DRS", "DSZ14WDRS"),
         ),
@@ -347,6 +345,7 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SENSOR,),
             category="meters",
             interval=600,
+            options=(OPT_PART_OF,),
             examples="F3Z14D",
             models=("F3Z14D",),
         ),
@@ -356,6 +355,7 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SENSOR,),
             category="meters",
             interval=600,
+            options=(OPT_PART_OF,),
             examples="F3Z14D",
             models=("F3Z14D",),
         ),

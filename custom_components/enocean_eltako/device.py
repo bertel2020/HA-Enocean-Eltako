@@ -18,6 +18,7 @@ from .catalog import (
     CENTRAL,
     DIRECTION_ROCKER,
     GROUP_VIRTUAL,
+    OPT_PART_OF,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
     OPT_STATUS_CHANNEL,
@@ -227,6 +228,13 @@ class EnOceanDevice:
         return self.model.receive.eep
 
     @property
+    def part_of(self) -> EnOceanDevice | None:
+        """The device this one hangs under (a meter on the load of an actuator), if set and
+        still there."""
+        target = self.entry.runtime_data.devices.get(self.options.get(OPT_PART_OF) or "")
+        return None if target is self else target
+
+    @property
     def device_info(self) -> DeviceInfo:
         info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_prefix)},
@@ -237,7 +245,9 @@ class EnOceanDevice:
             model_id=str(self.model.receive) if self.model.receive and self._model_label else None,
             serial_number=format_id(self.device_id),
         )
-        if (gateway := self.entry.runtime_data.gateway_device_id) is not None:
+        # a device under another one is linked after the platforms are set up (the registry ID
+        # of the other may not exist yet): __init__._async_link_devices
+        if self.part_of is None and (gateway := self.entry.runtime_data.gateway_device_id):
             info["via_device_id"] = gateway
         return info
 

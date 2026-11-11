@@ -19,7 +19,7 @@ from .catalog import (
     ROCKER,
 )
 from .device import EnOceanDevice
-from .entity import MeasuredEntity
+from .entity import EnOceanEntity
 from .protocol.eep import vld
 from .protocol.eep.eltako import switching
 
@@ -70,7 +70,7 @@ async def async_setup_entry(
             async_add_entities([EnOceanSwitchLight(device)], config_subentry_id=subentry_id)
 
 
-class EnOceanSwitchLight(MeasuredEntity, LightEntity, RestoreEntity):
+class EnOceanSwitchLight(EnOceanEntity, LightEntity, RestoreEntity):
     _attr_name = None
     _assume_until_heard = True
     _attr_color_mode = ColorMode.ONOFF

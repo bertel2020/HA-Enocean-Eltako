@@ -171,11 +171,12 @@ der Aktor sich selbst meldet.
 
 Ein FSR14 misst nichts; ein F3Z14D (oder ein anderer Zähler) misst den Stromkreis. Beide werden
 als zwei Geräte angelegt und nach ihrer Funktion benannt, zum Beispiel „Bad Konvektor Schalter“
-und „Bad Konvektor Zähler“, im selben Bereich. In den Geräteeinstellungen des Schalters können
-**Leistungsmesser** und **Energiezähler** auf die Sensoren des Zählers zeigen; der Schalter
-zeigt dann `measured_power` und `measured_energy` als Attribute. Das ist nur eine Anzeige: Die
-Messwerte bleiben beim Zähler, den das Energie-Dashboard weiter nutzt. Die Auswahl lässt sich
-jederzeit setzen oder entfernen, ohne Sender-IDs oder Verlauf anzufassen.
+und „Bad Konvektor Zähler“, im selben Bereich. In den Geräteeinstellungen des Zählers kann
+**Gehört zu Gerät** auf den Schalter zeigen: Die Seite des Zählers sagt dann „Verbunden über Bad
+Konvektor Schalter“, und der Schalter listet den Zähler als verbundenes Gerät. Beide bleiben
+eigene Geräte mit eigenen Entitäten, sodass sich Entity-IDs, Sender-IDs und Verlauf nicht ändern
+und das Energie-Dashboard weiter den Zähler nutzt. Die Verbindung lässt sich jederzeit setzen
+oder entfernen.
 
 ### Virtuelle Sensoren
 

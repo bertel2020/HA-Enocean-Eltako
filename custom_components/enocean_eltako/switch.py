@@ -13,7 +13,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_CHANNEL, OPT_PLATFORM
 from .device import EnOceanDevice
-from .entity import MeasuredEntity
+from .entity import EnOceanEntity
 from .light import inverted, on_state, switch_actuator
 from .protocol.eep import vld
 
@@ -35,7 +35,7 @@ async def async_setup_entry(
             async_add_entities([VldSwitch(device)], config_subentry_id=subentry_id)
 
 
-class EnOceanSwitch(MeasuredEntity, SwitchEntity, RestoreEntity):
+class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
     _attr_name = None
     _assume_until_heard = True
 
