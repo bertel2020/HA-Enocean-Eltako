@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame.
 
-Idea: no snap fit, no base plate. The existing wall-mount tray (SwitchBotMount.3mf, meter clips in
-from the front) is screwed to the wall THROUGH the frame window with its two own screws. Two spacer
-sleeves of frame depth sit between tray and wall. The tray overlaps the frame border at the top
-and bottom and clamps the frame to the wall.
+Idea: no snap fit. A small plate is screwed onto the flush box (box screws, 60 mm apart) inside the
+hollow frame. The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front) is
+screwed THROUGH the frame window into that plate with its two own screws; two spacer sleeves sit
+between tray and plate. The tray overlaps the frame border at the top and bottom and clamps the frame.
 
-Parts:  front_piece.stl  the tray, moved so that its back face sits on the frame front
-        spacer.stl       print twice, one per screw
+Parts:  base_plate.stl   onto the flush box
+        front_piece.stl  the tray, moved so that its back face sits on the frame front
+        spacer.stl       print twice, one per tray screw
 
 Axes: X width, Y height, Z away from the wall (Z=0 is the wall). All values in mm.
 """
@@ -23,6 +24,13 @@ FRAME_D = 10.0          # depth of the frame = spacer length
 
 # --- tray (measured from SwitchBotMount.3mf) ---
 HOLE_Y = 18.0           # screw holes at y = +-18 (36 mm apart)
+
+# --- flush box (ASSUMED: standard 60 mm screw spacing, check yours) ---
+BOX_SPACING = 60.0
+PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width 78)
+PLATE_T = 4.0
+BOX_HOLE = 4.5          # holes at (+-30, 0) and (0, +-30), so the plate fits either way round
+PILOT = 2.8             # pilot holes for the tray screws
 
 # --- spacer ---
 SPACER_OD = 8.0
@@ -68,8 +76,36 @@ def front_piece():
     return [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
 
 
+def box_tris(x0, x1, y0, y1, z0, z1):
+    f = [((x0,y0,z0),(x0,y1,z0),(x1,y1,z0),(x1,y0,z0)),      # bottom
+         ((x0,y0,z1),(x1,y0,z1),(x1,y1,z1),(x0,y1,z1)),      # top
+         ((x0,y0,z0),(x1,y0,z0),(x1,y0,z1),(x0,y0,z1)),      # -Y
+         ((x0,y1,z0),(x0,y1,z1),(x1,y1,z1),(x1,y1,z0)),      # +Y
+         ((x0,y0,z0),(x0,y0,z1),(x0,y1,z1),(x0,y1,z0)),      # -X
+         ((x1,y0,z0),(x1,y1,z0),(x1,y1,z1),(x1,y0,z1))]      # +X
+    return [t for a, b, c, d in f for t in ((a, b, c), (a, c, d))]
+
+
+def base_plate():
+    """Square plate, built from grid cells so that the (square) holes are left out."""
+    half, sp = PLATE / 2, BOX_SPACING / 2
+    def sq(cx, cy, d):
+        return (cx - d / 2, cx + d / 2, cy - d / 2, cy + d / 2)
+    holes = [sq(sp, 0, BOX_HOLE), sq(-sp, 0, BOX_HOLE), sq(0, sp, BOX_HOLE), sq(0, -sp, BOX_HOLE),
+             sq(0, HOLE_Y, PILOT), sq(0, -HOLE_Y, PILOT)]
+    xs = sorted({-half, half, *[v for h in holes for v in h[0:2]]})
+    ys = sorted({-half, half, *[v for h in holes for v in h[2:4]]})
+    tris = []
+    for xa, xb in zip(xs, xs[1:]):
+        for ya, yb in zip(ys, ys[1:]):
+            cx, cy = (xa + xb) / 2, (ya + yb) / 2
+            if not any(h[0] < cx < h[1] and h[2] < cy < h[3] for h in holes):
+                tris += box_tris(xa, xb, ya, yb, 0.0, PLATE_T)
+    return tris
+
+
 def spacer():
-    ro, ri, h = SPACER_OD / 2, SPACER_ID / 2, FRAME_D
+    ro, ri, h = SPACER_OD / 2, SPACER_ID / 2, FRAME_D - PLATE_T
     tris = []
     for k in range(SEGMENTS):
         a0, a1 = 2 * math.pi * k / SEGMENTS, 2 * math.pi * (k + 1) / SEGMENTS
@@ -86,7 +122,7 @@ def spacer():
 
 
 if __name__ == "__main__":
-    for name, tris in (("front_piece", front_piece()), ("spacer", spacer())):
+    for name, tris in (("base_plate", base_plate()), ("front_piece", front_piece()), ("spacer", spacer())):
         write_stl(f"{name}.stl", name, tris)
         xs, ys, zs = zip(*[p for t in tris for p in t])
         print(f"{name}.stl: {max(xs)-min(xs):.1f} x {max(ys)-min(ys):.1f} x {max(zs)-min(zs):.1f} mm, "
