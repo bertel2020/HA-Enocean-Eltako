@@ -40,6 +40,9 @@ FIT = 0.4               # total clearance
 TRAY_WALL = 2.4
 LIP = 1.2               # lips over the front edge of the meter
 FLOOR_T = 3.0           # tray floor (screws go through it)
+R_OUT = 4.0             # rounded outer corners at the closed (bottom) end
+R_IN = R_OUT - TRAY_WALL  # concentric inner corner radius, keeps the wall 2.4 mm everywhere
+R_TIP = 1.0             # rounded outer corners at the open (top) end
 
 # --- screws ---
 HOLE_Y = 18.0           # screw positions y = +-18, x = 0
@@ -165,6 +168,70 @@ def base_plate():
     return tris
 
 
+def arc(cx, cy, r, a0, a1, n=10):
+    return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * k / n)),
+             cy + r * math.sin(math.radians(a0 + (a1 - a0) * k / n))) for k in range(n + 1)]
+
+
+def triangulate(pts):
+    """Ear clipping of a simple counter-clockwise polygon; returns index triples."""
+    idx = list(range(len(pts)))
+    out = []
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    def inside(p, a, b, c):
+        return cross(a, b, p) >= -1e-9 and cross(b, c, p) >= -1e-9 and cross(c, a, p) >= -1e-9
+    guard = 0
+    while len(idx) > 3 and guard < 10000:
+        guard += 1
+        for k in range(len(idx)):
+            i0, i1, i2 = idx[k - 1], idx[k], idx[(k + 1) % len(idx)]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            if cross(a, b, c) <= 1e-12:
+                continue
+            if any(inside(pts[j], a, b, c) for j in idx if j not in (i0, i1, i2)):
+                continue
+            out.append((i0, i1, i2))
+            idx.pop(k)
+            break
+        else:
+            raise ValueError("triangulation failed")
+    out.append(tuple(idx))
+    return out
+
+
+def extrude(pts, z0, z1):
+    """Extrude a counter-clockwise polygon along Z."""
+    pts = [p for k, p in enumerate(pts) if math.dist(p, pts[k - 1]) > 1e-6]
+    tris = []
+    for i0, i1, i2 in triangulate(pts):
+        a, b, c = pts[i0], pts[i1], pts[i2]
+        tris.append(((a[0], a[1], z1), (b[0], b[1], z1), (c[0], c[1], z1)))
+        tris.append(((a[0], a[1], z0), (c[0], c[1], z0), (b[0], b[1], z0)))
+    for k in range(len(pts)):
+        a, b = pts[k], pts[(k + 1) % len(pts)]
+        tris.append(((a[0], a[1], z0), (b[0], b[1], z0), (b[0], b[1], z1)))
+        tris.append(((a[0], a[1], z0), (b[0], b[1], z1), (a[0], a[1], z1)))
+    return tris
+
+
+def tray_wall_polygon(xo, yo, x_in, y_in):
+    """U-shaped wall outline (counter-clockwise), open at the top, rounded at the bottom corners."""
+    p = []
+    p += [(-xo, yo - R_TIP)]
+    p += arc(-xo + R_OUT, -yo + R_OUT, R_OUT, 180, 270)
+    p += arc(xo - R_OUT, -yo + R_OUT, R_OUT, 270, 360)
+    p += [(xo, yo - R_TIP)]
+    p += arc(xo - R_TIP, yo - R_TIP, R_TIP, 0, 90, 4)
+    p += [(x_in, yo)]
+    p += arc(x_in - R_IN, -y_in + R_IN, R_IN, 0, -90, 6)
+    p += arc(-x_in + R_IN, -y_in + R_IN, R_IN, -90, -180, 6)
+    p += [(-x_in, yo)]
+    p += [(-xo + R_TIP, yo)]
+    p += arc(-xo + R_TIP, yo - R_TIP, R_TIP, 90, 180, 4)
+    return p
+
+
 def front_piece():
     tris = []
     x_in = (METER_W + FIT) / 2
@@ -177,18 +244,21 @@ def front_piece():
     patches = [(-ph, ph, sy * HOLE_Y - ph, sy * HOLE_Y + ph) for sy in (1, -1)]
     # floor with stepped screw holes: 3.4 mm through, 6.4 mm counterbore on top
     zc = zf - HEAD_DEPTH
-    tris += cut_rect((-xo, xo, -yo, yo), patches, FRAME_D, zc)
-    tris += cut_rect((-xo, xo, -yo, yo), patches, zc, zf)
+    ym0, ym1 = -yo + R_OUT, yo - R_TIP                       # middle part of the floor, between the rounded caps
+    tris += cut_rect((-xo, xo, ym0, ym1), patches, FRAME_D, zc)
+    tris += cut_rect((-xo, xo, ym0, ym1), patches, zc, zf)
     for sy in (1, -1):
         tris += round_hole_patch(0.0, sy * HOLE_Y, SCREW_HOLE_R, ph, FRAME_D, zc)
         tris += round_hole_patch(0.0, sy * HOLE_Y, HEAD_HOLE_R, ph, zc, zf)
-    # walls: both sides full length, bottom end closed, top end open (the meter slides in from the top)
-    for sx in (1, -1):
-        xa, xb = sorted((sx * x_in, sx * xo))
-        tris += box_tris(xa, xb, -yo, yo, zf - 0.1, z_top)
+    bottom = arc(-xo + R_OUT, -yo + R_OUT, R_OUT, 180, 270) + arc(xo - R_OUT, -yo + R_OUT, R_OUT, 270, 360)
+    tris += extrude(bottom + [(xo, ym0), (-xo, ym0)], FRAME_D, zf)           # rounded bottom cap
+    top = [(-xo, ym1), (xo, ym1)] + arc(xo - R_TIP, yo - R_TIP, R_TIP, 0, 90, 4) + arc(-xo + R_TIP, yo - R_TIP, R_TIP, 90, 180, 4)
+    tris += extrude(top, FRAME_D, zf)                                         # top cap
+    # walls: both sides, bottom end closed (rounded corners), top end open: the meter slides in from the top
+    tris += extrude(tray_wall_polygon(xo, yo, x_in, y_in), zf - 0.1, z_top)
+    for sx in (1, -1):                                                        # lips over the meter's front edge
         xa, xb = sorted((sx * (x_in - LIP), sx * x_in))
-        tris += box_tris(xa, xb, -yo, yo, z_lip, z_top)
-    tris += box_tris(-xo, xo, -yo, -y_in, zf - 0.1, z_top)
+        tris += box_tris(xa, xb, -y_in, yo, z_lip, z_top)
     tris += box_tris(-x_in, x_in, -y_in, -y_in + LIP, z_lip, z_top)
     # cover plate filling the window, recessed, and the web to the tray; holes for the posts
     c, ph = COVER / 2, POST_HOLE_R + 0.5
