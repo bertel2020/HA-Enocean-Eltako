@@ -14,6 +14,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Panel**: coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
 - **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
 
 #### Added
@@ -31,6 +32,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Panel**: Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
 - **Übernahme, Zuordnung und CSV**: Der alte Fenstergriff-Sensor (`…_windowhandle`) bekommt in der Zuordnung alt → neu jetzt sein Gegenstück (den Sensor Griff); er stand bisher ohne neue ID da.
 
 #### Hinzugefügt
