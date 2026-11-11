@@ -1,51 +1,38 @@
 #!/usr/bin/env python3
-"""Two-part holder for a SwitchBot Outdoor Meter behind a Berker S1 frame.
+"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame.
 
-Part 1 (base plate): screwed to the wall, sits inside the hollow frame, collar stands in the window.
-Part 2 (front piece): the user's wall-mount tray (SwitchBotMount.3mf, meter clips in from the front), two snap arms go through the window and
-hook into the collar. The frame is clamped between plate and front piece.
+Idea: no snap fit, no base plate. The existing wall-mount tray (SwitchBotMount.3mf, meter clips in
+from the front) is screwed to the wall THROUGH the frame window with its two own screws. Two spacer
+sleeves of frame depth sit between tray and wall. The tray overlaps the frame border at the top
+and bottom and clamps the frame to the wall.
+
+Parts:  front_piece.stl  the tray, moved so that its back face sits on the frame front
+        spacer.stl       print twice, one per screw
 
 Axes: X width, Y height, Z away from the wall (Z=0 is the wall). All values in mm.
-Items marked ASSUMED are not measured. Axis-aligned boxes only, no ramps or fillets.
 """
-import sys
+import math
 import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# --- frame (measured by the user) ---
+# --- frame (measured) ---
 WINDOW = 56.0
 BORDER = 14.0
-FRAME_D = 10.0          # depth of the frame
-# --- frame (ASSUMED) ---
-FRONT_T = 2.5           # thickness of the frame front face
-INNER = 78.0            # free inner width of the frame hollow
+FRAME_D = 10.0          # depth of the frame = spacer length
 
+# --- tray (measured from SwitchBotMount.3mf) ---
+HOLE_Y = 18.0           # screw holes at y = +-18 (36 mm apart)
 
-# --- fit ---
-CLEAR = 0.2
+# --- spacer ---
+SPACER_OD = 8.0
+SPACER_ID = 4.2         # for 3.5-4 mm screws
+SEGMENTS = 48
 
-# --- base plate ---
-PLATE = 76.0            # must be < INNER
-PLATE_T = 4.0
-RING_T = 2.0
-SCREW = 32.0            # screw holes at (+-SCREW, +-SCREW), hidden under the frame border
-OPEN_X, OPEN_Y = 20.0, 24.0   # central opening of the ring
-HOLE = 4.5
-
-# --- snap ---
-ARM_W = 10.0
-ARM_T = 1.5
-CATCH = 0.7             # block protrusion on the collar
-BARB = 1.4
-
-assert PLATE < INNER
-
-MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")   # the user's wall mount (U-shaped tray)
+MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
 
 def load_3mf_triangles(path):
-    """Return [(p0, p1, p2), ...] of the first mesh object in a 3MF (no transforms applied)."""
     with zipfile.ZipFile(path) as z:
         name = next(n for n in z.namelist() if n.startswith("3D/Objects/") and n.endswith(".model"))
         root = ET.fromstring(z.read(name))
@@ -54,116 +41,53 @@ def load_3mf_triangles(path):
     return [tuple(verts[int(t.get(k))] for k in ("v1", "v2", "v3")) for t in root.iterfind(".//m:triangle", ns)]
 
 
-class Mesh:
-    def __init__(self):
-        self.boxes = []
-        self.tris = []
-
-    def box(self, x0, x1, y0, y1, z0, z1):
-        assert x1 > x0 and y1 > y0 and z1 > z0, (x0, x1, y0, y1, z0, z1)
-        self.boxes.append((x0, x1, y0, y1, z0, z1))
-
-    def mirror_xy(self, x0, x1, y0, y1, z0, z1, mx=True, my=True):
-        for sx in ((1, -1) if mx else (1,)):
-            for sy in ((1, -1) if my else (1,)):
-                xa, xb = sorted((sx * x0, sx * x1))
-                ya, yb = sorted((sy * y0, sy * y1))
-                self.box(xa, xb, ya, yb, z0, z1)
-
-    def write(self, path, name):
-        with open(path, "w") as fh:
-            fh.write(f"solid {name}\n")
-            for x0, x1, y0, y1, a, c in self.boxes:
-                faces = [
-                    ((x0,y0,a),(x0,y1,a),(x1,y1,a),(x1,y0,a),(0,0,-1)),
-                    ((x0,y0,c),(x1,y0,c),(x1,y1,c),(x0,y1,c),(0,0,1)),
-                    ((x0,y0,a),(x1,y0,a),(x1,y0,c),(x0,y0,c),(0,-1,0)),
-                    ((x0,y1,a),(x0,y1,c),(x1,y1,c),(x1,y1,a),(0,1,0)),
-                    ((x0,y0,a),(x0,y0,c),(x0,y1,c),(x0,y1,a),(-1,0,0)),
-                    ((x1,y0,a),(x1,y1,a),(x1,y1,c),(x1,y0,c),(1,0,0)),
-                ]
-                for p0, p1, p2, p3, n in faces:
-                    for tri in ((p0, p1, p2), (p0, p2, p3)):
-                        fh.write(f" facet normal {n[0]} {n[1]} {n[2]}\n  outer loop\n")
-                        for p in tri:
-                            fh.write(f"   vertex {p[0]:.3f} {p[1]:.3f} {p[2]:.3f}\n")
-                        fh.write("  endloop\n endfacet\n")
-            for p0, p1, p2 in self.tris:
-                ux, uy, uz = (p1[i] - p0[i] for i in range(3))
-                vx, vy, vz = (p2[i] - p0[i] for i in range(3))
-                n = (uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx)
-                ln = sum(c * c for c in n) ** 0.5 or 1.0
-                fh.write(f" facet normal {n[0]/ln:.5f} {n[1]/ln:.5f} {n[2]/ln:.5f}\n  outer loop\n")
-                for p in (p0, p1, p2):
-                    fh.write(f"   vertex {p[0]:.4f} {p[1]:.4f} {p[2]:.4f}\n")
-                fh.write("  endloop\n endfacet\n")
-            fh.write(f"endsolid {name}\n")
-
-    def size(self):
-        xs = [v for b in self.boxes for v in b[0:2]] + [p[0] for t in self.tris for p in t]
-        ys = [v for b in self.boxes for v in b[2:4]] + [p[1] for t in self.tris for p in t]
-        zs = [v for b in self.boxes for v in b[4:6]] + [p[2] for t in self.tris for p in t]
-        return max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs)
+def write_stl(path, name, tris):
+    with open(path, "w") as fh:
+        fh.write(f"solid {name}\n")
+        for p0, p1, p2 in tris:
+            u = [p1[i] - p0[i] for i in range(3)]
+            v = [p2[i] - p0[i] for i in range(3)]
+            n = (u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0])
+            ln = math.sqrt(sum(c*c for c in n)) or 1.0
+            fh.write(f" facet normal {n[0]/ln:.5f} {n[1]/ln:.5f} {n[2]/ln:.5f}\n  outer loop\n")
+            for p in (p0, p1, p2):
+                fh.write(f"   vertex {p[0]:.4f} {p[1]:.4f} {p[2]:.4f}\n")
+            fh.write("  endloop\n endfacet\n")
+        fh.write(f"endsolid {name}\n")
 
 
-def cut_plate(m, half, z0, z1, holes):
-    """Square plate (edge 2*half) minus rectangular holes [(x0, x1, y0, y1)], built from grid cells."""
-    xs = sorted({-half, half, *[v for h in holes for v in h[0:2]]})
-    ys = sorted({-half, half, *[v for h in holes for v in h[2:4]]})
-    for xa, xb in zip(xs, xs[1:]):
-        for ya, yb in zip(ys, ys[1:]):
-            cx, cy = (xa + xb) / 2, (ya + yb) / 2
-            if not any(h[0] < cx < h[1] and h[2] < cy < h[3] for h in holes):
-                m.box(xa, xb, ya, yb, z0, z1)
-
-
-def base_plate():
-    """Mounting ring like the one of a socket: flat ring with a central opening, four screw holes
-    in the corners (screw it to the wall first, then put the frame over it), collar in the window."""
-    m = Mesh()
-    h = HOLE / 2
-    holes = [(-OPEN_X, OPEN_X, -OPEN_Y, OPEN_Y)]
-    holes += [(sx * SCREW - h, sx * SCREW + h, sy * SCREW - h, sy * SCREW + h)
-              for sx in (-1, 1) for sy in (-1, 1)]
-    cut_plate(m, PLATE / 2, 0, PLATE_T, holes)
-    # collar ring in the window, up to the front of the frame
-    ro = WINDOW / 2 - CLEAR
-    ri = ro - RING_T
-    z1 = FRAME_D
-    m.box(-ro, ro, ri, ro, PLATE_T, z1)
-    m.box(-ro, ro, -ro, -ri, PLATE_T, z1)
-    m.box(-ro, -ri, -ri, ri, PLATE_T, z1)
-    m.box(ri, ro, -ri, ri, PLATE_T, z1)
-    # catch blocks under which the barbs hook (top and bottom)
-    m.mirror_xy(-6, 6, ri - CATCH, ri, PLATE_T + BARB, PLATE_T + BARB + 1.2, mx=False)
-    return m
+def volume(tris):
+    return sum(sum(a[i]*(b[(i+1)%3]*c[(i+2)%3]-b[(i+2)%3]*c[(i+1)%3]) for i in range(3)) / 3
+               for a, b, c in tris) / 2
 
 
 def front_piece():
-    """The user's tray (base at the back, open at the front) with its back face on the frame front,
-    plus two snap arms through the window."""
-    m = Mesh()
     tris = load_3mf_triangles(MOUNT_3MF)
     zmin = min(p[2] for t in tris for p in t)
-    dz = FRAME_D - zmin                      # base rear face rests on the frame front (Z = FRAME_D)
-    m.tris = [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
-    # close the two countersunk screw holes of the original wall mount (unused here)
-    base_t = 2.6
-    for sy in (1, -1):
-        m.box(-4.0, 4.0, sy * 18.0 - 4.0, sy * 18.0 + 4.0, FRAME_D, FRAME_D + base_t)
-    ri = WINDOW / 2 - CLEAR - RING_T
-    out = ri - 1.6                           # outer face of the arm
-    zb = PLATE_T
-    for sy in (1, -1):
-        ya, yb = sorted((sy * (out - ARM_T), sy * out))
-        m.box(-ARM_W / 2, ARM_W / 2, ya, yb, zb, FRAME_D + 1.0)
-        ya, yb = sorted((sy * out, sy * (out + BARB)))
-        m.box(-ARM_W / 2, ARM_W / 2, ya, yb, zb, zb + BARB)
-    return m
+    dz = FRAME_D - zmin                    # back face of the tray on the frame front (Z = FRAME_D)
+    return [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
+
+
+def spacer():
+    ro, ri, h = SPACER_OD / 2, SPACER_ID / 2, FRAME_D
+    tris = []
+    for k in range(SEGMENTS):
+        a0, a1 = 2 * math.pi * k / SEGMENTS, 2 * math.pi * (k + 1) / SEGMENTS
+        c0, s0, c1, s1 = math.cos(a0), math.sin(a0), math.cos(a1), math.sin(a1)
+        O0t, O1t = (ro*c0, ro*s0, h), (ro*c1, ro*s1, h)
+        O0b, O1b = (ro*c0, ro*s0, 0), (ro*c1, ro*s1, 0)
+        I0t, I1t = (ri*c0, ri*s0, h), (ri*c1, ri*s1, h)
+        I0b, I1b = (ri*c0, ri*s0, 0), (ri*c1, ri*s1, 0)
+        tris += [(O0t, O1t, I1t), (O0t, I1t, I0t)]          # top, normal +Z
+        tris += [(O0b, I1b, O1b), (O0b, I0b, I1b)]          # bottom, normal -Z
+        tris += [(O0b, O1b, O1t), (O0b, O1t, O0t)]          # outside
+        tris += [(I0b, I1t, I1b), (I0b, I0t, I1t)]          # inside, facing the axis
+    return tris
 
 
 if __name__ == "__main__":
-    for name, mesh in (("base_plate", base_plate()), ("front_piece", front_piece())):
-        path = f"{name}.stl"
-        mesh.write(path, name)
-        print(path, "%.1f x %.1f x %.1f mm" % mesh.size(), f"({len(mesh.boxes)} boxes, {len(mesh.tris)} tris)")
+    for name, tris in (("front_piece", front_piece()), ("spacer", spacer())):
+        write_stl(f"{name}.stl", name, tris)
+        xs, ys, zs = zip(*[p for t in tris for p in t])
+        print(f"{name}.stl: {max(xs)-min(xs):.1f} x {max(ys)-min(ys):.1f} x {max(zs)-min(zs):.1f} mm, "
+              f"{len(tris)} tris, volume {volume(tris):.0f} mm3")
