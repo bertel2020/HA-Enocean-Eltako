@@ -484,7 +484,7 @@ const STYLE = `
   .devices .dev .acts .icon-btn svg { width: 18px; height: 18px; }
   .devices .dev .acts .chip { height: 32px; padding: 0 12px; margin-left: 4px; }
   /* "add" is the one action of an unknown sender: a round filled button, its name is the tooltip */
-  .devices .dev .acts .chip.add { width: 32px; padding: 0; border-radius: 50%; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .devices .dev .acts .chip.add { width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 50%; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .devices .dev .acts .chip.add:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
   .devices .dev .acts .chip.add .lbl { display: none; }
   .devices .dev:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
