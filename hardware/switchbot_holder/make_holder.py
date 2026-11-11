@@ -8,7 +8,7 @@ base_plate.stl   Closed mounting plate: 1.3 mm under the frame (the allowed thic
 front_piece.stl  Tray for the meter, own design (the first tray had 1.0 mm walls that flex when the meter
                  is clipped in and break in PLA). Walls are 2.4 mm, nothing flexes: the meter slides in
                  from the open top under two side lips and rests on the bottom wall. Underneath: a cover
-                 plate that fills the whole window of the frame, 2 mm below the frame front (the frame
+                 plate that fills the whole window of the frame, 3 mm below the frame front (the frame
                  is domed and lower at the corners), and a web that connects plate and tray. The posts
                  pass through holes in plate and web.
 
@@ -49,7 +49,7 @@ HEAD_DEPTH = 1.8
 
 # --- cover plate in the window ---
 COVER = 56.0            # edge length incl. clearance (given)
-COVER_RECESS = 2.0      # front face of the plate lies this far below the frame front (domed frame)
+COVER_RECESS = 3.0      # front face of the plate lies this far below the frame front (domed frame)
 COVER_T = 1.6
 WEB_HALF_X = 13.6       # web between plate and tray, same width as the tray
 POST_HOLE_R = 4.7       # holes for the posts in plate and web
