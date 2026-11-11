@@ -1208,7 +1208,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button></div>
+          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
@@ -1452,6 +1452,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayFilter").addEventListener("change", (e) => this._set("gateway", e.target.value));
     $("typeFilter").addEventListener("change", (e) => this._set("type", e.target.value));
     $("resetTop").addEventListener("click", () => this._resetFilters());
+    $("forgetUnknown").addEventListener("click", () => this._forgetUnknown());
     $("thead").addEventListener("click", (e) => {
       const button = e.target.closest("[data-sort]");
       if (!button) return;
@@ -2079,6 +2080,23 @@ class EnOceanEltakoPanel extends HTMLElement {
     window.open(DEVICE_REQUEST_URL, "_blank", "noopener");
   }
 
+  async _forgetUnknown() {
+    // drops the unknown senders of the gateway chosen (all gateways when none is): stored and in the buffer
+    const gateways = this._gateways.filter((g) => g.loaded && (!this._filter.gateway || g.entry_id === this._filter.gateway));
+    if (!window.confirm(this._t.forgetUnknownConfirm)) return;
+    this._notice("");
+    try {
+      for (const g of gateways) await this._hass.callWS({ type: "enocean_eltako/forget_unknown", entry_id: g.entry_id });
+    } catch (err) {
+      this._notice(this._t.hideResult.failed);
+      return;
+    }
+    const ids = new Set(gateways.map((g) => g.entry_id));
+    this._rows = this._rows.filter((r) => r.device || r.dir !== "rx" || !ids.has(r.gateway));
+    await this._refreshStatus();
+    this._render();
+  }
+
   async _hideSender(gateway, sender) {
     this._notice("");
     try {
@@ -2583,6 +2601,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._options($("gatewayFilter"), [["", t.allGateways], ...this._gateways.map((g) => [g.entry_id, g.title])], f.gateway);
     $("gatewayRow").hidden = !this._multi && !f.gateway;
     const devices = this._view === "devices";
+    $("forgetUnknown").hidden = !(devices && f.devStatus === "unknown");
     $("resetTop").hidden = !(f.gateway || f.text || (devices ? f.devStatus || f.area : f.dir || f.type || f.repeats || f.unknown));
     // the filters of the menu that are set: a chip each, its cross removes it
     const gateway = this._gateways.find((g) => g.entry_id === f.gateway);
@@ -3136,6 +3155,20 @@ class EnOceanEltakoPanel extends HTMLElement {
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
         dbm: r.dbm, trend: d.dbm, fields: d.fields, data: r.data, teach: d.teach, candidates: d.candidates, rorg: r.rorg,
       });
+    }
+    // unknown senders heard before the last restart: not in the buffer, but kept by the gateway
+    for (const g of this._gateways) {
+      if (f.gateway && g.entry_id !== f.gateway) continue;
+      for (const u of g.heard_unknown || []) {
+        const key = `${g.entry_id}|${u.id}`;
+        if (heardKeys.has(key) || setup.has(key) || this._isHidden(g.entry_id, u.id)) continue;
+        items.push({
+          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: false, page: null, devKey: null, senders: [],
+          category: "", models: [], entityIds: [], eepFull: "", eep: this._eepLabel(RORG[u.rorg] || u.rorg), model: "", area: null, entities: null, labels: [], disabled: false,
+          gateway: g.entry_id, gateway_name: g.title, time: u.last * 1000, count: 0, perMinute: 0,
+          dbm: u.dbm, trend: [], fields: null, data: u.data || "", teach: null, candidates: null, rorg: u.rorg,
+        });
+      }
     }
     for (const d of setup.values()) {
       if (heardKeys.has(`${d.gateway}|${d.id}`) || (f.gateway && d.gateway !== f.gateway)) continue;

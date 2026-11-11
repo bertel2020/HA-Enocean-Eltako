@@ -228,7 +228,13 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["step_id"] == "settings"  # no menu: sender IDs and takeover are in the panel
-    assert set(result["data_schema"].schema) == {"message_delay", "discovery", "mode", *PREFIX}
+    assert set(result["data_schema"].schema) == {
+        "message_delay",
+        "discovery",
+        "forget_unknown_days",
+        "mode",
+        *PREFIX,
+    }
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"message_delay": 25.0, "discovery": False, "mode": "on_demand"}
     )
@@ -236,6 +242,7 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     assert entry.options == {
         "message_delay": 25,
         "discovery": False,
+        "forget_unknown_days": 30,
         "mode": "on_demand",
         "entity_prefix": False,
         "gateway_number": 1,
@@ -246,7 +253,12 @@ async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> No
     entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert set(result["data_schema"].schema) == {"message_delay", "discovery", *PREFIX}
+    assert set(result["data_schema"].schema) == {
+        "message_delay",
+        "discovery",
+        "forget_unknown_days",
+        *PREFIX,
+    }
 
 
 def _zeroconf(host: str, port: int):

@@ -293,3 +293,52 @@ async def test_card_hides_senders_and_keeps_the_dialog(hass: HomeAssistant, gate
     assert result["reason"] == "sender_hidden"
     assert not await _cards(hass)
     assert entry.runtime_data.hub.hidden[entry.entry_id] == {0x002A0B21, 0x002A0B22}
+
+
+async def test_unknown_senders_survive_a_reload(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    entry, server = gateway
+    hub = entry.runtime_data.hub
+    _push(server, 0x05, b"\x70", 0x002A0B0F, 0x30)
+    await _settle(hass)
+    assert hub.discovered
+    await hub.notes[entry.entry_id].async_flush()
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.runtime_data.hub.discovered  # restored from the stored last telegram
+    from custom_components.enocean_eltako.discovery import stored_unknown
+
+    assert [r["id"] for r in stored_unknown(entry)] == ["00-2A-0B-0F"]
+
+
+async def test_unknown_senders_are_forgotten_by_age_or_by_hand(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    import time
+
+    from custom_components.enocean_eltako.discovery import async_forget_unknown, stored_unknown
+
+    entry, server = gateway
+    hub = entry.runtime_data.hub
+    notes = hub.notes[entry.entry_id]
+    _push(server, 0x05, b"\x70", 0x002A0B10, 0x30)
+    _push(server, 0x05, b"\x70", 0x002A0B11, 0x30)
+    await _settle(hass)
+    old = time.time() - 40 * 86400
+    notes.heard["00-2A-0B-10"]["last"] = old
+    notes.last["00-2A-0B-10"]["time"] = old
+    hub.discovered[0x002A0B10] = hub.discovered[0x002A0B10].__class__(
+        hub.discovered[0x002A0B10].telegram, entry.entry_id, old, 0x002A0B10
+    )
+    assert async_forget_unknown(hass, entry, 30) == 1  # only the one gone quiet for 40 days
+    assert [r["id"] for r in stored_unknown(entry)] == ["00-2A-0B-11"]
+    assert "00-2A-0B-10" not in notes.last
+
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": "enocean_eltako/forget_unknown", "entry_id": entry.entry_id}
+    )
+    assert (await client.receive_json())["result"] == {"removed": 1}
+    assert not stored_unknown(entry)
+    assert not hub.discovered

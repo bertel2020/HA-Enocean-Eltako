@@ -560,6 +560,16 @@ class Notes:
             del self.heard[min(self.heard, key=lambda s: self.heard[s]["last"])]
         self._signal_dirty()
 
+    @callback
+    def forget_heard(self, senders: set[str], keep_last: set[str]) -> None:
+        """Drop unknown senders and their last telegram (except the senders in keep_last)."""
+        for sender in senders:
+            self.heard.pop(sender, None)
+            if sender not in keep_last:
+                self.last.pop(sender, None)
+        if senders:
+            self._save()
+
     async def async_flush(self) -> None:
         """Write what is waiting (on unload)."""
         if self._signal_timer is not None:

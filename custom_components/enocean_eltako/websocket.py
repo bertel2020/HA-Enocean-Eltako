@@ -35,7 +35,7 @@ from .const import (
     DOMAIN,
 )
 from .device import UTE_WINDOW
-from .discovery import async_set_hidden
+from .discovery import async_forget_unknown, async_set_hidden, stored_unknown
 from .documentation import IMPORTABLE_VERSIONS
 from .documentation import collect as collect_documentation
 from .heard import heard_by
@@ -101,6 +101,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
+    websocket_api.async_register_command(hass, ws_forget_unknown)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
     websocket_api.async_register_command(hass, ws_free_senders)
@@ -423,6 +424,8 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "radio_devices": radio_devices(runtime),
             # senders hidden from discovery: the panel does not offer them as new devices
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
+            # unknown senders heard before the last restart: the panel lists them as well
+            "heard_unknown": stored_unknown(entry),
             "note": runtime.hub.notes[entry.entry_id].gateway,
             "manual": runtime.hub.notes[entry.entry_id].manual,
             "supplies": runtime.hub.notes[entry.entry_id].supplies,
@@ -1112,6 +1115,22 @@ async def ws_hide_sender(
     hidden = runtime.hub.hidden.get(entry.entry_id, set())
     await async_set_hidden(hass, entry, {*hidden, sender})
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "enocean_eltako/forget_unknown", vol.Required("entry_id"): str}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_forget_unknown(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel device list: drop all unknown senders of this gateway (heard again, listed again)."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    connection.send_result(msg["id"], {"removed": async_forget_unknown(hass, entry, None)})
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:

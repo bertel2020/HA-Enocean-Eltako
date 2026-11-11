@@ -10,27 +10,30 @@ Our own sender IDs (pools) are skipped; a gateway can switch discovery off in it
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from datetime import timedelta
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import SOURCE_INTEGRATION_DISCOVERY
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import discovery_flow
-from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.helpers.selector import SelectOptionDict
 from homeassistant.helpers.storage import Store
 
-from .const import CONF_DISCOVERY, DOMAIN
+from .const import CONF_DISCOVERY, CONF_FORGET_DAYS, DEFAULT_FORGET_DAYS, DOMAIN
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.ids import format_id, parse_id
-from .protocol.telegram import Rorg
+from .protocol.telegram import RadioTelegram, Rorg
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry
 
 
 MAX_DISCOVERED = 100
+FORGET_CHECK = timedelta(hours=6)  # how often unknown senders gone quiet for too long are dropped
 STORAGE_VERSION = 1
 
 
@@ -164,6 +167,65 @@ def async_remove_card(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> N
             hass.config_entries.flow.async_abort(flow["flow_id"])
 
 
+def _configured(entry: EnOceanEltakoConfigEntry) -> set[str]:
+    return {s.unique_id.split("_")[0] for s in entry.subentries.values() if s.unique_id}
+
+
+@callback
+def async_forget_unknown(
+    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, days: float | None
+) -> int:
+    """Drop the unknown senders not heard for `days` (None: all of them); returns how many.
+
+    They are kept across restarts (the notes store); this is the only thing that removes them,
+    apart from the hub's cap. A sender that is heard again is simply listed again.
+    """
+    hub = entry.runtime_data.hub
+    notes = hub.notes.get(entry.entry_id)
+    cutoff = None if days is None else time.time() - days * 86400
+    configured = _configured(entry)
+    gone: set[str] = set()
+    if notes is not None:
+        gone = {
+            sender
+            for sender, values in notes.heard.items()
+            if cutoff is None or values["last"] < cutoff
+        }
+        notes.forget_heard(gone, configured)
+    for sender, t in list(hub.discovered.items()):
+        if t.gateway == entry.entry_id and (cutoff is None or t.timestamp < cutoff):
+            del hub.discovered[sender]
+            gone.add(format_id(sender))
+    if gone:
+        async_update_notification(hass, entry)
+    return len(gone)
+
+
+def stored_unknown(entry: EnOceanEltakoConfigEntry) -> list[dict[str, Any]]:
+    """The unknown senders heard (also before a restart), for the panel's device list."""
+    hub = entry.runtime_data.hub
+    notes = hub.notes.get(entry.entry_id)
+    if notes is None:
+        return []
+    configured = _configured(entry)
+    hidden = {format_id(s) for s in hub.hidden.get(entry.entry_id, ())}
+    rows = []
+    for sender, values in notes.heard.items():
+        if sender in configured or sender in hidden or hub.senders.in_pool(parse_id(sender)):
+            continue
+        last = notes.last.get(sender, {})
+        rows.append(
+            {
+                "id": sender,
+                "rorg": values["rorg"],
+                "dbm": values["dbm"],
+                "last": values["last"],
+                "data": last.get("data", ""),
+            }
+        )
+    return sorted(rows, key=lambda r: r["last"], reverse=True)
+
+
 def pending(entry: EnOceanEltakoConfigEntry) -> list[ReceivedTelegram]:
     """Unknown senders this gateway heard that are not set up as devices (newest first)."""
     hub = entry.runtime_data.hub
@@ -219,12 +281,43 @@ def async_setup_discovery(
         if new:
             async_update_notification(hass, entry)
 
+    notes = hub.notes.get(entry.entry_id)
+    if notes is not None and entry.options.get(CONF_DISCOVERY, True):
+        configured = _configured(entry)
+        hidden = hub.hidden.get(entry.entry_id, set())
+        for sender_text, saved in notes.last.items():  # senders heard before the restart
+            if sender_text not in notes.heard or sender_text in configured:
+                continue
+            sender = parse_id(sender_text)
+            if sender in hub.discovered or sender in hidden or hub.senders.in_pool(sender):
+                continue
+            hub.discovered[sender] = ReceivedTelegram(
+                RadioTelegram(
+                    int(saved["rorg"], 16),
+                    bytes.fromhex(saved["data"]),
+                    sender,
+                    saved["status"],
+                    dbm=saved["dbm"],
+                ),
+                entry.entry_id,
+                saved["time"],
+                sender,
+            )
+
+    @callback
+    def forget(_now: object = None) -> None:
+        if days := entry.options.get(CONF_FORGET_DAYS, DEFAULT_FORGET_DAYS):
+            async_forget_unknown(hass, entry, days)
+
+    forget()
     async_update_notification(hass, entry)  # after a reload: the count is current again
     remove = hub.dispatcher.add_unknown_listener(heard)
+    remove_timer = async_track_time_interval(hass, forget, FORGET_CHECK)
 
     @callback
     def stop() -> None:
         remove()
+        remove_timer()
         async_remove_card(hass, entry)
 
     return stop
