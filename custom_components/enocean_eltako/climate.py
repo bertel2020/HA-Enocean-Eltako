@@ -1,5 +1,8 @@
 """Climate (E8).
 
+Switching actuator with a thermostat (thermostat.py): Home Assistant regulates a room temperature
+around a setpoint and switches the relay; "heating" means the meter on the same load takes power.
+
 Room controller on site (FUTH, FTR): read only; setpoint, temperature and night setback come
 from its telegrams and it is operated locally.
 
@@ -32,12 +35,19 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import EnOceanEltakoConfigEntry
-from .catalog import COOLING_PRESS, COOLING_SWITCH, OPT_SEND_INTERVAL, OPT_TEMPERATURE_SENSOR
+from .catalog import (
+    COOLING_PRESS,
+    COOLING_SWITCH,
+    OPT_SEND_INTERVAL,
+    OPT_TEMPERATURE_SENSOR,
+    OPT_THERMOSTAT_ATTRS,
+)
 from .const import DOMAIN
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .protocol.eep.eltako import heating
 from .protocol.send_queue import Priority
+from .thermostat import Status, ThermostatController, controller_for, enabled
 
 PARALLEL_UPDATES = 0
 
@@ -58,6 +68,8 @@ async def async_setup_entry(
             async_add_entities([RoomControllerClimate(device)], config_subentry_id=subentry_id)
         elif device.model.kind == "heating_actuator":
             async_add_entities([HeatingClimate(device)], config_subentry_id=subentry_id)
+        elif enabled(device):
+            async_add_entities([ThermostatClimate(device)], config_subentry_id=subentry_id)
 
 
 class RoomControllerClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
@@ -251,3 +263,119 @@ class HeatingClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
             return False
         self._attr_hvac_action = action
         return True
+
+
+class ThermostatClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
+    """A switching actuator channel with its own thermostat (Home Assistant regulates)."""
+
+    _attr_translation_key = "thermostat"
+    _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TURN_ON
+        | ClimateEntityFeature.TURN_OFF
+    )
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "thermostat")
+        self._ctl: ThermostatController = controller_for(device.hass, device)
+        settings = self._ctl.settings
+        self._attr_min_temp = settings.setpoint_min
+        self._attr_max_temp = settings.setpoint_max
+        self._attr_target_temperature_step = settings.step
+        self._attr_precision = settings.precision
+        self._with_attributes = bool(device.options.get(OPT_THERMOSTAT_ATTRS, True))
+        self._issue_ids = {
+            Status.BLOCKED: f"thermostat_blocked_{device.unique_prefix}",
+            Status.SENSOR_STALE: f"thermostat_stale_{device.unique_prefix}",
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None:
+            target = last.attributes.get(ATTR_TEMPERATURE)
+            self._ctl.restore(
+                float(target) if target is not None else None,
+                None if last.state not in ("heat", "off") else last.state == "heat",
+            )
+        self._ctl.start()
+        self.async_on_remove(self._ctl.stop)
+        self.async_on_remove(self._ctl.add_listener(self._changed))
+        self.async_on_remove(self._drop_issues)
+        self._sync_issues()  # the controller judged the situation before this listener existed
+
+    @callback
+    def _drop_issues(self) -> None:
+        for issue_id in self._issue_ids.values():
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+
+    @callback
+    def _changed(self) -> None:
+        self._sync_issues()
+        self.async_write_ha_state()
+
+    @callback
+    def _sync_issues(self) -> None:
+        for status, issue_id in self._issue_ids.items():
+            if self._ctl.status == status:
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    issue_id,
+                    is_fixable=False,
+                    severity=ir.IssueSeverity.WARNING,
+                    translation_key=f"thermostat_{status.value}",
+                    translation_placeholders={"name": self._device.subentry.title},
+                )
+            else:
+                ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+
+    @property
+    def hvac_mode(self) -> HVACMode:
+        return HVACMode.HEAT if self._ctl.heating else HVACMode.OFF
+
+    @property
+    def hvac_action(self) -> HVACAction:
+        if not self._ctl.heating:
+            return HVACAction.OFF
+        return HVACAction.HEATING if self._ctl.status == Status.HEATING else HVACAction.IDLE
+
+    @property
+    def target_temperature(self) -> float:
+        return self._ctl.setpoint
+
+    @property
+    def current_temperature(self) -> float | None:
+        if (temperature := self._ctl.temperature) is None:
+            return None
+        precision = self._attr_precision or 0.1
+        return round(round(temperature / precision) * precision, 2)
+
+    @property
+    def current_humidity(self) -> float | None:
+        return self._ctl.humidity
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        if not self._with_attributes:
+            return None
+        attributes: dict[str, Any] = {
+            "status": self._ctl.status.value,
+            "run_minutes": self._ctl.run_minutes,
+            "cooldown_remaining": self._ctl.cooldown_remaining,
+            "on_hours_today": self._ctl.on_hours_today,
+        }
+        if self._ctl.power is not None:
+            attributes["power"] = self._ctl.power
+        return attributes
+
+    async def async_set_temperature(self, **kwargs: Any) -> None:
+        if (target := kwargs.get(ATTR_TEMPERATURE)) is not None:
+            self._ctl.set_setpoint(float(target))
+
+    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
+        self._ctl.set_heating(hvac_mode == HVACMode.HEAT)
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False  # the controller follows the relay itself

@@ -34,6 +34,7 @@ from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayConnectionSensor
 from .sensor import HANDLE_POSITIONS, HANDLE_UPSIDE_DOWN
+from .thermostat_entities import thermostat_binary_sensors, wanted
 
 PARALLEL_UPDATES = 0
 
@@ -192,6 +193,8 @@ async def async_setup_entry(
 ) -> None:
     async_add_entities([GatewayConnectionSensor(entry)])
     for subentry_id, device in entry.runtime_data.devices.items():
+        if wanted(device):  # the optional thermostat's status
+            async_add_entities(thermostat_binary_sensors(device), config_subentry_id=subentry_id)
         if Platform.BINARY_SENSOR not in device.model.platforms:
             continue
         descriptions = model_binary_descriptions(device)

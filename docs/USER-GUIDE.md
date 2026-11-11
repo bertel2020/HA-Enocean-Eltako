@@ -169,6 +169,35 @@ the meter as a connected device. Both stay devices of their own with their own e
 entity IDs, sender IDs and history do not change, and the energy dashboard keeps using the meter.
 The link can be set or removed at any time.
 
+### Thermostat for a switching actuator (convector)
+
+A switching actuator cannot regulate. Under **Thermostat** in the device settings (collapsed
+section), switch it on and pick a room temperature sensor (any temperature sensor in Home
+Assistant, for example a SwitchBot); the channel then also gets a thermostat entity. Home
+Assistant switches the relay through the send queue, with the senders of the channel.
+
+- **Regulation:** on at setpoint minus hysteresis, off at setpoint plus hysteresis; in between
+  nothing is sent, so a relay switched by hand or by a wall switch stays until the next
+  threshold. The relay stays at least the shortest time on and off; after the longest run (0 =
+  unlimited) it rests for the forced pause.
+- **Safety:** without a room temperature (unavailable or silent for longer than "Sensor outdated
+  after") the relay goes off and a repair issue says so. The convector's own thermostat stays the
+  safety limit: set it above the highest setpoint of the thermostat.
+- **Does it really heat?** With a meter that is set to **Belongs to device** this actuator
+  (previous section) the thermostat reads its power: "heating" means at least "Heating from
+  power". Relay on but no power for the time set under "Report blockade after" and the room below
+  the setpoint raises a repair issue (the convector's own thermostat holds it back, or the device
+  is out of order). Without such a meter "relay on" counts as heating and the blockade check is off.
+- **Humidity:** an optional humidity sensor is shown as the thermostat's humidity; it regulates
+  nothing.
+- **Extra readings:** power, run time, pause remaining, hours on today and status as attributes of
+  the thermostat, and run time, pause, time on today, "Heating" and "Blocked" as entities of their
+  own (diagnostics). Both can be switched off. The time on today starts again at midnight and
+  after a restart of Home Assistant.
+
+The thermostat is a device option and needs no sender ID of its own; it uses the senders taught
+into the actuator.
+
 ### Virtual sensors
 
 Home Assistant itself sends as a window contact (D5-00-01), motion sensor (A5-07-01),

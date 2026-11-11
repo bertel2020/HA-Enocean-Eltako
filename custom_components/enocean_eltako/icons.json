@@ -42,6 +42,18 @@
       },
       "wake": {
         "default": "mdi:alarm-light-outline"
+      },
+      "thermostat_heating": {
+        "default": "mdi:radiator-off",
+        "state": {
+          "on": "mdi:radiator"
+        }
+      },
+      "thermostat_blocked": {
+        "default": "mdi:check-circle-outline",
+        "state": {
+          "on": "mdi:alert-circle-outline"
+        }
       }
     },
     "button": {
@@ -289,11 +301,28 @@
       },
       "driven_time": {
         "default": "mdi:timer-outline"
+      },
+      "thermostat_run": {
+        "default": "mdi:timer-outline"
+      },
+      "thermostat_cooldown": {
+        "default": "mdi:timer-pause-outline"
+      },
+      "thermostat_on_today": {
+        "default": "mdi:clock-outline"
       }
     },
     "select": {
       "cover_automation": {
         "default": "mdi:form-select"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "default": "mdi:radiator-off",
+        "state": {
+          "heat": "mdi:radiator"
+        }
       }
     }
   },

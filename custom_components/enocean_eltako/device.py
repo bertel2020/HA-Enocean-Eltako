@@ -155,6 +155,7 @@ class EnOceanDevice:
         self._stat_listeners: list[Callable[[], None]] = []
         self.cover_entity: Any = None  # set by the cover entity (calibrate button, accuracy)
         self.virtual: Any = None  # I9: VirtualSensor of a virtual sensor device
+        self.thermostat: Any = None  # the ThermostatController of a switching actuator channel
         self._ute_profile: str | None = None  # VLD: profile whose teach-in is armed ...
         self._ute_until = 0.0  # ... until this time.monotonic()
         self.last_values: dict[str, Any] = {}  # the last decoded values of the device's channel

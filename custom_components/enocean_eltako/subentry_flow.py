@@ -45,14 +45,21 @@ from .catalog import (
     GROUP_ENOCEAN,
     GROUP_VIRTUAL,
     GROUPS,
+    OPT_ACTIVE_POWER,
+    OPT_BLOCKED_AFTER,
     OPT_BUTTONS,
     OPT_CALIBRATION,
     OPT_CHANNEL,
+    OPT_COOLDOWN,
     OPT_DEVICE_CLASS,
     OPT_DOUBLE_PRESS,
     OPT_FIELDS,
+    OPT_HUMIDITY_SENSOR,
+    OPT_HYSTERESIS,
     OPT_INVERT,
     OPT_LONG_PRESS,
+    OPT_MAX_RUN,
+    OPT_MIN_CYCLE,
     OPT_OFF_BUTTON,
     OPT_ON_BUTTON,
     OPT_PART_OF,
@@ -63,11 +70,20 @@ from .catalog import (
     OPT_ROCKER_ON,
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
+    OPT_SETPOINT_MAX,
+    OPT_SETPOINT_MIN,
+    OPT_SETPOINT_STEP,
     OPT_SOURCE,
+    OPT_STALE_AFTER,
     OPT_STATUS_CHANNEL,
     OPT_STATUS_REQUEST,
+    OPT_TEMP_PRECISION,
     OPT_TEMPERATURE_SENSOR,
     OPT_TENTHS,
+    OPT_THERMOSTAT,
+    OPT_THERMOSTAT_ATTRS,
+    OPT_THERMOSTAT_ENTITIES,
+    OPT_THERMOSTAT_SENSOR,
     OPT_TILT_TIME,
     OPT_TIME_CLOSES,
     OPT_TIME_OPENS,
@@ -81,6 +97,8 @@ from .catalog import (
     OPT_WEATHER_TEMPERATURE,
     OPT_WEATHER_WIND,
     OPT_WHEN_UNAVAILABLE,
+    THERMOSTAT_DEFAULTS,
+    THERMOSTAT_OPTIONS,
     WEATHER_SOURCES,
     DeviceModel,
     categories_of,
@@ -226,6 +244,7 @@ OPTION_KEYS = (
     OPT_ROCKER_OFF,
     OPT_STATUS_CHANNEL,
     OPT_PART_OF,
+    *THERMOSTAT_OPTIONS,
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
@@ -234,10 +253,12 @@ VIRTUAL_BUTTONS = ["a0", "a1", "b0", "b1"]  # the buttons a virtual rocker can o
 SECTION_ROCKER = "rocker_buttons"
 SECTION_WALL = "wall_switch_settings"
 SECTION_STATUS = "status_channel_settings"
+SECTION_THERMOSTAT = "thermostat_settings"
 SECTIONS = {
     SECTION_ROCKER: (OPT_ROCKER_ON, OPT_ROCKER_OFF),
     SECTION_WALL: (OPT_WALL_SWITCH, OPT_WALL_ON, OPT_WALL_OFF),
     SECTION_STATUS: (OPT_STATUS_CHANNEL,),
+    SECTION_THERMOSTAT: THERMOSTAT_OPTIONS,
 }
 
 
@@ -280,6 +301,45 @@ def _buttons_section(fields: dict[Any, Any], buttons: tuple[tuple[str, str], ...
         fields[vol.Required(opt, default=default)] = SelectSelector(
             SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
         )
+    return section(vol.Schema(fields), {"collapsed": True})
+
+
+def _thermostat_section() -> section:
+    """The optional thermostat of a switching actuator: switched on here, collapsed otherwise."""
+
+    def number(key: str, low: float, high: float, step: float, unit: str) -> Any:
+        return vol.Optional(key, default=THERMOSTAT_DEFAULTS[key]), NumberSelector(
+            NumberSelectorConfig(
+                min=low, max=high, step=step, unit_of_measurement=unit, mode=NumberSelectorMode.BOX
+            )
+        )
+
+    fields: dict[Any, Any] = {
+        vol.Optional(OPT_THERMOSTAT, default=False): BooleanSelector(),
+        vol.Optional(OPT_THERMOSTAT_SENSOR): EntitySelector(
+            EntitySelectorConfig(domain=["sensor", "input_number"], device_class="temperature")
+        ),
+        vol.Optional(OPT_HUMIDITY_SENSOR): EntitySelector(
+            EntitySelectorConfig(domain="sensor", device_class="humidity")
+        ),
+    }
+    for key, low, high, step, unit in (
+        (OPT_HYSTERESIS, 0.1, 5, 0.1, "K"),
+        (OPT_SETPOINT_MIN, 5, 30, 0.5, "°C"),
+        (OPT_SETPOINT_MAX, 5, 35, 0.5, "°C"),
+        (OPT_SETPOINT_STEP, 0.1, 1, 0.1, "K"),
+        (OPT_TEMP_PRECISION, 0.1, 1, 0.1, "K"),
+        (OPT_MIN_CYCLE, 0, 60, 1, "min"),
+        (OPT_MAX_RUN, 0, 1440, 5, "min"),
+        (OPT_COOLDOWN, 0, 240, 5, "min"),
+        (OPT_ACTIVE_POWER, 1, 5000, 1, "W"),
+        (OPT_BLOCKED_AFTER, 1, 240, 1, "min"),
+        (OPT_STALE_AFTER, 5, 1440, 5, "min"),
+    ):
+        field, selector = number(key, low, high, step, unit)
+        fields[field] = selector
+    fields[vol.Optional(OPT_THERMOSTAT_ATTRS, default=True)] = BooleanSelector()
+    fields[vol.Optional(OPT_THERMOSTAT_ENTITIES, default=True)] = BooleanSelector()
     return section(vol.Schema(fields), {"collapsed": True})
 
 
@@ -580,6 +640,8 @@ class DeviceForm:
                 {vol.Optional(OPT_WALL_SWITCH): TextSelector()},
                 ((OPT_WALL_ON, "a0"), (OPT_WALL_OFF, "a1")),
             )
+        if OPT_THERMOSTAT in model.options:
+            schema[vol.Optional(SECTION_THERMOSTAT, default={})] = _thermostat_section()
         return schema
 
     async def _async_save(
@@ -623,6 +685,17 @@ class DeviceForm:
                 errors["base"] = "wall_switch_invalid_id"  # a field in a section
         else:
             user_input = {k: v for k, v in user_input.items() if k != OPT_WALL_SWITCH}
+        if user_input.get(OPT_THERMOSTAT):  # fields in a section: errors on the form
+            if not user_input.get(OPT_THERMOSTAT_SENSOR):
+                errors["base"] = "thermostat_no_sensor"
+            elif float(user_input.get(OPT_SETPOINT_MIN, 0)) >= float(
+                user_input.get(OPT_SETPOINT_MAX, 100)
+            ):
+                errors["base"] = "thermostat_setpoint_range"
+            elif float(user_input.get(OPT_MAX_RUN) or 0) > 0 and not float(
+                user_input.get(OPT_COOLDOWN) or 0
+            ):
+                errors["base"] = "thermostat_no_cooldown"
         if errors:
             return None
         # an ID that moves to another profile of this device (a changed device type) stays

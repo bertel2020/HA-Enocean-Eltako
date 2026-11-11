@@ -92,6 +92,10 @@ from .senders import (
 )
 from .services import async_setup_services
 from .subentry_flow import sender_owner
+from .thermostat import enabled as thermostat_enabled
+from .thermostat_entities import BINARY_SENSORS as THERMOSTAT_BINARIES
+from .thermostat_entities import SENSORS as THERMOSTAT_SENSORS
+from .thermostat_entities import wanted as thermostat_wanted
 from .virtual import VirtualSensor
 from .websocket import async_setup_websocket
 
@@ -159,6 +163,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
 
     1.5 -> 1.6: a meter can hang under the actuator on its load ("part_of", the other device's
     subentry ID, optional; "connected via" on the device page); nothing to convert (schema 6).
+
+    1.6 -> 1.7: a switching actuator channel can have a thermostat ("thermostat" and its
+    settings, all optional); nothing to convert (schema 7).
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -217,6 +224,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             data["schema"] = 6
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=6)
+    if entry.minor_version < 7:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 7:
+                continue
+            data["schema"] = 7
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=7)
     return True
 
 
@@ -523,6 +538,15 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
             chosen = device.options.get(OPT_PLATFORM, default)
             other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
             stale.append((other, f"{prefix}_{'light' if other == Platform.LIGHT else 'switch'}"))
+        if device.model.kind == "switch":  # the optional thermostat and its extra entities
+            thermostat = thermostat_enabled(device)
+            if not thermostat:
+                stale.append((Platform.CLIMATE, f"{prefix}_thermostat"))
+            if not thermostat_wanted(device):
+                stale += [(Platform.SENSOR, f"{prefix}_{key}") for key, *_ in THERMOSTAT_SENSORS]
+                stale += [
+                    (Platform.BINARY_SENSOR, f"{prefix}_{key}") for key, *_ in THERMOSTAT_BINARIES
+                ]
         if device.model.id == GENERIC_EEP and device.model.receive is not None:
             chosen = device.options.get(OPT_FIELDS)
             for key, _field in generic_fields(device.model.receive.eep):

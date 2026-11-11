@@ -118,8 +118,8 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = (
-        6  # 1.2: senders (2); 1.3: rocker buttons (3); 1.4: model name (4); 1.5: routing;
-        # 1.6: measuring meter of a switch (6)
+        7  # 1.2: senders (2); 1.3: rocker buttons (3); 1.4: model name (4); 1.5: routing;
+        # 1.6: meter under an actuator (6); 1.7: thermostat of a switching actuator (7)
     )
 
     def __init__(self) -> None:
