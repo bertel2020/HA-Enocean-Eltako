@@ -188,7 +188,7 @@ const STYLE = `
   .icon-btn.spin svg { animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .icon-btn.spin svg { animation: none; } }
-  .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
+  .icon-btn { width: 40px; height: 40px; flex: none; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent-hover); }
   .icon-btn[hidden] { display: none; }
   .icon-btn.on { color: var(--accent); }
@@ -480,7 +480,7 @@ const STYLE = `
   .devices .dev-head [aria-sort="ascending"] svg { transform: rotate(180deg); }
   .devices .dev { border-top: 1px solid var(--line); cursor: pointer; min-height: 64px; }
   .devices .dev .acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px; }
-  .devices .dev .acts .icon-btn { width: 36px; height: 36px; }
+  .devices .dev .acts .icon-btn { width: 36px; height: 36px; flex: none; }
   .devices .dev .acts .icon-btn svg { width: 18px; height: 18px; }
   .devices .dev .acts .chip { height: 32px; padding: 0 12px; margin-left: 4px; }
   /* "add" is the one action of an unknown sender: a round filled button, its name is the tooltip */
