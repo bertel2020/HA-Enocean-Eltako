@@ -26,10 +26,11 @@ INNER = 78.0            # free inner width of the frame hollow
 CLEAR = 0.2
 
 # --- base plate ---
-PLATE = 70.0            # must be < INNER
+PLATE = 76.0            # must be < INNER
 PLATE_T = 4.0
 RING_T = 2.0
-SCREW_X = 20.5          # screw hole centre offset from the middle
+SCREW = 32.0            # screw holes at (+-SCREW, +-SCREW), hidden under the frame border
+OPEN_X, OPEN_Y = 20.0, 24.0   # central opening of the ring
 HOLE = 4.5
 
 # --- snap ---
@@ -105,15 +106,26 @@ class Mesh:
         return max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs)
 
 
+def cut_plate(m, half, z0, z1, holes):
+    """Square plate (edge 2*half) minus rectangular holes [(x0, x1, y0, y1)], built from grid cells."""
+    xs = sorted({-half, half, *[v for h in holes for v in h[0:2]]})
+    ys = sorted({-half, half, *[v for h in holes for v in h[2:4]]})
+    for xa, xb in zip(xs, xs[1:]):
+        for ya, yb in zip(ys, ys[1:]):
+            cx, cy = (xa + xb) / 2, (ya + yb) / 2
+            if not any(h[0] < cx < h[1] and h[2] < cy < h[3] for h in holes):
+                m.box(xa, xb, ya, yb, z0, z1)
+
+
 def base_plate():
+    """Mounting ring like the one of a socket: flat ring with a central opening, four screw holes
+    in the corners (screw it to the wall first, then put the frame over it), collar in the window."""
     m = Mesh()
-    p = PLATE / 2
-    hx0, hx1 = SCREW_X - HOLE / 2, SCREW_X + HOLE / 2
     h = HOLE / 2
-    m.box(-hx0, hx0, -p, p, 0, PLATE_T)                 # centre strip
-    m.mirror_xy(hx1, p, -p, p, 0, PLATE_T, my=False)    # outer strips
-    m.mirror_xy(hx0, hx1, h, p, 0, PLATE_T, my=False)   # above the holes
-    m.mirror_xy(hx0, hx1, -p, -h, 0, PLATE_T, my=False) # below the holes
+    holes = [(-OPEN_X, OPEN_X, -OPEN_Y, OPEN_Y)]
+    holes += [(sx * SCREW - h, sx * SCREW + h, sy * SCREW - h, sy * SCREW + h)
+              for sx in (-1, 1) for sy in (-1, 1)]
+    cut_plate(m, PLATE / 2, 0, PLATE_T, holes)
     # collar ring in the window, up to the front of the frame
     ro = WINDOW / 2 - CLEAR
     ri = ro - RING_T
@@ -123,7 +135,7 @@ def base_plate():
     m.box(-ro, -ri, -ri, ri, PLATE_T, z1)
     m.box(ri, ro, -ri, ri, PLATE_T, z1)
     # catch blocks under which the barbs hook (top and bottom)
-    m.mirror_xy(-6, 6, ri - CATCH, ri, PLATE_T + BARB + 0.0, PLATE_T + BARB + 1.2, mx=False)
+    m.mirror_xy(-6, 6, ri - CATCH, ri, PLATE_T + BARB, PLATE_T + BARB + 1.2, mx=False)
     return m
 
 
