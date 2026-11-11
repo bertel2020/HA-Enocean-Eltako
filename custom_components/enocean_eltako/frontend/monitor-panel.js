@@ -3548,7 +3548,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const none = `<span class="none">${esc(t.noValue)}</span>`;
     // a model that is not fixed (one EEP, several devices) names the candidates instead of nothing
     const model = d.model || (d.models.length ? d.models.join(" / ") : "");
-    const sub = [`<span class="mono">${esc(d.id)}</span>`, model ? esc(model) : d.eep ? `<span class="mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : "", this._multi ? esc(d.gateway_name) : ""].filter(Boolean).join(" · ");
+    const sub = [`<span class="mono">${esc(d.id)}</span>`, model ? esc(model) : d.eep ? `<span class="mono" title="${esc(d.eepFull)}">${esc(d.eep)}</span>` : "", this._multi ? esc(d.gateway_name) : "", d.senders?.length ? `<span class="mono" title="${esc(t.senderOfHint(d.senders.map((x) => `${this._profile(x.profile)} ${x.id}`).join(", ")))}">${esc(t.senderOf)} ${esc(d.senders[0].id)}</span>` : ""].filter(Boolean).join(" · ");
     const kind = d.unknown ? "unknown" : categoryIcon(d.category) ? d.category : "other";
     const kindName = kind === "unknown" ? t.unknownDevice : t.doc.tbl.categories[kind] || "";
     const tile = `<span class="tile ${kind}" title="${esc(kindName)}" aria-hidden="true">${svg(kind === "unknown" ? ICON.help : categoryIcon(kind) || ICON.tower)}</span>`;
