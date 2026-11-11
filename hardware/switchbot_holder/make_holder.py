@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, mounted without visible screws.
 
-A thin plate (2 mm) is screwed onto the flush box inside the hollow frame, like the mounting ring of
-a socket. The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front) gets two
-snap arms on its back. They go through the frame window and through two slots in the plate and hook
-behind it, inside the box opening. The tray clamps the frame on its top and bottom border.
+A thin mounting ring (2 mm, central opening, screw holes) is screwed onto the flush box inside the
+hollow frame, like the Tragring of a socket. The existing wall-mount tray (SwitchBotMount.3mf, meter
+clips in from the front) gets two snap arms on its back. They go through the frame window and the
+opening of the ring and hook behind its inner edge, inside the box opening. The tray clamps the frame on its top and bottom border.
 
-Parts:  base_plate.stl   onto the flush box (box screws, 60 mm apart, ASSUMED)
+Parts:  base_plate.stl   mounting ring onto the flush box (box screws, 60 mm apart, ASSUMED)
         front_piece.stl  the tray with two snap arms, pushed in from the front, no screws
 
 Axes: X width, Y height, Z away from the wall (Z=0 is the wall / rear face of the plate).
@@ -36,8 +36,7 @@ ARM_W = 10.0
 ARM_T = 1.5
 ARM_OUT = 23.6          # outer face of the arm (y)
 BARB = 1.6              # barb protrusion
-SLOT_Y0, SLOT_Y1 = 21.2, 24.4   # slot in the plate; barb is wider than the slot edge by 0.8
-SLOT_X = 5.6            # half width of the slot
+OPEN = 24.4             # half width of the square opening of the ring; the barbs hook its edge (0.8 mm)
 HOOK_Z = -0.2           # top of the barb, just below the plate rear
 LEAD = 2.2              # length of the lead-in ramp
 
@@ -84,12 +83,12 @@ def box_tris(x0, x1, y0, y1, z0, z1):
 
 
 def base_plate():
-    """Square plate, built from grid cells so that the (square) holes and slots are left out."""
+    """Mounting ring: square ring with a central opening and four screw holes, built from grid cells."""
     half, sp = PLATE / 2, BOX_SPACING / 2
     def sq(cx, cy, d):
         return (cx - d / 2, cx + d / 2, cy - d / 2, cy + d / 2)
     holes = [sq(sp, 0, BOX_HOLE), sq(-sp, 0, BOX_HOLE), sq(0, sp, BOX_HOLE), sq(0, -sp, BOX_HOLE),
-             (-SLOT_X, SLOT_X, SLOT_Y0, SLOT_Y1), (-SLOT_X, SLOT_X, -SLOT_Y1, -SLOT_Y0)]
+             (-OPEN, OPEN, -OPEN, OPEN)]
     xs = sorted({-half, half, *[v for h in holes for v in h[0:2]]})
     ys = sorted({-half, half, *[v for h in holes for v in h[2:4]]})
     tris = []
