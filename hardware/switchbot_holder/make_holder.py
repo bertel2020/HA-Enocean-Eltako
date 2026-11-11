@@ -35,13 +35,13 @@ PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free in
 PLATE_T = 1.3           # allowed thickness under the frame (given)
 
 # --- meter (measured) and tray ---
-METER_W, METER_H, METER_D = 27.5, 66.0, 20.0
+METER_W, METER_H, METER_D = 27.5, 66.0, 18.5   # depth measured in the tray: 1.5 mm less than the nominal 20
 FIT = 0.4               # total clearance
 TRAY_WALL = 2.4
 LIP = 1.2               # lips over the front edge of the meter
 FLOOR_T = 3.0           # tray floor (screws go through it)
-R_OUT = 4.0             # rounded outer corners at the closed (bottom) end
-R_IN = R_OUT - TRAY_WALL  # concentric inner corner radius, keeps the wall 2.4 mm everywhere
+R_OUT = 5.4             # rounded outer corners at the closed (bottom) end
+R_IN = R_OUT - TRAY_WALL  # = 3.0: concentric, wall stays 2.4 mm, follows the rounded meter corners
 R_TIP = 1.0             # rounded outer corners at the open (top) end
 
 # --- screws ---
