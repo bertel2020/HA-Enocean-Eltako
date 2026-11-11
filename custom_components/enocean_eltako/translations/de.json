@@ -641,7 +641,9 @@
             "weather_rain": "Regen",
             "weather_brightness": "Helligkeit",
             "run_time_tenths": "Fahrzeiten in 100 ms",
-            "model_name": "Modell (optional)"
+            "model_name": "Modell (optional)",
+            "measured_power": "Leistungsmesser",
+            "measured_energy": "Energiezähler"
           },
           "data_description": {
             "device_id": "ID, mit der das Gerät sendet, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3 (bei Aktoren die ID ihrer Statustelegramme).",
@@ -674,7 +676,10 @@
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
             "invert": "Kontakte: Ein heißt geschlossen. Fenstergriffe: Zu und Gekippt tauschen die Plätze (Griff andersherum montiert). Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
             "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden.",
-            "back": "Einschalten und OK drücken: zurück zum vorigen Schritt, ohne zu speichern."
+            "back": "Einschalten und OK drücken: zurück zum vorigen Schritt, ohne zu speichern.",
+            "measured_power": "Optional. Leistungssensor eines Zählers an derselben Last, zum Beispiel der F3Z14D-Kanal dieses Konvektors. Wird als Attribut dieser Entität angezeigt; die Messwerte bleiben beim Zähler.",
+            "measured_energy": "Optional. Energiesensor dieses Zählers, als Attribut dieser Entität angezeigt. Das Energie-Dashboard nutzt weiter den Zähler selbst.",
+            "name": "Nenne auch die Funktion, zum Beispiel „Bad Konvektor Schalter“ und „Bad Konvektor Zähler“: Aktor und Zähler sind zwei Geräte."
           },
           "sections": {
             "rocker_buttons": {
@@ -756,7 +761,9 @@
             "weather_brightness": "Helligkeit",
             "run_time_tenths": "Fahrzeiten in 100 ms",
             "model_name": "Modell (optional)",
-            "model": "Gerätetyp"
+            "model": "Gerätetyp",
+            "measured_power": "Leistungsmesser",
+            "measured_energy": "Energiezähler"
           },
           "data_description": {
             "time_opens": "Volle Laufzeit von zu nach auf.",
@@ -785,7 +792,10 @@
             "run_time_tenths": "Fahrzeiten des Controllers in Zehntelsekunden senden, genau bei kurzen Fahrten und Lamellen. Nur für Aktoren, die diese Form kennen (neuere Firmware); sonst ganze Sekunden, wie die alte Integration eltako sie sendete.",
             "invert": "Kontakte: Ein heißt geschlossen. Fenstergriffe: Zu und Gekippt tauschen die Plätze (Griff andersherum montiert). Schaltaktoren mit umgekehrter Relaislogik: Befehle und Zustand werden vertauscht.",
             "model_name": "Nur zur Anzeige im Telegramm-Monitor und auf der Geräteseite. Das Verhalten hängt vom Profil ab, nicht vom Modell. Ein anderes Modell kann eingetippt werden.",
-            "model": "Beim Wechsel des Typs bleibt die Sender-ID des ersten Senders; der Aktor muss sie eventuell neu einlernen. Seine Entitäten werden für den neuen Typ neu aufgebaut."
+            "model": "Beim Wechsel des Typs bleibt die Sender-ID des ersten Senders; der Aktor muss sie eventuell neu einlernen. Seine Entitäten werden für den neuen Typ neu aufgebaut.",
+            "measured_power": "Optional. Leistungssensor eines Zählers an derselben Last, zum Beispiel der F3Z14D-Kanal dieses Konvektors. Wird als Attribut dieser Entität angezeigt; die Messwerte bleiben beim Zähler.",
+            "measured_energy": "Optional. Energiesensor dieses Zählers, als Attribut dieser Entität angezeigt. Das Energie-Dashboard nutzt weiter den Zähler selbst.",
+            "name": "Nenne auch die Funktion, zum Beispiel „Bad Konvektor Schalter“ und „Bad Konvektor Zähler“: Aktor und Zähler sind zwei Geräte."
           },
           "sections": {
             "rocker_buttons": {

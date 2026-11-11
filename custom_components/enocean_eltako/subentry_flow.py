@@ -63,6 +63,8 @@ from .catalog import (
     OPT_ROUTING,
     OPT_SEND_INTERVAL,
     OPT_SOURCE,
+    OPT_MEASURED_ENERGY,
+    OPT_MEASURED_POWER,
     OPT_STATUS_CHANNEL,
     OPT_STATUS_REQUEST,
     OPT_TEMPERATURE_SENSOR,
@@ -224,6 +226,8 @@ OPTION_KEYS = (
     OPT_ROCKER_ON,
     OPT_ROCKER_OFF,
     OPT_STATUS_CHANNEL,
+    OPT_MEASURED_POWER,
+    OPT_MEASURED_ENERGY,
     *WEATHER_SOURCES,
 )
 BUTTONS = ["b0", "b1", "a0", "a1"]
@@ -472,6 +476,13 @@ class DeviceForm:
                     options=[p.id for p in model.senders],
                     translation_key=OPT_ROUTING,
                 )
+            )
+        if OPT_MEASURED_POWER in model.options:
+            schema[vol.Optional(OPT_MEASURED_POWER)] = EntitySelector(
+                EntitySelectorConfig(domain="sensor", device_class="power")
+            )
+            schema[vol.Optional(OPT_MEASURED_ENERGY)] = EntitySelector(
+                EntitySelectorConfig(domain="sensor", device_class="energy")
             )
         if OPT_TEMPERATURE_SENSOR in model.options:
             schema[vol.Optional(OPT_TEMPERATURE_SENSOR)] = EntitySelector(

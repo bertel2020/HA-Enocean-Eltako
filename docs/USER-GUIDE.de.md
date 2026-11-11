@@ -167,6 +167,16 @@ Tasters eintragen und die Tasten für Ein und Aus wählen (dieselbe Taste für b
 um). Seine Tastendrücke setzen dann den Zustand in Home Assistant, als angenommen markiert, bis
 der Aktor sich selbst meldet.
 
+### Schaltaktor und Zähler an derselben Last
+
+Ein FSR14 misst nichts; ein F3Z14D (oder ein anderer Zähler) misst den Stromkreis. Beide werden
+als zwei Geräte angelegt und nach ihrer Funktion benannt, zum Beispiel „Bad Konvektor Schalter“
+und „Bad Konvektor Zähler“, im selben Bereich. In den Geräteeinstellungen des Schalters können
+**Leistungsmesser** und **Energiezähler** auf die Sensoren des Zählers zeigen; der Schalter
+zeigt dann `measured_power` und `measured_energy` als Attribute. Das ist nur eine Anzeige: Die
+Messwerte bleiben beim Zähler, den das Energie-Dashboard weiter nutzt. Die Auswahl lässt sich
+jederzeit setzen oder entfernen, ohne Sender-IDs oder Verlauf anzufassen.
+
 ### Virtuelle Sensoren
 
 Home Assistant sendet selbst als Fensterkontakt (D5-00-01), Bewegungsmelder (A5-07-01),

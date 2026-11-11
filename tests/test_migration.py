@@ -137,3 +137,30 @@ async def test_cover_routing_both_becomes_one_sender(hass: HomeAssistant) -> Non
     assert data["Taster gewählt"]["routing"] == "direction_rocker"  # a chosen one stays
     assert all(d["schema"] == SUBENTRY_SCHEMA for d in data.values())
     assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION
+
+
+async def test_measuring_meter_option_needs_no_conversion(hass: HomeAssistant) -> None:
+    """1.5 -> 1.6: the optional meter link is new; existing devices only get the new schema."""
+    entry = _entry(
+        5,
+        [
+            ConfigSubentryData(
+                data={
+                    "schema": 5,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B9",
+                    "platform": "switch",
+                },
+                subentry_type="device",
+                title="Konvektor Schalter",
+                unique_id="05-10-A2-B9",
+            )
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await async_migrate_entry(hass, entry)
+    (data,) = (dict(s.data) for s in entry.subentries.values())
+    assert data["schema"] == SUBENTRY_SCHEMA == 6
+    assert "measured_power" not in data and "measured_energy" not in data
+    assert data["platform"] == "switch"  # everything else is kept
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 6
