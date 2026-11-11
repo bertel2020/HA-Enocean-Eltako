@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame: magnets and locating pins,
-no screws, nothing that flexes (PLA is brittle), any number of cycles.
+"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, screwed with the tray's own two
+screw holes. The screws sit behind the meter and are not visible.
 
 base_plate.stl   Closed mounting plate: 1.3 mm under the frame (the allowed thickness), screwed onto the
-                 flush box with round holes (60 mm). Inside the window cut-out, where there is room, four
-                 posts stand on it. Each post has a socket (locating) with a magnet pocket at the bottom.
-front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front) with
-                 four spigots on its back. A spigot enters the socket of its post (carries the weight,
-                 fixes the position) and a magnet pair pulls the tray onto the frame.
+                 flush box with round holes (60 mm). Inside the window cut-out, where there is room, two
+                 posts (y = +-18 mm, the screw positions of the tray) carry an M3 heat-set insert each.
+front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front),
+                 only moved so that its back face sits on the frame front. Its holes stay open.
 
-Magnets: 8 discs 6 x 2 mm (N35 or stronger), two per post/spigot pair, glued in with matching polarity
-(mark them before gluing). Four pairs hold roughly 3-4 kg; use only two pairs for a lighter pull.
+Hardware: 2 x M3 heat-set insert (about 5.7 mm long, 4.6 mm outer, soldering iron at 200-220 C for PLA),
+          2 x M3 x 8 screw with a low head (button head ISO 7380, head max 7 mm and about 1.7 mm high,
+          fits the 7.2 mm counterbore of the tray).
+Assembly: plate onto the box, frame over it, tray with 2 screws into the inserts, meter clips in.
 
-Print: plate flat. Tray with the back face on the bed (spigot pockets open to the bed, no supports).
+Print: plate flat, tray with the back face on the bed.
 Axes: X width, Y height (up), Z away from the wall (Z=0 is the wall / rear face of the plate).
 All values in mm. Re-generate with:  python3 -I make_holder.py
 """
@@ -25,8 +26,6 @@ from pathlib import Path
 WINDOW = 56.0
 FRAME_D = 10.0          # depth of the frame; the tray's back face sits at this height
 
-# --- tray (measured from SwitchBotMount.3mf) ---
-HOLE_Y = 18.0           # its two (unused) screw holes at y = +-18, closed again
 
 # --- mounting plate ---
 BOX_SPACING = 60.0      # flush box screws, standard
@@ -34,17 +33,12 @@ BOX_HOLE = 4.5          # round, for the usual 3.5 mm box screws
 PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width >= 78)
 PLATE_T = 1.3           # allowed thickness under the frame (given)
 
-# --- posts (plate) and spigots (tray) ---
-POST_X, POST_Y = 8.2, 16.0      # centres (+-, +-), inside the window cut-out
-POST_R = 5.4
-POST_TOP = 8.4
-SOCKET_R = 4.2          # socket for the spigot (spigot r 4.0 + 0.2 clearance)
-SOCKET_FLOOR = 5.4
-MAGNET_D, MAGNET_H = 6.0, 2.0
-POCKET_R = MAGNET_D / 2 + 0.075 # pocket for a glued-in magnet
-SPIGOT_R = 4.0
-SPIGOT_Z0 = 6.2         # rear end of the spigot; tray back face is at FRAME_D
-SPIGOT_TOP = FRAME_D + 0.5      # overlaps into the tray base
+# --- posts (plate) ---
+POST_Y = 18.0           # the tray's screw holes are at y = +-18, x = 0
+POST_R = 4.5
+POST_TOP = FRAME_D - 0.3        # the tray rests on the frame, not on the posts; the screws pull it down
+INSERT_D = 4.0          # hole for an M3 heat-set insert (4.6 mm outer, check your insert)
+INSERT_DEPTH = 6.2
 
 MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
@@ -155,32 +149,18 @@ def base_plate():
     tris = cut_rect((-half, half, -half, half), patches, 0.0, PLATE_T)
     for cx, cy in centres:
         tris += round_hole_patch(cx, cy, BOX_HOLE / 2, ph, 0.0, PLATE_T)
-    prof = [(0.0, PLATE_T - 0.5), (POST_R, PLATE_T - 0.5), (POST_R, POST_TOP), (SOCKET_R, POST_TOP),
-            (SOCKET_R, SOCKET_FLOOR), (POCKET_R, SOCKET_FLOOR), (POCKET_R, SOCKET_FLOOR - MAGNET_H - 0.2),
-            (0.0, SOCKET_FLOOR - MAGNET_H - 0.2), (0.0, PLATE_T - 0.5)]
-    for sx in (1, -1):
-        for sy in (1, -1):
-            tris += lathe(prof, sx * POST_X, sy * POST_Y)
+    prof = [(0.0, PLATE_T - 0.5), (POST_R, PLATE_T - 0.5), (POST_R, POST_TOP), (INSERT_D / 2, POST_TOP),
+            (INSERT_D / 2, POST_TOP - INSERT_DEPTH), (0.0, POST_TOP - INSERT_DEPTH), (0.0, PLATE_T - 0.5)]
+    for sy in (1, -1):
+        tris += lathe(prof, 0.0, sy * POST_Y)
     return tris
-
-
-def spigot(cx, cy):
-    prof = [(0.0, SPIGOT_TOP), (SPIGOT_R, SPIGOT_TOP), (SPIGOT_R, SPIGOT_Z0), (POCKET_R, SPIGOT_Z0),
-            (POCKET_R, SPIGOT_Z0 + MAGNET_H + 0.2), (0.0, SPIGOT_Z0 + MAGNET_H + 0.2), (0.0, SPIGOT_TOP)]
-    return lathe(prof, cx, cy)
 
 
 def front_piece():
     tris = load_3mf_triangles(MOUNT_3MF)
     zmin = min(p[2] for t in tris for p in t)
-    dz = FRAME_D - zmin
-    tris = [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
-    for sy in (1, -1):                                   # close the unused screw holes
-        tris += box_tris(-4.0, 4.0, sy * HOLE_Y - 4.0, sy * HOLE_Y + 4.0, FRAME_D, FRAME_D + 2.3)
-    for sx in (1, -1):
-        for sy in (1, -1):
-            tris += spigot(sx * POST_X, sy * POST_Y)
-    return tris
+    dz = FRAME_D - zmin                      # back face of the tray on the frame front (Z = FRAME_D)
+    return [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
 
 
 if __name__ == "__main__":
