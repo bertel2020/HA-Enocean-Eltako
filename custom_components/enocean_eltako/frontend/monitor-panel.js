@@ -877,7 +877,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     };
     // a hidden tab asks for no status; back in view it catches up at once
     this._onVisible = () => {
-      if (!document.hidden && this._hass) this._refreshStatus();
+      if (!document.hidden && this._hass) this._reloadView();
     };
     this._onSelection = () => {
       if (this._stale.list) this._render(true);
@@ -1674,6 +1674,20 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._timer = setInterval(() => {
       if (!document.hidden) this._refreshStatus();
     }, STATUS_INTERVAL);
+  }
+
+  async _reloadView() {
+    // everything the active view shows that Home Assistant can change behind the panel's back
+    if (!this._hass) return;
+    const view = this._view;
+    await this._refreshStatus();
+    if (view === "installation") await this._loadInstallation();
+    else if (view === "takeover") this._loadTakeover();
+    else if (view === "devices") {
+      await this._loadRegistries();
+      if (this._view === "devices") this._render(true);
+    }
+    if (this._managing() && !this._freeing) this._loadPools();
   }
 
   async _refreshStatus() {
