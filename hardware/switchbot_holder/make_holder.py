@@ -5,8 +5,10 @@ screw holes. The screws sit behind the meter and are not visible.
 base_plate.stl   Closed mounting plate: 1.3 mm under the frame (the allowed thickness), screwed onto the
                  flush box with round holes (60 mm). Inside the window cut-out, where there is room, two
                  posts (y = +-18 mm, the screw positions of the tray) carry an M3 heat-set insert each.
-front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front),
-                 only moved so that its back face sits on the frame front. Its holes stay open.
+front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front), moved so
+                 that its back face sits on the frame front, plus a thin cover plate on its back that
+                 fills the whole window of the frame (flush with the frame front), so the cut-out is
+                 closed all around the meter.
 
 Hardware: 2 x M3 heat-set insert (about 5.7 mm long, 4.6 mm outer, soldering iron at 200-220 C for PLA),
           2 x M3 x 8 button head screw (ISO 7380: head 5.7 mm wide, 1.65 mm high).
@@ -42,12 +44,16 @@ SCREW_HOLE_R = 1.7      # 3.4 mm through hole
 HEAD_HOLE_R = 3.2       # 6.4 mm counterbore
 HEAD_DEPTH = 1.8
 
+# --- cover plate in the window ---
+COVER = WINDOW - 0.4    # 0.2 mm clearance to the window edge on every side
+COVER_T = 1.6           # thin; its front face is flush with the frame front, it hangs on the tray
+
 # --- posts (plate) ---
 POST_Y = HOLE_Y          # the tray's screw holes are at y = +-18, x = 0
 POST_R = 4.5
-POST_TOP = FRAME_D - 0.3        # the tray rests on the frame, not on the posts; the screws pull it down
+POST_TOP = FRAME_D - COVER_T - 0.2   # below the cover plate; the tray rests on the frame, the screws pull it down
 INSERT_D = 4.0          # hole for an M3 heat-set insert (4.6 mm outer, check your insert)
-INSERT_DEPTH = 7.0      # insert 5.7 mm + reserve; an M3x8 tip ends 0.8 mm below the insert
+INSERT_DEPTH = 6.4      # insert 5.7 mm + reserve; an M3x8 engages 5 mm in the insert
 
 MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
@@ -176,6 +182,13 @@ def front_piece():
             (HEAD_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zr)]
     for sy in (1, -1):
         tris += lathe(prof, 0.0, sy * HOLE_Y)
+    # cover plate filling the window, with the two screw holes
+    c, ph = COVER / 2, 4.0
+    patches = [(-ph, ph, sy * HOLE_Y - ph, sy * HOLE_Y + ph) for sy in (1, -1)]
+    z0, z1 = FRAME_D - COVER_T, FRAME_D + 0.1
+    tris += cut_rect((-c, c, -c, c), patches, z0, z1)
+    for sy in (1, -1):
+        tris += round_hole_patch(0.0, sy * HOLE_Y, SCREW_HOLE_R, ph, z0, z1)
     return tris
 
 
