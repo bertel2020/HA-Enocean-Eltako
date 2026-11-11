@@ -1,36 +1,10 @@
 # Changelog
 
-All notable changes to this project are documented here, in English and German: every release
-has an English and a German part. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+All notable changes to this project are documented here, in German and English: every release
+has a German and an English part (German first). The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 ([deutsch](https://keepachangelog.com/de/1.1.0/)).
 
 ### [Unreleased]
-
-**English**
-
-#### Changed
-
-- **Sensors**: supply voltage sensors (battery or solar cell) show one decimal place; the stored value keeps two.
-
-#### Fixed
-
-- **Panel**: the active view reloads by itself when device, entity, area or label registries change in Home Assistant (after a short delay, so a series of changes reloads once).
-- **Panel**: coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
-- **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
-- **Panel, search fields**: the cursor no longer jumps to the start while typing in the installation and bus search fields, and they have a clear (x) button.
-- **Panel**: the round icon buttons (for example the + of an unknown sender) keep their size and stay round instead of being squeezed into an oval.
-- **Catalog**: F3Z14D is the first model in the list of the electricity meter.
-- **Device flow**: the "Back" switch is labelled "Back (without saving)" and explains itself in its description.
-
-#### Added
-
-- **Unknown senders**: they are kept across restarts (the panel's devices view and "Add device" list them again) and dropped after a number of days without a telegram: new gateway setting "Forget unknown senders after" (default 30 days, 0 keeps them). The devices view has a "Forget all" button on the Unknown tab.
-- **Panel**: a reload button in the header of every view reloads the data from Home Assistant; its tooltip says when it was last reloaded.
-- **Panel, devices view**: the row of a set-up actuator shows its sender ID (the first one; the tooltip lists all of them).
-- **Device flow**: the device form and the kind list of a heard sender have a "Back" switch that returns to the previous step (address menu, discovered list or start) without saving.
-- **Catalog**: F3Z14D (three S0 inputs for electricity, gas and water) is now selectable as a model for the electricity, gas and water meter.
-- **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
-- **Panel, connections**: the by-actuator list can also be sorted by device ID and by sender number.
 
 **Deutsch**
 
@@ -40,23 +14,59 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
-- **Panel**: Die aktive Ansicht lädt sich von selbst neu, wenn sich in Home Assistant Geräte-, Entitäts-, Bereichs- oder Label-Register ändern (mit kurzer Verzögerung, damit eine Serie von Änderungen nur einmal lädt).
-- **Panel**: Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
+- **Panel**:
+  - Die aktive Ansicht lädt sich von selbst neu, wenn sich in Home Assistant Geräte-, Entitäts-, Bereichs- oder Label-Register ändern (mit kurzer Verzögerung, damit eine Serie von Änderungen nur einmal lädt).
+  - Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
+  - Suchfelder: Der Cursor springt beim Tippen in den Suchfeldern der Anlage und des Busses nicht mehr an den Anfang, und sie haben ein Kreuz zum Leeren.
+  - Die runden Symbol-Buttons (zum Beispiel das + eines unbekannten Senders) behalten ihre Größe und werden nicht mehr zu einem Oval gedrückt.
 - **Übernahme, Zuordnung und CSV**: Der alte Fenstergriff-Sensor (`…_windowhandle`) bekommt in der Zuordnung alt → neu jetzt sein Gegenstück (den Sensor Griff); er stand bisher ohne neue ID da.
-- **Panel, Suchfelder**: Der Cursor springt beim Tippen in den Suchfeldern der Anlage und des Busses nicht mehr an den Anfang, und sie haben ein Kreuz zum Leeren.
-- **Panel**: Die runden Symbol-Buttons (zum Beispiel das + eines unbekannten Senders) behalten ihre Größe und werden nicht mehr zu einem Oval gedrückt.
 - **Katalog**: Der F3Z14D steht in der Modellliste des Stromzählers an erster Stelle.
 - **Geräte-Dialog**: Der Schalter „Zurück“ heißt jetzt „Zurück (ohne Speichern)“ und erklärt sich in seiner Beschreibung.
 
 #### Hinzugefügt
 
-- **Unbekannte Sender**: Sie bleiben über Neustarts erhalten (Geräteansicht des Panels und „Gerät hinzufügen“ listen sie wieder auf) und fallen nach einer Anzahl Tage ohne Telegramm heraus: neue Gateway-Einstellung „Unbekannte Sender vergessen nach“ (Standard 30 Tage, 0 behält sie). Die Geräteansicht hat auf dem Reiter Unbekannt einen Button „Alle vergessen“.
-- **Panel**: Ein Aktualisieren-Button im Kopf jeder Ansicht lädt die Daten neu aus Home Assistant; der Tooltip nennt den Zeitpunkt der letzten Aktualisierung.
-- **Panel, Geräteansicht**: Die Zeile eines eingerichteten Aktors zeigt seine Sender-ID (die erste; der Tooltip listet alle).
+- **Unbekannte Sender**:
+  - Sie bleiben über Neustarts erhalten; Geräteansicht des Panels und „Gerät hinzufügen“ listen sie wieder auf.
+  - Neue Gateway-Einstellung „Unbekannte Sender vergessen nach“: nach so vielen Tagen ohne Telegramm fallen sie heraus (Standard 30 Tage, 0 behält sie).
+  - Die Geräteansicht hat auf dem Reiter Unbekannt einen Button „Alle vergessen“.
+- **Panel**:
+  - Ein Aktualisieren-Button im Kopf jeder Ansicht lädt die Daten neu aus Home Assistant; der Tooltip nennt den Zeitpunkt der letzten Aktualisierung.
+  - Geräteansicht: Die Zeile eines eingerichteten Aktors zeigt seine Sender-ID (die erste; der Tooltip listet alle).
+  - Verbindungen: Die Liste nach Aktor lässt sich auch nach Geräte-ID und nach Sender-Nr. sortieren.
 - **Geräte-Dialog**: Das Geräteformular und die Auswahl der Geräteart eines gehörten Senders haben einen Schalter „Zurück“, der ohne Speichern zum vorigen Schritt führt (Adressmenü, Liste der entdeckten Geräte oder Start).
 - **Katalog**: Der F3Z14D (drei S0-Eingänge für Strom, Gas und Wasser) ist jetzt als Modell für Strom-, Gas- und Wasserzähler wählbar.
 - **Übernahme, Gateway-Präfix**: Bei eingeschaltetem Gateway-Präfix bietet der Schritt „Mitnehmen“ die Option „Gateway-Präfix in Entitäts-IDs“. Home Assistant gibt einer Entität, die es schon gab (Gerät übernommen, gelöscht und erneut übernommen), ihre frühere ID zurück, das Präfix wurde dann nicht angewendet; die Option benennt die Entitäten der gerade übernommenen Geräte nach dem Präfix-Schema um.
-- **Panel, Verbindungen**: Die Liste nach Aktor lässt sich auch nach Geräte-ID und nach Sender-Nr. sortieren.
+
+**English**
+
+#### Changed
+
+- **Sensors**: supply voltage sensors (battery or solar cell) show one decimal place; the stored value keeps two.
+
+#### Fixed
+
+- **Panel**:
+  - The active view reloads by itself when device, entity, area or label registries change in Home Assistant (after a short delay, so a series of changes reloads once).
+  - Coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
+  - Search fields: the cursor no longer jumps to the start while typing in the installation and bus search fields, and they have a clear (x) button.
+  - The round icon buttons (for example the + of an unknown sender) keep their size and stay round instead of being squeezed into an oval.
+- **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
+- **Catalog**: F3Z14D is the first model in the list of the electricity meter.
+- **Device flow**: the "Back" switch is labelled "Back (without saving)" and explains itself in its description.
+
+#### Added
+
+- **Unknown senders**:
+  - They are kept across restarts; the panel's devices view and "Add device" list them again.
+  - New gateway setting "Forget unknown senders after": they drop out after that many days without a telegram (default 30 days, 0 keeps them).
+  - The devices view has a "Forget all" button on the Unknown tab.
+- **Panel**:
+  - A reload button in the header of every view reloads the data from Home Assistant; its tooltip says when it was last reloaded.
+  - Devices view: the row of a set-up actuator shows its sender ID (the first one; the tooltip lists all of them).
+  - Connections: the by-actuator list can also be sorted by device ID and by sender number.
+- **Device flow**: the device form and the kind list of a heard sender have a "Back" switch that returns to the previous step (address menu, discovered list or start) without saving.
+- **Catalog**: F3Z14D (three S0 inputs for electricity, gas and water) is now selectable as a model for the electricity, gas and water meter.
+- **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
 
 ### [1.9.0] - 2026-11-09
 
