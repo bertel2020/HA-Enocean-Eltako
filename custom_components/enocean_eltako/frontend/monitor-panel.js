@@ -53,6 +53,8 @@ const ANSWER_WINDOW = 3000; // ms in which a device answers a command
 const WEAK_DBM = -85; // below this a sender is at the edge of the range (repeater or antenna)
 const TREND_POINTS = 30; // telegrams in a sender's signal curve
 const STATUS_INTERVAL = 5000; // ms between gateway status updates
+const HA_CHANGE_EVENTS = ["device_registry_updated", "entity_registry_updated", "area_registry_updated", "label_registry_updated"]; // what Home Assistant changes behind the panel's back
+const HA_CHANGE_DELAY = 1500; // ms: a series of changes (a device with ten entities) reloads once
 const NOTICE_TIME = 4000; // ms a success message stays
 const TAKEOVER_CHECK = 12; // status updates between checks whether the Takeover view is needed
 const RORG = { F6: "RPS", D5: "1BS", A5: "4BS", D2: "VLD", D4: "UTE", D1: "MSC" };
@@ -1100,6 +1102,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     clearTimeout(this._tkTyping);
     clearTimeout(this._noticeTimer);
     this._unwatchConnection();
+    this._unwatchChanges();
     if (this._unsub) {
       this._unsub.then((unsub) => unsub()).catch(() => {});
       this._unsub = null;
@@ -1651,6 +1654,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       history: HISTORY,
     });
     this._unsub = unsub;
+    this._watchChanges();
     this._setLink(this._hass.connection.connected === false ? "offline" : "connecting");
     unsub.then(
       () => {
@@ -1674,6 +1678,27 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._timer = setInterval(() => {
       if (!document.hidden) this._refreshStatus();
     }, STATUS_INTERVAL);
+  }
+
+  _watchChanges() {
+    const connection = this._hass?.connection;
+    if (this._changeUnsubs || typeof connection?.subscribeEvents !== "function") return;
+    const subscriptions = HA_CHANGE_EVENTS.map((type) =>
+      connection.subscribeEvents(() => {
+        clearTimeout(this._changeTimer);
+        this._changeTimer = setTimeout(() => {
+          if (!document.hidden) this._reloadView(); // a hidden tab catches up when it is shown
+        }, HA_CHANGE_DELAY);
+      }, type)
+    );
+    this._changeUnsubs = subscriptions;
+    for (const sub of subscriptions) sub.catch(() => {});
+  }
+
+  _unwatchChanges() {
+    clearTimeout(this._changeTimer);
+    for (const sub of this._changeUnsubs || []) sub.then((unsub) => unsub()).catch(() => {});
+    this._changeUnsubs = null;
   }
 
   async _reloadView() {

@@ -14,6 +14,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Fixed
 
+- **Panel**: the active view reloads by itself when device, entity, area or label registries change in Home Assistant (after a short delay, so a series of changes reloads once).
 - **Panel**: coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
 - **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
 
@@ -32,6 +33,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Behoben
 
+- **Panel**: Die aktive Ansicht lädt sich von selbst neu, wenn sich in Home Assistant Geräte-, Entitäts-, Bereichs- oder Label-Register ändern (mit kurzer Verzögerung, damit eine Serie von Änderungen nur einmal lädt).
 - **Panel**: Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
 - **Übernahme, Zuordnung und CSV**: Der alte Fenstergriff-Sensor (`…_windowhandle`) bekommt in der Zuordnung alt → neu jetzt sein Gegenstück (den Sensor Griff); er stand bisher ohne neue ID da.
 
