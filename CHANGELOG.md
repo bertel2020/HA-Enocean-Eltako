@@ -8,6 +8,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 **English**
 
+#### Changed
+
+- **Sensors**: supply voltage sensors (battery or solar cell) show one decimal place; the stored value keeps two.
+
 #### Fixed
 
 - **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
@@ -17,6 +21,10 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
 
 **Deutsch**
+
+#### Geändert
+
+- **Sensoren**: Versorgungsspannungen (Batterie oder Solarzelle) werden mit einer Nachkommastelle angezeigt; der gespeicherte Wert behält zwei.
 
 #### Behoben
 
