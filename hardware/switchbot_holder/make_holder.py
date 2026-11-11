@@ -1,30 +1,27 @@
 #!/usr/bin/env python3
-"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, screwed with the tray's own two
-screw holes. The screws sit behind the meter and are not visible.
+"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, screwed with two M3 screws that
+sit behind the meter and are not visible.
 
 base_plate.stl   Closed mounting plate: 1.3 mm under the frame (the allowed thickness), screwed onto the
                  flush box with round holes (60 mm). Inside the window cut-out, where there is room, two
-                 posts (y = +-18 mm, the screw positions of the tray) carry an M3 heat-set insert each.
-front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front), moved so
-                 that its back face sits on the frame front, plus a thin cover plate on its back that
-                 fills the whole window of the frame, 2 mm below the frame front (the frame is domed
-                 and lower at the corners), so the cut-out is closed all around the meter. A 27.6 mm wide
-                 web connects the plate to the tray across that 2 mm. The posts pass through holes in it.
+                 posts (y = +-18 mm) carry an M3 heat-set insert each.
+front_piece.stl  Tray for the meter, own design (the first tray had 1.0 mm walls that flex when the meter
+                 is clipped in and break in PLA). Walls are 2.4 mm, nothing flexes: the meter slides in
+                 from the open top under two side lips and rests on the bottom wall. Underneath: a cover
+                 plate that fills the whole window of the frame, 2 mm below the frame front (the frame
+                 is domed and lower at the corners), and a web that connects plate and tray. The posts
+                 pass through holes in plate and web.
 
 Hardware: 2 x M3 heat-set insert (about 5.7 mm long, 4.6 mm outer, soldering iron at 200-220 C for PLA),
-          2 x M3 x 8 button head screw (ISO 7380: head 5.7 mm wide, 1.65 mm high).
-The tray's own holes (4.0 mm through, 7.2 mm counterbore only 1 mm deep) are filled and redrilled to
-fit these screws: 3.4 mm through hole, 6.4 mm counterbore 1.8 mm deep, so the head sits flush.
-Assembly: plate onto the box, frame over it, tray with 2 screws into the inserts, meter clips in.
+          2 x M3 x 8 button head screw (ISO 7380: head 5.7 mm wide, 1.65 mm high), through the tray floor
+          (3.4 mm hole, 6.4 mm counterbore 1.8 mm deep, the head sits flush).
+Assembly: plate onto the box, frame over it, tray with 2 screws into the inserts, meter slides in from the top.
 
-Print: plate flat, tray with the back face on the bed.
+Print: plate flat, tray with the cover plate on the bed (pocket walls stand up, 2.4 mm thick).
 Axes: X width, Y height (up), Z away from the wall (Z=0 is the wall / rear face of the plate).
 All values in mm. Re-generate with:  python3 -I make_holder.py
 """
 import math
-import zipfile
-import xml.etree.ElementTree as ET
-from pathlib import Path
 
 # --- frame (measured) ---
 WINDOW = 56.0
@@ -37,11 +34,16 @@ BOX_HOLE = 4.5          # round, for the usual 3.5 mm box screws
 PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width >= 78)
 PLATE_T = 1.3           # allowed thickness under the frame (given)
 
-# --- screws (tray holes are redrilled for M3 x 8 button head) ---
-HOLE_Y = 18.0           # the tray's screw holes at y = +-18, x = 0
-FLOOR_TOP = 13.0        # top of the tray floor in the assembled position (3.0 mm thick floor, back face at 10)
-OLD_HOLE_R = 3.6        # largest radius of the original counterbore
-SCREW_HOLE_R = 1.7      # 3.4 mm through hole
+# --- meter (measured) and tray ---
+METER_W, METER_H, METER_D = 27.5, 66.0, 20.0
+FIT = 0.4               # total clearance
+TRAY_WALL = 2.4
+LIP = 1.2               # lips over the front edge of the meter
+FLOOR_T = 3.0           # tray floor (screws go through it)
+
+# --- screws ---
+HOLE_Y = 18.0           # screw positions y = +-18, x = 0
+SCREW_HOLE_R = 1.7      # 3.4 mm through hole for M3
 HEAD_HOLE_R = 3.2       # 6.4 mm counterbore
 HEAD_DEPTH = 1.8
 
@@ -58,18 +60,6 @@ POST_R = 4.5
 POST_TOP = FRAME_D - 0.2        # posts pass through the cover plate; the tray rests on the frame, the screws pull it down
 INSERT_D = 4.0          # hole for an M3 heat-set insert (4.6 mm outer, check your insert)
 INSERT_DEPTH = 7.0      # insert 5.7 mm + reserve; an M3x8 tip ends 0.8 mm below the insert
-
-MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
-
-
-def load_3mf_triangles(path):
-    with zipfile.ZipFile(path) as z:
-        name = next(n for n in z.namelist() if n.startswith("3D/Objects/") and n.endswith(".model"))
-        root = ET.fromstring(z.read(name))
-    ns = {"m": root.tag.split("}")[0][1:]}
-    verts = [(float(v.get("x")), float(v.get("y")), float(v.get("z"))) for v in root.iterfind(".//m:vertex", ns)]
-    return [tuple(verts[int(t.get(k))] for k in ("v1", "v2", "v3")) for t in root.iterfind(".//m:triangle", ns)]
-
 
 def write_stl(path, name, tris):
     with open(path, "w") as fh:
@@ -176,27 +166,41 @@ def base_plate():
 
 
 def front_piece():
-    tris = load_3mf_triangles(MOUNT_3MF)
-    zmin = min(p[2] for t in tris for p in t)
-    dz = FRAME_D - zmin                      # back face of the tray on the frame front (Z = FRAME_D)
-    tris = [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
-    # fill the original holes with a washer-shaped solid that has the new hole shape
-    zr, zt = FRAME_D, FLOOR_TOP
-    prof = [(SCREW_HOLE_R, zr), (OLD_HOLE_R + 0.1, zr), (OLD_HOLE_R + 0.1, zt), (HEAD_HOLE_R, zt),
-            (HEAD_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zr)]
+    tris = []
+    x_in = (METER_W + FIT) / 2
+    y_in = (METER_H + FIT) / 2
+    xo, yo = x_in + TRAY_WALL, y_in + TRAY_WALL
+    zf = FRAME_D + FLOOR_T                       # top of the floor
+    z_lip = zf + METER_D + FIT                   # underside of the lips
+    z_top = z_lip + LIP
+    ph = 4.0
+    patches = [(-ph, ph, sy * HOLE_Y - ph, sy * HOLE_Y + ph) for sy in (1, -1)]
+    # floor with stepped screw holes: 3.4 mm through, 6.4 mm counterbore on top
+    zc = zf - HEAD_DEPTH
+    tris += cut_rect((-xo, xo, -yo, yo), patches, FRAME_D, zc)
+    tris += cut_rect((-xo, xo, -yo, yo), patches, zc, zf)
     for sy in (1, -1):
-        tris += lathe(prof, 0.0, sy * HOLE_Y)
+        tris += round_hole_patch(0.0, sy * HOLE_Y, SCREW_HOLE_R, ph, FRAME_D, zc)
+        tris += round_hole_patch(0.0, sy * HOLE_Y, HEAD_HOLE_R, ph, zc, zf)
+    # walls: both sides full length, bottom end closed, top end open (the meter slides in from the top)
+    for sx in (1, -1):
+        xa, xb = sorted((sx * x_in, sx * xo))
+        tris += box_tris(xa, xb, -yo, yo, zf - 0.1, z_top)
+        xa, xb = sorted((sx * (x_in - LIP), sx * x_in))
+        tris += box_tris(xa, xb, -yo, yo, z_lip, z_top)
+    tris += box_tris(-xo, xo, -yo, -y_in, zf - 0.1, z_top)
+    tris += box_tris(-x_in, x_in, -y_in, -y_in + LIP, z_lip, z_top)
     # cover plate filling the window, recessed, and the web to the tray; holes for the posts
     c, ph = COVER / 2, POST_HOLE_R + 0.5
     patches = [(-ph, ph, sy * HOLE_Y - ph, sy * HOLE_Y + ph) for sy in (1, -1)]
-    zf = FRAME_D - COVER_RECESS                 # front face of the plate
-    zr = zf - COVER_T
+    zf2 = FRAME_D - COVER_RECESS                 # front face of the plate
+    zr = zf2 - COVER_T
     zt = FRAME_D + 0.1
-    tris += cut_rect((-c, c, -c, c), patches, zr, zf)
-    tris += cut_rect((-WEB_HALF_X, WEB_HALF_X, -c, c), patches, zf, zt)
+    tris += cut_rect((-c, c, -c, c), patches, zr, zf2)
+    tris += cut_rect((-WEB_HALF_X, WEB_HALF_X, -c, c), patches, zf2, zt)
     for sy in (1, -1):
-        tris += round_hole_patch(0.0, sy * HOLE_Y, POST_HOLE_R, ph, zr, zf)
-        tris += round_hole_patch(0.0, sy * HOLE_Y, POST_HOLE_R, ph, zf, zt)
+        tris += round_hole_patch(0.0, sy * HOLE_Y, POST_HOLE_R, ph, zr, zf2)
+        tris += round_hole_patch(0.0, sy * HOLE_Y, POST_HOLE_R, ph, zf2, zt)
     return tris
 
 
