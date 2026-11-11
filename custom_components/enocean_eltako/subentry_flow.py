@@ -671,6 +671,7 @@ class DeviceForm:
 
 
 CONF_HIDE = "hide"  # discovered sender: hide it instead of adding it
+CONF_BACK = "back"  # device and kind forms: go one step back instead of submitting
 
 
 class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
@@ -688,6 +689,9 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         self._kinds: list[str] = []
         self._group = GROUP_ELTAKO
         self._back = "user"  # step the "back" entry of the next menu returns to
+        self._via_address = False  # the device form came from the address menu
+        self._learned_shown = False  # the kind form of a heard sender was shown
+        self._from_discovered = False  # the heard sender was picked from the discovered list
         self._retyped: DeviceModel | None = None  # reconfigure: the type chosen instead
 
     def _loaded(self) -> bool:
@@ -699,6 +703,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         if not self._loaded():
             return self.async_abort(reason="gateway_not_loaded")
         self._device_model = None  # also when coming back: learning then suggests the kind
+        self._via_address = self._learned_shown = self._from_discovered = False
         custom = [CUSTOM] if DEFINITIONS else []  # I8: the user's own definitions
         entry = self._get_entry()
         if (handed := self._take_handed_over(entry)) is not None:
@@ -735,6 +740,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                 if len(heard) > 1:  # more to sort out: back to the list
                     return await self.async_step_discovered()
                 return self.async_abort(reason="sender_hidden")
+            self._from_discovered = True
             return await self.async_step_learned()
         if not heard:
             return self.async_abort(reason="no_discovered")
@@ -815,6 +821,7 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     async def _async_chosen(self, model: DeviceModel, back: str) -> SubentryFlowResult:
         self._device_model = model
         self._back = back
+        self._via_address = model.group != GROUP_VIRTUAL
         if model.group == GROUP_VIRTUAL:  # its ID is its own sender ID
             return await self.async_step_device()
         return await self.async_step_address()
@@ -840,7 +847,8 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
                             translation_key="device_model",
                             mode=SelectSelectorMode.LIST,
                         )
-                    )
+                    ),
+                    vol.Required(CONF_BACK, default=False): BooleanSelector(),
                 }
             ),
             description_placeholders=placeholders,
@@ -913,20 +921,30 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
     ) -> SubentryFlowResult:
         """Heard a new sender before the kind was chosen: offer the kinds that fit."""
         assert self._learned is not None
+        self._via_address = False
         if user_input is not None:
+            if user_input.get(CONF_BACK):
+                return await (
+                    self.async_step_discovered()
+                    if self._from_discovered
+                    else self.async_step_user()
+                )
             self._device_model = CATALOG[user_input[CONF_MODEL]]
             return await self.async_step_device()
         telegram = self._learned.telegram
         teach_in = decode_teach_in_4bs(telegram.data) if telegram.rorg == Rorg.BS4 else None
         if teach_in is not None and teach_in.eep in GENERIC_EEPS:
             fitting = [m for m in CATALOG.values() if receives(m, teach_in.eep)]
+            self._learned_shown = False
             if not fitting:  # no catalog entry decodes it: generic device
                 self._device_model = generic_model(EEPRef(teach_in.eep, "std"))
                 return await self.async_step_device()
         kinds = candidates(telegram.rorg, teach_in, telegram.data)
+        self._learned_shown = False
         if len(kinds) == 1:
             self._device_model = CATALOG[kinds[0]]
             return await self.async_step_device()
+        self._learned_shown = True
         return self._model_form(
             "learned",
             kinds,
@@ -977,7 +995,10 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         errors: dict[str, str] = {}
         virtual = self._device_model.group == GROUP_VIRTUAL
         id_field = sender_field(self._device_model.senders[0].id) if virtual else CONF_DEVICE_ID
+        if user_input is not None and user_input.get(CONF_BACK):
+            return await self._async_device_back(virtual)
         if user_input is not None:
+            user_input = {k: v for k, v in user_input.items() if k != CONF_BACK}
             device_id = None
             try:
                 device_id = parse_id(user_input[id_field])
@@ -998,12 +1019,26 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
             vol.Required(CONF_NAME): TextSelector(),
             **({} if virtual else {vol.Required(CONF_DEVICE_ID): TextSelector()}),
             **self._fields(self._device_model, {}, new=True),
+            vol.Required(CONF_BACK, default=False): BooleanSelector(),
         }
         # a device with several IDs takes its lowest ID: the one heard is not that
         if user_input is None and self._learned is not None and not self._device_model.linked:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
         form: SubentryFlowResult = await self._form("device", schema, user_input, errors)
         return form
+
+    async def _async_device_back(self, virtual: bool) -> SubentryFlowResult:
+        """One step back from the device form: to where the user came from."""
+        if virtual:
+            step: SubentryFlowResult = await getattr(self, f"async_step_{self._back}")()
+            return step
+        if self._via_address:
+            return await self.async_step_address()
+        if self._learned_shown:
+            return await self.async_step_learned()
+        if self._from_discovered:
+            return await self.async_step_discovered()
+        return await self.async_step_user()
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None

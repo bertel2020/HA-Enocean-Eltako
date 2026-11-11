@@ -1996,7 +1996,7 @@ async def test_learn_first_a5_04_02_offers_both_temperature_kinds(
     result = await configure(result["flow_id"])
     # the plain sensor and the solar sensor with its supply voltage: the first is preselected
     assert result["step_id"] == "learned"
-    (key,) = result["data_schema"].schema
+    (key,) = [k for k in result["data_schema"].schema if k == "model"]
     assert key.default() == "temp_humidity"
     selector = result["data_schema"].schema[key]
     assert set(selector.config["options"]) >= {"temp_humidity", "temp_humidity_solar"}
@@ -2877,3 +2877,31 @@ async def test_late_answer_to_a_replaced_command_does_not_confirm_the_new_one(
     _push(server, 0x05, b"\x50", 0x05_10_A2_B5, 0x30)  # the answer to "off"
     await _settle(hass)
     assert stats.confirmed == 1
+
+
+async def test_device_form_has_back_to_the_address_menu(hass: HomeAssistant, gateway) -> None:
+    entry, _server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "eep"})
+    result = await configure(result["flow_id"], {"eep": "std_a5_04_02"})
+    result = await configure(result["flow_id"], {"next_step_id": "device"})
+    assert result["step_id"] == "device"
+    result = await configure(
+        result["flow_id"], {"name": "x", "device_id": "05-11-22-33", "back": True}
+    )
+    assert result["step_id"] == "address"  # nothing was saved
+    assert not any(s.title == "x" for s in entry.subentries.values())
+
+
+async def test_kind_form_of_a_heard_sender_has_back(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    configure = hass.config_entries.subentries.async_configure
+    result = await _init_flow(hass, entry)
+    result = await configure(result["flow_id"], {"next_step_id": "learn"})
+    _push(server, 0x07, encode_teach_in_4bs("A5-04-02"), 0x01820A11)
+    await _settle(hass)
+    result = await configure(result["flow_id"])
+    assert result["step_id"] == "learned"
+    result = await configure(result["flow_id"], {"model": "temp_humidity", "back": True})
+    assert result["step_id"] == "user"

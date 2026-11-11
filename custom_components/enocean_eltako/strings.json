@@ -580,6 +580,7 @@
           "title": "Telegram received",
           "description": "Received a telegram from {device_id} (profile {eep}). What kind of device is it?",
           "data": {
+            "back": "Back",
             "model": "Device"
           }
         },
@@ -594,6 +595,7 @@
           "title": "Device",
           "description": "Examples: {examples}. Receives {receive}; senders: {send}. The first sender ID is suggested from this gateway's pool; further senders are optional (leave empty). Teach each one in with its button.\n\n{hint}",
           "data": {
+            "back": "Back",
             "name": "Name",
             "device_id": "Device ID",
             "platform": "Type",
