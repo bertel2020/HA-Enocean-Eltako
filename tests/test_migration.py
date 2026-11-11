@@ -160,7 +160,35 @@ async def test_part_of_option_needs_no_conversion(hass: HomeAssistant) -> None:
     entry.add_to_hass(hass)
     assert await async_migrate_entry(hass, entry)
     (data,) = (dict(s.data) for s in entry.subentries.values())
-    assert data["schema"] == SUBENTRY_SCHEMA == 6
+    assert data["schema"] == SUBENTRY_SCHEMA
     assert "part_of" not in data
     assert data["platform"] == "switch"  # everything else is kept
-    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 6
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION
+
+
+async def test_thermostat_option_needs_no_conversion(hass: HomeAssistant) -> None:
+    """1.6 -> 1.7: the optional thermostat of a switching actuator is new; nothing to convert."""
+    entry = _entry(
+        6,
+        [
+            ConfigSubentryData(
+                data={
+                    "schema": 6,
+                    "model": "switch",
+                    "device_id": "05-10-A2-B9",
+                    "platform": "switch",
+                    "part_of": "abc",
+                },
+                subentry_type="device",
+                title="Konvektor Schalter",
+                unique_id="05-10-A2-B9",
+            )
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await async_migrate_entry(hass, entry)
+    (data,) = (dict(s.data) for s in entry.subentries.values())
+    assert data["schema"] == SUBENTRY_SCHEMA == 7
+    assert "thermostat" not in data  # off unless the user switches it on
+    assert data["part_of"] == "abc"  # everything else is kept
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 7

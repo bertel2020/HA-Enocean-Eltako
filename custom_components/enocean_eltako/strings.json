@@ -715,6 +715,46 @@
               "data_description": {
                 "status_channel": "Which status telegrams belong to this device. Commands go through its own sender IDs."
               }
+            },
+            "thermostat_settings": {
+              "name": "Thermostat",
+              "description": "Optional. Home Assistant regulates a room temperature around a setpoint and switches this channel's relay; with a meter set to “Belongs to device” this actuator, “heating” means the load really takes power. The thermostat of the convector itself stays the safety limit: set it above the highest setpoint here.",
+              "data": {
+                "thermostat": "Thermostat",
+                "thermostat_sensor": "Room temperature sensor",
+                "humidity_sensor": "Humidity sensor",
+                "hysteresis": "Hysteresis",
+                "setpoint_min": "Lowest setpoint",
+                "setpoint_max": "Highest setpoint",
+                "setpoint_step": "Setpoint step",
+                "temperature_precision": "Room temperature precision",
+                "min_cycle": "Shortest time on / off",
+                "max_run": "Longest run",
+                "cooldown": "Forced pause",
+                "active_power": "Heating from power",
+                "blocked_after": "Report blockade after",
+                "stale_after": "Sensor outdated after",
+                "thermostat_attributes": "Extra readings as attributes",
+                "thermostat_entities": "Extra readings as entities"
+              },
+              "data_description": {
+                "thermostat": "Switches the thermostat on. Needs a room temperature sensor.",
+                "thermostat_sensor": "Any temperature sensor in Home Assistant.",
+                "humidity_sensor": "Optional. Shown as the humidity of the thermostat, regulates nothing.",
+                "hysteresis": "On at setpoint minus this, off at setpoint plus this; in between nothing is sent.",
+                "setpoint_min": "Lowest setpoint the thermostat accepts.",
+                "setpoint_max": "Highest setpoint the thermostat accepts. Keep it below the limit of the convector's own thermostat.",
+                "setpoint_step": "Step of the setpoint in the thermostat.",
+                "temperature_precision": "Rounding of the shown room temperature.",
+                "min_cycle": "The relay stays at least this long on, and at least this long off.",
+                "max_run": "Minutes on in a row before the forced pause. 0 = unlimited.",
+                "cooldown": "Minutes the relay stays off after the longest run (needed when a longest run is set).",
+                "active_power": "From this power of the meter on the load, “heating” counts as real. Without such a meter “relay on” counts as heating.",
+                "blocked_after": "Relay on, but no power for this long while the room is below the setpoint: a repair issue reports it.",
+                "stale_after": "No room temperature for this long: the relay goes off for safety.",
+                "thermostat_attributes": "Power, run time, pause and status as attributes of the thermostat.",
+                "thermostat_entities": "Run time, pause, time on today, “heating” and “blocked” as entities of their own (diagnostics)."
+              }
             }
           }
         },
@@ -829,6 +869,46 @@
               "data_description": {
                 "status_channel": "Which status telegrams belong to this device. Commands go through its own sender IDs."
               }
+            },
+            "thermostat_settings": {
+              "name": "Thermostat",
+              "description": "Optional. Home Assistant regulates a room temperature around a setpoint and switches this channel's relay; with a meter set to “Belongs to device” this actuator, “heating” means the load really takes power. The thermostat of the convector itself stays the safety limit: set it above the highest setpoint here.",
+              "data": {
+                "thermostat": "Thermostat",
+                "thermostat_sensor": "Room temperature sensor",
+                "humidity_sensor": "Humidity sensor",
+                "hysteresis": "Hysteresis",
+                "setpoint_min": "Lowest setpoint",
+                "setpoint_max": "Highest setpoint",
+                "setpoint_step": "Setpoint step",
+                "temperature_precision": "Room temperature precision",
+                "min_cycle": "Shortest time on / off",
+                "max_run": "Longest run",
+                "cooldown": "Forced pause",
+                "active_power": "Heating from power",
+                "blocked_after": "Report blockade after",
+                "stale_after": "Sensor outdated after",
+                "thermostat_attributes": "Extra readings as attributes",
+                "thermostat_entities": "Extra readings as entities"
+              },
+              "data_description": {
+                "thermostat": "Switches the thermostat on. Needs a room temperature sensor.",
+                "thermostat_sensor": "Any temperature sensor in Home Assistant.",
+                "humidity_sensor": "Optional. Shown as the humidity of the thermostat, regulates nothing.",
+                "hysteresis": "On at setpoint minus this, off at setpoint plus this; in between nothing is sent.",
+                "setpoint_min": "Lowest setpoint the thermostat accepts.",
+                "setpoint_max": "Highest setpoint the thermostat accepts. Keep it below the limit of the convector's own thermostat.",
+                "setpoint_step": "Step of the setpoint in the thermostat.",
+                "temperature_precision": "Rounding of the shown room temperature.",
+                "min_cycle": "The relay stays at least this long on, and at least this long off.",
+                "max_run": "Minutes on in a row before the forced pause. 0 = unlimited.",
+                "cooldown": "Minutes the relay stays off after the longest run (needed when a longest run is set).",
+                "active_power": "From this power of the meter on the load, “heating” counts as real. Without such a meter “relay on” counts as heating.",
+                "blocked_after": "Relay on, but no power for this long while the room is below the setpoint: a repair issue reports it.",
+                "stale_after": "No room temperature for this long: the relay goes off for safety.",
+                "thermostat_attributes": "Power, run time, pause and status as attributes of the thermostat.",
+                "thermostat_entities": "Run time, pause, time on today, “heating” and “blocked” as entities of their own (diagnostics)."
+              }
             }
           }
         },
@@ -928,7 +1008,10 @@
         "unknown_eep": "This profile is unknown. Pick an entry from the list or type a code such as A5-04-02.",
         "no_buttons": "Choose at least one button.",
         "weather_no_source": "Choose at least one entity for the weather station.",
-        "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34."
+        "wall_switch_invalid_id": "Not a valid wall switch ID. Four hex bytes, for example FE-D8-12-34.",
+        "thermostat_no_sensor": "The thermostat needs a room temperature sensor.",
+        "thermostat_setpoint_range": "The lowest setpoint must be below the highest.",
+        "thermostat_no_cooldown": "With a longest run, the forced pause must be longer than 0."
       },
       "abort": {
         "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected.",
@@ -1126,6 +1209,15 @@
       },
       "driven_time": {
         "name": "Driven time"
+      },
+      "thermostat_run": {
+        "name": "Run time"
+      },
+      "thermostat_cooldown": {
+        "name": "Pause remaining"
+      },
+      "thermostat_on_today": {
+        "name": "On today"
       }
     },
     "binary_sensor": {
@@ -1177,6 +1269,12 @@
       },
       "wake": {
         "name": "Wake input"
+      },
+      "thermostat_heating": {
+        "name": "Heating"
+      },
+      "thermostat_blocked": {
+        "name": "Blocked"
       }
     },
     "event": {
@@ -1274,6 +1372,11 @@
           "both": "Both"
         }
       }
+    },
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
+      }
     }
   },
   "issues": {
@@ -1324,6 +1427,14 @@
     "old_integration_shares_gateway": {
       "title": "{name} is also used by the old eltako integration",
       "description": "The old eltako integration is set up on the same connection ({connection}) as {name}. A serial port opens only once and an MGW-ETH serves one session, so the two block each other and one of them loses its connection. Run only one of them on this gateway: disable the old entry, or reach the gateway through the Device Proxy app, which lets several programs share it."
+    },
+    "thermostat_blocked": {
+      "title": "{name} does not heat although the relay is on",
+      "description": "The relay of {name} has been on for a while, the meter on the load shows no power, and the room is below the setpoint. The convector's own thermostat is probably set lower than the setpoint here, or the device is out of order."
+    },
+    "thermostat_sensor_stale": {
+      "title": "{name} has no room temperature",
+      "description": "The room temperature sensor of {name} is unavailable or silent for too long, so the relay was switched off for safety. It switches again as soon as a temperature arrives."
     }
   },
   "device_automation": {

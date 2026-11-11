@@ -57,6 +57,7 @@ from .entity_ids import gateway_prefix
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
 from .protocol.ids import format_id
 from .protocol.models import MODELS
+from .thermostat_entities import thermostat_sensors, wanted
 from .virtual import CONTACT_CLOSED, CONTACT_OPEN, MOTION, NO_MOTION
 
 _LOGGER = logging.getLogger(__name__)
@@ -534,6 +535,8 @@ async def async_setup_entry(
                 [CoverStateSensor(device), CoverDrivenTimeSensor(device)],
                 config_subentry_id=subentry_id,
             )
+        if wanted(device):  # the optional thermostat's readings
+            async_add_entities(thermostat_sensors(device), config_subentry_id=subentry_id)
         if Platform.SENSOR not in device.model.platforms:
             continue
         descriptions = model_descriptions(device)

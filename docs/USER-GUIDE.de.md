@@ -178,6 +178,36 @@ eigene Geräte mit eigenen Entitäten, sodass sich Entity-IDs, Sender-IDs und Ve
 und das Energie-Dashboard weiter den Zähler nutzt. Die Verbindung lässt sich jederzeit setzen
 oder entfernen.
 
+### Thermostat für einen Schaltaktor (Konvektor)
+
+Ein Schaltaktor kann nicht regeln. Unter **Thermostat** in den Geräteeinstellungen (eingeklappter
+Abschnitt) einschalten und einen Raumtemperatursensor wählen (jeder Temperatursensor in Home
+Assistant, zum Beispiel ein SwitchBot); der Kanal bekommt dann zusätzlich eine Thermostat-Entität.
+Home Assistant schaltet das Relais über die Sendewarteschlange, mit den Sendern des Kanals.
+
+- **Regelung:** An bei Soll minus Hysterese, aus bei Soll plus Hysterese; dazwischen wird nichts
+  gesendet, ein von Hand oder am Wandtaster geschaltetes Relais bleibt also bis zur nächsten
+  Schwelle. Das Relais bleibt mindestens die kürzeste Zeit an und aus; nach der Höchstlaufzeit
+  (0 = unbegrenzt) ruht es für die Abkühlzeit.
+- **Sicherheit:** Ohne Raumtemperatur (nicht verfügbar oder länger stumm als „Sensor veraltet
+  nach“) geht das Relais aus, und ein Reparaturhinweis meldet es. Der eigene Regler des Konvektors
+  bleibt die Sicherheitsgrenze: oberhalb der höchsten Solltemperatur des Thermostats einstellen.
+- **Heizt er wirklich?** Mit einem Zähler, der auf **Gehört zu Gerät** diesen Aktor steht (vorheriger
+  Abschnitt), liest das Thermostat dessen Leistung: „Heizt“ heißt mindestens „Heizt ab Leistung“.
+  Relais an, aber keine Leistung für die Zeit unter „Blockade melden nach“ und der Raum unter dem
+  Sollwert löst einen Reparaturhinweis aus (der eigene Regler des Konvektors hält ihn zurück, oder
+  das Gerät ist ausgefallen). Ohne solchen Zähler gilt „Relais an“ als Heizen, die Blockade-Prüfung
+  ist aus.
+- **Luftfeuchte:** Ein optionaler Feuchtesensor wird als Luftfeuchte des Thermostats angezeigt; er
+  regelt nichts.
+- **Zusatzwerte:** Leistung, Laufzeit, Pause, Stunden heute und Status als Attribute des
+  Thermostats, und Laufzeit, Pause, Laufzeit heute, „Heizt“ und „Blockiert“ als eigene Entitäten
+  (Diagnose). Beides lässt sich abschalten. Die Laufzeit heute beginnt um Mitternacht und nach
+  einem Neustart von Home Assistant neu.
+
+Das Thermostat ist eine Geräteoption und braucht keine eigene Sender-ID; es nutzt die Sender, die
+im Aktor eingelernt sind.
+
 ### Virtuelle Sensoren
 
 Home Assistant sendet selbst als Fensterkontakt (D5-00-01), Bewegungsmelder (A5-07-01),

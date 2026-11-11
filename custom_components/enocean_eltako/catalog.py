@@ -65,6 +65,57 @@ OPT_ROCKER_ON = "rocker_on_button"  # rocker sender: the button it presses for o
 OPT_ROCKER_OFF = "rocker_off_button"  # rocker sender: the button it presses for off / down
 OPT_PART_OF = "part_of"  # meter: subentry ID of the device it hangs under ("connected via")
 OPT_BUTTONS = "buttons"  # virtual rocker: the buttons it offers (all four when absent)
+# switch: the optional thermostat of a switching actuator (Home Assistant regulates, the relay
+# switches); defaults in THERMOSTAT_DEFAULTS
+OPT_THERMOSTAT = "thermostat"  # on: the channel gets a thermostat entity
+OPT_THERMOSTAT_SENSOR = "thermostat_sensor"  # room temperature entity (any temperature sensor)
+OPT_HUMIDITY_SENSOR = "humidity_sensor"  # shown as the thermostat's humidity, regulates nothing
+OPT_HYSTERESIS = "hysteresis"  # K around the setpoint
+OPT_SETPOINT_MIN = "setpoint_min"  # degC
+OPT_SETPOINT_MAX = "setpoint_max"  # degC
+OPT_SETPOINT_STEP = "setpoint_step"  # K
+OPT_TEMP_PRECISION = "temperature_precision"  # K, rounding of the shown room temperature
+OPT_MIN_CYCLE = "min_cycle"  # min: shortest time on, and shortest time off
+OPT_MAX_RUN = "max_run"  # min on in a row before the forced pause, 0 = unlimited
+OPT_COOLDOWN = "cooldown"  # min forced pause after the longest run
+OPT_ACTIVE_POWER = "active_power"  # W from which the load counts as heating
+OPT_BLOCKED_AFTER = "blocked_after"  # min relay on without power before the blockade is reported
+OPT_STALE_AFTER = "stale_after"  # min without a room temperature before the relay goes off
+OPT_THERMOSTAT_ATTRS = "thermostat_attributes"  # extra readings as attributes of the thermostat
+OPT_THERMOSTAT_ENTITIES = "thermostat_entities"  # extra readings as entities of their own
+THERMOSTAT_DEFAULTS: dict[str, float | bool] = {
+    OPT_HYSTERESIS: 0.3,
+    OPT_SETPOINT_MIN: 16.0,
+    OPT_SETPOINT_MAX: 24.0,
+    OPT_SETPOINT_STEP: 0.5,
+    OPT_TEMP_PRECISION: 0.1,
+    OPT_MIN_CYCLE: 3,
+    OPT_MAX_RUN: 0,
+    OPT_COOLDOWN: 15,
+    OPT_ACTIVE_POWER: 50,
+    OPT_BLOCKED_AFTER: 20,
+    OPT_STALE_AFTER: 30,
+    OPT_THERMOSTAT_ATTRS: True,
+    OPT_THERMOSTAT_ENTITIES: True,
+}
+THERMOSTAT_OPTIONS = (
+    OPT_THERMOSTAT,
+    OPT_THERMOSTAT_SENSOR,
+    OPT_HUMIDITY_SENSOR,
+    OPT_HYSTERESIS,
+    OPT_SETPOINT_MIN,
+    OPT_SETPOINT_MAX,
+    OPT_SETPOINT_STEP,
+    OPT_TEMP_PRECISION,
+    OPT_MIN_CYCLE,
+    OPT_MAX_RUN,
+    OPT_COOLDOWN,
+    OPT_ACTIVE_POWER,
+    OPT_BLOCKED_AFTER,
+    OPT_STALE_AFTER,
+    OPT_THERMOSTAT_ATTRS,
+    OPT_THERMOSTAT_ENTITIES,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +274,7 @@ CATALOG: dict[str, DeviceModel] = {
                 OPT_WALL_SWITCH,
                 OPT_ROCKER_ON,
                 OPT_STATUS_CHANNEL,
+                *THERMOSTAT_OPTIONS,
             ),
             examples="FSR61, FSR14, FL62, FSR71",
             models=(

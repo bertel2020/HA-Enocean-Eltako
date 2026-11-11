@@ -715,6 +715,46 @@
               "data_description": {
                 "status_channel": "Welche Statustelegramme zu diesem Gerät gehören. Befehle laufen über seine eigenen Sender-IDs."
               }
+            },
+            "thermostat_settings": {
+              "name": "Thermostat",
+              "description": "Optional. Home Assistant regelt eine Raumtemperatur um einen Sollwert und schaltet das Relais dieses Kanals; mit einem Zähler, der auf „Gehört zu Gerät“ diesen Aktor steht, heißt „Heizt“, dass die Last wirklich Leistung aufnimmt. Der eigene Regler des Konvektors bleibt die Sicherheitsgrenze: oberhalb des höchsten Sollwerts hier einstellen.",
+              "data": {
+                "thermostat": "Thermostat",
+                "thermostat_sensor": "Raumtemperatursensor",
+                "humidity_sensor": "Feuchtesensor",
+                "hysteresis": "Hysterese",
+                "setpoint_min": "Niedrigste Solltemperatur",
+                "setpoint_max": "Höchste Solltemperatur",
+                "setpoint_step": "Temperaturschritt (Soll)",
+                "temperature_precision": "Genauigkeit der Raumtemperatur",
+                "min_cycle": "Kürzeste Zeit an / aus",
+                "max_run": "Höchstlaufzeit",
+                "cooldown": "Abkühlzeit",
+                "active_power": "Heizt ab Leistung",
+                "blocked_after": "Blockade melden nach",
+                "stale_after": "Sensor veraltet nach",
+                "thermostat_attributes": "Zusatzwerte als Attribute",
+                "thermostat_entities": "Zusatzwerte als Entitäten"
+              },
+              "data_description": {
+                "thermostat": "Schaltet das Thermostat ein. Braucht einen Raumtemperatursensor.",
+                "thermostat_sensor": "Jeder Temperatursensor in Home Assistant.",
+                "humidity_sensor": "Optional. Wird als Luftfeuchte des Thermostats angezeigt und regelt nichts.",
+                "hysteresis": "An bei Soll minus diesem Wert, aus bei Soll plus diesem Wert; dazwischen wird nichts gesendet.",
+                "setpoint_min": "Niedrigste Solltemperatur, die das Thermostat annimmt.",
+                "setpoint_max": "Höchste Solltemperatur, die das Thermostat annimmt. Unter der Grenze des Konvektor-Reglers lassen.",
+                "setpoint_step": "Schritt der Solltemperatur im Thermostat.",
+                "temperature_precision": "Rundung der angezeigten Raumtemperatur.",
+                "min_cycle": "Das Relais bleibt mindestens so lange an und mindestens so lange aus.",
+                "max_run": "Minuten am Stück an, bevor die Zwangspause beginnt. 0 = unbegrenzt.",
+                "cooldown": "Minuten, die das Relais nach der Höchstlaufzeit aus bleibt (nötig, wenn eine Höchstlaufzeit gesetzt ist).",
+                "active_power": "Ab dieser Leistung des Zählers an der Last gilt „Heizt“ als echt. Ohne solchen Zähler gilt „Relais an“ als Heizen.",
+                "blocked_after": "Relais an, aber so lange keine Leistung, während der Raum unter dem Sollwert liegt: ein Reparaturhinweis meldet es.",
+                "stale_after": "So lange keine Raumtemperatur: das Relais geht zur Sicherheit aus.",
+                "thermostat_attributes": "Leistung, Laufzeit, Pause und Status als Attribute des Thermostats.",
+                "thermostat_entities": "Laufzeit, Pause, Laufzeit heute, „Heizt“ und „Blockiert“ als eigene Entitäten (Diagnose)."
+              }
             }
           }
         },
@@ -829,6 +869,46 @@
               "data_description": {
                 "status_channel": "Welche Statustelegramme zu diesem Gerät gehören. Befehle laufen über seine eigenen Sender-IDs."
               }
+            },
+            "thermostat_settings": {
+              "name": "Thermostat",
+              "description": "Optional. Home Assistant regelt eine Raumtemperatur um einen Sollwert und schaltet das Relais dieses Kanals; mit einem Zähler, der auf „Gehört zu Gerät“ diesen Aktor steht, heißt „Heizt“, dass die Last wirklich Leistung aufnimmt. Der eigene Regler des Konvektors bleibt die Sicherheitsgrenze: oberhalb des höchsten Sollwerts hier einstellen.",
+              "data": {
+                "thermostat": "Thermostat",
+                "thermostat_sensor": "Raumtemperatursensor",
+                "humidity_sensor": "Feuchtesensor",
+                "hysteresis": "Hysterese",
+                "setpoint_min": "Niedrigste Solltemperatur",
+                "setpoint_max": "Höchste Solltemperatur",
+                "setpoint_step": "Temperaturschritt (Soll)",
+                "temperature_precision": "Genauigkeit der Raumtemperatur",
+                "min_cycle": "Kürzeste Zeit an / aus",
+                "max_run": "Höchstlaufzeit",
+                "cooldown": "Abkühlzeit",
+                "active_power": "Heizt ab Leistung",
+                "blocked_after": "Blockade melden nach",
+                "stale_after": "Sensor veraltet nach",
+                "thermostat_attributes": "Zusatzwerte als Attribute",
+                "thermostat_entities": "Zusatzwerte als Entitäten"
+              },
+              "data_description": {
+                "thermostat": "Schaltet das Thermostat ein. Braucht einen Raumtemperatursensor.",
+                "thermostat_sensor": "Jeder Temperatursensor in Home Assistant.",
+                "humidity_sensor": "Optional. Wird als Luftfeuchte des Thermostats angezeigt und regelt nichts.",
+                "hysteresis": "An bei Soll minus diesem Wert, aus bei Soll plus diesem Wert; dazwischen wird nichts gesendet.",
+                "setpoint_min": "Niedrigste Solltemperatur, die das Thermostat annimmt.",
+                "setpoint_max": "Höchste Solltemperatur, die das Thermostat annimmt. Unter der Grenze des Konvektor-Reglers lassen.",
+                "setpoint_step": "Schritt der Solltemperatur im Thermostat.",
+                "temperature_precision": "Rundung der angezeigten Raumtemperatur.",
+                "min_cycle": "Das Relais bleibt mindestens so lange an und mindestens so lange aus.",
+                "max_run": "Minuten am Stück an, bevor die Zwangspause beginnt. 0 = unbegrenzt.",
+                "cooldown": "Minuten, die das Relais nach der Höchstlaufzeit aus bleibt (nötig, wenn eine Höchstlaufzeit gesetzt ist).",
+                "active_power": "Ab dieser Leistung des Zählers an der Last gilt „Heizt“ als echt. Ohne solchen Zähler gilt „Relais an“ als Heizen.",
+                "blocked_after": "Relais an, aber so lange keine Leistung, während der Raum unter dem Sollwert liegt: ein Reparaturhinweis meldet es.",
+                "stale_after": "So lange keine Raumtemperatur: das Relais geht zur Sicherheit aus.",
+                "thermostat_attributes": "Leistung, Laufzeit, Pause und Status als Attribute des Thermostats.",
+                "thermostat_entities": "Laufzeit, Pause, Laufzeit heute, „Heizt“ und „Blockiert“ als eigene Entitäten (Diagnose)."
+              }
             }
           }
         },
@@ -928,7 +1008,10 @@
         "unknown_eep": "Dieses Profil ist unbekannt. Einen Eintrag aus der Liste wählen oder einen Code wie A5-04-02 eingeben.",
         "no_buttons": "Mindestens eine Taste wählen.",
         "weather_no_source": "Mindestens eine Entität für die Wetterstation wählen.",
-        "wall_switch_invalid_id": "Keine gültige Wandtaster-ID. Vier Hex-Bytes, zum Beispiel FE-D8-12-34."
+        "wall_switch_invalid_id": "Keine gültige Wandtaster-ID. Vier Hex-Bytes, zum Beispiel FE-D8-12-34.",
+        "thermostat_no_sensor": "Das Thermostat braucht einen Raumtemperatursensor.",
+        "thermostat_setpoint_range": "Die niedrigste Solltemperatur muss unter der höchsten liegen.",
+        "thermostat_no_cooldown": "Mit einer Höchstlaufzeit muss die Abkühlzeit größer als 0 sein."
       },
       "abort": {
         "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist.",
@@ -1126,6 +1209,15 @@
       },
       "driven_time": {
         "name": "Fahrzeit"
+      },
+      "thermostat_run": {
+        "name": "Laufzeit"
+      },
+      "thermostat_cooldown": {
+        "name": "Pause noch"
+      },
+      "thermostat_on_today": {
+        "name": "An heute"
       }
     },
     "binary_sensor": {
@@ -1177,6 +1269,12 @@
       },
       "wake": {
         "name": "Weckeingang"
+      },
+      "thermostat_heating": {
+        "name": "Heizt"
+      },
+      "thermostat_blocked": {
+        "name": "Blockiert"
       }
     },
     "event": {
@@ -1274,6 +1372,11 @@
           "both": "Beides"
         }
       }
+    },
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
+      }
     }
   },
   "issues": {
@@ -1324,6 +1427,14 @@
     "old_integration_shares_gateway": {
       "title": "{name} wird auch von der alten eltako-Integration verwendet",
       "description": "Die alte eltako-Integration ist auf derselben Verbindung ({connection}) eingerichtet wie {name}. Ein serieller Port lässt sich nur einmal öffnen und ein MGW-ETH bedient nur eine Sitzung; die beiden blockieren sich also, und eine verliert ihre Verbindung. Betreibe an diesem Gateway nur eine von beiden: deaktiviere den alten Eintrag oder binde das Gateway über die App Device Proxy ein, die es mehreren Programmen zugleich zur Verfügung stellt."
+    },
+    "thermostat_blocked": {
+      "title": "{name} heizt nicht, obwohl das Relais an ist",
+      "description": "Das Relais von {name} ist seit einer Weile an, der Zähler an der Last zeigt keine Leistung, und der Raum liegt unter dem Sollwert. Wahrscheinlich ist der eigene Regler des Konvektors niedriger eingestellt als der Sollwert hier, oder das Gerät ist ausgefallen."
+    },
+    "thermostat_sensor_stale": {
+      "title": "{name} hat keine Raumtemperatur",
+      "description": "Der Raumtemperatursensor von {name} ist nicht verfügbar oder zu lange stumm, deshalb wurde das Relais zur Sicherheit ausgeschaltet. Es schaltet wieder, sobald eine Temperatur ankommt."
     }
   },
   "device_automation": {
