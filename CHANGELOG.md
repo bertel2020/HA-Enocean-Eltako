@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Added
 
+- **Panel, devices view**: the row of a set-up actuator shows its sender ID (the first one; the tooltip lists all of them).
 - **Device flow**: the device form and the kind list of a heard sender have a "Back" switch that returns to the previous step (address menu, discovered list or start) without saving.
 - **Catalog**: F3Z14D (three S0 inputs for electricity, gas and water) is now selectable as a model for the electricity, gas and water meter.
 - **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
@@ -34,6 +35,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 
 #### Hinzugefügt
 
+- **Panel, Geräteansicht**: Die Zeile eines eingerichteten Aktors zeigt seine Sender-ID (die erste; der Tooltip listet alle).
 - **Geräte-Dialog**: Das Geräteformular und die Auswahl der Geräteart eines gehörten Senders haben einen Schalter „Zurück“, der ohne Speichern zum vorigen Schritt führt (Adressmenü, Liste der entdeckten Geräte oder Start).
 - **Katalog**: Der F3Z14D (drei S0-Eingänge für Strom, Gas und Wasser) ist jetzt als Modell für Strom-, Gas- und Wasserzähler wählbar.
 - **Übernahme, Gateway-Präfix**: Bei eingeschaltetem Gateway-Präfix bietet der Schritt „Mitnehmen“ die Option „Gateway-Präfix in Entitäts-IDs“. Home Assistant gibt einer Entität, die es schon gab (Gerät übernommen, gelöscht und erneut übernommen), ihre frühere ID zurück, das Präfix wurde dann nicht angewendet; die Option benennt die Entitäten der gerade übernommenen Geräte nach dem Präfix-Schema um.
