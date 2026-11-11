@@ -334,7 +334,7 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.SENSOR,),
             category="meters",
             interval=600,
-            examples="FWZ12, FSDG14, DSZ14",
+            examples="F3Z14D, FWZ12, FSDG14, DSZ14",
             models=("F3Z14D", "FWZ12-65A", "FWZ14-65A", "FSDG14", "DSZ14DRS", "DSZ14WDRS"),
         ),
         DeviceModel(
