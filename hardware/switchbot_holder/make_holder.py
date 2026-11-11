@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, mounted without visible screws.
 
-A thin mounting ring (2 mm, central opening, screw holes) is screwed onto the flush box inside the
-hollow frame, like the Tragring of a socket. The existing wall-mount tray (SwitchBotMount.3mf, meter
-clips in from the front) gets two snap arms on its back. They go through the frame window and the
-opening of the ring and hook behind its inner edge, inside the box opening. The tray clamps the frame on its top and bottom border.
+Mounting ring (base_plate.stl): flat 1.3 mm ring under the frame (the allowed thickness there), screwed
+onto the flush box with the usual 60 mm screws. Inside the window cut-out the frame leaves room up to
+its front face, so four small receptacle blocks (two at the top, two at the bottom edge of the opening)
+stand up there, each with a rectangular catch window.
 
-Parts:  base_plate.stl   mounting ring onto the flush box (box screws, 60 mm apart, ASSUMED)
-        front_piece.stl  the tray with two snap arms, pushed in from the front, no screws
+Front piece (front_piece.stl): the existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the
+front) with four matching snap arms on its back. Each arm has a lead-in ramp and a hook face that
+locks in the window of its block. The tray rests on the top and bottom border of the frame and clamps it.
 
-Axes: X width, Y height, Z away from the wall (Z=0 is the wall / rear face of the plate).
+Axes: X width, Y height, Z away from the wall (Z=0 is the wall / rear face of the ring).
 All values in mm. Re-generate with:  python3 -I make_holder.py
 """
 import math
@@ -25,20 +26,26 @@ FRAME_D = 10.0          # depth of the frame = spacer length
 # --- tray (measured from SwitchBotMount.3mf) ---
 HOLE_Y = 18.0           # screw holes at y = +-18 (36 mm apart)
 
-# --- flush box (ASSUMED: standard 60 mm screw spacing, check yours) ---
+# --- flush box (standard 60 mm screw spacing, check yours) ---
 BOX_SPACING = 60.0
-BOX_HOLE = 4.5          # holes at (+-30, 0) and (0, +-30), so the plate fits either way round
+BOX_HOLE = 4.5          # holes at (+-30, 0) and (0, +-30), so the ring fits either way round
 PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width 78)
-PLATE_T = 2.0
+PLATE_T = 1.3           # allowed thickness under the frame (given)
+OPEN = 26.0             # half width of the square opening of the ring (box access)
 
-# --- snap arms (two, top and bottom, x width 10) ---
-ARM_W = 10.0
+# --- receptacle blocks (inside the window cut-out) ---
+BLOCK_Y0, BLOCK_Y1 = 26.0, 27.8   # wall of the block, outer face stays 0.2 short of the window edge
+BLOCK_X0, BLOCK_X1 = 5.4, 15.0    # block x range, mirrored to both sides
+BLOCK_TOP = FRAME_D - 0.3         # stays below the frame front
+WIN_X0, WIN_X1 = 6.6, 13.8        # catch window, x
+WIN_Z0, WIN_Z1 = 1.5, 3.3         # catch window, z (upper edge catches the hook)
+
+# --- snap arms (four) ---
+ARM_X0, ARM_X1 = 7.4, 13.0     # inside the tray width (27.6)
 ARM_T = 1.5
-ARM_OUT = 23.6          # outer face of the arm (y)
-BARB = 1.6              # barb protrusion
-OPEN = 24.4             # half width of the square opening of the ring; the barbs hook its edge (0.8 mm)
-HOOK_Z = -0.2           # top of the barb, just below the plate rear
-LEAD = 2.2              # length of the lead-in ramp
+ARM_OUT = 25.8          # outer face of the arm (0.2 inside the block wall)
+BARB = 1.0              # protrusion into the window
+ARM_TIP = 1.6           # lowest point of the arm, above the ring
 
 MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
@@ -83,7 +90,7 @@ def box_tris(x0, x1, y0, y1, z0, z1):
 
 
 def base_plate():
-    """Mounting ring: square ring with a central opening and four screw holes, built from grid cells."""
+    """1.3 mm mounting ring with square opening and four box screw holes, plus four receptacle blocks."""
     half, sp = PLATE / 2, BOX_SPACING / 2
     def sq(cx, cy, d):
         return (cx - d / 2, cx + d / 2, cy - d / 2, cy + d / 2)
@@ -97,6 +104,16 @@ def base_plate():
             cx, cy = (xa + xb) / 2, (ya + yb) / 2
             if not any(h[0] < cx < h[1] and h[2] < cy < h[3] for h in holes):
                 tris += box_tris(xa, xb, ya, yb, 0.0, PLATE_T)
+    for sy in (1, -1):
+        for sx in (1, -1):
+            def b(xa, xb, z0, z1):
+                x0, x1 = sorted((sx * xa, sx * xb))
+                y0, y1 = sorted((sy * BLOCK_Y0, sy * BLOCK_Y1))
+                return box_tris(x0, x1, y0, y1, z0, z1)
+            tris += b(BLOCK_X0, BLOCK_X1, 0.0, WIN_Z0)                       # below the window
+            tris += b(BLOCK_X0, BLOCK_X1, WIN_Z1, BLOCK_TOP)                 # above the window
+            tris += b(BLOCK_X0, WIN_X0, WIN_Z0, WIN_Z1)                      # jambs
+            tris += b(WIN_X1, BLOCK_X1, WIN_Z0, WIN_Z1)
     return tris
 
 
@@ -124,14 +141,15 @@ def front_piece():
     # close the two countersunk screw holes of the original wall mount (not used here)
     for sy in (1, -1):
         tris += box_tris(-4.0, 4.0, sy * HOLE_Y - 4.0, sy * HOLE_Y + 4.0, FRAME_D, FRAME_D + 2.3)
-    # snap arms with lead-in ramp and hook, top (+y) and bottom (-y)
-    zlow = HOOK_Z - LEAD
+    # four snap arms with lead-in ramp and hook face
     for sy in (1, -1):
-        ya, yb = sorted((sy * (ARM_OUT - ARM_T), sy * ARM_OUT))
-        tris += box_tris(-ARM_W / 2, ARM_W / 2, ya, yb, zlow, FRAME_D + 1.0)
-        prof = [(ARM_OUT, zlow), (ARM_OUT + BARB, HOOK_Z - 0.3), (ARM_OUT + BARB, HOOK_Z), (ARM_OUT, HOOK_Z)]
-        prof = [(sy * y, z) for y, z in prof]
-        tris += prism(prof, -ARM_W / 2, ARM_W / 2)
+        for sx in (1, -1):
+            x0, x1 = sorted((sx * ARM_X0, sx * ARM_X1))
+            ya, yb = sorted((sy * (ARM_OUT - ARM_T), sy * ARM_OUT))
+            tris += box_tris(x0, x1, ya, yb, ARM_TIP, FRAME_D + 1.0)
+            prof = [(ARM_OUT, ARM_TIP), (ARM_OUT + BARB, WIN_Z0 + 1.4), (ARM_OUT + BARB, WIN_Z1), (ARM_OUT, WIN_Z1)]
+            prof = [(sy * y, z) for y, z in prof]
+            tris += prism(prof, x0, x1)
     return tris
 
 
