@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame, without screws and without
-flexing parts (PLA is brittle, so nothing here is a snap arm).
+"""SwitchBot Outdoor Meter on the wall, in front of a Berker S1 frame: magnets and locating pins,
+no screws, nothing that flexes (PLA is brittle), any number of cycles.
 
-Principle: sliding keyhole lock, like a picture hook. Four studs with a mushroom head stand on the
-mounting ring inside the window cut-out. The back of the tray has four keyhole blocks. The tray is
-pushed over the studs, then slid down by SLIDE mm; gravity keeps it locked. To remove: push it up by
-SLIDE mm and pull it off. No spring force, no fatigue, any number of cycles.
-
-base_plate.stl   Mounting ring: 1.3 mm flat ring under the frame (allowed thickness), screwed onto the
-                 flush box (60 mm, round holes), two 3 mm webs across the opening carry the four studs.
+base_plate.stl   Closed mounting plate: 1.3 mm under the frame (the allowed thickness), screwed onto the
+                 flush box with round holes (60 mm). Inside the window cut-out, where there is room, four
+                 posts stand on it. Each post has a socket (locating) with a magnet pocket at the bottom.
 front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips in from the front) with
-                 four keyhole blocks on its back. It rests on the top and bottom border of the frame.
+                 four spigots on its back. A spigot enters the socket of its post (carries the weight,
+                 fixes the position) and a magnet pair pulls the tray onto the frame.
 
-Print: ring flat. Tray with the back face on the bed, no supports needed (keyholes open to the bed).
-Axes: X width, Y height (up), Z away from the wall (Z=0 is the wall / rear face of the ring).
+Magnets: 8 discs 6 x 2 mm (N35 or stronger), two per post/spigot pair, glued in with matching polarity
+(mark them before gluing). Four pairs hold roughly 3-4 kg; use only two pairs for a lighter pull.
+
+Print: plate flat. Tray with the back face on the bed (spigot pockets open to the bed, no supports).
+Axes: X width, Y height (up), Z away from the wall (Z=0 is the wall / rear face of the plate).
 All values in mm. Re-generate with:  python3 -I make_holder.py
 """
 import math
@@ -28,29 +28,23 @@ FRAME_D = 10.0          # depth of the frame; the tray's back face sits at this 
 # --- tray (measured from SwitchBotMount.3mf) ---
 HOLE_Y = 18.0           # its two (unused) screw holes at y = +-18, closed again
 
-# --- mounting ring ---
+# --- mounting plate ---
 BOX_SPACING = 60.0      # flush box screws, standard
 BOX_HOLE = 4.5          # round, for the usual 3.5 mm box screws
 PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width >= 78)
 PLATE_T = 1.3           # allowed thickness under the frame (given)
-OPEN = 26.0             # half width of the square opening (access to the box)
-WEB_X0, WEB_X1 = 4.5, 12.0   # two webs across the opening, mirrored left/right
-WEB_T = 3.0             # inside the window cut-out there is room for more than 1.3 mm
 
-# --- studs and keyholes ---
-STUD_X, STUD_Y = 8.2, 16.0   # stud centres (+-, +-); the tray is in the locked position
-NECK_R = 2.0
-CONE_Z0, CONE_Z1 = 7.5, 8.9   # 45 degree cone under the head, printable without support
-HEAD_R = 3.4
-HEAD_TOP = 9.4
-SLIDE = 4.0             # how far the tray is slid down to lock
-LIP_Z0, LIP_Z1 = 6.0, 7.4       # keyhole lip (back of the block)
-CHAMBER_Z1 = 9.6                # ceiling of the head chamber
-BLOCK_TOP = FRAME_D + 0.5       # overlaps into the tray base
-SLOT_HALF = 2.3         # lip slot half width (neck r 2.0 + 0.3)
-HOLE_HALF = 3.8         # square pass-through hole for the head (r 3.4 + 0.4)
-CHAMBER_HALF = 3.7
-WALL = 1.3
+# --- posts (plate) and spigots (tray) ---
+POST_X, POST_Y = 8.2, 16.0      # centres (+-, +-), inside the window cut-out
+POST_R = 5.4
+POST_TOP = 8.4
+SOCKET_R = 4.2          # socket for the spigot (spigot r 4.0 + 0.2 clearance)
+SOCKET_FLOOR = 5.4
+MAGNET_D, MAGNET_H = 6.0, 2.0
+POCKET_R = MAGNET_D / 2 + 0.075 # pocket for a glued-in magnet
+SPIGOT_R = 4.0
+SPIGOT_Z0 = 6.2         # rear end of the spigot; tray back face is at FRAME_D
+SPIGOT_TOP = FRAME_D + 0.5      # overlaps into the tray base
 
 MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
@@ -158,30 +152,22 @@ def base_plate():
     half, sp, ph = PLATE / 2, BOX_SPACING / 2, 4.0
     centres = [(sp, 0), (-sp, 0), (0, sp), (0, -sp)]
     patches = [(cx - ph, cx + ph, cy - ph, cy + ph) for cx, cy in centres]
-    tris = cut_rect((-half, half, -half, half), patches + [(-OPEN, OPEN, -OPEN, OPEN)], 0.0, PLATE_T)
+    tris = cut_rect((-half, half, -half, half), patches, 0.0, PLATE_T)
     for cx, cy in centres:
         tris += round_hole_patch(cx, cy, BOX_HOLE / 2, ph, 0.0, PLATE_T)
-    for sx in (1, -1):                                   # two webs across the opening
-        xa, xb = sorted((sx * WEB_X0, sx * WEB_X1))
-        tris += box_tris(xa, xb, -OPEN - 0.5, OPEN + 0.5, 0.0, WEB_T)
-        for sy in (1, -1):                               # studs
-            prof = [(0.0, WEB_T - 0.5), (NECK_R, WEB_T - 0.5), (NECK_R, CONE_Z0), (HEAD_R, CONE_Z1),
-                    (HEAD_R, HEAD_TOP), (0.0, HEAD_TOP)]
-            tris += lathe(prof, sx * STUD_X, sy * STUD_Y)
+    prof = [(0.0, PLATE_T - 0.5), (POST_R, PLATE_T - 0.5), (POST_R, POST_TOP), (SOCKET_R, POST_TOP),
+            (SOCKET_R, SOCKET_FLOOR), (POCKET_R, SOCKET_FLOOR), (POCKET_R, SOCKET_FLOOR - MAGNET_H - 0.2),
+            (0.0, SOCKET_FLOOR - MAGNET_H - 0.2), (0.0, PLATE_T - 0.5)]
+    for sx in (1, -1):
+        for sy in (1, -1):
+            tris += lathe(prof, sx * POST_X, sy * POST_Y)
     return tris
 
 
-def keyhole_block(xc, yp):
-    """Block on the back of the tray with a keyhole: wide hole below, slot upwards to the stud."""
-    yh = yp - SLIDE                                      # centre of the pass-through hole
-    block = (xc - CHAMBER_HALF - WALL, xc + CHAMBER_HALF + WALL, yh - HOLE_HALF - WALL, yp + CHAMBER_HALF + WALL)
-    hole = (xc - HOLE_HALF, xc + HOLE_HALF, yh - HOLE_HALF, yh + HOLE_HALF)
-    slot = (xc - SLOT_HALF, xc + SLOT_HALF, yh - SLOT_HALF, yp + SLOT_HALF)
-    chamber = (xc - CHAMBER_HALF, xc + CHAMBER_HALF, yh - HOLE_HALF, yp + CHAMBER_HALF)
-    tris = cut_rect(block, [hole, slot], LIP_Z0, LIP_Z1)            # lip with keyhole opening
-    tris += cut_rect(block, [chamber], LIP_Z1, CHAMBER_Z1)          # chamber for the head
-    tris += cut_rect(block, [], CHAMBER_Z1, BLOCK_TOP)              # closed front
-    return tris
+def spigot(cx, cy):
+    prof = [(0.0, SPIGOT_TOP), (SPIGOT_R, SPIGOT_TOP), (SPIGOT_R, SPIGOT_Z0), (POCKET_R, SPIGOT_Z0),
+            (POCKET_R, SPIGOT_Z0 + MAGNET_H + 0.2), (0.0, SPIGOT_Z0 + MAGNET_H + 0.2), (0.0, SPIGOT_TOP)]
+    return lathe(prof, cx, cy)
 
 
 def front_piece():
@@ -193,10 +179,7 @@ def front_piece():
         tris += box_tris(-4.0, 4.0, sy * HOLE_Y - 4.0, sy * HOLE_Y + 4.0, FRAME_D, FRAME_D + 2.3)
     for sx in (1, -1):
         for sy in (1, -1):
-            kb = keyhole_block(STUD_X, STUD_Y) if sy > 0 else keyhole_block(STUD_X, -STUD_Y)
-            if sx < 0:
-                kb = [tuple((-p[0], p[1], p[2]) for p in (t[0], t[2], t[1])) for t in kb]
-            tris += kb
+            tris += spigot(sx * POST_X, sy * POST_Y)
     return tris
 
 
