@@ -159,7 +159,7 @@ async def test_panel_hand_over_skips_menu_and_list(
 
     result = await _menu(hass, entry)  # no menu, no list: straight to the kind, rocker preselected
     assert result["step_id"] == "learned"
-    (key,) = result["data_schema"].schema
+    (key,) = [k for k in result["data_schema"].schema if k == "model"]
     assert key.default() == "rocker"
     configure = hass.config_entries.subentries.async_configure
     result = await configure(result["flow_id"], {"model": "rocker"})

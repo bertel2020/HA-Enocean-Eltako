@@ -580,6 +580,7 @@
           "title": "Telegramm empfangen",
           "description": "Telegramm von {device_id} empfangen (Profil {eep}). Welche Art von Gerät ist es?",
           "data": {
+            "back": "Zurück",
             "model": "Gerät"
           }
         },
@@ -594,6 +595,7 @@
           "title": "Gerät",
           "description": "Beispiele: {examples}. Empfängt {receive}; Sender: {send}. Die erste Sender-ID wird aus dem Pool dieses Gateways vorgeschlagen; weitere Sender sind optional (leer lassen). Jeden mit seinem Button einlernen.\n\n{hint}",
           "data": {
+            "back": "Zurück",
             "name": "Name",
             "device_id": "Geräte-ID",
             "platform": "Art",

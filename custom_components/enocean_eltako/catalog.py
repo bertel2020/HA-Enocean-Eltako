@@ -335,7 +335,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="meters",
             interval=600,
             examples="FWZ12, FSDG14, DSZ14",
-            models=("FWZ12-65A", "FWZ14-65A", "FSDG14", "DSZ14DRS", "DSZ14WDRS"),
+            models=("FWZ12-65A", "FWZ14-65A", "FSDG14", "DSZ14DRS", "DSZ14WDRS", "F3Z14D"),
         ),
         DeviceModel(
             "gas_meter",
@@ -344,6 +344,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="meters",
             interval=600,
             examples="F3Z14D",
+            models=("F3Z14D",),
         ),
         DeviceModel(
             "water_meter",
@@ -352,6 +353,7 @@ CATALOG: dict[str, DeviceModel] = {
             category="meters",
             interval=600,
             examples="F3Z14D",
+            models=("F3Z14D",),
         ),
         DeviceModel(
             "temp_humidity",
