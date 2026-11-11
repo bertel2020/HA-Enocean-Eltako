@@ -582,7 +582,7 @@ export const busView = {
     const roleSel = `<select data-bv-lrole aria-label="${esc(B.role)}"><option value="">${esc(B.role)}: ${esc(B.listFilters.all)}</option>${roles.map((r) => `<option value="${r}"${L.role === r ? " selected" : ""}>${esc(B.roles[r] ?? r)}</option>`).join("")}</select>`;
     const places = v.data.cabinets.flatMap((c) => [[`c:${c.id}`, c.name], ...c.rows.map((r) => [`r:${r.id}`, `${c.name} · ${r.name}`])]);
     const placeSel = `<select data-bv-lplace aria-label="${esc(B.cols.place)}"><option value="">${esc(B.cols.place)}: ${esc(B.listFilters.all)}</option>${places.map(([id, n]) => `<option value="${esc(id)}"${L.place === id ? " selected" : ""}>${esc(n)}</option>`).join("")}<option value="none"${L.place === "none" ? " selected" : ""}>${esc(B.noPlace)}</option></select>`;
-    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(B.search)}" aria-label="${esc(B.search)}">`;
+    const search = `<input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(B.search)}" aria-label="${esc(B.search)}">`;
     const filtered = L.f || L.role || L.place || q;
     return `<div class="bv-bar">${search}${roleSel}${placeSel}${filtered ? `<button class="chip text" data-bv-lreset>${esc(B.listReset)}</button>` : ""}<span class="bv-grow"></span>${colMenu}</div><div class="chips bv-lchips">${["", "dup", "noaddr", "ha", "doc"].map(chip).join("")}</div>${assign}<div class="tablewrap"><table class="itable bv-list"><thead>${head}</thead><tbody>${body ? body.replace(/<\/tr>/g, '<td class="rmenu"></td></tr>') : `<tr><td colspan="${shownCols.length + 1}" class="none">${esc(B.nothing)}</td></tr>`}</tbody></table></div><p class="bv-note">${esc(B.listNote)}</p>`;
   },

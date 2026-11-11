@@ -17,6 +17,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Panel**: the active view reloads by itself when device, entity, area or label registries change in Home Assistant (after a short delay, so a series of changes reloads once).
 - **Panel**: coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
 - **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
+- **Panel, search fields**: the cursor no longer jumps to the start while typing in the installation and bus search fields, and they have a clear (x) button.
 
 #### Added
 
@@ -25,6 +26,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Device flow**: the device form and the kind list of a heard sender have a "Back" switch that returns to the previous step (address menu, discovered list or start) without saving.
 - **Catalog**: F3Z14D (three S0 inputs for electricity, gas and water) is now selectable as a model for the electricity, gas and water meter.
 - **Takeover, gateway prefix**: with the gateway prefix on, the carry-over step offers "Gateway prefix in entity IDs". Home Assistant gives an entity that existed before (a device taken over, deleted and taken over again) its former ID, so the prefix was not applied; the option renames the entities of the devices just taken over to the prefix scheme.
+- **Panel, connections**: the by-actuator list can also be sorted by device ID and by sender number.
 
 **Deutsch**
 
@@ -37,6 +39,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Panel**: Die aktive Ansicht lädt sich von selbst neu, wenn sich in Home Assistant Geräte-, Entitäts-, Bereichs- oder Label-Register ändern (mit kurzer Verzögerung, damit eine Serie von Änderungen nur einmal lädt).
 - **Panel**: Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
 - **Übernahme, Zuordnung und CSV**: Der alte Fenstergriff-Sensor (`…_windowhandle`) bekommt in der Zuordnung alt → neu jetzt sein Gegenstück (den Sensor Griff); er stand bisher ohne neue ID da.
+- **Panel, Suchfelder**: Der Cursor springt beim Tippen in den Suchfeldern der Anlage und des Busses nicht mehr an den Anfang, und sie haben ein Kreuz zum Leeren.
 
 #### Hinzugefügt
 
@@ -45,6 +48,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Geräte-Dialog**: Das Geräteformular und die Auswahl der Geräteart eines gehörten Senders haben einen Schalter „Zurück“, der ohne Speichern zum vorigen Schritt führt (Adressmenü, Liste der entdeckten Geräte oder Start).
 - **Katalog**: Der F3Z14D (drei S0-Eingänge für Strom, Gas und Wasser) ist jetzt als Modell für Strom-, Gas- und Wasserzähler wählbar.
 - **Übernahme, Gateway-Präfix**: Bei eingeschaltetem Gateway-Präfix bietet der Schritt „Mitnehmen“ die Option „Gateway-Präfix in Entitäts-IDs“. Home Assistant gibt einer Entität, die es schon gab (Gerät übernommen, gelöscht und erneut übernommen), ihre frühere ID zurück, das Präfix wurde dann nicht angewendet; die Option benennt die Entitäten der gerade übernommenen Geräte nach dem Präfix-Schema um.
+- **Panel, Verbindungen**: Die Liste nach Aktor lässt sich auch nach Geräte-ID und nach Sender-Nr. sortieren.
 
 ### [1.9.0] - 2026-11-09
 

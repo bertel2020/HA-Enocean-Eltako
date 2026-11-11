@@ -705,7 +705,7 @@ export const installation = {
       const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
       const from = rows.length ? v.pg * v.ps + 1 : 0;
       const pager = `<div class="spager"><span>${esc(S.range(from, from + page.length - (rows.length ? 1 : 0), rows.length))}</span><div><label>${esc(S.perPage)} <select data-in-sidps="${key}" aria-label="${esc(S.perPage)}">${sizes}</select></label><button class="chip" data-in-sidpg="${key}|-1" aria-label="${esc(S.prev)}"${v.pg === 0 ? " disabled" : ""}>‹</button><span>${esc(S.page(v.pg + 1, pages))}</span><button class="chip" data-in-sidpg="${key}|1" aria-label="${esc(S.next2)}"${v.pg >= pages - 1 ? " disabled" : ""}>›</button></div></div>`;
-      const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(S.search)}" aria-label="${esc(S.search)}">`;
+      const search = `<input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(S.search)}" aria-label="${esc(S.search)}">`;
       return `${tiles}${next}<div class="itools" style="align-items:center">${search}${chips ? `<span class="chips">${chips}</span>` : ""}</div><div class="swrap"><div class="tablewrap"><table class="itable stable"><thead>${head}</thead><tbody>${body || `<tr><td colspan="9" class="none">${esc(S.none)}</td></tr>`}</tbody></table></div>${pager}</div>`;
     });
     return `<p class="isub sintro">${esc(S.intro)} <span class="info" title="${esc(`${T.sendersIntro} ${t.inst.editHint}`)}">ⓘ</span></p>${html}`;
@@ -745,7 +745,7 @@ export const installation = {
     const tile = (title, value, bad = false) => `<div class="tile${bad === "ok" ? " ok" : bad ? " bad" : ""}"><small>${esc(title)}</small>${value}</div>`;
     const sensors = all.filter(({ d }) => d.virtual);
     const tiles = `<div class="tiles">${tile(V.tileDevices, esc(I.funk.devicesN(all.length)))}${tile(V.tileLinked, `${all.filter((x) => taught(x).length).length} ${esc(I.of)} ${all.length}`)}${tile(V.tileNoSource, String(sensors.filter(({ d }) => !d.follows?.length).length), sensors.some(({ d }) => !d.follows?.length))}</div>`;
-    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    const search = `<input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     const sections = gateways(state.doc).map((gw) => {
       const rows = withMenu(gw.devices.filter((d) => isVirtual(d) && matches(d, state.q)).map((d) => {
         const numbers = gw.numbers?.get(d.note_key) ?? [];
@@ -787,7 +787,7 @@ export const installation = {
     const kinds = ["taster", "sensor", "aktor"];
     const artChips = `<div class="chips"><button class="chip" data-in-art="all" aria-pressed="${state.art === "all"}">${esc(I.all)} <b>${all.length}</b></button>${kinds.map((k) => `<button class="chip" data-k="${k}" data-in-art="${k}" aria-pressed="${state.art === k}">${esc(I.kinds[k])} <b>${all.filter((d) => kindOf(d) === k).length}</b></button>`).join("")}</div>`;
     const menu = `<details class="colmenu" ${state.colMenu ? "open" : ""}><summary class="chip">${esc(I.columns)}</summary><div class="items">${FUNK_COLUMNS.map((c) => `<label><input type="checkbox" data-in-funkcol="${c}" ${state.funkCols.has(c) ? "checked" : ""}>${esc(F.cols[c])}</label>`).join("")}</div></details>`;
-    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    const search = `<input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     const form = state.docForm ? this._instDocForm(kinds) : "";
     const tools = `<div class="itools" style="align-items:center">${search}<span style="flex:1"></span><button class="chip" data-in-act="doc-open">${esc(F.document)}</button>${menu}</div>`;
     const input = (d, gw, field, value, placeholder, extra = "") => (d.manual
@@ -1190,7 +1190,7 @@ export const installation = {
     const group = state.view === "all"
       ? `<label class="isub">${esc(I.groupBy)} <select data-in-groupsel aria-label="${esc(I.groupBy)}"><option value="">${esc(I.groupNone)}</option><option value="area" ${state.group === "area" ? "selected" : ""}>${esc(I.byArea)}</option><option value="location" ${state.group === "location" ? "selected" : ""}>${esc(I.byPlace)}</option><option value="gateway" ${state.group === "gateway" ? "selected" : ""}>${esc(I.byGateway)}</option></select></label>`
       : "";
-    const search = `<input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
+    const search = `<input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(I.search)}" aria-label="${esc(I.search)}">`;
     this._artChips = artChips;
     return `<div class="itools" style="align-items:center">${search}${group}<span style="flex:1"></span><button class="chip" data-in-act="sheet" aria-pressed="${state.sheet}">${svg(ICON.table)}${esc(I.sheetButton)}</button>${menu}</div>${paste}${missChips}${bulk}${sections.join("")}`;
   },
@@ -1244,7 +1244,7 @@ export const installation = {
     const tiles = `<div class="stiles">${tile(L.tiles.actuators, String(model.actuators.length), "u", "all")}${tile(L.tiles.none, String(without), "w", "none")}${tile(L.tiles.noAnswer, String(noAnswer), "d", "noanswer")}${tile(L.tiles.untested, String(notTested), "w", "untested")}${tile(L.tiles.answered, String(confirmed), "f", "confirmed")}</div>`;
     const chip = (attr, value, current, text, count = null) => `<button class="chip" ${attr}="${value}" aria-pressed="${current === value}">${esc(text)}${count === null ? "" : ` <b>${count}</b>`}</button>`;
     const filtered = state.linkFilter !== "all" || state.linkSource !== "all" || state.q;
-    const filters = state.linkView === "matrix" ? "" : `<div class="chips" style="margin-bottom:8px"><span class="isub lead">${esc(L.source.title)}</span>${["assigned", "declared", "entered"].map((x) => `<button class="chip" data-src="${x}" data-in-linksource="${state.linkSource === x ? "all" : x}" aria-pressed="${state.linkSource === x}" title="${esc(L.sourceHint[x])}">${esc(L.source[x])} <b>${gw.links.filter((l) => l.source === x).length}</b></button>`).join("")}<span style="flex:1"></span>${filtered ? `<button class="chip" data-in-linkreset="1">${esc(L.reset)}</button>` : ""}</div><div class="itools" style="align-items:center"><input class="isearch" data-in-search value="${esc(state.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}"><span style="flex:1"></span><span class="isub">${esc(L.sort)}</span><span class="seg" role="group">${["name", "status", "count"].map((k) => `<button data-in-linksort="${k}" aria-pressed="${state.linkSort === k}">${esc(L.sorts[k])}${state.linkSort === k ? (state.linkDir > 0 ? " ↑" : " ↓") : ""}</button>`).join("")}</span><button class="chip" data-in-linklearn="1" aria-pressed="${state.linkLearn}" title="${esc(L.learnHint)}">${esc(L.learn)}</button></div>`;
+    const filters = state.linkView === "matrix" ? "" : `<div class="chips" style="margin-bottom:8px"><span class="isub lead">${esc(L.source.title)}</span>${["assigned", "declared", "entered"].map((x) => `<button class="chip" data-src="${x}" data-in-linksource="${state.linkSource === x ? "all" : x}" aria-pressed="${state.linkSource === x}" title="${esc(L.sourceHint[x])}">${esc(L.source[x])} <b>${gw.links.filter((l) => l.source === x).length}</b></button>`).join("")}<span style="flex:1"></span>${filtered ? `<button class="chip" data-in-linkreset="1">${esc(L.reset)}</button>` : ""}</div><div class="itools" style="align-items:center"><input class="isearch" type="search" data-in-search value="${esc(state.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}"><span style="flex:1"></span><span class="isub">${esc(L.sort)}</span><span class="seg" role="group">${["name", "status", "count", "id", "sender"].map((k) => `<button data-in-linksort="${k}" aria-pressed="${state.linkSort === k}">${esc(L.sorts[k])}${state.linkSort === k ? (state.linkDir > 0 ? " ↑" : " ↓") : ""}</button>`).join("")}</span><button class="chip" data-in-linklearn="1" aria-pressed="${state.linkLearn}" title="${esc(L.learnHint)}">${esc(L.learn)}</button></div>`;
     const passLink = (l) => (state.linkSource === "all" || l.source === state.linkSource) && (state.linkFilter !== "untested" || untested(l)) && (state.linkFilter !== "noanswer" || l.status === "no_answer") && (state.linkFilter !== "confirmed" || l.status === "confirmed");
     const body = state.linkView === "matrix" ? this._instLinkMatrix(gw, model) : state.linkView === "sender" ? this._instLinkBySender(gw, model, passLink) : this._instLinkByActuator(gw, model, passLink, testable);
     return `${tiles}${filters}<div class="${state.linkLearn ? "" : "nolearn"}">${body}</div>`;
@@ -1302,8 +1302,13 @@ export const installation = {
     const L = this._t.inst.links;
     const state = this._in;
     const q = state.q.trim().toLowerCase();
+    // device IDs are fixed-width hex; actuators without a sender number (or without an ID) go last
+    const cmpId = (x, y) => (x ? (y ? (x < y ? -1 : x > y ? 1 : 0) : -1) : y ? 1 : 0);
+    const senderNo = (a) => (a.device ? (gw.numbers?.get(a.device.note_key) ?? [])[0] : undefined) ?? 1e9;
     const worst = (a) => Math.min(3, ...a.links.map((l) => ({ no_answer: 0, unverified: 1, confirmed: 2 })[l.status] ?? 3), a.links.length ? 3 : -1);
-    const sorters = { name: (a, b) => a.name.localeCompare(b.name), status: (a, b) => worst(a) - worst(b) || a.name.localeCompare(b.name), count: (a, b) => a.links.length - b.links.length || a.name.localeCompare(b.name) };
+    const sorters = { name: (a, b) => a.name.localeCompare(b.name), status: (a, b) => worst(a) - worst(b) || a.name.localeCompare(b.name), count: (a, b) => a.links.length - b.links.length || a.name.localeCompare(b.name),
+      id: (a, b) => cmpId(a.id, b.id) || a.name.localeCompare(b.name),
+      sender: (a, b) => senderNo(a) - senderNo(b) || cmpId(a.id, b.id) };
     const actuators = model.actuators.filter((a) => !q || [a.name, a.id, a.device?.model, ...a.links.flatMap((l) => [l.from_name, l.from_id, l.role])].join(" ").toLowerCase().includes(q)).sort((a, b) => sorters[state.linkSort](a, b) * state.linkDir);
     const cards = actuators.map((a) => {
       const shown = a.links.filter(pass);
@@ -1340,6 +1345,7 @@ export const installation = {
     const q = state.q.trim().toLowerCase();
     const senders = model.senders.filter((x) => !q || [x.name, x.id, ...x.links.flatMap((l) => [l.to_name, l.to_id, l.role])].join(" ").toLowerCase().includes(q));
     if (state.linkSort === "count") senders.sort((a, b) => (a.links.length - b.links.length) * state.linkDir);
+    else if (state.linkSort === "id" || state.linkSort === "sender") senders.sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")) * state.linkDir);
     else if (state.linkDir < 0) senders.reverse();
     const cards = senders.map((x) => {
       const shown = x.links.filter(pass);
@@ -1442,7 +1448,7 @@ export const installation = {
     const from = list.length ? v.pg * v.ps + 1 : 0;
     const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
     const pager = `<div class="spager"><span>${esc(t.inst.sid.range(from, from + page.length - (list.length ? 1 : 0), list.length))}</span><div><label>${esc(t.inst.sid.perPage)} <select data-in-logps aria-label="${esc(t.inst.sid.perPage)}">${sizes}</select></label><button class="chip" data-in-logpg="-1"${v.pg === 0 ? " disabled" : ""} aria-label="${esc(t.inst.sid.prev)}">‹</button><span>${esc(t.inst.sid.page(v.pg + 1, pages))}</span><button class="chip" data-in-logpg="1"${v.pg >= pages - 1 ? " disabled" : ""} aria-label="${esc(t.inst.sid.next2)}">›</button></div></div>`;
-    const search = `<input class="isearch" data-in-search value="${esc(this._in.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}">`;
+    const search = `<input class="isearch" type="search" data-in-search value="${esc(this._in.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.search)}">`;
     const empty = `<tr><td colspan="2" class="none">${esc(L.none)}</td></tr>`;
     return `<div class="itools" style="align-items:center">${search}<span class="seg" role="group">${period}</span><span style="flex:1"></span><button class="chip" data-in-act="log-csv">${svg(ICON.download)}${esc(L.csv)}</button></div><div class="chips" style="margin-bottom:10px">${chips}</div><div class="swrap"><div class="logbar"><span>${esc(L.count(list.length, all.length))}</span><button data-in-logsort="1">${esc(t.time)} ${v.dir < 0 ? "↓" : "↑"} ${esc(v.dir < 0 ? L.newest : L.oldest)}</button></div><div class="tablewrap"><table class="itable log"><tbody>${body || empty}</tbody></table></div>${pager}</div>`;
   },
@@ -1947,8 +1953,15 @@ export const installation = {
       state.q = e.target.value;
       clearTimeout(this._inSearch);
       this._inSearch = setTimeout(() => {
+        const before = this.shadowRoot.querySelector("[data-in-search]");
+        const focused = this.shadowRoot.activeElement === before;
+        const pos = before?.selectionStart ?? state.q.length;
         this._renderInstallation();
-        this.shadowRoot.querySelector("[data-in-search]")?.focus();
+        const input = this.shadowRoot.querySelector("[data-in-search]");
+        if (focused && input) {
+          input.focus();
+          input.setSelectionRange(pos, pos);
+        }
       }, 250);
       return;
     }
