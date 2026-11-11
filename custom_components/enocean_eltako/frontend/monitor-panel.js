@@ -2242,6 +2242,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (result.entry_id) {
       // the sender waits under "Add device" of its gateway on the integration page
       // the hash makes the integration page scroll to and highlight that gateway
+      // Home Assistant's toast stays over the page change and says what to press there
+      this.dispatchEvent(new CustomEvent("hass-notification", { detail: { message: this._t.addResult.next, duration: 10000 }, bubbles: true, composed: true }));
       this._navigate(`/config/integrations/integration/enocean_eltako#config_entry=${result.entry_id}`);
       return;
     }
