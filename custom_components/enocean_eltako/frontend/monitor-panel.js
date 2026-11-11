@@ -185,6 +185,9 @@ const STYLE = `
   .live.paused, .live.connecting { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
   .live.offline { color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, transparent); }
   .spacer { flex: 1; }
+  .icon-btn.spin svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .icon-btn.spin svg { animation: none; } }
   .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--muted); }
   .icon-btn:hover { background: var(--accent-soft); color: var(--accent-hover); }
   .icon-btn[hidden] { display: none; }
@@ -1142,6 +1145,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <button class="mini" id="mini" hidden></button>
             <span class="sr-only" id="announce" role="status" aria-live="polite"></span>
             <span class="spacer"></span>
+            <button class="icon-btn" id="refresh" title="${esc(t.refresh)}" aria-label="${esc(t.refresh)}">${svg(ICON.refresh)}</button>
             <button class="icon-btn list-only" id="pause"></button>
             <button class="icon-btn tg-only" id="send" title="${esc(t.send)}" aria-label="${esc(t.send)}" aria-expanded="false">${svg(ICON.send)}</button>
             <button class="icon-btn list-only d-only" id="export" title="${esc(t.export)}" aria-label="${esc(t.export)}">${svg(ICON.download)}</button>
@@ -1504,6 +1508,18 @@ class EnOceanEltakoPanel extends HTMLElement {
       this._render();
     });
     $("pause").addEventListener("click", () => this._togglePause());
+    const hint = () => {
+      $("refresh").title = this._t.refreshHint(this._t.ago(Math.max(0, Math.round((Date.now() - (this._reloadedAt || this._builtAt || Date.now())) / 1000))));
+    };
+    this._builtAt = Date.now();
+    $("refresh").addEventListener("pointerenter", hint);
+    $("refresh").addEventListener("focus", hint);
+    $("refresh").addEventListener("click", async () => {
+      const button = $("refresh");
+      button.classList.add("spin");
+      await this._reloadView();
+      button.classList.remove("spin");
+    });
     $("clear").addEventListener("click", () => {
       this._offset = 0;
       // added up: a second clear must not bring back what the first one removed
@@ -1702,6 +1718,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   async _reloadView() {
+    this._reloadedAt = Date.now();
     // everything the active view shows that Home Assistant can change behind the panel's back
     if (!this._hass) return;
     const view = this._view;
