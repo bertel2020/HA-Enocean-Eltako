@@ -1317,38 +1317,59 @@ async def test_inverted_window_handle_swaps_closed_and_tilted(hass: HomeAssistan
         assert hass.states.get(window).state == is_open
 
 
+HEATER_SUBENTRY = "0123456789abcdef0123456789abcdef"
+
+
+def _heater_and_meter(part_of: str | None = HEATER_SUBENTRY):
+    return [
+        ConfigSubentryData(
+            data={"schema": 6, "model": "switch", "device_id": "05-10-A2-B9", "platform": "switch"},
+            subentry_type="device",
+            title="Konvektor Bad",
+            unique_id="05-10-A2-B9",
+            subentry_id=HEATER_SUBENTRY,
+        ),
+        _subentry("meter", "05-10-A2-C0", "Konvektor Bad Zähler", part_of=part_of),
+    ]
+
+
+def _device_of(hass: HomeAssistant, domain: str, unique_id: str):
+    registry = er.async_get(hass)
+    entity = registry.async_get(registry.async_get_entity_id(domain, DOMAIN, unique_id))
+    return dr.async_get(hass).async_get(entity.device_id)
+
+
+@pytest.mark.parametrize("gateway", [_heater_and_meter()], indirect=True)
+async def test_meter_hangs_under_its_switch(hass: HomeAssistant, gateway) -> None:
+    """part_of: two devices of their own; the meter's page says "connected via" the switch."""
+    switch = _device_of(hass, "switch", f"{BASE}_05-10-A2-B9_1_switch")
+    meter = _device_of(hass, "sensor", f"{BASE}_05-10-A2-C0_1_energy")
+    assert meter.id != switch.id
+    assert meter.name == "Konvektor Bad Zähler" and switch.name == "Konvektor Bad"
+    assert meter.via_device_id == switch.id
+    assert (DOMAIN, f"{BASE}_05-10-A2-C0") in meter.identifiers  # identity unchanged
+
+
 @pytest.mark.parametrize(
     "gateway",
-    [
-        [
-            _subentry(
-                "switch",
-                "05-10-A2-B9",
-                "Konvektor Schalter",
-                platform="switch",
-                measured_power="sensor.konvektor_leistung",
-                measured_energy="sensor.konvektor_energie",
-            )
-        ]
-    ],
+    [_heater_and_meter("a-subentry-that-is-gone"), _heater_and_meter(None)],
     indirect=True,
 )
-async def test_switch_shows_power_and_energy_of_its_meter(hass: HomeAssistant, gateway) -> None:
-    """A switch without own measurement shows the readings of the linked meter as attributes."""
-    switch = _entity(hass, "switch", f"{BASE}_05-10-A2-B9_1_switch")
-    assert "measured_power" not in hass.states.get(switch).attributes  # meter unknown so far
-    hass.states.async_set(
-        "sensor.konvektor_leistung", "1200", {"unit_of_measurement": "W", "device_class": "power"}
-    )
-    hass.states.async_set("sensor.konvektor_energie", "348.5", {"unit_of_measurement": "kWh"})
-    await hass.async_block_till_done()
-    attributes = hass.states.get(switch).attributes
-    assert attributes["measured_power"] == 1200.0
-    assert attributes["measured_power_unit"] == "W"
-    assert attributes["measured_energy"] == 348.5
-    hass.states.async_set("sensor.konvektor_leistung", "unavailable")
-    await hass.async_block_till_done()
-    assert "measured_power" not in hass.states.get(switch).attributes
+async def test_meter_without_a_target_hangs_under_the_gateway(hass: HomeAssistant, gateway) -> None:
+    switch = _device_of(hass, "switch", f"{BASE}_05-10-A2-B9_1_switch")
+    meter = _device_of(hass, "sensor", f"{BASE}_05-10-A2-C0_1_energy")
+    assert meter.via_device_id is not None and meter.via_device_id != switch.id
+
+
+@pytest.mark.parametrize("gateway", [_heater_and_meter(None)], indirect=True)
+async def test_reconfigure_meter_offers_the_other_devices(hass: HomeAssistant, gateway) -> None:
+    """The meter's form lists the other devices, not the meter itself."""
+    entry, _server = gateway
+    meter = next(s for s in entry.subentries.values() if s.title == "Konvektor Bad Zähler")
+    flow = await entry.start_subentry_reconfigure_flow(hass, meter.subentry_id)
+    field = next(k for k in flow["data_schema"].schema if k == "part_of")
+    options = flow["data_schema"].schema[field].config["options"]
+    assert [o["value"] for o in options] == [HEATER_SUBENTRY]
 
 
 def test_heating_controller_telegram() -> None:

@@ -642,8 +642,7 @@
             "weather_brightness": "Brightness",
             "run_time_tenths": "Run times in 100 ms",
             "model_name": "Model (optional)",
-            "measured_power": "Power meter",
-            "measured_energy": "Energy meter"
+            "part_of": "Belongs to device"
           },
           "data_description": {
             "device_id": "ID of the device's telegrams, for example 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 or 0510A2B3 (actuators: the ID of their status telegrams).",
@@ -677,9 +676,8 @@
             "invert": "Contacts: on means closed. Window handles: closed and tilted trade places (handle fitted the other way up). Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model.",
             "back": "Switch on and press OK to go back to the previous step without saving.",
-            "measured_power": "Optional. Power sensor of a meter on the same load, for example the F3Z14D channel of this convector. Shown as an attribute of this entity; the readings stay with the meter.",
-            "measured_energy": "Optional. Energy sensor of that meter, shown as an attribute of this entity. The energy dashboard keeps using the meter itself.",
-            "name": "Name the function too, for example “Bath convector switch” and “Bath convector meter”: an actuator and its meter are two devices."
+            "name": "Name the function too, for example “Bath convector switch” and “Bath convector meter”: an actuator and its meter are two devices.",
+            "part_of": "Optional. Hangs this meter under another device, for example the switch of the convector it measures: the device page then says “Connected via …”. The meter stays a device of its own with its own bus address, entities and settings. Empty: no connection."
           },
           "sections": {
             "rocker_buttons": {
@@ -762,8 +760,7 @@
             "run_time_tenths": "Run times in 100 ms",
             "model_name": "Model (optional)",
             "model": "Device type",
-            "measured_power": "Power meter",
-            "measured_energy": "Energy meter"
+            "part_of": "Belongs to device"
           },
           "data_description": {
             "time_opens": "Full travel time from closed to open.",
@@ -793,9 +790,8 @@
             "invert": "Contacts: on means closed. Window handles: closed and tilted trade places (handle fitted the other way up). Switching actuators with reversed relay logic: commands and state are swapped.",
             "model_name": "Only shown in the telegram monitor and on the device page. The behaviour depends on the profile, not on the model. You can type another model.",
             "model": "Changing the type keeps the sender ID of the first sender; the actuator may have to learn it again. Its entities are rebuilt for the new type.",
-            "measured_power": "Optional. Power sensor of a meter on the same load, for example the F3Z14D channel of this convector. Shown as an attribute of this entity; the readings stay with the meter.",
-            "measured_energy": "Optional. Energy sensor of that meter, shown as an attribute of this entity. The energy dashboard keeps using the meter itself.",
-            "name": "Name the function too, for example “Bath convector switch” and “Bath convector meter”: an actuator and its meter are two devices."
+            "name": "Name the function too, for example “Bath convector switch” and “Bath convector meter”: an actuator and its meter are two devices.",
+            "part_of": "Optional. Hangs this meter under another device, for example the switch of the convector it measures: the device page then says “Connected via …”. The meter stays a device of its own with its own bus address, entities and settings. Empty: no connection."
           },
           "sections": {
             "rocker_buttons": {

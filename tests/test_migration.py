@@ -139,8 +139,8 @@ async def test_cover_routing_both_becomes_one_sender(hass: HomeAssistant) -> Non
     assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION
 
 
-async def test_measuring_meter_option_needs_no_conversion(hass: HomeAssistant) -> None:
-    """1.5 -> 1.6: the optional meter link is new; existing devices only get the new schema."""
+async def test_part_of_option_needs_no_conversion(hass: HomeAssistant) -> None:
+    """1.5 -> 1.6: the optional part_of link is new; existing devices only get the new schema."""
     entry = _entry(
         5,
         [
@@ -161,6 +161,6 @@ async def test_measuring_meter_option_needs_no_conversion(hass: HomeAssistant) -
     assert await async_migrate_entry(hass, entry)
     (data,) = (dict(s.data) for s in entry.subentries.values())
     assert data["schema"] == SUBENTRY_SCHEMA == 6
-    assert "measured_power" not in data and "measured_energy" not in data
+    assert "part_of" not in data
     assert data["platform"] == "switch"  # everything else is kept
     assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 6

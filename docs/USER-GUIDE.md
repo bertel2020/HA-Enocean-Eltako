@@ -163,10 +163,11 @@ then set the state in Home Assistant, marked as assumed until the actuator repor
 
 An FSR14 has no measurement; an F3Z14D (or another meter) measures the circuit. Add them as two
 devices and name the function, for example "Bath convector switch" and "Bath convector meter",
-both in the same area. In the switch's device settings, **Power meter** and **Energy meter** can
-point to the meter's sensors; the switch then shows `measured_power` and `measured_energy` as
-attributes. This is display only: the readings stay with the meter, which the energy dashboard
-keeps using. It can be set or removed at any time without touching sender IDs or history.
+both in the same area. In the meter's device settings, **Belongs to device** can point to the
+switch: the meter's page then says "Connected via Bath convector switch", and the switch lists
+the meter as a connected device. Both stay devices of their own with their own entities, so
+entity IDs, sender IDs and history do not change, and the energy dashboard keeps using the meter.
+The link can be set or removed at any time.
 
 ### Virtual sensors
 

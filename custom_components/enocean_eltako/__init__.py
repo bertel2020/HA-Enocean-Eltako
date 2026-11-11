@@ -157,8 +157,8 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
     1.4 -> 1.5: the cover routing "both" is gone, a cover moves through one sender; it keeps
     the controller (the direction rocker where it has no controller) (schema 5).
 
-    1.5 -> 1.6: a switching actuator can show the power and energy of a meter on the same load
-    ("measured_power", "measured_energy", both optional); nothing to convert (schema 6).
+    1.5 -> 1.6: a meter can hang under the actuator on its load ("part_of", the other device's
+    subentry ID, optional; "connected via" on the device page); nothing to convert (schema 6).
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -371,6 +371,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     entry.runtime_data.health_check = async_setup_health(hass, entry)
     _async_request_states(hass, entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _async_link_devices(hass, entry)
     entry.runtime_data.remove_reload_listener = entry.add_update_listener(_async_reload_on_change)
     entry.async_on_unload(entry.runtime_data.suspend_reload)
     if not on_demand:
@@ -492,6 +493,22 @@ def _release_unowned(store: SenderStore, owners: set[str]) -> None:
             released = True
     if released:
         store.async_schedule_save()
+
+
+def _async_link_devices(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """A device with "part_of" (a meter) is connected via the device it belongs to."""
+    registry = dr.async_get(hass)
+    for device in entry.runtime_data.devices.values():
+        if (target := device.part_of) is None:
+            continue
+        own = registry.async_get_device_by_identifier(
+            (DOMAIN, device.unique_prefix), entry.entry_id
+        )
+        parent = registry.async_get_device_by_identifier(
+            (DOMAIN, target.unique_prefix), entry.entry_id
+        )
+        if own and parent and own.id != parent.id and own.via_device_id != parent.id:
+            registry.async_update_device(own.id, via_device_id=parent.id)
 
 
 def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:

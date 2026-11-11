@@ -10,7 +10,7 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
-- **Schaltaktor und Zähler**: Ein Schaltaktor ohne eigene Messung (FSR14) kann Leistung und Energie eines Zählers an derselben Last (F3Z14D) anzeigen. Im Gerät des Schalters wählt man optional dessen Leistungs- und Energiesensor; der Schalter zeigt sie als Attribute `measured_power` und `measured_energy`. Nur Anzeige: Die Messwerte bleiben beim Zähler, nichts wird doppelt gezählt. Jederzeit nachträglich setzbar. Subentry-Schema 6 mit Migration (nichts umzurechnen). Namenstipp im Dialog: die Funktion mit benennen („Bad Konvektor Schalter“ / „… Zähler“).
+- **Zähler unter einem Gerät**: Ein Zähler (z. B. F3Z14D) kann „Gehört zu Gerät“ auf den Schaltaktor ohne eigene Messung (FSR14) an derselben Last gesetzt bekommen. Auf der Geräteseite steht dann „Verbunden über …“, und der Schalter verlinkt den Zähler. Beide bleiben eigene Geräte mit eigenen Entitäten; Entity-IDs, Gerätekennungen, Sender-IDs und Verlauf ändern sich nicht. Jederzeit nachträglich setzbar. Subentry-Schema 6 mit Migration (nichts umzurechnen). Namenstipp im Dialog: die Funktion mit benennen („Bad Konvektor Schalter“ / „… Zähler“).
 
 #### Geändert
 
@@ -20,7 +20,7 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Added
 
-- **Switching actuator and meter**: a switching actuator without a measurement of its own (FSR14) can show power and energy of a meter on the same load (F3Z14D). In the switch's device, optionally pick the meter's power and energy sensors; the switch shows them as the attributes `measured_power` and `measured_energy`. Display only: the readings stay with the meter, nothing is counted twice. Can be set later at any time. Subentry schema 6 with a migration (nothing to convert). Naming tip in the dialog: name the function too ("Bath convector switch" / "… meter").
+- **Meter under a device**: a meter (for example the F3Z14D) can be set to "Belongs to device" the switching actuator without a measurement of its own (FSR14) on the same load. The device page then says "Connected via …" and the switch links the meter. Both stay devices of their own with their own entities; entity IDs, device identifiers, sender IDs and history do not change. Can be set later at any time. Subentry schema 6 with a migration (nothing to convert). Naming tip in the dialog: name the function too ("Bath convector switch" / "… meter").
 
 #### Changed
 
