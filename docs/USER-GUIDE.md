@@ -159,6 +159,15 @@ For older or 230 V-only actuators: enter the ID of a pushbutton taught into the 
 **Wall switch** and pick its on and off buttons (the same button for both toggles). Its presses
 then set the state in Home Assistant, marked as assumed until the actuator reports itself.
 
+### Switching actuator and meter on the same load
+
+An FSR14 has no measurement; an F3Z14D (or another meter) measures the circuit. Add them as two
+devices and name the function, for example "Bath convector switch" and "Bath convector meter",
+both in the same area. In the switch's device settings, **Power meter** and **Energy meter** can
+point to the meter's sensors; the switch then shows `measured_power` and `measured_energy` as
+attributes. This is display only: the readings stay with the meter, which the energy dashboard
+keeps using. It can be set or removed at any time without touching sender IDs or history.
+
 ### Virtual sensors
 
 Home Assistant itself sends as a window contact (D5-00-01), motion sensor (A5-07-01),

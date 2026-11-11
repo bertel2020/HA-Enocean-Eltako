@@ -1317,6 +1317,40 @@ async def test_inverted_window_handle_swaps_closed_and_tilted(hass: HomeAssistan
         assert hass.states.get(window).state == is_open
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-10-A2-B9",
+                "Konvektor Schalter",
+                platform="switch",
+                measured_power="sensor.konvektor_leistung",
+                measured_energy="sensor.konvektor_energie",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_switch_shows_power_and_energy_of_its_meter(hass: HomeAssistant, gateway) -> None:
+    """A switch without own measurement shows the readings of the linked meter as attributes."""
+    switch = _entity(hass, "switch", f"{BASE}_05-10-A2-B9_1_switch")
+    assert "measured_power" not in hass.states.get(switch).attributes  # meter unknown so far
+    hass.states.async_set(
+        "sensor.konvektor_leistung", "1200", {"unit_of_measurement": "W", "device_class": "power"}
+    )
+    hass.states.async_set("sensor.konvektor_energie", "348.5", {"unit_of_measurement": "kWh"})
+    await hass.async_block_till_done()
+    attributes = hass.states.get(switch).attributes
+    assert attributes["measured_power"] == 1200.0
+    assert attributes["measured_power_unit"] == "W"
+    assert attributes["measured_energy"] == 348.5
+    hass.states.async_set("sensor.konvektor_leistung", "unavailable")
+    await hass.async_block_till_done()
+    assert "measured_power" not in hass.states.get(switch).attributes
+
+
 def test_heating_controller_telegram() -> None:
     from custom_components.enocean_eltako.protocol.eep.eltako import heating
 

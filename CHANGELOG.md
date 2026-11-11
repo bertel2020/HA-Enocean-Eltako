@@ -8,11 +8,19 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 **Deutsch**
 
+#### Hinzugefügt
+
+- **Schaltaktor und Zähler**: Ein Schaltaktor ohne eigene Messung (FSR14) kann Leistung und Energie eines Zählers an derselben Last (F3Z14D) anzeigen. Im Gerät des Schalters wählt man optional dessen Leistungs- und Energiesensor; der Schalter zeigt sie als Attribute `measured_power` und `measured_energy`. Nur Anzeige: Die Messwerte bleiben beim Zähler, nichts wird doppelt gezählt. Jederzeit nachträglich setzbar. Subentry-Schema 6 mit Migration (nichts umzurechnen). Namenstipp im Dialog: die Funktion mit benennen („Bad Konvektor Schalter“ / „… Zähler“).
+
 #### Geändert
 
 - **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
 
 **English**
+
+#### Added
+
+- **Switching actuator and meter**: a switching actuator without a measurement of its own (FSR14) can show power and energy of a meter on the same load (F3Z14D). In the switch's device, optionally pick the meter's power and energy sensors; the switch shows them as the attributes `measured_power` and `measured_energy`. Display only: the readings stay with the meter, nothing is counted twice. Can be set later at any time. Subentry schema 6 with a migration (nothing to convert). Naming tip in the dialog: name the function too ("Bath convector switch" / "… meter").
 
 #### Changed
 

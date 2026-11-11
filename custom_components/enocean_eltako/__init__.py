@@ -156,6 +156,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
 
     1.4 -> 1.5: the cover routing "both" is gone, a cover moves through one sender; it keeps
     the controller (the direction rocker where it has no controller) (schema 5).
+
+    1.5 -> 1.6: a switching actuator can show the power and energy of a meter on the same load
+    ("measured_power", "measured_energy", both optional); nothing to convert (schema 6).
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -206,6 +209,14 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             data["schema"] = 5
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=5)
+    if entry.minor_version < 6:
+        for subentry in list(entry.subentries.values()):
+            data = dict(subentry.data)
+            if data.get("schema", 1) >= 6:
+                continue
+            data["schema"] = 6
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
+        hass.config_entries.async_update_entry(entry, minor_version=6)
     return True
 
 

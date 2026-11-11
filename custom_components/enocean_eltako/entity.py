@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.core import callback
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import Event, EventStateChangedData, callback
+from homeassistant.helpers.event import async_track_state_change_event
 
-from .catalog import OPT_UNAVAILABLE_WHEN_SILENT
+from .catalog import OPT_MEASURED_ENERGY, OPT_MEASURED_POWER, OPT_UNAVAILABLE_WHEN_SILENT
 from .device import EnOceanDevice
 from .entity_ids import PrefixedEntityId
 
@@ -74,3 +76,45 @@ class EnOceanEntity(PrefixedEntityId):
     def _apply(self, values: dict[str, Any]) -> bool:
         """Update attributes from values; True when the state changed."""
         raise NotImplementedError
+
+
+MEASURED = {OPT_MEASURED_POWER: "measured_power", OPT_MEASURED_ENERGY: "measured_energy"}
+
+
+class MeasuredEntity(EnOceanEntity):
+    """An actuator entity that shows power and energy of a meter on the same load.
+
+    A switching actuator (FSR14) has no measurement; the meter (F3Z14D) is a device of its own.
+    The link is display only: the readings stay with the meter (the energy dashboard uses it),
+    nothing is created twice.
+    """
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        linked = [e for opt in MEASURED if (e := self._device.options.get(opt))]
+        if linked:
+            self.async_on_remove(
+                async_track_state_change_event(self.hass, linked, self._measured_changed)
+            )
+
+    @callback
+    def _measured_changed(self, event: Event[EventStateChangedData]) -> None:
+        old, new = event.data["old_state"], event.data["new_state"]
+        if old is None or new is None or old.state != new.state:
+            self.async_write_ha_state()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        attributes: dict[str, Any] = {}
+        for opt, name in MEASURED.items():
+            entity_id = self._device.options.get(opt)
+            state = self.hass.states.get(entity_id) if entity_id else None
+            if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+                continue
+            try:
+                attributes[name] = float(state.state)
+            except ValueError:
+                continue
+            if unit := state.attributes.get("unit_of_measurement"):
+                attributes[f"{name}_unit"] = unit
+        return attributes or None
