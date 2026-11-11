@@ -18,6 +18,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Panel**: coming back to the tab reloads the active view (installation, devices, sender pool, takeover); changes made in Home Assistant meanwhile no longer need a page reload.
 - **Takeover, mapping and CSV**: the old window handle sensor (`…_windowhandle`) now gets its new counterpart (the Handle sensor) in the old → new entity IDs; it was listed without one.
 - **Panel, search fields**: the cursor no longer jumps to the start while typing in the installation and bus search fields, and they have a clear (x) button.
+- **Panel**: the round icon buttons (for example the + of an unknown sender) keep their size and stay round instead of being squeezed into an oval.
 - **Catalog**: F3Z14D is the first model in the list of the electricity meter.
 - **Device flow**: the "Back" switch is labelled "Back (without saving)" and explains itself in its description.
 
@@ -42,6 +43,7 @@ has an English and a German part. The format follows [Keep a Changelog](https://
 - **Panel**: Beim Zurückkehren zum Tab wird die aktive Ansicht neu geladen (Anlage, Geräte, Sender-ID-Pool, Übernahme); Änderungen in Home Assistant brauchen dafür kein Neuladen der Seite mehr.
 - **Übernahme, Zuordnung und CSV**: Der alte Fenstergriff-Sensor (`…_windowhandle`) bekommt in der Zuordnung alt → neu jetzt sein Gegenstück (den Sensor Griff); er stand bisher ohne neue ID da.
 - **Panel, Suchfelder**: Der Cursor springt beim Tippen in den Suchfeldern der Anlage und des Busses nicht mehr an den Anfang, und sie haben ein Kreuz zum Leeren.
+- **Panel**: Die runden Symbol-Buttons (zum Beispiel das + eines unbekannten Senders) behalten ihre Größe und werden nicht mehr zu einem Oval gedrückt.
 - **Katalog**: Der F3Z14D steht in der Modellliste des Stromzählers an erster Stelle.
 - **Geräte-Dialog**: Der Schalter „Zurück“ heißt jetzt „Zurück (ohne Speichern)“ und erklärt sich in seiner Beschreibung.
 
