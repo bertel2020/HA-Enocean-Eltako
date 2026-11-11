@@ -524,6 +524,7 @@ export const TEXT = {
       gateway_not_loaded: "The gateway that heard it is not loaded.",
       not_found: "No telegram from this sender in the monitor any more.",
       failed: "Could not add the device.",
+      next: "Sender ready. Continue with \"Add device\" on the gateway.",
     },
   },
   de: {
@@ -1039,6 +1040,7 @@ export const TEXT = {
       gateway_not_loaded: "Das Gateway, das ihn gehört hat, ist nicht geladen.",
       not_found: "Kein Telegramm dieses Senders mehr im Monitor.",
       failed: "Das Gerät ließ sich nicht anlegen.",
+      next: "Sender vorgemerkt. Weiter mit „Gerät hinzufügen“ beim Gateway.",
     },
   },
 };
