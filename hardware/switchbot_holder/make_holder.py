@@ -9,8 +9,9 @@ front_piece.stl  The existing wall-mount tray (SwitchBotMount.3mf, meter clips i
                  only moved so that its back face sits on the frame front. Its holes stay open.
 
 Hardware: 2 x M3 heat-set insert (about 5.7 mm long, 4.6 mm outer, soldering iron at 200-220 C for PLA),
-          2 x M3 x 8 screw with a low head (button head ISO 7380, head max 7 mm and about 1.7 mm high,
-          fits the 7.2 mm counterbore of the tray).
+          2 x M3 x 8 button head screw (ISO 7380: head 5.7 mm wide, 1.65 mm high).
+The tray's own holes (4.0 mm through, 7.2 mm counterbore only 1 mm deep) are filled and redrilled to
+fit these screws: 3.4 mm through hole, 6.4 mm counterbore 1.8 mm deep, so the head sits flush.
 Assembly: plate onto the box, frame over it, tray with 2 screws into the inserts, meter clips in.
 
 Print: plate flat, tray with the back face on the bed.
@@ -33,12 +34,20 @@ BOX_HOLE = 4.5          # round, for the usual 3.5 mm box screws
 PLATE = 70.0            # must fit into the hollow of the frame (ASSUMED free inner width >= 78)
 PLATE_T = 1.3           # allowed thickness under the frame (given)
 
+# --- screws (tray holes are redrilled for M3 x 8 button head) ---
+HOLE_Y = 18.0           # the tray's screw holes at y = +-18, x = 0
+FLOOR_TOP = 13.0        # top of the tray floor in the assembled position (3.0 mm thick floor, back face at 10)
+OLD_HOLE_R = 3.6        # largest radius of the original counterbore
+SCREW_HOLE_R = 1.7      # 3.4 mm through hole
+HEAD_HOLE_R = 3.2       # 6.4 mm counterbore
+HEAD_DEPTH = 1.8
+
 # --- posts (plate) ---
-POST_Y = 18.0           # the tray's screw holes are at y = +-18, x = 0
+POST_Y = HOLE_Y          # the tray's screw holes are at y = +-18, x = 0
 POST_R = 4.5
 POST_TOP = FRAME_D - 0.3        # the tray rests on the frame, not on the posts; the screws pull it down
 INSERT_D = 4.0          # hole for an M3 heat-set insert (4.6 mm outer, check your insert)
-INSERT_DEPTH = 6.2
+INSERT_DEPTH = 7.0      # insert 5.7 mm + reserve; an M3x8 tip ends 0.8 mm below the insert
 
 MOUNT_3MF = Path(__file__).with_name("SwitchBotMount.3mf")
 
@@ -160,7 +169,14 @@ def front_piece():
     tris = load_3mf_triangles(MOUNT_3MF)
     zmin = min(p[2] for t in tris for p in t)
     dz = FRAME_D - zmin                      # back face of the tray on the frame front (Z = FRAME_D)
-    return [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
+    tris = [tuple((p[0], p[1], p[2] + dz) for p in t) for t in tris]
+    # fill the original holes with a washer-shaped solid that has the new hole shape
+    zr, zt = FRAME_D, FLOOR_TOP
+    prof = [(SCREW_HOLE_R, zr), (OLD_HOLE_R + 0.1, zr), (OLD_HOLE_R + 0.1, zt), (HEAD_HOLE_R, zt),
+            (HEAD_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zt - HEAD_DEPTH), (SCREW_HOLE_R, zr)]
+    for sy in (1, -1):
+        tris += lathe(prof, 0.0, sy * HOLE_Y)
+    return tris
 
 
 if __name__ == "__main__":

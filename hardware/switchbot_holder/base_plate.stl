@@ -7402,21 +7402,21 @@ solid base_plate
   outer loop
    vertex 2.0000 18.0000 9.7000
    vertex 1.9616 18.3902 9.7000
-   vertex 1.9616 18.3902 3.5000
+   vertex 1.9616 18.3902 2.7000
   endloop
  endfacet
  facet normal -0.99518 -0.09802 -0.00000
   outer loop
    vertex 2.0000 18.0000 9.7000
-   vertex 1.9616 18.3902 3.5000
-   vertex 2.0000 18.0000 3.5000
+   vertex 1.9616 18.3902 2.7000
+   vertex 2.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 2.0000 18.0000 3.5000
-   vertex 1.9616 18.3902 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 2.0000 18.0000 2.7000
+   vertex 1.9616 18.3902 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7458,21 +7458,21 @@ solid base_plate
   outer loop
    vertex 1.9616 18.3902 9.7000
    vertex 1.8478 18.7654 9.7000
-   vertex 1.8478 18.7654 3.5000
+   vertex 1.8478 18.7654 2.7000
   endloop
  endfacet
  facet normal -0.95694 -0.29028 -0.00000
   outer loop
    vertex 1.9616 18.3902 9.7000
-   vertex 1.8478 18.7654 3.5000
-   vertex 1.9616 18.3902 3.5000
+   vertex 1.8478 18.7654 2.7000
+   vertex 1.9616 18.3902 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.9616 18.3902 3.5000
-   vertex 1.8478 18.7654 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.9616 18.3902 2.7000
+   vertex 1.8478 18.7654 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7514,21 +7514,21 @@ solid base_plate
   outer loop
    vertex 1.8478 18.7654 9.7000
    vertex 1.6629 19.1111 9.7000
-   vertex 1.6629 19.1111 3.5000
+   vertex 1.6629 19.1111 2.7000
   endloop
  endfacet
  facet normal -0.88192 -0.47140 -0.00000
   outer loop
    vertex 1.8478 18.7654 9.7000
-   vertex 1.6629 19.1111 3.5000
-   vertex 1.8478 18.7654 3.5000
+   vertex 1.6629 19.1111 2.7000
+   vertex 1.8478 18.7654 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.8478 18.7654 3.5000
-   vertex 1.6629 19.1111 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.8478 18.7654 2.7000
+   vertex 1.6629 19.1111 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7570,21 +7570,21 @@ solid base_plate
   outer loop
    vertex 1.6629 19.1111 9.7000
    vertex 1.4142 19.4142 9.7000
-   vertex 1.4142 19.4142 3.5000
+   vertex 1.4142 19.4142 2.7000
   endloop
  endfacet
  facet normal -0.77301 -0.63439 -0.00000
   outer loop
    vertex 1.6629 19.1111 9.7000
-   vertex 1.4142 19.4142 3.5000
-   vertex 1.6629 19.1111 3.5000
+   vertex 1.4142 19.4142 2.7000
+   vertex 1.6629 19.1111 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.6629 19.1111 3.5000
-   vertex 1.4142 19.4142 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.6629 19.1111 2.7000
+   vertex 1.4142 19.4142 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7626,21 +7626,21 @@ solid base_plate
   outer loop
    vertex 1.4142 19.4142 9.7000
    vertex 1.1111 19.6629 9.7000
-   vertex 1.1111 19.6629 3.5000
+   vertex 1.1111 19.6629 2.7000
   endloop
  endfacet
  facet normal -0.63439 -0.77301 -0.00000
   outer loop
    vertex 1.4142 19.4142 9.7000
-   vertex 1.1111 19.6629 3.5000
-   vertex 1.4142 19.4142 3.5000
+   vertex 1.1111 19.6629 2.7000
+   vertex 1.4142 19.4142 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.4142 19.4142 3.5000
-   vertex 1.1111 19.6629 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.4142 19.4142 2.7000
+   vertex 1.1111 19.6629 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7682,21 +7682,21 @@ solid base_plate
   outer loop
    vertex 1.1111 19.6629 9.7000
    vertex 0.7654 19.8478 9.7000
-   vertex 0.7654 19.8478 3.5000
+   vertex 0.7654 19.8478 2.7000
   endloop
  endfacet
  facet normal -0.47140 -0.88192 -0.00000
   outer loop
    vertex 1.1111 19.6629 9.7000
-   vertex 0.7654 19.8478 3.5000
-   vertex 1.1111 19.6629 3.5000
+   vertex 0.7654 19.8478 2.7000
+   vertex 1.1111 19.6629 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.1111 19.6629 3.5000
-   vertex 0.7654 19.8478 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.1111 19.6629 2.7000
+   vertex 0.7654 19.8478 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7738,21 +7738,21 @@ solid base_plate
   outer loop
    vertex 0.7654 19.8478 9.7000
    vertex 0.3902 19.9616 9.7000
-   vertex 0.3902 19.9616 3.5000
+   vertex 0.3902 19.9616 2.7000
   endloop
  endfacet
  facet normal -0.29028 -0.95694 -0.00000
   outer loop
    vertex 0.7654 19.8478 9.7000
-   vertex 0.3902 19.9616 3.5000
-   vertex 0.7654 19.8478 3.5000
+   vertex 0.3902 19.9616 2.7000
+   vertex 0.7654 19.8478 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.7654 19.8478 3.5000
-   vertex 0.3902 19.9616 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 0.7654 19.8478 2.7000
+   vertex 0.3902 19.9616 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7794,21 +7794,21 @@ solid base_plate
   outer loop
    vertex 0.3902 19.9616 9.7000
    vertex 0.0000 20.0000 9.7000
-   vertex 0.0000 20.0000 3.5000
+   vertex 0.0000 20.0000 2.7000
   endloop
  endfacet
  facet normal -0.09802 -0.99518 -0.00000
   outer loop
    vertex 0.3902 19.9616 9.7000
-   vertex 0.0000 20.0000 3.5000
-   vertex 0.3902 19.9616 3.5000
+   vertex 0.0000 20.0000 2.7000
+   vertex 0.3902 19.9616 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.3902 19.9616 3.5000
-   vertex 0.0000 20.0000 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 0.3902 19.9616 2.7000
+   vertex 0.0000 20.0000 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7850,21 +7850,21 @@ solid base_plate
   outer loop
    vertex 0.0000 20.0000 9.7000
    vertex -0.3902 19.9616 9.7000
-   vertex -0.3902 19.9616 3.5000
+   vertex -0.3902 19.9616 2.7000
   endloop
  endfacet
  facet normal 0.09802 -0.99518 0.00000
   outer loop
    vertex 0.0000 20.0000 9.7000
-   vertex -0.3902 19.9616 3.5000
-   vertex 0.0000 20.0000 3.5000
+   vertex -0.3902 19.9616 2.7000
+   vertex 0.0000 20.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.0000 20.0000 3.5000
-   vertex -0.3902 19.9616 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 0.0000 20.0000 2.7000
+   vertex -0.3902 19.9616 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7906,21 +7906,21 @@ solid base_plate
   outer loop
    vertex -0.3902 19.9616 9.7000
    vertex -0.7654 19.8478 9.7000
-   vertex -0.7654 19.8478 3.5000
+   vertex -0.7654 19.8478 2.7000
   endloop
  endfacet
  facet normal 0.29028 -0.95694 0.00000
   outer loop
    vertex -0.3902 19.9616 9.7000
-   vertex -0.7654 19.8478 3.5000
-   vertex -0.3902 19.9616 3.5000
+   vertex -0.7654 19.8478 2.7000
+   vertex -0.3902 19.9616 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.3902 19.9616 3.5000
-   vertex -0.7654 19.8478 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -0.3902 19.9616 2.7000
+   vertex -0.7654 19.8478 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -7962,21 +7962,21 @@ solid base_plate
   outer loop
    vertex -0.7654 19.8478 9.7000
    vertex -1.1111 19.6629 9.7000
-   vertex -1.1111 19.6629 3.5000
+   vertex -1.1111 19.6629 2.7000
   endloop
  endfacet
  facet normal 0.47140 -0.88192 0.00000
   outer loop
    vertex -0.7654 19.8478 9.7000
-   vertex -1.1111 19.6629 3.5000
-   vertex -0.7654 19.8478 3.5000
+   vertex -1.1111 19.6629 2.7000
+   vertex -0.7654 19.8478 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.7654 19.8478 3.5000
-   vertex -1.1111 19.6629 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -0.7654 19.8478 2.7000
+   vertex -1.1111 19.6629 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8018,21 +8018,21 @@ solid base_plate
   outer loop
    vertex -1.1111 19.6629 9.7000
    vertex -1.4142 19.4142 9.7000
-   vertex -1.4142 19.4142 3.5000
+   vertex -1.4142 19.4142 2.7000
   endloop
  endfacet
  facet normal 0.63439 -0.77301 0.00000
   outer loop
    vertex -1.1111 19.6629 9.7000
-   vertex -1.4142 19.4142 3.5000
-   vertex -1.1111 19.6629 3.5000
+   vertex -1.4142 19.4142 2.7000
+   vertex -1.1111 19.6629 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.1111 19.6629 3.5000
-   vertex -1.4142 19.4142 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.1111 19.6629 2.7000
+   vertex -1.4142 19.4142 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8074,21 +8074,21 @@ solid base_plate
   outer loop
    vertex -1.4142 19.4142 9.7000
    vertex -1.6629 19.1111 9.7000
-   vertex -1.6629 19.1111 3.5000
+   vertex -1.6629 19.1111 2.7000
   endloop
  endfacet
  facet normal 0.77301 -0.63439 0.00000
   outer loop
    vertex -1.4142 19.4142 9.7000
-   vertex -1.6629 19.1111 3.5000
-   vertex -1.4142 19.4142 3.5000
+   vertex -1.6629 19.1111 2.7000
+   vertex -1.4142 19.4142 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.4142 19.4142 3.5000
-   vertex -1.6629 19.1111 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.4142 19.4142 2.7000
+   vertex -1.6629 19.1111 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8130,21 +8130,21 @@ solid base_plate
   outer loop
    vertex -1.6629 19.1111 9.7000
    vertex -1.8478 18.7654 9.7000
-   vertex -1.8478 18.7654 3.5000
+   vertex -1.8478 18.7654 2.7000
   endloop
  endfacet
  facet normal 0.88192 -0.47140 0.00000
   outer loop
    vertex -1.6629 19.1111 9.7000
-   vertex -1.8478 18.7654 3.5000
-   vertex -1.6629 19.1111 3.5000
+   vertex -1.8478 18.7654 2.7000
+   vertex -1.6629 19.1111 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.6629 19.1111 3.5000
-   vertex -1.8478 18.7654 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.6629 19.1111 2.7000
+   vertex -1.8478 18.7654 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8186,21 +8186,21 @@ solid base_plate
   outer loop
    vertex -1.8478 18.7654 9.7000
    vertex -1.9616 18.3902 9.7000
-   vertex -1.9616 18.3902 3.5000
+   vertex -1.9616 18.3902 2.7000
   endloop
  endfacet
  facet normal 0.95694 -0.29028 0.00000
   outer loop
    vertex -1.8478 18.7654 9.7000
-   vertex -1.9616 18.3902 3.5000
-   vertex -1.8478 18.7654 3.5000
+   vertex -1.9616 18.3902 2.7000
+   vertex -1.8478 18.7654 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.8478 18.7654 3.5000
-   vertex -1.9616 18.3902 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.8478 18.7654 2.7000
+   vertex -1.9616 18.3902 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8242,21 +8242,21 @@ solid base_plate
   outer loop
    vertex -1.9616 18.3902 9.7000
    vertex -2.0000 18.0000 9.7000
-   vertex -2.0000 18.0000 3.5000
+   vertex -2.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.99518 -0.09802 0.00000
   outer loop
    vertex -1.9616 18.3902 9.7000
-   vertex -2.0000 18.0000 3.5000
-   vertex -1.9616 18.3902 3.5000
+   vertex -2.0000 18.0000 2.7000
+   vertex -1.9616 18.3902 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.9616 18.3902 3.5000
-   vertex -2.0000 18.0000 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.9616 18.3902 2.7000
+   vertex -2.0000 18.0000 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 -1.00000
@@ -8298,21 +8298,21 @@ solid base_plate
   outer loop
    vertex -2.0000 18.0000 9.7000
    vertex -1.9616 17.6098 9.7000
-   vertex -1.9616 17.6098 3.5000
+   vertex -1.9616 17.6098 2.7000
   endloop
  endfacet
  facet normal 0.99518 0.09802 0.00000
   outer loop
    vertex -2.0000 18.0000 9.7000
-   vertex -1.9616 17.6098 3.5000
-   vertex -2.0000 18.0000 3.5000
+   vertex -1.9616 17.6098 2.7000
+   vertex -2.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -2.0000 18.0000 3.5000
-   vertex -1.9616 17.6098 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -2.0000 18.0000 2.7000
+   vertex -1.9616 17.6098 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8354,21 +8354,21 @@ solid base_plate
   outer loop
    vertex -1.9616 17.6098 9.7000
    vertex -1.8478 17.2346 9.7000
-   vertex -1.8478 17.2346 3.5000
+   vertex -1.8478 17.2346 2.7000
   endloop
  endfacet
  facet normal 0.95694 0.29028 0.00000
   outer loop
    vertex -1.9616 17.6098 9.7000
-   vertex -1.8478 17.2346 3.5000
-   vertex -1.9616 17.6098 3.5000
+   vertex -1.8478 17.2346 2.7000
+   vertex -1.9616 17.6098 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.9616 17.6098 3.5000
-   vertex -1.8478 17.2346 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.9616 17.6098 2.7000
+   vertex -1.8478 17.2346 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8410,21 +8410,21 @@ solid base_plate
   outer loop
    vertex -1.8478 17.2346 9.7000
    vertex -1.6629 16.8889 9.7000
-   vertex -1.6629 16.8889 3.5000
+   vertex -1.6629 16.8889 2.7000
   endloop
  endfacet
  facet normal 0.88192 0.47140 0.00000
   outer loop
    vertex -1.8478 17.2346 9.7000
-   vertex -1.6629 16.8889 3.5000
-   vertex -1.8478 17.2346 3.5000
+   vertex -1.6629 16.8889 2.7000
+   vertex -1.8478 17.2346 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.8478 17.2346 3.5000
-   vertex -1.6629 16.8889 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.8478 17.2346 2.7000
+   vertex -1.6629 16.8889 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8466,21 +8466,21 @@ solid base_plate
   outer loop
    vertex -1.6629 16.8889 9.7000
    vertex -1.4142 16.5858 9.7000
-   vertex -1.4142 16.5858 3.5000
+   vertex -1.4142 16.5858 2.7000
   endloop
  endfacet
  facet normal 0.77301 0.63439 0.00000
   outer loop
    vertex -1.6629 16.8889 9.7000
-   vertex -1.4142 16.5858 3.5000
-   vertex -1.6629 16.8889 3.5000
+   vertex -1.4142 16.5858 2.7000
+   vertex -1.6629 16.8889 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.6629 16.8889 3.5000
-   vertex -1.4142 16.5858 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.6629 16.8889 2.7000
+   vertex -1.4142 16.5858 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8522,21 +8522,21 @@ solid base_plate
   outer loop
    vertex -1.4142 16.5858 9.7000
    vertex -1.1111 16.3371 9.7000
-   vertex -1.1111 16.3371 3.5000
+   vertex -1.1111 16.3371 2.7000
   endloop
  endfacet
  facet normal 0.63439 0.77301 0.00000
   outer loop
    vertex -1.4142 16.5858 9.7000
-   vertex -1.1111 16.3371 3.5000
-   vertex -1.4142 16.5858 3.5000
+   vertex -1.1111 16.3371 2.7000
+   vertex -1.4142 16.5858 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.4142 16.5858 3.5000
-   vertex -1.1111 16.3371 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.4142 16.5858 2.7000
+   vertex -1.1111 16.3371 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8578,21 +8578,21 @@ solid base_plate
   outer loop
    vertex -1.1111 16.3371 9.7000
    vertex -0.7654 16.1522 9.7000
-   vertex -0.7654 16.1522 3.5000
+   vertex -0.7654 16.1522 2.7000
   endloop
  endfacet
  facet normal 0.47140 0.88192 0.00000
   outer loop
    vertex -1.1111 16.3371 9.7000
-   vertex -0.7654 16.1522 3.5000
-   vertex -1.1111 16.3371 3.5000
+   vertex -0.7654 16.1522 2.7000
+   vertex -1.1111 16.3371 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.1111 16.3371 3.5000
-   vertex -0.7654 16.1522 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -1.1111 16.3371 2.7000
+   vertex -0.7654 16.1522 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8634,21 +8634,21 @@ solid base_plate
   outer loop
    vertex -0.7654 16.1522 9.7000
    vertex -0.3902 16.0384 9.7000
-   vertex -0.3902 16.0384 3.5000
+   vertex -0.3902 16.0384 2.7000
   endloop
  endfacet
  facet normal 0.29028 0.95694 0.00000
   outer loop
    vertex -0.7654 16.1522 9.7000
-   vertex -0.3902 16.0384 3.5000
-   vertex -0.7654 16.1522 3.5000
+   vertex -0.3902 16.0384 2.7000
+   vertex -0.7654 16.1522 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -0.7654 16.1522 3.5000
-   vertex -0.3902 16.0384 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -0.7654 16.1522 2.7000
+   vertex -0.3902 16.0384 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8690,21 +8690,21 @@ solid base_plate
   outer loop
    vertex -0.3902 16.0384 9.7000
    vertex -0.0000 16.0000 9.7000
-   vertex -0.0000 16.0000 3.5000
+   vertex -0.0000 16.0000 2.7000
   endloop
  endfacet
  facet normal 0.09802 0.99518 0.00000
   outer loop
    vertex -0.3902 16.0384 9.7000
-   vertex -0.0000 16.0000 3.5000
-   vertex -0.3902 16.0384 3.5000
+   vertex -0.0000 16.0000 2.7000
+   vertex -0.3902 16.0384 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -0.3902 16.0384 3.5000
-   vertex -0.0000 16.0000 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -0.3902 16.0384 2.7000
+   vertex -0.0000 16.0000 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 -1.00000
@@ -8746,21 +8746,21 @@ solid base_plate
   outer loop
    vertex -0.0000 16.0000 9.7000
    vertex 0.3902 16.0384 9.7000
-   vertex 0.3902 16.0384 3.5000
+   vertex 0.3902 16.0384 2.7000
   endloop
  endfacet
  facet normal -0.09802 0.99518 0.00000
   outer loop
    vertex -0.0000 16.0000 9.7000
-   vertex 0.3902 16.0384 3.5000
-   vertex -0.0000 16.0000 3.5000
+   vertex 0.3902 16.0384 2.7000
+   vertex -0.0000 16.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.0000 16.0000 3.5000
-   vertex 0.3902 16.0384 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex -0.0000 16.0000 2.7000
+   vertex 0.3902 16.0384 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8802,21 +8802,21 @@ solid base_plate
   outer loop
    vertex 0.3902 16.0384 9.7000
    vertex 0.7654 16.1522 9.7000
-   vertex 0.7654 16.1522 3.5000
+   vertex 0.7654 16.1522 2.7000
   endloop
  endfacet
  facet normal -0.29028 0.95694 0.00000
   outer loop
    vertex 0.3902 16.0384 9.7000
-   vertex 0.7654 16.1522 3.5000
-   vertex 0.3902 16.0384 3.5000
+   vertex 0.7654 16.1522 2.7000
+   vertex 0.3902 16.0384 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 0.3902 16.0384 3.5000
-   vertex 0.7654 16.1522 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 0.3902 16.0384 2.7000
+   vertex 0.7654 16.1522 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8858,21 +8858,21 @@ solid base_plate
   outer loop
    vertex 0.7654 16.1522 9.7000
    vertex 1.1111 16.3371 9.7000
-   vertex 1.1111 16.3371 3.5000
+   vertex 1.1111 16.3371 2.7000
   endloop
  endfacet
  facet normal -0.47140 0.88192 0.00000
   outer loop
    vertex 0.7654 16.1522 9.7000
-   vertex 1.1111 16.3371 3.5000
-   vertex 0.7654 16.1522 3.5000
+   vertex 1.1111 16.3371 2.7000
+   vertex 0.7654 16.1522 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 0.7654 16.1522 3.5000
-   vertex 1.1111 16.3371 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 0.7654 16.1522 2.7000
+   vertex 1.1111 16.3371 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8914,21 +8914,21 @@ solid base_plate
   outer loop
    vertex 1.1111 16.3371 9.7000
    vertex 1.4142 16.5858 9.7000
-   vertex 1.4142 16.5858 3.5000
+   vertex 1.4142 16.5858 2.7000
   endloop
  endfacet
  facet normal -0.63439 0.77301 0.00000
   outer loop
    vertex 1.1111 16.3371 9.7000
-   vertex 1.4142 16.5858 3.5000
-   vertex 1.1111 16.3371 3.5000
+   vertex 1.4142 16.5858 2.7000
+   vertex 1.1111 16.3371 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.1111 16.3371 3.5000
-   vertex 1.4142 16.5858 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.1111 16.3371 2.7000
+   vertex 1.4142 16.5858 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -8970,21 +8970,21 @@ solid base_plate
   outer loop
    vertex 1.4142 16.5858 9.7000
    vertex 1.6629 16.8889 9.7000
-   vertex 1.6629 16.8889 3.5000
+   vertex 1.6629 16.8889 2.7000
   endloop
  endfacet
  facet normal -0.77301 0.63439 0.00000
   outer loop
    vertex 1.4142 16.5858 9.7000
-   vertex 1.6629 16.8889 3.5000
-   vertex 1.4142 16.5858 3.5000
+   vertex 1.6629 16.8889 2.7000
+   vertex 1.4142 16.5858 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.4142 16.5858 3.5000
-   vertex 1.6629 16.8889 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.4142 16.5858 2.7000
+   vertex 1.6629 16.8889 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9026,21 +9026,21 @@ solid base_plate
   outer loop
    vertex 1.6629 16.8889 9.7000
    vertex 1.8478 17.2346 9.7000
-   vertex 1.8478 17.2346 3.5000
+   vertex 1.8478 17.2346 2.7000
   endloop
  endfacet
  facet normal -0.88192 0.47140 0.00000
   outer loop
    vertex 1.6629 16.8889 9.7000
-   vertex 1.8478 17.2346 3.5000
-   vertex 1.6629 16.8889 3.5000
+   vertex 1.8478 17.2346 2.7000
+   vertex 1.6629 16.8889 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.6629 16.8889 3.5000
-   vertex 1.8478 17.2346 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.6629 16.8889 2.7000
+   vertex 1.8478 17.2346 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9082,21 +9082,21 @@ solid base_plate
   outer loop
    vertex 1.8478 17.2346 9.7000
    vertex 1.9616 17.6098 9.7000
-   vertex 1.9616 17.6098 3.5000
+   vertex 1.9616 17.6098 2.7000
   endloop
  endfacet
  facet normal -0.95694 0.29028 0.00000
   outer loop
    vertex 1.8478 17.2346 9.7000
-   vertex 1.9616 17.6098 3.5000
-   vertex 1.8478 17.2346 3.5000
+   vertex 1.9616 17.6098 2.7000
+   vertex 1.8478 17.2346 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.8478 17.2346 3.5000
-   vertex 1.9616 17.6098 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.8478 17.2346 2.7000
+   vertex 1.9616 17.6098 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9138,21 +9138,21 @@ solid base_plate
   outer loop
    vertex 1.9616 17.6098 9.7000
    vertex 2.0000 18.0000 9.7000
-   vertex 2.0000 18.0000 3.5000
+   vertex 2.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal -0.99518 0.09802 0.00000
   outer loop
    vertex 1.9616 17.6098 9.7000
-   vertex 2.0000 18.0000 3.5000
-   vertex 1.9616 17.6098 3.5000
+   vertex 2.0000 18.0000 2.7000
+   vertex 1.9616 17.6098 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.9616 17.6098 3.5000
-   vertex 2.0000 18.0000 3.5000
-   vertex 0.0000 18.0000 3.5000
+   vertex 1.9616 17.6098 2.7000
+   vertex 2.0000 18.0000 2.7000
+   vertex 0.0000 18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9194,21 +9194,21 @@ solid base_plate
   outer loop
    vertex 2.0000 -18.0000 9.7000
    vertex 1.9616 -17.6098 9.7000
-   vertex 1.9616 -17.6098 3.5000
+   vertex 1.9616 -17.6098 2.7000
   endloop
  endfacet
  facet normal -0.99518 -0.09802 -0.00000
   outer loop
    vertex 2.0000 -18.0000 9.7000
-   vertex 1.9616 -17.6098 3.5000
-   vertex 2.0000 -18.0000 3.5000
+   vertex 1.9616 -17.6098 2.7000
+   vertex 2.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 2.0000 -18.0000 3.5000
-   vertex 1.9616 -17.6098 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 2.0000 -18.0000 2.7000
+   vertex 1.9616 -17.6098 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9250,21 +9250,21 @@ solid base_plate
   outer loop
    vertex 1.9616 -17.6098 9.7000
    vertex 1.8478 -17.2346 9.7000
-   vertex 1.8478 -17.2346 3.5000
+   vertex 1.8478 -17.2346 2.7000
   endloop
  endfacet
  facet normal -0.95694 -0.29028 -0.00000
   outer loop
    vertex 1.9616 -17.6098 9.7000
-   vertex 1.8478 -17.2346 3.5000
-   vertex 1.9616 -17.6098 3.5000
+   vertex 1.8478 -17.2346 2.7000
+   vertex 1.9616 -17.6098 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.9616 -17.6098 3.5000
-   vertex 1.8478 -17.2346 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.9616 -17.6098 2.7000
+   vertex 1.8478 -17.2346 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9306,21 +9306,21 @@ solid base_plate
   outer loop
    vertex 1.8478 -17.2346 9.7000
    vertex 1.6629 -16.8889 9.7000
-   vertex 1.6629 -16.8889 3.5000
+   vertex 1.6629 -16.8889 2.7000
   endloop
  endfacet
  facet normal -0.88192 -0.47140 -0.00000
   outer loop
    vertex 1.8478 -17.2346 9.7000
-   vertex 1.6629 -16.8889 3.5000
-   vertex 1.8478 -17.2346 3.5000
+   vertex 1.6629 -16.8889 2.7000
+   vertex 1.8478 -17.2346 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.8478 -17.2346 3.5000
-   vertex 1.6629 -16.8889 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.8478 -17.2346 2.7000
+   vertex 1.6629 -16.8889 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9362,21 +9362,21 @@ solid base_plate
   outer loop
    vertex 1.6629 -16.8889 9.7000
    vertex 1.4142 -16.5858 9.7000
-   vertex 1.4142 -16.5858 3.5000
+   vertex 1.4142 -16.5858 2.7000
   endloop
  endfacet
  facet normal -0.77301 -0.63439 -0.00000
   outer loop
    vertex 1.6629 -16.8889 9.7000
-   vertex 1.4142 -16.5858 3.5000
-   vertex 1.6629 -16.8889 3.5000
+   vertex 1.4142 -16.5858 2.7000
+   vertex 1.6629 -16.8889 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.6629 -16.8889 3.5000
-   vertex 1.4142 -16.5858 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.6629 -16.8889 2.7000
+   vertex 1.4142 -16.5858 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9418,21 +9418,21 @@ solid base_plate
   outer loop
    vertex 1.4142 -16.5858 9.7000
    vertex 1.1111 -16.3371 9.7000
-   vertex 1.1111 -16.3371 3.5000
+   vertex 1.1111 -16.3371 2.7000
   endloop
  endfacet
  facet normal -0.63439 -0.77301 -0.00000
   outer loop
    vertex 1.4142 -16.5858 9.7000
-   vertex 1.1111 -16.3371 3.5000
-   vertex 1.4142 -16.5858 3.5000
+   vertex 1.1111 -16.3371 2.7000
+   vertex 1.4142 -16.5858 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.4142 -16.5858 3.5000
-   vertex 1.1111 -16.3371 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.4142 -16.5858 2.7000
+   vertex 1.1111 -16.3371 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9474,21 +9474,21 @@ solid base_plate
   outer loop
    vertex 1.1111 -16.3371 9.7000
    vertex 0.7654 -16.1522 9.7000
-   vertex 0.7654 -16.1522 3.5000
+   vertex 0.7654 -16.1522 2.7000
   endloop
  endfacet
  facet normal -0.47140 -0.88192 -0.00000
   outer loop
    vertex 1.1111 -16.3371 9.7000
-   vertex 0.7654 -16.1522 3.5000
-   vertex 1.1111 -16.3371 3.5000
+   vertex 0.7654 -16.1522 2.7000
+   vertex 1.1111 -16.3371 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 1.1111 -16.3371 3.5000
-   vertex 0.7654 -16.1522 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.1111 -16.3371 2.7000
+   vertex 0.7654 -16.1522 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9530,21 +9530,21 @@ solid base_plate
   outer loop
    vertex 0.7654 -16.1522 9.7000
    vertex 0.3902 -16.0384 9.7000
-   vertex 0.3902 -16.0384 3.5000
+   vertex 0.3902 -16.0384 2.7000
   endloop
  endfacet
  facet normal -0.29028 -0.95694 -0.00000
   outer loop
    vertex 0.7654 -16.1522 9.7000
-   vertex 0.3902 -16.0384 3.5000
-   vertex 0.7654 -16.1522 3.5000
+   vertex 0.3902 -16.0384 2.7000
+   vertex 0.7654 -16.1522 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.7654 -16.1522 3.5000
-   vertex 0.3902 -16.0384 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 0.7654 -16.1522 2.7000
+   vertex 0.3902 -16.0384 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9586,21 +9586,21 @@ solid base_plate
   outer loop
    vertex 0.3902 -16.0384 9.7000
    vertex 0.0000 -16.0000 9.7000
-   vertex 0.0000 -16.0000 3.5000
+   vertex 0.0000 -16.0000 2.7000
   endloop
  endfacet
  facet normal -0.09802 -0.99518 -0.00000
   outer loop
    vertex 0.3902 -16.0384 9.7000
-   vertex 0.0000 -16.0000 3.5000
-   vertex 0.3902 -16.0384 3.5000
+   vertex 0.0000 -16.0000 2.7000
+   vertex 0.3902 -16.0384 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.3902 -16.0384 3.5000
-   vertex 0.0000 -16.0000 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 0.3902 -16.0384 2.7000
+   vertex 0.0000 -16.0000 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9642,21 +9642,21 @@ solid base_plate
   outer loop
    vertex 0.0000 -16.0000 9.7000
    vertex -0.3902 -16.0384 9.7000
-   vertex -0.3902 -16.0384 3.5000
+   vertex -0.3902 -16.0384 2.7000
   endloop
  endfacet
  facet normal 0.09802 -0.99518 0.00000
   outer loop
    vertex 0.0000 -16.0000 9.7000
-   vertex -0.3902 -16.0384 3.5000
-   vertex 0.0000 -16.0000 3.5000
+   vertex -0.3902 -16.0384 2.7000
+   vertex 0.0000 -16.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex 0.0000 -16.0000 3.5000
-   vertex -0.3902 -16.0384 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 0.0000 -16.0000 2.7000
+   vertex -0.3902 -16.0384 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9698,21 +9698,21 @@ solid base_plate
   outer loop
    vertex -0.3902 -16.0384 9.7000
    vertex -0.7654 -16.1522 9.7000
-   vertex -0.7654 -16.1522 3.5000
+   vertex -0.7654 -16.1522 2.7000
   endloop
  endfacet
  facet normal 0.29028 -0.95694 0.00000
   outer loop
    vertex -0.3902 -16.0384 9.7000
-   vertex -0.7654 -16.1522 3.5000
-   vertex -0.3902 -16.0384 3.5000
+   vertex -0.7654 -16.1522 2.7000
+   vertex -0.3902 -16.0384 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.3902 -16.0384 3.5000
-   vertex -0.7654 -16.1522 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -0.3902 -16.0384 2.7000
+   vertex -0.7654 -16.1522 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9754,21 +9754,21 @@ solid base_plate
   outer loop
    vertex -0.7654 -16.1522 9.7000
    vertex -1.1111 -16.3371 9.7000
-   vertex -1.1111 -16.3371 3.5000
+   vertex -1.1111 -16.3371 2.7000
   endloop
  endfacet
  facet normal 0.47140 -0.88192 0.00000
   outer loop
    vertex -0.7654 -16.1522 9.7000
-   vertex -1.1111 -16.3371 3.5000
-   vertex -0.7654 -16.1522 3.5000
+   vertex -1.1111 -16.3371 2.7000
+   vertex -0.7654 -16.1522 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.7654 -16.1522 3.5000
-   vertex -1.1111 -16.3371 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -0.7654 -16.1522 2.7000
+   vertex -1.1111 -16.3371 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9810,21 +9810,21 @@ solid base_plate
   outer loop
    vertex -1.1111 -16.3371 9.7000
    vertex -1.4142 -16.5858 9.7000
-   vertex -1.4142 -16.5858 3.5000
+   vertex -1.4142 -16.5858 2.7000
   endloop
  endfacet
  facet normal 0.63439 -0.77301 0.00000
   outer loop
    vertex -1.1111 -16.3371 9.7000
-   vertex -1.4142 -16.5858 3.5000
-   vertex -1.1111 -16.3371 3.5000
+   vertex -1.4142 -16.5858 2.7000
+   vertex -1.1111 -16.3371 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.1111 -16.3371 3.5000
-   vertex -1.4142 -16.5858 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.1111 -16.3371 2.7000
+   vertex -1.4142 -16.5858 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9866,21 +9866,21 @@ solid base_plate
   outer loop
    vertex -1.4142 -16.5858 9.7000
    vertex -1.6629 -16.8889 9.7000
-   vertex -1.6629 -16.8889 3.5000
+   vertex -1.6629 -16.8889 2.7000
   endloop
  endfacet
  facet normal 0.77301 -0.63439 0.00000
   outer loop
    vertex -1.4142 -16.5858 9.7000
-   vertex -1.6629 -16.8889 3.5000
-   vertex -1.4142 -16.5858 3.5000
+   vertex -1.6629 -16.8889 2.7000
+   vertex -1.4142 -16.5858 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.4142 -16.5858 3.5000
-   vertex -1.6629 -16.8889 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.4142 -16.5858 2.7000
+   vertex -1.6629 -16.8889 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9922,21 +9922,21 @@ solid base_plate
   outer loop
    vertex -1.6629 -16.8889 9.7000
    vertex -1.8478 -17.2346 9.7000
-   vertex -1.8478 -17.2346 3.5000
+   vertex -1.8478 -17.2346 2.7000
   endloop
  endfacet
  facet normal 0.88192 -0.47140 0.00000
   outer loop
    vertex -1.6629 -16.8889 9.7000
-   vertex -1.8478 -17.2346 3.5000
-   vertex -1.6629 -16.8889 3.5000
+   vertex -1.8478 -17.2346 2.7000
+   vertex -1.6629 -16.8889 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.6629 -16.8889 3.5000
-   vertex -1.8478 -17.2346 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.6629 -16.8889 2.7000
+   vertex -1.8478 -17.2346 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -9978,21 +9978,21 @@ solid base_plate
   outer loop
    vertex -1.8478 -17.2346 9.7000
    vertex -1.9616 -17.6098 9.7000
-   vertex -1.9616 -17.6098 3.5000
+   vertex -1.9616 -17.6098 2.7000
   endloop
  endfacet
  facet normal 0.95694 -0.29028 0.00000
   outer loop
    vertex -1.8478 -17.2346 9.7000
-   vertex -1.9616 -17.6098 3.5000
-   vertex -1.8478 -17.2346 3.5000
+   vertex -1.9616 -17.6098 2.7000
+   vertex -1.8478 -17.2346 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.8478 -17.2346 3.5000
-   vertex -1.9616 -17.6098 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.8478 -17.2346 2.7000
+   vertex -1.9616 -17.6098 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10034,21 +10034,21 @@ solid base_plate
   outer loop
    vertex -1.9616 -17.6098 9.7000
    vertex -2.0000 -18.0000 9.7000
-   vertex -2.0000 -18.0000 3.5000
+   vertex -2.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.99518 -0.09802 0.00000
   outer loop
    vertex -1.9616 -17.6098 9.7000
-   vertex -2.0000 -18.0000 3.5000
-   vertex -1.9616 -17.6098 3.5000
+   vertex -2.0000 -18.0000 2.7000
+   vertex -1.9616 -17.6098 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -1.9616 -17.6098 3.5000
-   vertex -2.0000 -18.0000 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.9616 -17.6098 2.7000
+   vertex -2.0000 -18.0000 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 -1.00000
@@ -10090,21 +10090,21 @@ solid base_plate
   outer loop
    vertex -2.0000 -18.0000 9.7000
    vertex -1.9616 -18.3902 9.7000
-   vertex -1.9616 -18.3902 3.5000
+   vertex -1.9616 -18.3902 2.7000
   endloop
  endfacet
  facet normal 0.99518 0.09802 0.00000
   outer loop
    vertex -2.0000 -18.0000 9.7000
-   vertex -1.9616 -18.3902 3.5000
-   vertex -2.0000 -18.0000 3.5000
+   vertex -1.9616 -18.3902 2.7000
+   vertex -2.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -2.0000 -18.0000 3.5000
-   vertex -1.9616 -18.3902 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -2.0000 -18.0000 2.7000
+   vertex -1.9616 -18.3902 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10146,21 +10146,21 @@ solid base_plate
   outer loop
    vertex -1.9616 -18.3902 9.7000
    vertex -1.8478 -18.7654 9.7000
-   vertex -1.8478 -18.7654 3.5000
+   vertex -1.8478 -18.7654 2.7000
   endloop
  endfacet
  facet normal 0.95694 0.29028 0.00000
   outer loop
    vertex -1.9616 -18.3902 9.7000
-   vertex -1.8478 -18.7654 3.5000
-   vertex -1.9616 -18.3902 3.5000
+   vertex -1.8478 -18.7654 2.7000
+   vertex -1.9616 -18.3902 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.9616 -18.3902 3.5000
-   vertex -1.8478 -18.7654 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.9616 -18.3902 2.7000
+   vertex -1.8478 -18.7654 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10202,21 +10202,21 @@ solid base_plate
   outer loop
    vertex -1.8478 -18.7654 9.7000
    vertex -1.6629 -19.1111 9.7000
-   vertex -1.6629 -19.1111 3.5000
+   vertex -1.6629 -19.1111 2.7000
   endloop
  endfacet
  facet normal 0.88192 0.47140 0.00000
   outer loop
    vertex -1.8478 -18.7654 9.7000
-   vertex -1.6629 -19.1111 3.5000
-   vertex -1.8478 -18.7654 3.5000
+   vertex -1.6629 -19.1111 2.7000
+   vertex -1.8478 -18.7654 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.8478 -18.7654 3.5000
-   vertex -1.6629 -19.1111 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.8478 -18.7654 2.7000
+   vertex -1.6629 -19.1111 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10258,21 +10258,21 @@ solid base_plate
   outer loop
    vertex -1.6629 -19.1111 9.7000
    vertex -1.4142 -19.4142 9.7000
-   vertex -1.4142 -19.4142 3.5000
+   vertex -1.4142 -19.4142 2.7000
   endloop
  endfacet
  facet normal 0.77301 0.63439 0.00000
   outer loop
    vertex -1.6629 -19.1111 9.7000
-   vertex -1.4142 -19.4142 3.5000
-   vertex -1.6629 -19.1111 3.5000
+   vertex -1.4142 -19.4142 2.7000
+   vertex -1.6629 -19.1111 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.6629 -19.1111 3.5000
-   vertex -1.4142 -19.4142 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.6629 -19.1111 2.7000
+   vertex -1.4142 -19.4142 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10314,21 +10314,21 @@ solid base_plate
   outer loop
    vertex -1.4142 -19.4142 9.7000
    vertex -1.1111 -19.6629 9.7000
-   vertex -1.1111 -19.6629 3.5000
+   vertex -1.1111 -19.6629 2.7000
   endloop
  endfacet
  facet normal 0.63439 0.77301 0.00000
   outer loop
    vertex -1.4142 -19.4142 9.7000
-   vertex -1.1111 -19.6629 3.5000
-   vertex -1.4142 -19.4142 3.5000
+   vertex -1.1111 -19.6629 2.7000
+   vertex -1.4142 -19.4142 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.4142 -19.4142 3.5000
-   vertex -1.1111 -19.6629 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.4142 -19.4142 2.7000
+   vertex -1.1111 -19.6629 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10370,21 +10370,21 @@ solid base_plate
   outer loop
    vertex -1.1111 -19.6629 9.7000
    vertex -0.7654 -19.8478 9.7000
-   vertex -0.7654 -19.8478 3.5000
+   vertex -0.7654 -19.8478 2.7000
   endloop
  endfacet
  facet normal 0.47140 0.88192 0.00000
   outer loop
    vertex -1.1111 -19.6629 9.7000
-   vertex -0.7654 -19.8478 3.5000
-   vertex -1.1111 -19.6629 3.5000
+   vertex -0.7654 -19.8478 2.7000
+   vertex -1.1111 -19.6629 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -1.1111 -19.6629 3.5000
-   vertex -0.7654 -19.8478 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -1.1111 -19.6629 2.7000
+   vertex -0.7654 -19.8478 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10426,21 +10426,21 @@ solid base_plate
   outer loop
    vertex -0.7654 -19.8478 9.7000
    vertex -0.3902 -19.9616 9.7000
-   vertex -0.3902 -19.9616 3.5000
+   vertex -0.3902 -19.9616 2.7000
   endloop
  endfacet
  facet normal 0.29028 0.95694 0.00000
   outer loop
    vertex -0.7654 -19.8478 9.7000
-   vertex -0.3902 -19.9616 3.5000
-   vertex -0.7654 -19.8478 3.5000
+   vertex -0.3902 -19.9616 2.7000
+   vertex -0.7654 -19.8478 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -0.7654 -19.8478 3.5000
-   vertex -0.3902 -19.9616 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -0.7654 -19.8478 2.7000
+   vertex -0.3902 -19.9616 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10482,21 +10482,21 @@ solid base_plate
   outer loop
    vertex -0.3902 -19.9616 9.7000
    vertex -0.0000 -20.0000 9.7000
-   vertex -0.0000 -20.0000 3.5000
+   vertex -0.0000 -20.0000 2.7000
   endloop
  endfacet
  facet normal 0.09802 0.99518 0.00000
   outer loop
    vertex -0.3902 -19.9616 9.7000
-   vertex -0.0000 -20.0000 3.5000
-   vertex -0.3902 -19.9616 3.5000
+   vertex -0.0000 -20.0000 2.7000
+   vertex -0.3902 -19.9616 2.7000
   endloop
  endfacet
  facet normal -0.00000 0.00000 1.00000
   outer loop
-   vertex -0.3902 -19.9616 3.5000
-   vertex -0.0000 -20.0000 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -0.3902 -19.9616 2.7000
+   vertex -0.0000 -20.0000 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 -1.00000
@@ -10538,21 +10538,21 @@ solid base_plate
   outer loop
    vertex -0.0000 -20.0000 9.7000
    vertex 0.3902 -19.9616 9.7000
-   vertex 0.3902 -19.9616 3.5000
+   vertex 0.3902 -19.9616 2.7000
   endloop
  endfacet
  facet normal -0.09802 0.99518 0.00000
   outer loop
    vertex -0.0000 -20.0000 9.7000
-   vertex 0.3902 -19.9616 3.5000
-   vertex -0.0000 -20.0000 3.5000
+   vertex 0.3902 -19.9616 2.7000
+   vertex -0.0000 -20.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 1.00000
   outer loop
-   vertex -0.0000 -20.0000 3.5000
-   vertex 0.3902 -19.9616 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex -0.0000 -20.0000 2.7000
+   vertex 0.3902 -19.9616 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10594,21 +10594,21 @@ solid base_plate
   outer loop
    vertex 0.3902 -19.9616 9.7000
    vertex 0.7654 -19.8478 9.7000
-   vertex 0.7654 -19.8478 3.5000
+   vertex 0.7654 -19.8478 2.7000
   endloop
  endfacet
  facet normal -0.29028 0.95694 0.00000
   outer loop
    vertex 0.3902 -19.9616 9.7000
-   vertex 0.7654 -19.8478 3.5000
-   vertex 0.3902 -19.9616 3.5000
+   vertex 0.7654 -19.8478 2.7000
+   vertex 0.3902 -19.9616 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 0.3902 -19.9616 3.5000
-   vertex 0.7654 -19.8478 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 0.3902 -19.9616 2.7000
+   vertex 0.7654 -19.8478 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10650,21 +10650,21 @@ solid base_plate
   outer loop
    vertex 0.7654 -19.8478 9.7000
    vertex 1.1111 -19.6629 9.7000
-   vertex 1.1111 -19.6629 3.5000
+   vertex 1.1111 -19.6629 2.7000
   endloop
  endfacet
  facet normal -0.47140 0.88192 0.00000
   outer loop
    vertex 0.7654 -19.8478 9.7000
-   vertex 1.1111 -19.6629 3.5000
-   vertex 0.7654 -19.8478 3.5000
+   vertex 1.1111 -19.6629 2.7000
+   vertex 0.7654 -19.8478 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 0.7654 -19.8478 3.5000
-   vertex 1.1111 -19.6629 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 0.7654 -19.8478 2.7000
+   vertex 1.1111 -19.6629 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10706,21 +10706,21 @@ solid base_plate
   outer loop
    vertex 1.1111 -19.6629 9.7000
    vertex 1.4142 -19.4142 9.7000
-   vertex 1.4142 -19.4142 3.5000
+   vertex 1.4142 -19.4142 2.7000
   endloop
  endfacet
  facet normal -0.63439 0.77301 0.00000
   outer loop
    vertex 1.1111 -19.6629 9.7000
-   vertex 1.4142 -19.4142 3.5000
-   vertex 1.1111 -19.6629 3.5000
+   vertex 1.4142 -19.4142 2.7000
+   vertex 1.1111 -19.6629 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.1111 -19.6629 3.5000
-   vertex 1.4142 -19.4142 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.1111 -19.6629 2.7000
+   vertex 1.4142 -19.4142 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10762,21 +10762,21 @@ solid base_plate
   outer loop
    vertex 1.4142 -19.4142 9.7000
    vertex 1.6629 -19.1111 9.7000
-   vertex 1.6629 -19.1111 3.5000
+   vertex 1.6629 -19.1111 2.7000
   endloop
  endfacet
  facet normal -0.77301 0.63439 0.00000
   outer loop
    vertex 1.4142 -19.4142 9.7000
-   vertex 1.6629 -19.1111 3.5000
-   vertex 1.4142 -19.4142 3.5000
+   vertex 1.6629 -19.1111 2.7000
+   vertex 1.4142 -19.4142 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.4142 -19.4142 3.5000
-   vertex 1.6629 -19.1111 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.4142 -19.4142 2.7000
+   vertex 1.6629 -19.1111 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10818,21 +10818,21 @@ solid base_plate
   outer loop
    vertex 1.6629 -19.1111 9.7000
    vertex 1.8478 -18.7654 9.7000
-   vertex 1.8478 -18.7654 3.5000
+   vertex 1.8478 -18.7654 2.7000
   endloop
  endfacet
  facet normal -0.88192 0.47140 0.00000
   outer loop
    vertex 1.6629 -19.1111 9.7000
-   vertex 1.8478 -18.7654 3.5000
-   vertex 1.6629 -19.1111 3.5000
+   vertex 1.8478 -18.7654 2.7000
+   vertex 1.6629 -19.1111 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.6629 -19.1111 3.5000
-   vertex 1.8478 -18.7654 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.6629 -19.1111 2.7000
+   vertex 1.8478 -18.7654 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10874,21 +10874,21 @@ solid base_plate
   outer loop
    vertex 1.8478 -18.7654 9.7000
    vertex 1.9616 -18.3902 9.7000
-   vertex 1.9616 -18.3902 3.5000
+   vertex 1.9616 -18.3902 2.7000
   endloop
  endfacet
  facet normal -0.95694 0.29028 0.00000
   outer loop
    vertex 1.8478 -18.7654 9.7000
-   vertex 1.9616 -18.3902 3.5000
-   vertex 1.8478 -18.7654 3.5000
+   vertex 1.9616 -18.3902 2.7000
+   vertex 1.8478 -18.7654 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.8478 -18.7654 3.5000
-   vertex 1.9616 -18.3902 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.8478 -18.7654 2.7000
+   vertex 1.9616 -18.3902 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal 0.00000 0.00000 -1.00000
@@ -10930,21 +10930,21 @@ solid base_plate
   outer loop
    vertex 1.9616 -18.3902 9.7000
    vertex 2.0000 -18.0000 9.7000
-   vertex 2.0000 -18.0000 3.5000
+   vertex 2.0000 -18.0000 2.7000
   endloop
  endfacet
  facet normal -0.99518 0.09802 0.00000
   outer loop
    vertex 1.9616 -18.3902 9.7000
-   vertex 2.0000 -18.0000 3.5000
-   vertex 1.9616 -18.3902 3.5000
+   vertex 2.0000 -18.0000 2.7000
+   vertex 1.9616 -18.3902 2.7000
   endloop
  endfacet
  facet normal 0.00000 -0.00000 1.00000
   outer loop
-   vertex 1.9616 -18.3902 3.5000
-   vertex 2.0000 -18.0000 3.5000
-   vertex 0.0000 -18.0000 3.5000
+   vertex 1.9616 -18.3902 2.7000
+   vertex 2.0000 -18.0000 2.7000
+   vertex 0.0000 -18.0000 2.7000
   endloop
  endfacet
 endsolid base_plate
