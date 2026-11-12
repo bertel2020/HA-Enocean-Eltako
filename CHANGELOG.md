@@ -18,6 +18,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Geändert
 
+- **Bus-Aktoren (Baureihe 14 am FAM14) bestätigen langsamer, als wir warteten**: Das FAM14 fragt die Aktoren nacheinander ab, die Bestätigung kann bis zu 10 s dauern (Eltako „Inhalte der Eltako-Funktelegramme“). Ein Befehl an einen Bus-Aktor wartet deshalb 12 s statt 1 s auf die Bestätigung, bevor er wiederholt wird, und ein Fahrbefehl eines Rollladens wird gar nicht mehr wiederholt (er würde den Rollladen erneut fahren lassen). Unbestätigt bleibt er dann nur gemeldet. Schneller geht es mit einer Geräteliste im PCT14 und FAM14-Betriebsart 5.
+
 - **Zähler: Seriennummer** nur noch bei Zählern, die sie senden (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; laut Eltako-Funktelegramm-Liste). Der Sensor entsteht erst mit dem ersten Seriennummer-Telegramm, beim F3Z14D und bei Aktoren (FSR14M-2x, FSR61VA, FSVA-230V) gibt es ihn nicht mehr. Das Format ist jetzt wie aufgedruckt „S-AABBCC“ (vorher vier Hex-Bytes aus falsch gelesenen Telegrammen). Die Ziffernkodierung ist noch nicht mit einem Mitschnitt geprüft.
 
 - **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
@@ -33,6 +35,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 - **Meter under a device**: a meter (for example the F3Z14D) can be set to "Belongs to device" the switching actuator without a measurement of its own (FSR14) on the same load. The device page then says "Connected via …" and the switch links the meter. Both stay devices of their own with their own entities; entity IDs, device identifiers, sender IDs and history do not change. Can be set later at any time. Subentry schema 6 with a migration (nothing to convert). Naming tip in the dialog: name the function too ("Bath convector switch" / "… meter").
 
 #### Changed
+
+- **Bus actuators (series 14 on the FAM14) confirm more slowly than we waited**: the FAM14 polls the actuators one by one, so a confirmation can take up to 10 s (Eltako "Inhalte der Eltako-Funktelegramme"). A command to a bus actuator now waits 12 s instead of 1 s for the confirmation before it is repeated, and a cover's run command is not repeated at all (it would drive the cover again); it is only reported as unconfirmed. It is faster with a device list in the PCT14 and FAM14 operating mode 5.
 
 - **Meter serial number** only on meters that send it (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; per Eltako's radio telegram list). The sensor is created with the first serial number telegram; the F3Z14D and actuators (FSR14M-2x, FSR61VA, FSVA-230V) no longer get one. The format is now "S-AABBCC" as printed (before: four hex bytes from misread telegrams). The digit coding is not yet checked against a capture.
 

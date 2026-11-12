@@ -52,7 +52,7 @@ from .protocol.eep.std.profiles import PROFILES
 from .protocol.eep.teach_in import decode_teach_in_4bs
 from .protocol.eep.ute import decode_ute_request, encode_ute_response
 from .protocol.ids import BROADCAST, format_id, parse_id
-from .protocol.send_queue import Priority, SendResult
+from .protocol.send_queue import BUS_CONFIRM_TIMEOUT, MAX_RETRIES, Priority, SendResult
 from .protocol.telegram import RadioTelegram, Rorg
 
 if TYPE_CHECKING:
@@ -486,7 +486,15 @@ class EnOceanDevice:
         if runtime.bus is not None and sender_id in runtime.bus.senders.pool:
             task = self.entry.async_create_task(
                 self.hass,
-                runtime.bus.group.submit(telegram, priority, key=queue_key, expect=expect),
+                runtime.bus.group.submit(
+                    telegram,
+                    priority,
+                    key=queue_key,
+                    expect=expect,
+                    timeout=BUS_CONFIRM_TIMEOUT,
+                    # a run command that is repeated moves the cover again
+                    retries=0 if self.model.kind == "cover" else MAX_RETRIES,
+                ),
                 f"{DOMAIN} send {self.subentry.title}",
             )
             task.add_done_callback(lambda t: self._log_result(t.result(), started))

@@ -14,7 +14,7 @@ from collections.abc import Callable, Hashable
 from dataclasses import dataclass, field
 
 from .gateway import Gateway
-from .send_queue import DEFAULT_CONFIRM_TIMEOUT, Priority, SendQueue, SendResult
+from .send_queue import DEFAULT_CONFIRM_TIMEOUT, MAX_RETRIES, Priority, SendQueue, SendResult
 from .telegram import RadioTelegram
 
 _LOGGER = logging.getLogger(__name__)
@@ -108,6 +108,7 @@ class BusGroup:
         key: Hashable | None = None,
         expect: Callable[[RadioTelegram], bool] | None = None,
         timeout: float = DEFAULT_CONFIRM_TIMEOUT,
+        retries: int = MAX_RETRIES,
     ) -> SendResult:
         result = SendResult.FAILED
         for index, member in enumerate(self.candidates()):
@@ -120,7 +121,7 @@ class BusGroup:
             elif not member.connected:
                 continue
             result = await member.queue.submit(
-                telegram, priority, key=key, expect=expect, timeout=timeout
+                telegram, priority, key=key, expect=expect, timeout=timeout, retries=retries
             )
             member._touch()
             if result not in FAILOVER_RESULTS:
