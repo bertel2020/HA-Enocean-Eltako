@@ -32,6 +32,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
 
+- **Dokumentation: „Bestehende Entitäten jetzt umbenennen“** (Gateway-Präfix): Die Benutzeranleitung beschreibt jetzt, was das Umbenennen tut (alle Entitäten des Gateways samt deaktivierter Diagnose-Entitäten; die neue ID entsteht aus Geräte- und Entitätsname, nicht aus der alten ID, daher bringt „Präfix aus“ nicht jede alte ID zurück), was es nicht anpasst (Automationen, Skripte, Szenen, Gruppen, Dashboards, Energie-Dashboard, YAML) und in welcher Reihenfolge man vorgeht.
+
 **English**
 
 #### Added
@@ -57,6 +59,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 - **Meter serial number** only on meters that send it (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; per Eltako's radio telegram list). The sensor is created with the first serial number telegram; the F3Z14D and actuators (FSR14M-2x, FSR61VA, FSVA-230V) no longer get one. The format is now "S-AABBCC" as printed (before: four hex bytes from misread telegrams). The digit coding is not yet checked against a capture.
 
 - **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
+
+- **Documentation: "Rename existing entities now"** (gateway prefix): the user guide now says what the rename does (every entity of the gateway, the disabled diagnostic ones too; the new ID is built from device and entity name, not from the old ID, so switching the prefix off does not bring back every old ID), what it does not adapt (automations, scripts, scenes, groups, dashboards, the Energy dashboard, YAML) and in which order to proceed.
 
 ### [1.10.0] - 2026-11-11
 

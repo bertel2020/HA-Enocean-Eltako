@@ -612,8 +612,33 @@ Ohne Präfix bildet Home Assistant Entitäts-IDs aus Geräte- und Entitätsname 
 Gateways unterscheiden. Jedes Gateway mit Präfix braucht eine eigene Nummer; das Gateway-Gerät
 zeigt seinen Präfix im Diagnose-Sensor **Entitäts-ID-Präfix**. Die Einstellung
 gilt für Entitäten, die ab dann dazukommen. **Bestehende Entitäten jetzt umbenennen** benennt
-die Entitäten des Gateways sofort um, in beide Richtungen; Automationen, Skripte und Dashboards
-werden nicht angepasst, danach also prüfen.
+die Entitäten des Gateways sofort um, in beide Richtungen.
+
+Was das Umbenennen tut und was nicht:
+
+- Es benennt jede Entität des Gateways um, auch die deaktivierten Diagnose-Entitäten. Helfer, die
+  du selbst auf die Geräte gesetzt hast (zum Beispiel ein Schwellwert-Helfer), werden nicht umbenannt.
+- Die neue ID entsteht aus dem **aktuellen Geräte- und Entitätsnamen**, nicht aus der alten ID.
+  Eine Entität, deren ID von einem älteren Namen stammt oder nach einer Kollision ein `_2` bekam,
+  erhält eine andere ID als „Präfix + alte ID“ (`light.bad_2` wird `light.eno_gw1_bad`). Den Präfix
+  wieder auszuschalten bringt deshalb nicht jede alte ID zurück.
+- Es passt **nichts** an, was auf die alten IDs verweist: Automationen, Skripte, Szenen, Gruppen
+  (die Mitgliederliste kann die alten IDs behalten, die Gruppe wird dann `unavailable`), Dashboards
+  (auch IDs in Karten-Templates und JavaScript), das Energie-Dashboard und YAML-Dateien. Helfer, die
+  eine Entität lesen, etwa ein Schwellwert-Helfer, ziehen von selbst mit.
+
+Eine sichere Reihenfolge:
+
+1. Backup anlegen.
+2. Die Automationen ausschalten, die Entitäten des Gateways nutzen, und solche, die Szenen mit
+   ihnen aufrufen.
+3. **Bestehende Entitäten jetzt umbenennen** ankreuzen und speichern.
+4. Die alten IDs überall ersetzen, wo sie vorkommen; jede Stelle nach der alten ID durchsuchen,
+   zum Beispiel `light.kuche`. Auch Gruppen, Dashboards und das Energie-Dashboard prüfen.
+5. Die Automationen wieder einschalten und nach dem nächsten Auslöser ihre Traces ansehen.
+
+Entitäten, die unter der alten ID nicht mehr existieren, erscheinen als nicht verfügbar oder als
+„Entity not found“ im Log; so findet man eine übersehene Stelle am schnellsten.
 
 Reparaturen weisen darauf hin, wo etwas zu tun ist:
 
