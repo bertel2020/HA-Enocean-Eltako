@@ -62,7 +62,13 @@ from .const import (
 )
 from .custom_devices import async_load as async_load_custom_devices
 from .device import EnOceanDevice
-from .discovery import async_load_hidden, async_remove_hidden, async_setup_discovery
+from .discovery import (
+    async_load_hidden,
+    async_load_labels,
+    async_remove_hidden,
+    async_remove_labels,
+    async_setup_discovery,
+)
 from .entity_ids import gateway_prefix
 from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
@@ -349,6 +355,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     _async_setup_devices(hass, entry)
     async_check_old_integration(hass, entry)
     await async_load_hidden(hass, entry)
+    await async_load_labels(hass, entry)
     notes = entry.runtime_data.hub.notes[entry.entry_id] = Notes(hass, entry.entry_id)
     await notes.async_load()
     notes.sync_known(
@@ -616,6 +623,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEntr
     # the IDs stay blocked for a gateway added again with this base ID
     await async_retire_pool(hass, entry.entry_id, parse_id(entry.data[CONF_BASE_ID]))
     await async_remove_hidden(hass, entry.entry_id)
+    await async_remove_labels(hass, entry.entry_id)
     await Notes(hass, entry.entry_id).async_remove()
     (await async_get_installation(hass)).remove_entry(entry.entry_id)
     ir.async_delete_issue(hass, DOMAIN, old_issue_id(entry.entry_id))

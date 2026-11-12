@@ -72,6 +72,43 @@ async def async_load_hidden(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry
     hub.parked[entry.entry_id] = kinds
 
 
+LABEL_MAX = 60
+
+
+def _label_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    return Store(hass, 1, f"{DOMAIN}.sender_labels.{entry_id}")
+
+
+async def async_load_labels(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
+    """Read the labels of this gateway's unknown senders into the hub."""
+    stored = await _label_store(hass, entry.entry_id).async_load() or {}
+    labels: dict[int, str] = {}
+    for text, label in stored.get("labels", {}).items():
+        try:
+            labels[parse_id(text)] = str(label)[:LABEL_MAX]
+        except ValueError:
+            continue
+    entry.runtime_data.hub.labels[entry.entry_id] = labels
+
+
+async def async_set_label(
+    hass: HomeAssistant, entry: EnOceanEltakoConfigEntry, sender: int, label: str
+) -> None:
+    """Label an unknown sender; an empty label removes it."""
+    labels = entry.runtime_data.hub.labels.setdefault(entry.entry_id, {})
+    if label := label.strip()[:LABEL_MAX]:
+        labels[sender] = label
+    else:
+        labels.pop(sender, None)
+    await _label_store(hass, entry.entry_id).async_save(
+        {"labels": {format_id(s): v for s, v in sorted(labels.items())}}
+    )
+
+
+async def async_remove_labels(hass: HomeAssistant, entry_id: str) -> None:
+    await _label_store(hass, entry_id).async_remove()
+
+
 def parked_kinds(entry: EnOceanEltakoConfigEntry) -> dict[int, str]:
     """The kind of every parked sender of this gateway (a sender without one is "ignored")."""
     hub = entry.runtime_data.hub
@@ -116,7 +153,9 @@ async def async_park(
     if kind is None:
         await async_set_hidden(hass, entry, set(current) - senders)
     else:
-        await async_set_hidden(hass, entry, set(current) | senders, kinds=dict.fromkeys(senders, kind))
+        await async_set_hidden(
+            hass, entry, set(current) | senders, kinds=dict.fromkeys(senders, kind)
+        )
 
 
 async def async_remove_hidden(hass: HomeAssistant, entry_id: str) -> None:
