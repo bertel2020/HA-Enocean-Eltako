@@ -42,6 +42,8 @@ class Hub:
     hidden: dict[str, set[int]] = field(default_factory=dict)  # parked senders per gateway, stored
     # the kind of each parked sender (button, unused, ignored); a sender missing here is ignored
     parked: dict[str, dict[int, str]] = field(default_factory=dict)
+    # the user's short label for an unknown sender (function, place), per gateway, stored
+    labels: dict[str, dict[int, str]] = field(default_factory=dict)
     notes: dict[str, Notes] = field(default_factory=dict)  # per gateway entry, stored
     card_timer: dict[str, Callable[[], None]] = field(
         default_factory=dict

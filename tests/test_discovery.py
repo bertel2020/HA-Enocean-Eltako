@@ -361,3 +361,35 @@ async def test_parked_senders_stay_in_the_stored_list(hass: HomeAssistant, gatew
     rows = {r["id"]: r for r in stored_unknown(entry)}
     assert set(rows) == {"00-2A-0B-30", "00-2A-0B-31"}
     assert rows["00-2A-0B-31"]["last"] == 0
+
+
+async def test_sender_labels_are_stored_and_listed(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    entry, _server = gateway
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {
+            "type": "enocean_eltako/sender_label",
+            "entry_id": entry.entry_id,
+            "sender": "00-2A-0B-40",
+            "label": "  Flur, links oben ",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    assert entry.runtime_data.hub.labels[entry.entry_id] == {0x002A0B40: "Flur, links oben"}
+    from custom_components.enocean_eltako.websocket import gateway_status
+
+    assert gateway_status(entry)["labels"] == {"00-2A-0B-40": "Flur, links oben"}
+    await client.send_json_auto_id(
+        {
+            "type": "enocean_eltako/sender_label",
+            "entry_id": entry.entry_id,
+            "sender": "00-2A-0B-40",
+            "label": "",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    assert not entry.runtime_data.hub.labels[entry.entry_id]

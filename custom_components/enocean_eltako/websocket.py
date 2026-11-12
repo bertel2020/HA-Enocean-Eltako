@@ -36,10 +36,12 @@ from .const import (
 )
 from .device import UTE_WINDOW
 from .discovery import (
+    LABEL_MAX,
     PARK_KINDS,
     async_forget_unknown,
     async_park,
     async_set_hidden,
+    async_set_label,
     parked_kinds,
     stored_unknown,
 )
@@ -109,6 +111,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
     websocket_api.async_register_command(hass, ws_park_senders)
+    websocket_api.async_register_command(hass, ws_sender_label)
     websocket_api.async_register_command(hass, ws_external_senders)
     websocket_api.async_register_command(hass, ws_forget_unknown)
     websocket_api.async_register_command(hass, ws_sender_pools)
@@ -455,6 +458,11 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
             # the same senders by kind (button, unused, ignored): the panel files them in groups
             "parked": {format_id(s): k for s, k in sorted(parked_kinds(entry).items())},
+            # the user's labels of unknown senders (function, place)
+            "labels": {
+                format_id(s): v
+                for s, v in sorted(runtime.hub.labels.get(entry.entry_id, {}).items())
+            },
             # unknown senders heard before the last restart: the panel lists them as well
             "heard_unknown": stored_unknown(entry),
             "note": runtime.hub.notes[entry.entry_id].gateway,
@@ -1184,6 +1192,36 @@ async def ws_park_senders(
         return
     await async_park(hass, entry, senders, msg["kind"])
     connection.send_result(msg["id"], {"count": len(senders)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/sender_label",
+        vol.Required("entry_id"): str,
+        vol.Required("sender"): str,
+        vol.Required("label"): vol.All(str, vol.Length(max=LABEL_MAX)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_sender_label(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel device list: label an unknown sender (function, place); an empty label removes it."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    try:
+        sender = parse_id(msg["sender"])
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    if any(device.owns(sender) for device in entry.runtime_data.devices.values()):
+        connection.send_error(msg["id"], "known_device", "this sender is a set-up device")
+        return
+    await async_set_label(hass, entry, sender, msg["label"])
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command(

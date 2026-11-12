@@ -12,6 +12,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Unbekannte Sender parken**: In der Geräteliste des Panels lassen sich unbekannte Sender über das ⋮-Menü als **Taster**, **ungenutzt** oder **ignoriert** ablegen (Wandtaster, freie Aktor-Kanäle, Fremdes). Nichts wird automatisch geparkt. Geparkte Sender sind aus der Liste „Alle“ und aus der Aufmerksamkeit heraus und haben je ein eigenes Chip; „Zurückholen“ macht es rückgängig, das Einrichten als Gerät bleibt möglich. Bisher ausgeblendete Sender gelten als „ignoriert“ (Speicher-Version 2 mit Migration). „Ausgeblendete Sender“ unter Konfigurieren heißt jetzt „Geparkte Sender“. Ist ein Bus mit Master und Basis-ID angelegt, tragen seine unbekannten Sender (Basis + 1 bis Basis + 126) den Hinweis „Bus · Adresse N“, und eine Zeile über der Liste parkt sie gemeinsam als ungenutzt (nach Rückfrage). Sender-IDs aus dem Pool des Gateways, die Home Assistant nicht vergeben hat (z. B. ein Altsystem wie Symcon), werden jetzt aufgelistet („Pool, nicht von HA“, auch nach dem Sperren sichtbar) und lassen sich mit „ID für anderes System sperren“ von der Vergabe ausnehmen; die Sender-ID-Karte zeigt sie als „für anderes System gesperrt“.
 
+- **Beschriftung für unbekannte Sender**: Im ⋮-Menü eines unbekannten Senders gibt es „Beschriftung ändern“ (Funktion oder Standort, z. B. „Flur, links oben“). Die Beschriftung ersetzt „Unbekannter Sender“ als Name, ist durchsuchbar und wird beim Einrichten als Gerät als Name vorgeschlagen. Sie gilt auch für nicht geparkte Sender.
+
 - **Impuls-Aktor (Garagentor)**: Beim Schaltaktor gibt es den neuen Typ „Impuls (Taste)“. Statt Licht oder Schalter legt er einen Button „Auslösen“ an, der den Befehl „Ein“ genau einmal sendet (nie wiederholt, damit der Antrieb nicht zweimal angestoßen wird), und ein Diagnose-Relais, das die Rückmeldung des Aktors zeigt. Das Relais muss von selbst abfallen: als Universaltaster ER einlernen (oberer Drehschalter 10) und die Ausschaltverzögerung (EW-Zeit) auf 1–2 s stellen. Der Teach-in-Hinweis sagt das. Quelle: Eltako-Anleitung FSR14-2x (30 014 002-6), noch nicht an Hardware getestet.
 
 - **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0 = links oben, A1 = links unten, B0 = rechts oben, B1 = rechts unten; bei zwei gleichzeitig z. B. „A0 + B0“). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
@@ -46,6 +48,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Impulse actuator (garage door)**: switching actuators get a new type "Impulse (button)". Instead of a light or switch it creates a button "Trigger" that sends "on" exactly once (never repeated, so the drive is not triggered twice) and a diagnostic relay that shows the actuator's answer. The relay has to fall back by itself: teach in as universal rocker ER (upper rotary switch 10) and set the off delay (EW time) to 1-2 s. The teach-in hint says so. Source: Eltako manual FSR14-2x (30 014 002-6), not yet tested on hardware.
 
+- **Labels for unknown senders**: the ⋮ menu of an unknown sender has "Edit label" (function or place, e.g. "Hallway, top left"). The label replaces "Unknown sender" as the name, is searchable and is suggested as the name when you set the sender up as a device. It works for senders that are not parked as well.
+
 - **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
 
 - **Button position in the choice lists**: wherever an actuator or sender picks a rocker button (rocker sender, virtual pushbuttons) the position is now shown, e.g. "B0 · right top (0x70)". Contacts via rocker telegrams (FTS14EM, FSM14 ...) keep plain A0 to B1, as those are inputs.
@@ -62,11 +66,11 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Changed
 
-- **Bus actuators (series 14 on the FAM14) confirm more slowly than we waited**: the FAM14 polls the actuators one by one, so a confirmation can take up to 10 s (Eltako "Inhalte der Eltako-Funktelegramme"). A command to a bus actuator now waits 12 s instead of 1 s for the confirmation before it is repeated, and a cover's run command is not repeated at all (it would drive the cover again); it is only reported as unconfirmed. It is faster with a device list in the PCT14 and FAM14 operating mode 5.
-
 - **Takeover: contacts via rocker telegrams** (FSM14, FTS14EM …, an old `binary_sensor` with F6-02-01) now take over "Off with: released". The old integration switched on on press and off on release; without it a contact such as "Kontakt Garagentor" stayed "open" forever after its first opening. Contacts taken over earlier can be changed under "Off with".
 
 - **Meter serial number** only on meters that send it (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; per Eltako's radio telegram list). The sensor is created with the first serial number telegram; the F3Z14D and actuators (FSR14M-2x, FSR61VA, FSVA-230V) no longer get one. The format is now "S-AABBCC" as printed (before: four hex bytes from misread telegrams). The digit coding is not yet checked against a capture.
+
+- **Bus actuators (series 14 on the FAM14) confirm more slowly than we waited**: the FAM14 polls the actuators one by one, so a confirmation can take up to 10 s (Eltako "Inhalte der Eltako-Funktelegramme"). A command to a bus actuator now waits 12 s instead of 1 s for the confirmation before it is repeated, and a cover's run command is not repeated at all (it would drive the cover again); it is only reported as unconfirmed. It is faster with a device list in the PCT14 and FAM14 operating mode 5.
 
 - **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
 

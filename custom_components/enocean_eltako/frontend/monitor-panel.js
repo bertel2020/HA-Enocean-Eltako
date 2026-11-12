@@ -1210,6 +1210,7 @@ class EnOceanEltakoPanel extends HTMLElement {
             <div class="buttons"><button class="chip" type="button" id="sendCancel">${esc(t.sendCancel)}</button><button class="chip primary" type="submit" id="sendGo">${svg(ICON.send)}${esc(t.sendAction)}</button></div>
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
+          <form class="sendform dev-only" id="labelForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
           <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
           <div class="selbar dev-only" id="selBar" hidden></div>
@@ -1605,6 +1606,19 @@ class EnOceanEltakoPanel extends HTMLElement {
         e.stopPropagation();
         this._openTeach(null);
       }
+    });
+    $("labelForm").addEventListener("click", (e) => {
+      if (e.target.closest("[data-label-cancel]")) this._openLabel(null);
+    });
+    $("labelForm").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this._openLabel(null);
+      }
+    });
+    $("labelForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      this._saveLabel();
     });
     $("teachForm").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -2138,9 +2152,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._popupMenu(
       button,
       d.rowmore,
-      this._parkItems(d) + (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : "") + (d.mRemove ? item("remove", ICON.clear, t.selRemove) : ""),
+      (d.mPark ? item("label", ICON.label, t.labelMenu) : "") + this._parkItems(d) + (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : "") + (d.mRemove ? item("remove", ICON.clear, t.selRemove) : ""),
       (act) => {
-        if (act.startsWith("pool:")) this._keepIds(d.mGateway, [d.mPark], act === "pool:keep");
+        if (act === "label") this._openLabel({ gateway: d.mGateway, id: d.mPark });
+        else if (act.startsWith("pool:")) this._keepIds(d.mGateway, [d.mPark], act === "pool:keep");
         else if (act.startsWith("park:")) this._park(d.mGateway, [d.mPark], act.slice(5) === "restore" ? null : act.slice(5));
         else if (act === "teach") this._openTeach(d.mTeach);
         else if (act === "remove") {
@@ -2168,6 +2183,40 @@ class EnOceanEltakoPanel extends HTMLElement {
     const pool = d.mPool === "foreign" ? `<button role="menuitem" data-addact="pool:keep"><span>${esc(t.poolMenu.keep)}<small>${esc(t.poolMenu.keepHint)}</small></span></button>`
       : d.mPool === "external" ? `<button role="menuitem" data-addact="pool:release"><span>${esc(t.poolMenu.release)}<small>${esc(t.poolMenu.releaseHint)}</small></span></button>` : "";
     return pool + kinds.filter((k) => k !== d.mParked).map(entry).join("") + (d.mParked ? entry("restore") : "");
+  }
+
+  _labelOf(gateway, id) {
+    // the user's own label of an unknown sender (function, place); "" when none
+    return this._gateways.find((g) => g.entry_id === gateway)?.labels?.[id] || "";
+  }
+
+  _openLabel(target) {
+    const t = this._t;
+    const form = this.shadowRoot.getElementById("labelForm");
+    this._labeling = target;
+    form.hidden = !target;
+    if (!target) return;
+    form.innerHTML = `<h3>${esc(t.labelTitle(target.id))}</h3><p>${esc(t.labelHint)}</p>
+      <div class="fields"><label><span>${esc(t.labelField)}</span><input class="text" id="labelText" maxlength="60" autocomplete="off" placeholder="${esc(t.labelPlaceholder)}" value="${esc(this._labelOf(target.gateway, target.id))}"></label></div>
+      <div class="buttons"><button class="chip" type="button" data-label-cancel>${esc(t.sendCancel)}</button><button class="chip primary" type="submit">${svg(ICON.check)}${esc(t.labelSave)}</button></div>`;
+    form.scrollIntoView?.({ block: "nearest" });
+    this.shadowRoot.getElementById("labelText").focus();
+  }
+
+  async _saveLabel() {
+    const target = this._labeling;
+    if (!target) return;
+    const label = this.shadowRoot.getElementById("labelText").value.trim();
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/sender_label", entry_id: target.gateway, sender: target.id, label });
+    } catch (err) {
+      this._notice(this._t.labelFailed);
+      return;
+    }
+    this._openLabel(null);
+    await this._refreshStatus();
+    this._render();
+    this._notice(label ? this._t.labelSaved : this._t.labelRemoved, true);
   }
 
   async _park(gateway, senders, kind) {
@@ -2620,7 +2669,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       : data);
     const head = [t.devCols.name, "ID", t.eep, t.devCols.area, t.devCols.entities, t.gateway, t.lastHeardAt, t.telegrams, t.perMinute, "dBm", t.content];
     const lines = this._deviceList().map((d) => [
-      d.name || t.unknownDevice, d.id, d.eepFull || d.eep, d.area ?? "", d.entities ?? "", d.gateway_name,
+      d.name || d.label || t.unknownDevice, d.id, d.eepFull || d.eep, d.area ?? "", d.entities ?? "", d.gateway_name,
       d.time != null ? new Date(d.time).toISOString() : "", d.count, d.perMinute, d.dbm ?? "", d.silent ? t.silent : values(d.fields, d.data),
     ]);
     this._download(csv([head, ...lines]), "text/csv", `enocean-devices-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`);
@@ -3272,7 +3321,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const info = setup.get(`${r.gateway}|${r.sender}`);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
-        hidden: !r.device && this._isHidden(r.gateway, r.sender), parked: r.device ? "" : this._parkedKind(r.gateway, r.sender), bus: r.device ? null : this._busOf(r.gateway, r.sender), pool: r.device ? "" : this._poolOf(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
+        hidden: !r.device && this._isHidden(r.gateway, r.sender), parked: r.device ? "" : this._parkedKind(r.gateway, r.sender), label: r.device ? "" : this._labelOf(r.gateway, r.sender), bus: r.device ? null : this._busOf(r.gateway, r.sender), pool: r.device ? "" : this._poolOf(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
         category: info?.category || "", models: info?.models || [], entityIds: info?.entity_ids || [], eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null, labels: info?.labels || [], disabled: !!info?.disabled,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
@@ -3286,7 +3335,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         const key = `${g.entry_id}|${u.id}`;
         if (heardKeys.has(key) || setup.has(key)) continue;
         items.push({
-          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: this._isHidden(g.entry_id, u.id), parked: this._parkedKind(g.entry_id, u.id), bus: this._busOf(g.entry_id, u.id), pool: this._poolOf(g.entry_id, u.id), page: null, devKey: null, senders: [],
+          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: this._isHidden(g.entry_id, u.id), parked: this._parkedKind(g.entry_id, u.id), label: this._labelOf(g.entry_id, u.id), bus: this._busOf(g.entry_id, u.id), pool: this._poolOf(g.entry_id, u.id), page: null, devKey: null, senders: [],
           category: "", models: [], entityIds: [], eepFull: "", eep: this._eepLabel(RORG[u.rorg] || u.rorg), model: "", area: null, entities: null, labels: [], disabled: false,
           gateway: g.entry_id, gateway_name: g.title, time: u.last ? u.last * 1000 : null, count: 0, perMinute: 0,
           dbm: u.dbm, trend: [], fields: null, data: u.data || "", teach: null, candidates: null, rorg: u.rorg,
@@ -3329,7 +3378,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
     return (
-      [d.name, d.eepFull, d.model, d.area, d.gateway_name, d.data, d.teach, ...(d.candidates || []), ...this._labelNames(d)].some((v) => v && String(v).toLowerCase().includes(text)) ||
+      [d.name, d.label, d.eepFull, d.model, d.area, d.gateway_name, d.data, d.teach, ...(d.candidates || []), ...this._labelNames(d)].some((v) => v && String(v).toLowerCase().includes(text)) ||
       (d.fields || []).some((field) => String(field.label).toLowerCase().includes(text)) ||
       (!!compact && d.id.replace(/-/g, "").toLowerCase().includes(compact))
     );
@@ -3759,7 +3808,8 @@ class EnOceanEltakoPanel extends HTMLElement {
 
   _deviceRow(d, now) {
     const t = this._t;
-    const name = d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name" title="${esc(d.name)}">${esc(d.name)}</span>`;
+    const name = d.unknown && d.label ? `<span class="name" title="${esc(d.label)}">${esc(d.label)}</span>`
+      : d.unknown ? `<span class="name unknown">${esc(t.unknownDevice)}</span>` : `<span class="name" title="${esc(d.name)}">${esc(d.name)}</span>`;
     const none = `<span class="none">${esc(t.noValue)}</span>`;
     // a model that is not fixed (one EEP, several devices) names the candidates instead of nothing
     const model = d.model || (d.models.length ? d.models.join(" / ") : "");

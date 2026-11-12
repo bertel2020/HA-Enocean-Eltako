@@ -1116,6 +1116,10 @@ class DeviceSubentryFlow(DeviceForm, ConfigSubentryFlow):
         # a device with several IDs takes its lowest ID: the one heard is not that
         if user_input is None and self._learned is not None and not self._device_model.linked:
             user_input = {CONF_DEVICE_ID: format_id(self._learned.sender)}
+            # the user's own label of that sender is the name suggested for the device
+            labels = entry.runtime_data.hub.labels.get(entry.entry_id, {})
+            if label := labels.get(self._learned.sender):
+                user_input[CONF_NAME] = label
         form: SubentryFlowResult = await self._form("device", schema, user_input, errors)
         return form
 
