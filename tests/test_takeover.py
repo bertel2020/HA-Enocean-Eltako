@@ -248,7 +248,10 @@ def test_plan_sensors() -> None:
     garage = devices[
         "Kontakt Garagentor"
     ]  # a rocker under binary_sensor is a contact, not a button
-    assert (garage.model, garage.data) == ("rocker_contact", {"device_class": "garage_door"})
+    assert (garage.model, garage.data) == (
+        "rocker_contact",
+        {"device_class": "garage_door", "off_button": "released"},  # the old one: release = off
+    )
     window = devices["Fenster"]
     assert (window.model, window.data) == ("window_handle", {"invert": True})
     motion = devices["Bewegung"]

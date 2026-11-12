@@ -39,6 +39,7 @@ from .catalog import (
     OPT_BUTTONS,
     OPT_DEVICE_CLASS,
     OPT_INVERT,
+    OPT_OFF_BUTTON,
     OPT_PLATFORM,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
@@ -182,6 +183,8 @@ def _sensor(device: TakeoverDevice, platform: str, eep: str, conf: Mapping[str, 
     if model_id is not None:
         device.model = model_id
         options = CATALOG[model_id].options
+        if model_id == "rocker_contact":  # the old one: a press is on, the release is off
+            device.data[OPT_OFF_BUTTON] = "released"
         if OPT_DEVICE_CLASS in options and conf.get("device_class"):
             device.data[OPT_DEVICE_CLASS] = conf["device_class"]
         if OPT_INVERT in options and "invert_signal" in conf:
