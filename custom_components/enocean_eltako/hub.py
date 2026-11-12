@@ -39,7 +39,9 @@ class Hub:
     # the sender the panel's "add as device" handed over (sender ID, monotonic time): the next
     # "Add device" of its gateway goes straight to it, within HANDOVER_SECONDS
     handed_over: tuple[int, float] | None = None
-    hidden: dict[str, set[int]] = field(default_factory=dict)  # per gateway entry, stored
+    hidden: dict[str, set[int]] = field(default_factory=dict)  # parked senders per gateway, stored
+    # the kind of each parked sender (button, unused, ignored); a sender missing here is ignored
+    parked: dict[str, dict[int, str]] = field(default_factory=dict)
     notes: dict[str, Notes] = field(default_factory=dict)  # per gateway entry, stored
     card_timer: dict[str, Callable[[], None]] = field(
         default_factory=dict

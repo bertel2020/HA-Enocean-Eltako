@@ -146,8 +146,26 @@ Even simpler: every sender the gateway hears that is not set up yet is listed un
 **Add device → Discovered devices** of that gateway (a card under **Settings → Devices
 & services → Discovered** tells how many there are, and points here). Picking one suggests the kind and fills in the ID. Senders that are not yours
 (a neighbour's, for example) can be hidden there with **Hide this sender**; **Configure →
-Hidden senders** on the gateway lists them again. The list keeps the newest 100 senders and
-starts empty after a restart; hidden senders are remembered.
+Parked senders** on the gateway lists them again. The list keeps the newest 100 senders and
+starts empty after a restart; parked senders are remembered.
+
+In the panel's device list you sort unknown senders yourself with the ⋮ menu of a row, nothing is
+parked on its own: **Park as button** (a wall switch taught straight into actuators), **Park as
+unused** (known, part of your installation, not used in Home Assistant right now) or **Ignore**
+(cannot be placed, or not yours). Only the group **New** asks for attention; the others have a chip
+of their own in the status row. **Bring back** lists a sender as new again, and the **+** to set it
+up as a device stays available.
+
+Once a bus with its master and base ID is written down in the installation, unknown senders in its
+radio ID range (base + 1 to base + 126, the confirmations of its actuator channels) are marked
+**Bus · address N**, and a line above the list parks all of them at once as unused, after asking
+and naming the range. Without such a bus the panel only hints at many unknown senders in one block.
+
+An ID in the gateway's own sender pool (base ID + 1 to + 127) that Home Assistant did not hand out
+is listed as well, marked **Pool, not from HA**: another system (a legacy controller such as
+Symcon) sends from it. **Keep ID for another system** in the ⋮ menu keeps it free of Home Assistant's
+own senders until you **Give ID back**; without it Home Assistant could hand the same ID out later
+and both systems would drive the same actuators.
 Discovery can be switched off per gateway in its settings.
 
 Eltako series 14 actuators learn a sender ID through a learn function on the actuator; which

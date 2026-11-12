@@ -122,6 +122,14 @@ def answers(heard: Iterable[Heard], base: int | None) -> dict[int, Answer]:
     return found
 
 
+def bus_address(sender: int, base: int) -> int | None:
+    """The device address of a radio ID in the block of a FAM14 base ID, else None.
+
+    Only base + 1 ... base + 126 are device addresses: the base ID itself and base + 127 are not.
+    """
+    return offset if 1 <= (offset := sender - base) <= ADDRESSES else None
+
+
 def feedback_id(base: int, address: int) -> str:
     """The radio ID of a channel's confirmation telegrams: the FAM14's base ID plus its address."""
     if not 1 <= address <= ADDRESSES:

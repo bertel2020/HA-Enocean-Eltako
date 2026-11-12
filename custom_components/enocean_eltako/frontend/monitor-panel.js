@@ -502,6 +502,8 @@ const STYLE = `
   .devices .dev .c-area { display: grid; min-width: 0; font-size: calc(13px * var(--fs)); overflow-wrap: anywhere; }
   .devices .dev .c-area .sub svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; }
   .devices .dgroup { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; padding: 9px 16px; background: var(--soft); border-top: 1px solid var(--line); cursor: pointer; font-size: calc(13px * var(--fs)); }
+  .devices .busnote { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 9px 16px; background: var(--accent-soft); border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); }
+  .devices .busnote.hint { background: var(--soft); color: var(--muted); }
   .devices .dgroup:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .devices .dgroup .chev { align-self: center; width: 14px; height: 14px; color: var(--muted); transition: transform .15s; }
   .devices .dgroup[aria-expanded="false"] .chev { transform: rotate(-90deg); }
@@ -739,7 +741,7 @@ function bars(dbm) {
 }
 
 // buttons that keep the keyboard focus when their row or card is drawn again
-const FOCUSABLE = [".rowmore", "[data-sel]", ".expand", "[data-copy]", "[data-only]", "[data-hide]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
+const FOCUSABLE = [".rowmore", "[data-sel]", ".expand", "[data-copy]", "[data-only]", "[data-hide]", "[data-buspark]", ".add", "[data-free]", "[data-teach]", "[data-device-page]", "[data-resend]", '[data-gateway-action="filter"]', '[data-gateway-action="details"]'];
 
 // column sort: each compares ascending; equal rows stay newest first
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -767,7 +769,8 @@ const DEV_SORTERS = {
 const DEV_DESC_FIRST = new Set(["entities", "heard", "busy"]); // first click: most, newest
 // ICON is bound after the parts have loaded, so the table is built when it is first needed
 const categoryIcon = (category) => ({ lighting: ICON.bulb, covers: ICON.slats, climate: ICON.thermometer, buttons: ICON.button, sensors: ICON.thermometer, meters: ICON.flash, virtual: ICON.cloud })[category];
-const DEV_STATUS = ["", "known", "unknown", "silent", "unheard", "weak"];
+const DEV_STATUS = ["", "known", "unknown", "silent", "unheard", "weak", "button", "unused", "ignored"];
+const PARK_KINDS = ["button", "unused", "ignored"]; // where an unknown sender can be parked
 const DEV_GROUPS = ["", "area", "kind"];
 const GROUP_KEY = "enocean_eltako_dev_group";
 
@@ -1358,6 +1361,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (head) {
         const key = head.dataset.dsort;
         this._setDevSort(key, this._devSort.key === key ? !this._devSort.desc : DEV_DESC_FIRST.has(key));
+        return;
+      }
+      const busPark = e.target.closest("[data-buspark]");
+      if (busPark) {
+        this._parkBus(busPark.dataset.buspark);
         return;
       }
       const rowMore = e.target.closest(".rowmore");
@@ -2130,9 +2138,11 @@ class EnOceanEltakoPanel extends HTMLElement {
     this._popupMenu(
       button,
       d.rowmore,
-      (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : "") + (d.mRemove ? item("remove", ICON.clear, t.selRemove) : ""),
+      this._parkItems(d) + (d.mTeach ? item("teach", ICON.teach, t.teachHint) : "") + (d.mPage ? item("page", ICON.open, t.openDeviceHint) : "") + (d.mOnly ? item("only", ICON.filter, t.showTelegrams) : "") + (d.mRemove ? item("remove", ICON.clear, t.selRemove) : ""),
       (act) => {
-        if (act === "teach") this._openTeach(d.mTeach);
+        if (act.startsWith("pool:")) this._keepIds(d.mGateway, [d.mPark], act === "pool:keep");
+        else if (act.startsWith("park:")) this._park(d.mGateway, [d.mPark], act.slice(5) === "restore" ? null : act.slice(5));
+        else if (act === "teach") this._openTeach(d.mTeach);
         else if (act === "remove") {
           // the row's own device goes through the same confirmation as a ticked selection
           this._sel = new Set([d.mRemove]);
@@ -2146,6 +2156,31 @@ class EnOceanEltakoPanel extends HTMLElement {
         }
       }
     );
+  }
+
+  _parkItems(d) {
+    // an unknown sender can be filed as button, unused or ignored; a wall switch (F6) is offered as button first
+    if (!d.mPark) return "";
+    const t = this._t;
+    const kinds = d.mBus !== undefined ? ["unused", "button", "ignored"] : d.mRorg === "F6" ? ["button", "unused", "ignored"] : ["unused", "button", "ignored"];
+    const entry = (kind) => `<button role="menuitem" data-addact="park:${kind}"><span>${esc(t.parkMenu[kind])}<small>${esc(t.parkMenuHint[kind])}</small></span></button>`;
+    // an ID of the gateway's own pool that Home Assistant did not hand out: keep it first
+    const pool = d.mPool === "foreign" ? `<button role="menuitem" data-addact="pool:keep"><span>${esc(t.poolMenu.keep)}<small>${esc(t.poolMenu.keepHint)}</small></span></button>`
+      : d.mPool === "external" ? `<button role="menuitem" data-addact="pool:release"><span>${esc(t.poolMenu.release)}<small>${esc(t.poolMenu.releaseHint)}</small></span></button>` : "";
+    return pool + kinds.filter((k) => k !== d.mParked).map(entry).join("") + (d.mParked ? entry("restore") : "");
+  }
+
+  async _park(gateway, senders, kind) {
+    this._notice("");
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/park_senders", entry_id: gateway, senders, kind });
+    } catch (err) {
+      this._notice(this._t.parkResult[err.code] || this._t.parkResult.failed);
+      return;
+    }
+    await this._refreshStatus();
+    this._render();
+    this._notice(this._t.parkResult.done(senders.length, kind), true);
   }
 
   _popupMenu(button, ref, items, onAct) {
@@ -2435,6 +2470,92 @@ class EnOceanEltakoPanel extends HTMLElement {
   _isHidden(gateway, sender) {
     // a sender hidden from the gateway's discovery is not offered as a new device here either
     return !!this._gateways.find((g) => g.entry_id === gateway)?.hidden?.includes(sender);
+  }
+
+  _poolOf(gateway, id) {
+    // an ID in this gateway's radio sender pool: "foreign" when nobody here uses it (a legacy
+    // controller sends from it), "external" when it is kept for such a system, "" otherwise
+    const pool = this._gateways.find((x) => x.entry_id === gateway)?.pool;
+    if (!pool) return "";
+    const n = parseInt(id.replace(/-/g, ""), 16);
+    if (n < pool.first || n > pool.last) return "";
+    const taken = pool.taken[id];
+    return taken === "external" ? "external" : taken ? "" : "foreign";
+  }
+
+  async _keepIds(gateway, ids, keep) {
+    this._notice("");
+    const t = this._t;
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/external_senders", entry_id: gateway, senders: ids, keep });
+    } catch (err) {
+      this._notice(t.poolResult[err.code] || t.poolResult.failed);
+      return;
+    }
+    await this._refreshStatus();
+    this._render();
+    this._notice(keep ? t.poolResult.kept(ids.length) : t.poolResult.released(ids.length), true);
+  }
+
+  _busOf(gateway, id) {
+    // the bus whose radio ID range (base + 1 ... base + 126) holds this sender, with its device address
+    const n = parseInt(id.replace(/-/g, ""), 16);
+    for (const range of this._gateways.find((x) => x.entry_id === gateway)?.bus_ranges || []) {
+      const address = n - parseInt(range.base.replace(/-/g, ""), 16);
+      if (address >= 1 && address <= 126) return { ...range, address };
+    }
+    return null;
+  }
+
+  _busNotes(all) {
+    // above the list: per bus the unknown senders without a device that can be parked together; per
+    // gateway without such a bus a hint when many unknown senders share one block of 128 IDs
+    const t = this._t;
+    if (this._filter.devStatus && this._filter.devStatus !== "unknown") return "";
+    const open = all.filter((d) => d.unknown && !d.parked && (!this._filter.gateway || d.gateway === this._filter.gateway));
+    const rows = [];
+    const groups = new Map();
+    for (const d of open) {
+      if (d.bus) {
+        const key = `${d.gateway}|${d.bus.bus}`;
+        if (!groups.has(key)) groups.set(key, { gateway: d.gateway, bus: d.bus, ids: [] });
+        groups.get(key).ids.push(d.id);
+      }
+    }
+    for (const [key, g] of groups) {
+      const name = g.bus.name || g.bus.base;
+      rows.push(`<div class="busnote"><span>${esc(t.busPark.note(g.ids.length, name))}</span><button class="chip" data-buspark="${esc(key)}">${esc(t.busPark.button)}</button></div>`);
+    }
+    const blocks = new Map();
+    for (const d of open) {
+      if (d.bus || (this._gateways.find((x) => x.entry_id === d.gateway)?.bus_ranges || []).length) continue;
+      const n = parseInt(d.id.replace(/-/g, ""), 16);
+      const offset = n & 0x7f;
+      if (offset < 1 || offset > 126 || n < 0xff800000) continue;
+      const block = (n & ~0x7f) >>> 0;
+      blocks.set(block, (blocks.get(block) || 0) + 1);
+    }
+    for (const [block, n] of blocks) {
+      if (n >= 5) rows.push(`<div class="busnote hint">${esc(t.busHint(block.toString(16).toUpperCase().padStart(8, "0").replace(/(..)(?=.)/g, "$1-"), n))}</div>`);
+    }
+    return rows.join("");
+  }
+
+  async _parkBus(key) {
+    // the bus note's button: every unknown, not yet parked sender in the bus's range, after a question
+    const [gateway, busId] = key.split("|");
+    const t = this._t;
+    const range = this._gateways.find((x) => x.entry_id === gateway)?.bus_ranges?.find((r) => r.bus === busId);
+    if (!range) return;
+    const ids = this._deviceItems().filter((d) => d.unknown && !d.parked && d.gateway === gateway && d.bus?.bus === busId).map((d) => d.id);
+    if (!ids.length || !window.confirm(t.busPark.confirm(ids.length, range.name || range.base, range.first, range.last))) return;
+    await this._park(gateway, ids, "unused");
+  }
+
+  _parkedKind(gateway, sender) {
+    // where the user parked an unknown sender (button, unused, ignored); "" when it is not parked
+    const g = this._gateways.find((x) => x.entry_id === gateway);
+    return g?.parked?.[sender] || (g?.hidden?.includes(sender) ? "ignored" : "");
   }
 
   _matches(r) {
@@ -3030,7 +3151,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const hex = [24, 16, 8, 0].map((sh) => ((n >>> sh) & 255).toString(16).toUpperCase().padStart(2, "0")).join("-");
       const r = byId.get(n);
       const state = r ? r.state : away.has(n) ? "unavailable" : "free";
-      const label = { assigned: t.stateAssigned, blocked: t.stateBlocked, unavailable: t.stateUnavailable, free: t.stateFree }[state];
+      const label = r?.external ? t.stateExternal : { assigned: t.stateAssigned, blocked: t.stateBlocked, unavailable: t.stateUnavailable, free: t.stateFree }[state];
       const who = r?.device ? ` · ${r.device}` : "";
       const text = `${hex} (${i + 1}) · ${label}${who}`;
       const chosen = this._poolSel === hex;
@@ -3151,7 +3272,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const info = setup.get(`${r.gateway}|${r.sender}`);
       items.push({
         key, id: r.sender, name: r.device || null, unknown: !r.device, silent: !!info?.silent, quiet: false,
-        hidden: !r.device && this._isHidden(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
+        hidden: !r.device && this._isHidden(r.gateway, r.sender), parked: r.device ? "" : this._parkedKind(r.gateway, r.sender), bus: r.device ? null : this._busOf(r.gateway, r.sender), pool: r.device ? "" : this._poolOf(r.gateway, r.sender), page: info?.ha_device || r.ha_device || null, devKey: info?.key || null, senders: info?.teach || [],
         category: info?.category || "", models: info?.models || [], entityIds: info?.entity_ids || [], eepFull: info?.eep || r.eep || "", eep: this._eepLabel(info?.eep || r.eep || RORG[r.rorg] || r.rorg),
         model: info?.model || (r.eep?.endsWith(":eltako") && r.model) || "", area: info?.area || null, entities: info?.entities ?? null, labels: info?.labels || [], disabled: !!info?.disabled,
         gateway: r.gateway, gateway_name: r.gateway_name, time: Date.parse(r.time), count: d.count, perMinute: d.perMinute,
@@ -3165,7 +3286,7 @@ class EnOceanEltakoPanel extends HTMLElement {
         const key = `${g.entry_id}|${u.id}`;
         if (heardKeys.has(key) || setup.has(key) || this._isHidden(g.entry_id, u.id)) continue;
         items.push({
-          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: false, page: null, devKey: null, senders: [],
+          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: false, parked: "", bus: this._busOf(g.entry_id, u.id), pool: this._poolOf(g.entry_id, u.id), page: null, devKey: null, senders: [],
           category: "", models: [], entityIds: [], eepFull: "", eep: this._eepLabel(RORG[u.rorg] || u.rorg), model: "", area: null, entities: null, labels: [], disabled: false,
           gateway: g.entry_id, gateway_name: g.title, time: u.last * 1000, count: 0, perMinute: 0,
           dbm: u.dbm, trend: [], fields: null, data: u.data || "", teach: null, candidates: null, rorg: u.rorg,
@@ -3192,6 +3313,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _inStatus(d, status) {
     if (status === "known") return !d.unknown;
     if (status === "unknown") return d.unknown && !d.hidden;
+    if (PARK_KINDS.includes(status)) return d.unknown && d.parked === status;
     if (status === "silent") return !!d.silent;
     if (status === "unheard") return !d.unknown && !d.disabled && d.time == null;
     if (status === "weak") return d.dbm != null && d.dbm < WEAK_DBM;
@@ -3202,6 +3324,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     const f = this._filter;
     if (f.area && d.area !== f.area) return false;
     if (!this._inStatus(d, f.devStatus)) return false;
+    if (!f.devStatus && d.parked) return false; // parked senders are out of the way until a chip asks for them
     const text = f.text.toLowerCase();
     if (!text) return true;
     const compact = text.replace(/[-:\s]/g, "");
@@ -3240,6 +3363,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   _kindName(d) {
     // the kind of device in words: its category, or "unknown sender" for what is not set up
     const t = this._t;
+    if (d.unknown && d.parked) return t.parkKinds[d.parked];
     return d.unknown ? t.unknownDevice : t.doc.tbl.categories[d.category] || t.kindOther;
   }
 
@@ -3249,7 +3373,7 @@ class EnOceanEltakoPanel extends HTMLElement {
   }
 
   _needsAttention(d) {
-    return d.unknown || !!d.silent || (d.dbm != null && d.dbm < WEAK_DBM) || (!d.unknown && !d.disabled && d.time == null);
+    return (d.unknown && !d.hidden) || !!d.silent || (d.dbm != null && d.dbm < WEAK_DBM) || (!d.unknown && !d.disabled && d.time == null);
   }
 
   _setDevSort(key, desc) {
@@ -3338,7 +3462,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     } else {
       body = page.map((d) => this._deviceRow(d, now)).join("");
     }
-    this._replace(container, head + body);
+    this._replace(container, head + this._busNotes(all) + body);
     const headBox = container.querySelector("[data-sel-all]");
     if (headBox) headBox.indeterminate = ticked > 0 && ticked < listed.length;
   }
@@ -3660,7 +3784,10 @@ class EnOceanEltakoPanel extends HTMLElement {
     const hints =
       pill +
       (d.unknown
-        ? (d.hidden ? `<span class="tag" title="${esc(t.hiddenHint)}">${esc(t.hiddenTag)}</span>` : "") +
+        ? (d.parked ? `<span class="tag" title="${esc(t.parkMenuHint[d.parked])}">${esc(t.parkKinds[d.parked])}</span>` : "") +
+          (d.bus ? `<span class="tag" title="${esc(t.busTagHint)}">${esc(t.busTag(d.bus.address))}</span>` : "") +
+          (d.pool === "foreign" ? `<span class="tag warn" title="${esc(t.poolForeignHint)}">${esc(t.poolForeign)}</span>` : "") +
+          (d.pool === "external" ? `<span class="tag" title="${esc(t.poolExternalHint)}">${esc(t.poolExternal)}</span>` : "") +
           (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
         : "");
     const maybe = d.unknown ? maybeTag(t, d.candidates) : "";
@@ -3674,12 +3801,12 @@ class EnOceanEltakoPanel extends HTMLElement {
     const only = d.name || d.id;
     const open = !!d.devKey && this._devOpen.has(d.devKey);
     // everything but the one main action sits in the ⋮ menu: the buttons of a row stay where they are
-    const add = d.unknown && !d.hidden ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : "";
+    const add = d.unknown ? `<button class="chip add" data-id="${esc(d.id)}" data-gateway="${esc(d.gateway)}" aria-haspopup="menu" title="${esc(t.addHint)}" aria-label="${esc(t.addHint)}">${svg(ICON.plus)}<span class="lbl">${esc(t.add)}</span></button>` : "";
     const menuTeach = d.senders.length ? d.devKey : "";
     const menuOnly = d.quiet && d.time == null ? "" : only;
     const more =
       menuTeach || d.page || menuOnly || d.devKey
-        ? `<button class="icon-btn rowmore" data-rowmore="${esc(d.devKey || d.key)}" data-m-remove="${esc(d.devKey || "")}" data-m-teach="${esc(menuTeach)}" data-m-page="${esc(d.page || "")}" data-m-only="${esc(menuOnly)}" aria-haspopup="menu" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</button>`
+        ? `<button class="icon-btn rowmore" data-rowmore="${esc(d.devKey || d.key)}" data-m-remove="${esc(d.devKey || "")}" data-m-teach="${esc(menuTeach)}" data-m-page="${esc(d.page || "")}" data-m-only="${esc(menuOnly)}"${d.unknown ? ` data-m-park="${esc(d.id)}" data-m-gateway="${esc(d.gateway)}" data-m-parked="${esc(d.parked)}" data-m-rorg="${esc(d.rorg)}"${d.bus ? " data-m-bus" : ""}${d.pool ? ` data-m-pool="${esc(d.pool)}"` : ""}` : ""} aria-haspopup="menu" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</button>`
         : "";
     const acts = add + more;
     const chevron = d.devKey ? `<button class="icon-btn expand" data-dev-open="${esc(d.devKey)}" aria-expanded="${open}" aria-label="${esc(t.details)}" title="${esc(t.details)}">${svg(ICON.chevron, "chev")}</button>` : "";

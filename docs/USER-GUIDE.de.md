@@ -153,8 +153,27 @@ Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerich
 steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Karte unter **Einstellungen →
 Geräte & Dienste → Entdeckt** nennt die Anzahl und weist hierher). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
 vom Nachbarn) lassen sich dort mit **Diesen Sender ausblenden** verstecken; **Konfigurieren →
-Ausgeblendete Sender** am Gateway zeigt sie wieder an. Die Liste behält die neuesten 100
-Sender und beginnt nach einem Neustart leer; ausgeblendete Sender werden gemerkt. In den
+Geparkte Sender** am Gateway zeigt sie wieder an. Die Liste behält die neuesten 100
+Sender und beginnt nach einem Neustart leer; geparkte Sender werden gemerkt.
+
+In der Geräteliste des Panels sortierst du unbekannte Sender selbst über das ⋮-Menü einer Zeile,
+nichts wird von allein geparkt: **Als Taster parken** (ein Wandtaster, direkt in Aktoren angelernt),
+**Als ungenutzt parken** (bekannt, gehört zu deiner Anlage, wird in Home Assistant aktuell nicht
+verwendet) oder **Ignorieren** (nicht zuordenbar oder nicht deiner). Nur die Gruppe **Neu** verlangt
+Aufmerksamkeit; die anderen haben ein eigenes Chip in der Statuszeile. **Zurückholen** listet einen
+Sender wieder als neu auf, das **+** zum Einrichten als Gerät bleibt erhalten.
+
+Ist in der Installation ein Bus mit Master und Basis-ID angelegt, werden unbekannte Sender in seinem
+Funk-ID-Bereich (Basis + 1 bis Basis + 126, die Rückmeldungen seiner Aktor-Kanäle) mit **Bus ·
+Adresse N** markiert, und eine Zeile über der Liste parkt sie auf einmal als ungenutzt, nach
+Rückfrage und mit Nennung des Bereichs. Ohne einen solchen Bus weist das Panel nur darauf hin, wenn
+viele unbekannte Sender in einem Block liegen.
+
+Eine ID im Sender-Pool des Gateways (Basis-ID + 1 bis + 127), die Home Assistant nicht vergeben hat,
+wird ebenfalls aufgelistet und mit **Pool, nicht von HA** markiert: Ein anderes System (ein Altsystem
+wie Symcon) sendet damit. **ID für anderes System sperren** im ⋮-Menü hält sie von Home Assistants
+eigenen Sendern frei, bis du sie mit **ID zurückgeben** zurückgibst; ohne das könnte Home Assistant
+dieselbe ID später selbst vergeben, und beide Systeme würden dieselben Aktoren steuern. In den
 Einstellungen des Gateways lässt sich die Discovery abschalten.
 
 Eltako-Aktoren der Baureihe 14 lernen eine Sender-ID über eine Einlernfunktion am Aktor; welche

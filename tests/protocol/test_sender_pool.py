@@ -73,3 +73,40 @@ def test_registry_prevents_collisions_across_gateways() -> None:
     assert radio.next_free() == BASE
     reg.remove_pool("bus_a")
     bus_b.assign(BUS_POOL_START, "other")
+
+
+def test_what_an_id_in_a_pool_is() -> None:
+    """Ours, kept for another system, or foreign: in a pool but allocated to nobody."""
+    registry = SenderRegistry()
+    pool = registry.create_pool("radio", BASE + 1, 127)
+    registry.reserve(BASE + 4, "device alias")
+    pool.assign(BASE + 2, "device:a:central")
+    pool.reserve_external(BASE + 3)
+    assert registry.status(BASE + 2) == "ours"
+    assert registry.status(BASE + 4) == "ours"  # reserved here
+    assert registry.status(BASE + 3) == "external"
+    assert registry.status(BASE + 5) == "foreign"  # in the pool, allocated to nobody
+    assert registry.status(BASE) is None  # the base ID itself is not in the pool
+    pool.release(BASE + 2)  # a deleted device: still ours until the teach-out is confirmed
+    assert registry.status(BASE + 2) == "ours"
+
+
+def test_an_external_id_is_never_handed_out_and_needs_no_teach_out() -> None:
+    pool = SenderPool(BASE + 1, 127)
+    pool.reserve_external(BASE + 1)
+    assert pool.allocate("a") == BASE + 2  # the kept ID is skipped
+    pool.release_external(BASE + 1)
+    assert pool.get(BASE + 1) is None and pool.next_free() == BASE + 1  # at once, no BLOCKED
+    pool.assign(BASE + 3, "device:x:central")
+    pool.release_external(BASE + 3)  # a device's own ID is not touched
+    assert pool.get(BASE + 3) is not None
+    with pytest.raises(SenderIdError) as err:
+        pool.reserve_external(BASE + 3)  # allocated to a device
+    assert err.value.reason == "in_use"
+    pool.release(BASE + 3)
+    with pytest.raises(SenderIdError) as blocked:
+        pool.reserve_external(BASE + 3)  # waiting for its teach-out
+    assert blocked.value.reason == "blocked"
+    with pytest.raises(SenderIdError) as out:
+        pool.reserve_external(BASE + 200)
+    assert out.value.reason == "out_of_range"

@@ -80,9 +80,16 @@ async def test_teach_in_of_generic_profile_skips_kind(hass: HomeAssistant, gatew
 async def test_own_senders_and_disabled_discovery(hass: HomeAssistant, gateway) -> None:  # noqa: F811
     entry, server = gateway
     hub = entry.runtime_data.hub
+    entry.runtime_data.senders.pool.assign(0xFFB74485, "device:x:central")
     _push(server, 0x05, b"\x70", 0xFFB74485, 0x30)  # one of our own sender IDs
     await _settle(hass)
     assert not hub.discovered
+    # an ID of the pool that nobody here uses is someone else's (a legacy controller): listed
+    _push(server, 0x05, b"\x70", 0xFFB74486, 0x30)
+    await _settle(hass)
+    assert list(hub.discovered) == [0xFFB74486]
+    assert hub.senders.status(0xFFB74486) == "foreign"
+    hub.discovered.clear()
     hass.config_entries.async_update_entry(entry, options={**entry.options, "discovery": False})
     await hass.async_block_till_done()
     await server.connected.wait()

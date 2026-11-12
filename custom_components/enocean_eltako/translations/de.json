@@ -426,12 +426,12 @@
       "init": {
         "menu_options": {
           "settings": "Einstellungen",
-          "hidden": "Ausgeblendete Sender"
+          "hidden": "Geparkte Sender"
         }
       },
       "hidden": {
-        "title": "Ausgeblendete Sender",
-        "description": "Von dir ausgeblendete Sender. Wähle die, die wieder aufgelistet werden sollen, sobald das Gateway sie hört.",
+        "title": "Geparkte Sender",
+        "description": "Sender, die du als Taster, ungenutzt oder ignoriert geparkt hast. Wähle die, die wieder als neu aufgelistet werden sollen, sobald das Gateway sie hört.",
         "data": {
           "again": "Wieder anzeigen"
         }

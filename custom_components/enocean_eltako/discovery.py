@@ -34,17 +34,49 @@ if TYPE_CHECKING:
 
 MAX_DISCOVERED = 100
 FORGET_CHECK = timedelta(hours=6)  # how often unknown senders gone quiet for too long are dropped
-STORAGE_VERSION = 1
+STORAGE_VERSION = 2
+
+# Where a parked sender is filed: the user's decision, never made automatically.
+PARK_BUTTON = "button"  # a wall switch taught straight into actuators
+PARK_UNUSED = "unused"  # known, part of the installation, not in use in Home Assistant
+PARK_IGNORED = "ignored"  # cannot be placed, or not the user's
+PARK_KINDS = (PARK_BUTTON, PARK_UNUSED, PARK_IGNORED)
 
 
-def _store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, list[str]]]:
-    return Store(hass, STORAGE_VERSION, f"{DOMAIN}.hidden.{entry_id}")
+class _HiddenStore(Store[dict[str, Any]]):
+    """Version 1 kept a list of hidden IDs; every one of them becomes "ignored"."""
+
+    async def _async_migrate_func(
+        self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        if old_major_version == 1:
+            return {"senders": {s: PARK_IGNORED for s in old_data.get("ids", [])}}
+        return old_data
+
+
+def _store(hass: HomeAssistant, entry_id: str) -> _HiddenStore:
+    return _HiddenStore(hass, STORAGE_VERSION, f"{DOMAIN}.hidden.{entry_id}")
 
 
 async def async_load_hidden(hass: HomeAssistant, entry: EnOceanEltakoConfigEntry) -> None:
-    """Read the hidden senders of this gateway into the hub."""
+    """Read the parked senders of this gateway into the hub."""
     stored = await _store(hass, entry.entry_id).async_load() or {}
-    entry.runtime_data.hub.hidden[entry.entry_id] = {parse_id(s) for s in stored.get("ids", [])}
+    kinds: dict[int, str] = {}
+    for text, kind in stored.get("senders", {}).items():
+        try:
+            kinds[parse_id(text)] = kind if kind in PARK_KINDS else PARK_IGNORED
+        except ValueError:
+            continue
+    hub = entry.runtime_data.hub
+    hub.hidden[entry.entry_id] = set(kinds)
+    hub.parked[entry.entry_id] = kinds
+
+
+def parked_kinds(entry: EnOceanEltakoConfigEntry) -> dict[int, str]:
+    """The kind of every parked sender of this gateway (a sender without one is "ignored")."""
+    hub = entry.runtime_data.hub
+    kinds = hub.parked.get(entry.entry_id, {})
+    return {s: kinds.get(s, PARK_IGNORED) for s in hub.hidden.get(entry.entry_id, ())}
 
 
 async def async_set_hidden(
@@ -52,15 +84,39 @@ async def async_set_hidden(
     entry: EnOceanEltakoConfigEntry,
     senders: set[int],
     refresh: bool = True,
+    kinds: dict[int, str] | None = None,
 ) -> None:
-    """Replace the hidden senders of this gateway and refresh the notification."""
+    """Replace the parked senders of this gateway and refresh the notification.
+
+    A sender that is new to the set is filed under kinds[sender], else as "ignored"; one that
+    stays keeps its kind unless kinds names another.
+    """
     hub = entry.runtime_data.hub
-    hub.hidden[entry.entry_id] = senders
+    old = parked_kinds(entry)
+    filed = {s: (kinds or {}).get(s) or old.get(s) or PARK_IGNORED for s in senders}
+    hub.hidden[entry.entry_id] = set(filed)
+    hub.parked[entry.entry_id] = filed
     for sender in senders:
         hub.discovered.pop(sender, None)
-    await _store(hass, entry.entry_id).async_save({"ids": sorted(format_id(s) for s in senders)})
+    await _store(hass, entry.entry_id).async_save(
+        {"senders": {format_id(s): k for s, k in sorted(filed.items())}}
+    )
     if refresh:
         async_update_notification(hass, entry)
+
+
+async def async_park(
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    senders: set[int],
+    kind: str | None,
+) -> None:
+    """File senders under `kind`; None takes them out again (they are listed as new when heard)."""
+    current = parked_kinds(entry)
+    if kind is None:
+        await async_set_hidden(hass, entry, set(current) - senders)
+    else:
+        await async_set_hidden(hass, entry, set(current) | senders, kinds=dict.fromkeys(senders, kind))
 
 
 async def async_remove_hidden(hass: HomeAssistant, entry_id: str) -> None:
@@ -211,7 +267,7 @@ def stored_unknown(entry: EnOceanEltakoConfigEntry) -> list[dict[str, Any]]:
     hidden = {format_id(s) for s in hub.hidden.get(entry.entry_id, ())}
     rows = []
     for sender, values in notes.heard.items():
-        if sender in configured or sender in hidden or hub.senders.in_pool(parse_id(sender)):
+        if sender in configured or sender in hidden or hub.senders.status(parse_id(sender)) == "ours":
             continue
         last = notes.last.get(sender, {})
         rows.append(
@@ -255,7 +311,7 @@ def async_setup_discovery(
             received.gateway != entry.entry_id
             or not entry.options.get(CONF_DISCOVERY, True)
             or sender in hub.hidden.get(entry.entry_id, ())
-            or hub.senders.in_pool(sender)
+            or hub.senders.status(sender) == "ours"
         ):
             return
         new = sender not in hub.discovered
@@ -289,7 +345,7 @@ def async_setup_discovery(
             if sender_text not in notes.heard or sender_text in configured:
                 continue
             sender = parse_id(sender_text)
-            if sender in hub.discovered or sender in hidden or hub.senders.in_pool(sender):
+            if sender in hub.discovered or sender in hidden or hub.senders.status(sender) == "ours":
                 continue
             hub.discovered[sender] = ReceivedTelegram(
                 RadioTelegram(

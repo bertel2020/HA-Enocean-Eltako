@@ -436,6 +436,7 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
             "ref": "05-10-A2-B3",
             "profile": "central",
             "state": "assigned",
+            "external": False,
         },
         {
             "id": "FF-B7-44-82",
@@ -444,6 +445,7 @@ async def test_websocket_lists_and_frees_sender_ids(hass: HomeAssistant, hass_ws
             "ref": "gone",
             "profile": "controller",
             "state": "blocked",
+            "external": False,
         },
     ]
 
@@ -829,6 +831,153 @@ async def test_websocket_hide_sender(hass: HomeAssistant, hass_ws_client) -> Non
     assert status["hidden"] == ["00-00-05-20", "01-90-8C-14"]
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()
+
+
+async def test_websocket_park_senders(hass: HomeAssistant, hass_ws_client) -> None:
+    """Senders are filed as button, unused or ignored and brought back; nothing is half done."""
+    from homeassistant.config_entries import ConfigSubentryData
+
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+        subentries_data=[
+            ConfigSubentryData(
+                data={"schema": 4, "model": "weather", "device_id": "FF-85-EF-81"},
+                subentry_type="device",
+                title="Wetter",
+                unique_id="FF-85-EF-81",
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    hub = entry.runtime_data.hub
+    msg_ids = iter(range(1, 100))
+
+    async def park(senders: list[str], kind: str | None, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": next(msg_ids),
+                "type": "enocean_eltako/park_senders",
+                "entry_id": entry_id or entry.entry_id,
+                "senders": senders,
+                "kind": kind,
+            }
+        )
+        return await client.receive_json()
+
+    for senders, kind, entry_id, code in (
+        (["01-90-8C-14"], "unused", "nope", "not_found"),
+        (["nope"], "unused", None, "invalid_id"),
+        (["01-90-8C-14", "FF-85-EF-81"], "unused", None, "known_device"),
+    ):
+        reply = await park(senders, kind, entry_id)
+        assert not reply["success"] and reply["error"]["code"] == code
+    assert not hub.hidden.get(entry.entry_id)  # a refused request parks nothing
+
+    assert (await park(["01-90-8C-14", "00-00-05-20"], "unused"))["success"]
+    assert (await park(["00-00-05-21"], "button"))["success"]
+    assert hub.hidden[entry.entry_id] == {0x01908C14, 0x00000520, 0x00000521}
+    await client.send_json({"id": next(msg_ids), "type": "enocean_eltako/gateways"})
+    (status,) = (await client.receive_json())["result"]
+    assert status["bus_ranges"] == []  # no bus with master and base ID written down
+    assert status["parked"] == {
+        "00-00-05-20": "unused",
+        "00-00-05-21": "button",
+        "01-90-8C-14": "unused",
+    }
+    assert status["hidden"] == ["00-00-05-20", "00-00-05-21", "01-90-8C-14"]
+
+    # filing again moves a sender; a sender that stays keeps its kind
+    reply = await park(["00-00-05-20"], "ignored")
+    assert reply["success"], reply
+    assert hub.parked[entry.entry_id][0x00000520] == "ignored"
+    assert hub.parked[entry.entry_id][0x01908C14] == "unused"
+
+    # bringing senders back takes them out of both views
+    assert (await park(["00-00-05-20", "00-00-05-21"], None))["success"]
+    assert hub.hidden[entry.entry_id] == {0x01908C14}
+    assert hub.parked[entry.entry_id] == {0x01908C14: "unused"}
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_websocket_external_senders(hass: HomeAssistant, hass_ws_client) -> None:
+    """IDs of the pool can be kept for another system; the status says which are taken."""
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="FAM-USB Keller",
+        unique_id="FF-B7-44-80",
+        data={
+            "model": "fam_usb",
+            "device": {"type": "tcp", "host": "127.0.0.1", "port": server.port},
+            "base_id": "FF-B7-44-80",
+        },
+        options={"message_delay": 0},
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    client = await hass_ws_client(hass)
+    msg_ids = iter(range(1, 100))
+
+    async def keep(senders: list[str], keep: bool, entry_id: str | None = None):
+        await client.send_json(
+            {
+                "id": next(msg_ids),
+                "type": "enocean_eltako/external_senders",
+                "entry_id": entry_id or entry.entry_id,
+                "senders": senders,
+                "keep": keep,
+            }
+        )
+        return await client.receive_json()
+
+    async def pool_of_status() -> dict:
+        await client.send_json({"id": next(msg_ids), "type": "enocean_eltako/gateways"})
+        return (await client.receive_json())["result"][0]["pool"]
+
+    for senders, entry_id, code in (
+        (["FF-B7-44-85"], "nope", "not_found"),
+        (["nope"], None, "invalid_id"),
+        (["FF-B7-44-85", "FF-C2-4A-85"], None, "out_of_range"),  # one outside: nothing is kept
+    ):
+        reply = await keep(senders, True, entry_id)
+        assert not reply["success"] and reply["error"]["code"] == code
+    assert (await pool_of_status())["taken"] == {}
+
+    assert (await keep(["FF-B7-44-85", "FF-B7-44-86"], True))["success"]
+    pool = await pool_of_status()
+    assert (pool["first"], pool["last"]) == (0xFFB74481, 0xFFB744FF)
+    assert pool["taken"] == {"FF-B7-44-85": "external", "FF-B7-44-86": "external"}
+    # kept IDs are not handed out
+    assert entry.runtime_data.senders.pool.next_free() == 0xFFB74481
+    assert (await keep(["FF-B7-44-85"], False))["success"]
+    assert (await pool_of_status())["taken"] == {"FF-B7-44-86": "external"}
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_hidden_store_version_1_becomes_ignored(hass: HomeAssistant) -> None:
+    """Senders hidden before the kinds existed are filed as "ignored", which is what hiding meant."""
+    from custom_components.enocean_eltako.discovery import _HiddenStore
+
+    store = _HiddenStore(hass, 2, "enocean_eltako.hidden.test")
+    migrated = await store._async_migrate_func(1, 1, {"ids": ["01-90-8C-14", "00-00-05-20"]})
+    assert migrated == {"senders": {"01-90-8C-14": "ignored", "00-00-05-20": "ignored"}}
+    already = {"senders": {"01-90-8C-14": "button"}}
+    assert await store._async_migrate_func(2, 1, already) == already
 
 
 async def test_commands_reject_a_gateway_that_is_not_loaded(

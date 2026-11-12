@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
-from .bus_devices import BUS_TYPES, is_bus_model
+from .bus_devices import ADDRESSES, BUS_TYPES, is_bus_model
 from .const import CONF_BASE_ID, CONF_BUS_GROUP, CONF_MODEL, DOMAIN
 from .installation_checks import run_checks
 from .installation_data import (
@@ -436,6 +436,30 @@ class Installation:
                     t = item.telegram
                     heard.append(Heard(t.sender, entry_id, wired, t.rorg, t.data, item.timestamp))
         return heard
+
+    def bus_ranges(self, entry_id: str) -> list[dict[str, Any]]:
+        """The radio ID ranges of the buses a gateway reaches by radio, for those with a master and
+        a base ID written down: base + 1 ... base + 126. Without both there is no range to name."""
+        ranges = []
+        for bus in self.data["buses"]:
+            if not bus["master"] or not bus["base_id"]:
+                continue
+            if not any(a["entry_id"] == entry_id and a["via"] == "radio" for a in bus["access"]):
+                continue
+            try:
+                base = parse_id(bus["base_id"])
+            except ValueError:
+                continue
+            ranges.append(
+                {
+                    "bus": bus["id"],
+                    "name": bus["name"],
+                    "base": format_id(base),
+                    "first": format_id(base + 1),
+                    "last": format_id(base + ADDRESSES),
+                }
+            )
+        return ranges
 
     def observe(self, bus_id: str, heard: list[Heard], seconds: int) -> dict[str, Any] | None:
         """Compare what was heard with the documentation of a bus; kept until the next time."""
