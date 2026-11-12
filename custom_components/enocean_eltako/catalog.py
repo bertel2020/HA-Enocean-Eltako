@@ -378,8 +378,8 @@ CATALOG: dict[str, DeviceModel] = {
             (Platform.BINARY_SENSOR,),
             category="buttons",
             options=(OPT_ON_BUTTON, OPT_OFF_BUTTON, OPT_DEVICE_CLASS, OPT_INVERT),
-            examples="FTS14EM, FSM61, garage door controllers",
-            models=("FTS14EM", "FSM61"),
+            examples="FSM14, FTS14EM, FSM61, garage door controllers",
+            models=("FSM14", "FTS14EM", "FSM61"),
         ),
         DeviceModel(
             "meter",
