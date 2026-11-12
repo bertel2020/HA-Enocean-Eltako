@@ -21,7 +21,7 @@ RADIO_POOL_SIZE = 127  # base ID + 1 ... + 127
 BUS_POOL_START = 0x0000B000
 
 
-EXTERNAL = "external"  # owner of an ID that another system sends from: kept free of ours, no teach-out
+EXTERNAL = "external"  # owner of an ID another system sends from: kept free, no teach-out
 
 
 class SenderState(StrEnum):
@@ -107,7 +107,7 @@ class SenderPool:
             self._allocations[sender] = Allocation(current.owner, SenderState.BLOCKED)
 
     def reserve_external(self, sender: int) -> None:
-        """Keep an ID free of our own senders because another system (a legacy controller) uses it."""
+        """Keep an ID free of our own senders because another system (a legacy one) uses it."""
         self.assign(sender, EXTERNAL)
 
     def release_external(self, sender: int) -> None:

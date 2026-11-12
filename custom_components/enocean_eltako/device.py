@@ -529,9 +529,7 @@ class EnOceanDevice:
     def impulse(self) -> bool:
         """A switching actuator used as a button (garage door drive): one pulse per press, never
         repeated, and no state of its own (the relay falls back by itself)."""
-        return (
-            self.model.kind == "switch" and self.options.get(OPT_PLATFORM) == PLATFORM_IMPULSE
-        )
+        return self.model.kind == "switch" and self.options.get(OPT_PLATFORM) == PLATFORM_IMPULSE
 
     def sender_test_error(self) -> str | None:
         """Why the senders cannot be tested (a code for the panel), None when they can: only

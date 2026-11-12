@@ -14,10 +14,10 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_BUTTONS
-from .light import switch_actuator
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayReconnectButton
+from .light import switch_actuator
 
 # F6-02-01 rocker action of each button (pressed)
 ROCKER_BUTTONS = {"b0": 0x70, "b1": 0x50, "a0": 0x30, "a1": 0x10}

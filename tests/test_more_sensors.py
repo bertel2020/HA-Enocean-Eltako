@@ -48,7 +48,7 @@ def test_sunniest_side() -> None:
 
 
 def test_last_button_of_rocker_telegrams() -> None:
-    """Pressed buttons only (a0, a1, b0, b1; two at once joined, sorted); a release keeps the last."""
+    """Pressed buttons only (a0, a1, b0, b1; two at once joined); a release keeps the last."""
     for kind in ("rocker", "rocker_contact"):
         press = {"EB": 1, "R1": 2, "SA": 0}
         assert _value(kind, "last_button", press) == "b1"
