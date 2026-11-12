@@ -153,7 +153,8 @@
     "platform": {
       "options": {
         "light": "Licht",
-        "switch": "Schalter"
+        "switch": "Schalter",
+        "button": "Impuls (Taste)"
       }
     },
     "device_class": {
@@ -288,7 +289,7 @@
         "virtual_brightness": "Anlernen: Aktor in den Lernmodus für einen Helligkeitssensor bringen (FSB14: Funktion 150 für die Beschattungsautomatik; FSR14: beliebige Lernstellung, danach legt der obere Drehschalter die Schaltschwelle fest), dann „Helligkeitssensor einlernen“ drücken.",
         "virtual_weather": "Anlernen: Aktor in den Lernmodus für eine Wetterstation bringen (FSB14: beliebige Einlernfunktion; er nimmt entweder einen FAH60 oder einen FWS61), dann „Wetterstation einlernen“ drücken.",
         "virtual_scene": "Anlernen: Aktor in den Lernmodus für einen Szenentaster bringen (FSR14: 30, FUD14: LC4, FSB14: Funktion 180/200), dann einen der Szenen-Buttons auf dieser Geräteseite drücken. Die Szenen speichert der Aktor wie in seiner Anleitung beschrieben.",
-        "switch": "Anlernen (Eltako Baureihe 14, z. B. FSR14-4x): Kanal mit dem unteren Drehschalter wählen, den oberen Drehschalter auf die Lernfunktion stellen (0 = Richtungstaster, 5 oder 10 = Universaltaster; beim Zentralbefehl jede Stellung), den mittleren Schalter auf LRN stellen (LED blinkt langsam), dann auf dieser Geräteseite den passenden Einlernen-Button drücken. Einzelheiten zu anderen Geräten: docs/teach_in.de.md.",
+        "switch": "Anlernen (Eltako Baureihe 14, z. B. FSR14-4x): Kanal mit dem unteren Drehschalter wählen, den oberen Drehschalter auf die Lernfunktion stellen (0 = Richtungstaster, 5 oder 10 = Universaltaster; beim Zentralbefehl jede Stellung), den mittleren Schalter auf LRN stellen (LED blinkt langsam), dann auf dieser Geräteseite den passenden Einlernen-Button drücken. Einzelheiten zu anderen Geräten: docs/teach_in.de.md. Für ein Garagentor oder einen Antrieb, der einen Impuls braucht: den Typ „Impuls (Taste)“ wählen, als Universaltaster ER einlernen (oberer Schalter 10) und den oberen Schalter für die Ausschaltverzögerung (EW-Zeit) auf 1–2 s stellen, damit das Relais von selbst abfällt.",
         "dimmer": "Anlernen (Eltako-Dimmer, z. B. FUD14): den oberen Drehschalter auf die Lernfunktion stellen (LC2 = Richtungstaster, EC2 = Universaltaster, PCT = Zentralbefehl), den mittleren Schalter auf LRN stellen (LED blinkt langsam), dann auf dieser Geräteseite den passenden Einlernen-Button drücken. Einzelheiten zu anderen Geräten: docs/teach_in.de.md."
       }
     },
@@ -1266,6 +1267,9 @@
           "off": "Trocken"
         }
       },
+      "relay": {
+        "name": "Relais"
+      },
       "pump": {
         "name": "Pumpe"
       },
@@ -1360,6 +1364,9 @@
       },
       "calibrate": {
         "name": "Kalibrieren"
+      },
+      "impulse": {
+        "name": "Auslösen"
       },
       "gateway_reconnect": {
         "name": "Neu verbinden"

@@ -153,7 +153,8 @@
     "platform": {
       "options": {
         "light": "Light",
-        "switch": "Switch"
+        "switch": "Switch",
+        "button": "Impulse (button)"
       }
     },
     "device_class": {
@@ -288,7 +289,7 @@
         "virtual_brightness": "Teach-in: put the actuator into learn mode for a brightness sensor (FSB14: function 150 for the shading automatic; FSR14: any learn position, its upper rotary switch then sets the switching threshold), then press “Teach in brightness sensor”.",
         "virtual_weather": "Teach-in: put the actuator into learn mode for a weather station (FSB14: any learn function; it takes either an FAH60 or an FWS61), then press “Teach in weather station”.",
         "virtual_scene": "Teach-in: put the actuator into learn mode for a scene button (FSR14: 30, FUD14: LC4, FSB14: function 180/200), then press one of the scene buttons on this device page. Scenes are stored on the actuator as its manual describes.",
-        "switch": "Teach-in (Eltako series 14, e.g. FSR14-4x): pick the channel with the lower rotary switch, turn the upper switch to the learn function (0 = direction rocker, 5 or 10 = universal rocker; any position for the central command), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details for other devices: docs/teach_in.md.",
+        "switch": "Teach-in (Eltako series 14, e.g. FSR14-4x): pick the channel with the lower rotary switch, turn the upper switch to the learn function (0 = direction rocker, 5 or 10 = universal rocker; any position for the central command), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details for other devices: docs/teach_in.md. For a garage door or any drive that needs one pulse: choose the type “Impulse (button)”, teach in as universal rocker ER (upper switch 10) and set the upper switch for the off delay (EW time) to 1–2 s, so the relay falls back by itself.",
         "dimmer": "Teach-in (Eltako dimmer, e.g. FUD14): turn the upper rotary switch to the learn function (LC2 = direction rocker, EC2 = universal rocker, PCT = central command), turn the middle switch to LRN (LED flashes slowly), then press the matching teach-in button on this device page. Details for other devices: docs/teach_in.md."
       }
     },
@@ -1266,6 +1267,9 @@
           "off": "Dry"
         }
       },
+      "relay": {
+        "name": "Relay"
+      },
       "pump": {
         "name": "Pump"
       },
@@ -1360,6 +1364,9 @@
       },
       "calibrate": {
         "name": "Calibrate"
+      },
+      "impulse": {
+        "name": "Trigger"
       },
       "gateway_reconnect": {
         "name": "Reconnect"

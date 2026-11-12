@@ -19,6 +19,12 @@
           "on": "mdi:weather-pouring"
         }
       },
+      "relay": {
+        "default": "mdi:electric-switch",
+        "state": {
+          "on": "mdi:electric-switch-closed"
+        }
+      },
       "rain_recent": {
         "default": "mdi:weather-sunny",
         "state": {
@@ -59,6 +65,9 @@
     "button": {
       "calibrate": {
         "default": "mdi:arrow-collapse-vertical"
+      },
+      "impulse": {
+        "default": "mdi:gesture-tap-button"
       },
       "gateway_reconnect": {
         "default": "mdi:connection"

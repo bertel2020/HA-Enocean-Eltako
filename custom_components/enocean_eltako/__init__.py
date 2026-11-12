@@ -536,8 +536,12 @@ def _async_remove_stale_entities(hass: HomeAssistant, entry: EnOceanEltakoConfig
         if device.model.kind in ("switch", "psc", "vld_switch"):
             default = Platform.SWITCH if device.model.kind == "psc" else Platform.LIGHT
             chosen = device.options.get(OPT_PLATFORM, default)
-            other = Platform.SWITCH if chosen == Platform.LIGHT else Platform.LIGHT
-            stale.append((other, f"{prefix}_{'light' if other == Platform.LIGHT else 'switch'}"))
+            for other, key in ((Platform.LIGHT, "light"), (Platform.SWITCH, "switch")):
+                if chosen != other:
+                    stale.append((other, f"{prefix}_{key}"))
+            if not device.impulse:  # the entities of the impulse choice
+                stale.append((Platform.BUTTON, f"{prefix}_impulse"))
+                stale.append((Platform.BINARY_SENSOR, f"{prefix}_relay"))
         if device.model.kind == "switch":  # the optional thermostat and its extra entities
             thermostat = thermostat_enabled(device)
             if not thermostat:
