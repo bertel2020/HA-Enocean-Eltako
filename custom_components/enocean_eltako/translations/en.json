@@ -1271,10 +1271,18 @@
         "name": "Wake input"
       },
       "thermostat_heating": {
-        "name": "Heating"
+        "name": "Heating",
+        "state": {
+          "on": "Heating",
+          "off": "Off"
+        }
       },
       "thermostat_blocked": {
-        "name": "Blocked"
+        "name": "Heating blocked",
+        "state": {
+          "on": "Blocked",
+          "off": "OK"
+        }
       }
     },
     "event": {
