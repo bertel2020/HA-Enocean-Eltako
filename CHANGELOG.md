@@ -32,7 +32,7 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
 
-- **Dokumentation: „Bestehende Entitäten jetzt umbenennen“** (Gateway-Präfix): Die Benutzeranleitung beschreibt jetzt, was das Umbenennen tut (alle Entitäten des Gateways samt deaktivierter Diagnose-Entitäten; die neue ID entsteht aus Geräte- und Entitätsname, nicht aus der alten ID, daher bringt „Präfix aus“ nicht jede alte ID zurück), was es nicht anpasst (Automationen, Skripte, Szenen, Gruppen, Dashboards, Energie-Dashboard, YAML) und in welcher Reihenfolge man vorgeht.
+- **Dokumentation: „Bestehende Entitäten jetzt umbenennen“** (Gateway-Präfix): Die Benutzeranleitung beschreibt jetzt, was das Umbenennen tut (alle Entitäten des Gateways samt deaktivierter Diagnose-Entitäten; die neue ID entsteht aus Geräte- und Entitätsname, nicht aus der alten ID, daher bringt „Präfix aus“ nicht jede alte ID zurück), was es nicht anpasst (Automationen, Skripte, Szenen, Gruppen, Dashboards, Energie-Dashboard, YAML) und in welcher Reihenfolge man vorgeht. Der Hilfetext der Option in den Einstellungen nennt dasselbe in Kürze (auch Szenen, Gruppen und das Energie-Dashboard, Backup vorher).
 
 **English**
 
@@ -60,7 +60,7 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
 
-- **Documentation: "Rename existing entities now"** (gateway prefix): the user guide now says what the rename does (every entity of the gateway, the disabled diagnostic ones too; the new ID is built from device and entity name, not from the old ID, so switching the prefix off does not bring back every old ID), what it does not adapt (automations, scripts, scenes, groups, dashboards, the Energy dashboard, YAML) and in which order to proceed.
+- **Documentation: "Rename existing entities now"** (gateway prefix): the user guide now says what the rename does (every entity of the gateway, the disabled diagnostic ones too; the new ID is built from device and entity name, not from the old ID, so switching the prefix off does not bring back every old ID), what it does not adapt (automations, scripts, scenes, groups, dashboards, the Energy dashboard, YAML) and in which order to proceed. The option's help text in the settings says the same in short (scenes, groups and the Energy dashboard too, backup first).
 
 ### [1.10.0] - 2026-11-11
 
