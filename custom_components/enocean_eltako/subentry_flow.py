@@ -64,6 +64,7 @@ from .catalog import (
     OPT_ON_BUTTON,
     OPT_PART_OF,
     OPT_PLATFORM,
+    PLATFORM_IMPULSE,
     OPT_PRIORITY,
     OPT_RAIN_HOLD,
     OPT_ROCKER_OFF,
@@ -466,7 +467,11 @@ class DeviceForm:
             default = Platform.SWITCH.value if model.kind == "psc" else Platform.LIGHT.value
             schema[vol.Required(OPT_PLATFORM, default=default)] = SelectSelector(
                 SelectSelectorConfig(
-                    options=[Platform.LIGHT.value, Platform.SWITCH.value],
+                    options=[
+                        Platform.LIGHT.value,
+                        Platform.SWITCH.value,
+                        *([PLATFORM_IMPULSE] if model.kind == "switch" else []),
+                    ],
                     translation_key=OPT_PLATFORM,
                 )
             )

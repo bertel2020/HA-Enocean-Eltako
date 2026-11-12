@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnOceanEltakoConfigEntry
 from .catalog import OPT_BUTTONS
+from .light import switch_actuator
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayReconnectButton
@@ -48,6 +49,8 @@ async def async_setup_entry(
                 if p in ("central", "controller")
                 for out in (False, True)
             ]
+        if device.impulse:
+            buttons.append(ImpulseButton(device))
         if device.model.kind == "cover":
             buttons.append(CalibrateButton(device))
         if device.model.kind == "virtual_rocker":
@@ -98,6 +101,22 @@ class LearnButton(EnOceanEntity, ButtonEntity):
             self._device.teach_out(self._profile)
         else:
             self._device.unlock_learning(self._profile)
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class ImpulseButton(EnOceanEntity, ButtonEntity):
+    """A switching actuator as a button (garage door drive): sends "on" once, never repeated.
+    The relay has to fall back by itself (relay function ER with an off delay, EW time)."""
+
+    _attr_translation_key = "impulse"
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "impulse")
+
+    async def async_press(self) -> None:
+        switch_actuator(self._device, True)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False

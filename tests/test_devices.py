@@ -3123,3 +3123,44 @@ async def test_kind_form_of_a_heard_sender_has_back(hass: HomeAssistant, gateway
     assert result["step_id"] == "learned"
     result = await configure(result["flow_id"], {"model": "temp_humidity", "back": True})
     assert result["step_id"] == "user"
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-00-00-35",
+                "Garagentor",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-85"}],
+                platform="button",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_impulse_actuator_is_a_button(hass: HomeAssistant, gateway) -> None:
+    """Type "Impulse": no light or switch, a button that sends "on" once and never repeats."""
+    entry, server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    assert device.impulse
+    assert hass.states.get(_entity(hass, "button", f"{BASE}_05-00-00-35_1_impulse")) is not None
+    registry = er.async_get(hass)
+    assert registry.async_get_entity_id("light", DOMAIN, f"{BASE}_05-00-00-35_1_light") is None
+    assert registry.async_get_entity_id("switch", DOMAIN, f"{BASE}_05-00-00-35_1_switch") is None
+    relay = _entity(hass, "binary_sensor", f"{BASE}_05-00-00-35_1_relay")
+    await hass.services.async_call(
+        "button",
+        "press",
+        {"entity_id": _entity(hass, "button", f"{BASE}_05-00-00-35_1_impulse")},
+        blocking=True,
+    )
+    await _settle(hass)
+    assert _sent(server, "01000009", 0xFFB74485)  # "on" from the central command sender
+    _push(server, 0x05, b"\x70", 0x05000035, 0x30)  # the relay answers: on
+    await _settle(hass)
+    assert hass.states.get(relay).state == "on"
+    _push(server, 0x05, b"\x50", 0x05000035, 0x30)  # and falls back after the off delay
+    await _settle(hass)
+    assert hass.states.get(relay).state == "off"

@@ -33,6 +33,7 @@ from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .gateway_entity import GatewayConnectionSensor
+from .light import on_state
 from .sensor import HANDLE_POSITIONS, HANDLE_UPSIDE_DOWN
 from .thermostat_entities import thermostat_binary_sensors, wanted
 
@@ -195,6 +196,8 @@ async def async_setup_entry(
     for subentry_id, device in entry.runtime_data.devices.items():
         if wanted(device):  # the optional thermostat's status
             async_add_entities(thermostat_binary_sensors(device), config_subentry_id=subentry_id)
+        if device.impulse:
+            async_add_entities([ImpulseRelaySensor(device)], config_subentry_id=subentry_id)
         if Platform.BINARY_SENSOR not in device.model.platforms:
             continue
         descriptions = model_binary_descriptions(device)
@@ -249,6 +252,29 @@ class EnOceanBinarySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
         if value == self._attr_is_on:
             return False
         self._attr_is_on = value
+        return True
+
+
+class ImpulseRelaySensor(EnOceanEntity, BinarySensorEntity, RestoreEntity):
+    """The relay of an impulse actuator (garage door drive): on while the contact is closed.
+    It answers that the pulse arrived; the state of the door comes from its own contact."""
+
+    _attr_translation_key = "relay"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "relay")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None and last.state in ("on", "off"):
+            self._attr_is_on = last.state == "on"
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        on = on_state(values)
+        if on is None or on == self._attr_is_on:
+            return False
+        self._attr_is_on = on
         return True
 
 

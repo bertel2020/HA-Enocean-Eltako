@@ -10,6 +10,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
+- **Impuls-Aktor (Garagentor)**: Beim Schaltaktor gibt es den neuen Typ „Impuls (Taste)“. Statt Licht oder Schalter legt er einen Button „Auslösen“ an, der den Befehl „Ein“ genau einmal sendet (nie wiederholt, damit der Antrieb nicht zweimal angestoßen wird), und ein Diagnose-Relais, das die Rückmeldung des Aktors zeigt. Das Relais muss von selbst abfallen: als Universaltaster ER einlernen (oberer Drehschalter 10) und die Ausschaltverzögerung (EW-Zeit) auf 1–2 s stellen. Der Teach-in-Hinweis sagt das. Quelle: Eltako-Anleitung FSR14-2x (30 014 002-6), noch nicht an Hardware getestet.
+
 - **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0 = links oben, A1 = links unten, B0 = rechts oben, B1 = rechts unten; bei zwei gleichzeitig z. B. „A0 + B0“). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
 
 - **Tastenlage in den Auswahllisten**: Wo der Aktor oder Sender eine Wippentaste wählt (Wippen-Sender, virtuelle Taster), steht jetzt die Lage dabei, z. B. „B0 · rechts oben (0x70)“. Bei Kontakten über Tastertelegramme (FTS14EM, FSM14 …) bleibt es bei A0 bis B1, dort sind es Eingänge.
@@ -37,6 +39,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 **English**
 
 #### Added
+
+- **Impulse actuator (garage door)**: switching actuators get a new type "Impulse (button)". Instead of a light or switch it creates a button "Trigger" that sends "on" exactly once (never repeated, so the drive is not triggered twice) and a diagnostic relay that shows the actuator's answer. The relay has to fall back by itself: teach in as universal rocker ER (upper rotary switch 10) and set the off delay (EW time) to 1-2 s. The teach-in hint says so. Source: Eltako manual FSR14-2x (30 014 002-6), not yet tested on hardware.
 
 - **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
 

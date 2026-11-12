@@ -20,12 +20,14 @@ from .catalog import (
     DIRECTION_ROCKER,
     GROUP_VIRTUAL,
     OPT_PART_OF,
+    OPT_PLATFORM,
     OPT_ROCKER_OFF,
     OPT_ROCKER_ON,
     OPT_STATUS_CHANNEL,
     OPT_WALL_OFF,
     OPT_WALL_ON,
     OPT_WALL_SWITCH,
+    PLATFORM_IMPULSE,
     ROCKER,
     ROCKER_CODES,
     ROCKER_STATUS_PRESSED,
@@ -476,6 +478,8 @@ class EnOceanDevice:
                 translation_placeholders={"device": self.subentry.title},
             )
         data = self._with_lock(data, profile)
+        # a run command or an impulse that is repeated moves the cover / the door again
+        retries = 0 if self.model.kind == "cover" or self.impulse else MAX_RETRIES
         sender_id = self.senders[profile]
         rorg = rorg or self.model.sender_profile(profile).rorg
         telegram = RadioTelegram(rorg, data, sender_id, status, destination)
@@ -500,8 +504,7 @@ class EnOceanDevice:
                     key=queue_key,
                     expect=expect,
                     timeout=BUS_CONFIRM_TIMEOUT,
-                    # a run command that is repeated moves the cover again
-                    retries=0 if self.model.kind == "cover" else MAX_RETRIES,
+                    retries=retries,
                 ),
                 f"{DOMAIN} send {self.subentry.title}",
             )
@@ -515,10 +518,20 @@ class EnOceanDevice:
                 translation_key="gateway_not_connected",
                 translation_placeholders={"gateway": self.entry.title},
             )
-        future = runtime.queue.submit(telegram, priority, key=queue_key, expect=expect)
+        future = runtime.queue.submit(
+            telegram, priority, key=queue_key, expect=expect, retries=retries
+        )
         future.add_done_callback(lambda f: self._log_result(f.result(), started))
         if confirm:
             self.stats.commands += 1
+
+    @property
+    def impulse(self) -> bool:
+        """A switching actuator used as a button (garage door drive): one pulse per press, never
+        repeated, and no state of its own (the relay falls back by itself)."""
+        return (
+            self.model.kind == "switch" and self.options.get(OPT_PLATFORM) == PLATFORM_IMPULSE
+        )
 
     def sender_test_error(self) -> str | None:
         """Why the senders cannot be tested (a code for the panel), None when they can: only

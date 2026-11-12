@@ -23,6 +23,7 @@ from .protocol.eep.std.profiles import PROFILES
 from .protocol.telegram import Rorg
 
 OPT_PLATFORM = "platform"
+PLATFORM_IMPULSE = "button"  # switch: no state, a button sends one pulse (garage door drive)
 OPT_TIME_OPENS = "time_opens"
 OPT_TIME_CLOSES = "time_closes"
 OPT_VENT_TIME = "vent_time"  # shutters: seconds at the end of the down run closing the slots
