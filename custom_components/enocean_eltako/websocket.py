@@ -29,9 +29,11 @@ from .catalog import CATALOG, GENERIC_EEP
 from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
+    CONF_FORGET_DAYS,
     CONF_MODEL,
     CONF_MODEL_NAME,
     CONF_PROXY_REPLAY,
+    DEFAULT_FORGET_DAYS,
     DOMAIN,
 )
 from .device import UTE_WINDOW
@@ -112,6 +114,7 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_hide_sender)
     websocket_api.async_register_command(hass, ws_park_senders)
     websocket_api.async_register_command(hass, ws_sender_label)
+    websocket_api.async_register_command(hass, ws_forget_days)
     websocket_api.async_register_command(hass, ws_external_senders)
     websocket_api.async_register_command(hass, ws_forget_unknown)
     websocket_api.async_register_command(hass, ws_sender_pools)
@@ -458,6 +461,7 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
             # the same senders by kind (button, unused, ignored): the panel files them in groups
             "parked": {format_id(s): k for s, k in sorted(parked_kinds(entry).items())},
+            "forget_days": entry.options.get(CONF_FORGET_DAYS, DEFAULT_FORGET_DAYS),
             # the user's labels of unknown senders (function, place)
             "labels": {
                 format_id(s): v
@@ -1221,6 +1225,32 @@ async def ws_sender_label(
         connection.send_error(msg["id"], "known_device", "this sender is a set-up device")
         return
     await async_set_label(hass, entry, sender, msg["label"])
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/forget_days",
+        vol.Required("entry_id"): str,
+        vol.Required("days"): vol.All(int, vol.Range(min=0, max=3650)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_forget_days(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel device list: after how many days an unknown sender not heard is forgotten (0: never).
+
+    The same option as under the gateway's settings; saving it reloads the gateway like there.
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN:
+        connection.send_error(msg["id"], "not_found", "gateway not found")
+        return
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, CONF_FORGET_DAYS: msg["days"]}
+    )
     connection.send_result(msg["id"])
 
 

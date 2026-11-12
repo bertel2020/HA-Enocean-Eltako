@@ -393,3 +393,26 @@ async def test_sender_labels_are_stored_and_listed(
     )
     assert (await client.receive_json())["success"]
     assert not entry.runtime_data.hub.labels[entry.entry_id]
+
+
+async def test_forget_days_can_be_set_from_the_panel(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    from custom_components.enocean_eltako.const import CONF_FORGET_DAYS
+    from custom_components.enocean_eltako.websocket import gateway_status
+
+    entry, _server = gateway
+    assert gateway_status(entry)["forget_days"] == 30
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": "enocean_eltako/forget_days", "entry_id": entry.entry_id, "days": 7}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert entry.options[CONF_FORGET_DAYS] == 7
+    await client.send_json_auto_id(
+        {"type": "enocean_eltako/forget_days", "entry_id": entry.entry_id, "days": -1}
+    )
+    assert not (await client.receive_json())["success"]

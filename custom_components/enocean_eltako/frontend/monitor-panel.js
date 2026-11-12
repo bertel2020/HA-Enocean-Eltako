@@ -1158,6 +1158,7 @@ class EnOceanEltakoPanel extends HTMLElement {
               <span class="menu" id="moreMenu" role="menu" hidden>
                 <button role="menuitem" class="dup" data-act="export">${svg(ICON.download)}<span id="moreExport">${esc(t.exportShort)}</span></button>
                 <button role="menuitem" class="tg-only" data-act="clear">${svg(ICON.clear)}${esc(t.clear)}</button>
+                <button role="menuitem" class="dev-only" data-act="forget-days">${svg(ICON.clear)}<span>${esc(t.forgetDaysMenu)}</span></button>
                 <button role="menuitem" class="dev-only" data-act="doc-print">${svg(ICON.print)}${esc(t.doc.print)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv">${svg(ICON.download)}${esc(t.doc.csvItem)}</button>
                 <button role="menuitem" class="dev-only" data-act="doc-csv-links">${svg(ICON.download)}${esc(t.doc.linksCsvItem)}</button>
@@ -1211,8 +1212,9 @@ class EnOceanEltakoPanel extends HTMLElement {
           </form>
           <form class="sendform dev-only" id="teachForm" hidden></form>
           <form class="sendform dev-only" id="labelForm" hidden></form>
+          <form class="sendform dev-only" id="forgetForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
+          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="forgetHint"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
@@ -1562,6 +1564,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (!item) return;
       this._toggleMenu(false);
       if (item.dataset.act === "export") this._export();
+      else if (item.dataset.act === "forget-days") this._openForgetDays(true);
       else if (item.dataset.act === "doc-import") $("docFile").click();
       else if (item.dataset.act.startsWith("doc-")) this._documentation(item.dataset.act.slice(4));
       else $("clear").click();
@@ -1606,6 +1609,22 @@ class EnOceanEltakoPanel extends HTMLElement {
         e.stopPropagation();
         this._openTeach(null);
       }
+    });
+    $("forgetForm").addEventListener("click", (e) => {
+      if (e.target.closest("[data-forget-cancel]")) this._openForgetDays(false);
+    });
+    $("forgetForm").addEventListener("change", (e) => {
+      if (e.target.id === "forgetGateway") this._openForgetDays(true, e.target.value);
+    });
+    $("forgetForm").addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this._openForgetDays(false);
+      }
+    });
+    $("forgetForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      this._saveForgetDays();
     });
     $("labelForm").addEventListener("click", (e) => {
       if (e.target.closest("[data-label-cancel]")) this._openLabel(null);
@@ -2183,6 +2202,46 @@ class EnOceanEltakoPanel extends HTMLElement {
     const pool = d.mPool === "foreign" ? `<button role="menuitem" data-addact="pool:keep"><span>${esc(t.poolMenu.keep)}<small>${esc(t.poolMenu.keepHint)}</small></span></button>`
       : d.mPool === "external" ? `<button role="menuitem" data-addact="pool:release"><span>${esc(t.poolMenu.release)}<small>${esc(t.poolMenu.releaseHint)}</small></span></button>` : "";
     return pool + kinds.filter((k) => k !== d.mParked).map(entry).join("") + (d.mParked ? entry("restore") : "");
+  }
+
+  _openForgetDays(open, gateway) {
+    // the form above the list: after how many days an unknown sender not heard is forgotten, per gateway
+    const t = this._t;
+    const form = this.shadowRoot.getElementById("forgetForm");
+    const gateways = this._gateways.filter((g) => g.loaded);
+    form.hidden = !open || !gateways.length;
+    if (form.hidden) return;
+    const chosen = gateways.find((g) => g.entry_id === (gateway || this._filter.gateway)) || gateways[0];
+    const pick = gateways.length > 1
+      ? `<label><span>${esc(t.gateway)}</span><select class="select" id="forgetGateway">${gateways.map((g) => `<option value="${esc(g.entry_id)}"${g === chosen ? " selected" : ""}>${esc(g.title)}</option>`).join("")}</select></label>`
+      : "";
+    form.dataset.gateway = chosen.entry_id;
+    form.innerHTML = `<h3>${esc(t.forgetDaysTitle)}</h3><p>${esc(t.forgetDaysHint)}</p>
+      <div class="fields">${pick}<label><span>${esc(t.forgetDaysField)}</span><input class="text" id="forgetDays" type="number" min="0" max="3650" step="1" value="${chosen.forget_days ?? 30}"></label></div>
+      <div class="buttons"><button class="chip" type="button" data-forget-cancel>${esc(t.sendCancel)}</button><button class="chip primary" type="submit">${svg(ICON.check)}${esc(t.labelSave)}</button></div>`;
+    form.scrollIntoView?.({ block: "nearest" });
+    this.shadowRoot.getElementById("forgetDays").focus();
+  }
+
+  async _saveForgetDays() {
+    const form = this.shadowRoot.getElementById("forgetForm");
+    const days = Math.round(Number(this.shadowRoot.getElementById("forgetDays").value));
+    if (!Number.isFinite(days) || days < 0 || days > 3650) {
+      this._notice(this._t.forgetDaysInvalid);
+      return;
+    }
+    try {
+      await this._hass.callWS({ type: "enocean_eltako/forget_days", entry_id: form.dataset.gateway, days });
+    } catch (err) {
+      this._notice(this._t.forgetDaysFailed);
+      return;
+    }
+    this._openForgetDays(false);
+    this._notice(this._t.forgetDaysSaved(days), true);
+    setTimeout(async () => {
+      await this._refreshStatus(); // the gateway reloads with the new option
+      this._render();
+    }, 2500);
   }
 
   _labelOf(gateway, id) {
@@ -2774,6 +2833,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayRow").hidden = !this._multi && !f.gateway;
     const devices = this._view === "devices";
     $("forgetUnknown").hidden = !(devices && f.devStatus === "unknown");
+    const days = (this._gateways.find((g) => g.entry_id === f.gateway) || this._gateways.find((g) => g.loaded))?.forget_days;
+    $("forgetHint").textContent = devices && f.devStatus === "unknown" && days != null ? (days ? t.forgetHintDays(days) : t.forgetHintNever) : "";
     $("resetTop").hidden = !(f.gateway || f.text || (devices ? f.devStatus || f.area : f.dir || f.type || f.repeats || f.unknown));
     // the filters of the menu that are set: a chip each, its cross removes it
     const gateway = this._gateways.find((g) => g.entry_id === f.gateway);
