@@ -215,29 +215,19 @@ async def test_hide_and_show_again(hass: HomeAssistant, gateway) -> None:  # noq
     assert "discovered" not in result["menu_options"]
     hass.config_entries.subentries.async_abort(result["flow_id"])
 
+    from custom_components.enocean_eltako.discovery import async_park
+
     options = await hass.config_entries.options.async_init(entry.entry_id)
-    assert options["type"] is FlowResultType.MENU
-    options = await hass.config_entries.options.async_configure(
-        options["flow_id"], {"next_step_id": "hidden"}
-    )
-    late = await hass.config_entries.options.async_init(entry.entry_id)  # still open at unload
-    late = await hass.config_entries.options.async_configure(
-        late["flow_id"], {"next_step_id": "hidden"}
-    )
-    options = await hass.config_entries.options.async_configure(
-        options["flow_id"], {"again": ["00-2A-0B-0F"]}
-    )
-    assert options["reason"] == "senders_shown"
+    assert options["type"] is FlowResultType.FORM  # no extra menu: parked senders live in the panel
+    assert options["step_id"] == "settings"
+    hass.config_entries.options.async_abort(options["flow_id"])
+    await async_park(hass, entry, {0x002A0B0F}, None)  # what the panel's "bring back" does
     assert not hub.hidden[entry.entry_id]
     _push(server, 0x05, b"\x70", 0x002A0B0F, 0x30)
     await _settle(hass)
     result = await _menu(hass, entry)
     assert "discovered" in result["menu_options"]
     hass.config_entries.subentries.async_abort(result["flow_id"])
-
-    await hass.config_entries.async_unload(entry.entry_id)
-    late = await hass.config_entries.options.async_configure(late["flow_id"], {"again": []})
-    assert late["reason"] == "gateway_not_loaded"
 
 
 async def test_list_is_capped(hass: HomeAssistant, gateway) -> None:  # noqa: F811

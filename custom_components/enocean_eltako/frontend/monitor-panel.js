@@ -1214,7 +1214,7 @@ class EnOceanEltakoPanel extends HTMLElement {
           <form class="sendform dev-only" id="labelForm" hidden></form>
           <form class="sendform dev-only" id="forgetForm" hidden></form>
           <div class="notice" id="notice" hidden><span></span><button class="icon-btn" id="closeNotice" aria-label="${esc(t.closeNotice)}" title="${esc(t.closeNotice)}">${svg(ICON.close)}</button></div>
-          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="forgetHint"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
+          <div class="meta list-only"><label class="selall dev-only" id="selAllRow" hidden><input type="checkbox" id="selAll"><span>${esc(t.selAll)}</span></label><span id="count"></span><span class="active" id="forgetHint"></span><span class="active" id="activeFilters"></span><button class="chip text reset" id="resetTop" hidden>${esc(t.resetFilters)}</button><button class="chip text" id="restoreAll" hidden>${esc(t.restoreAll)}</button><button class="chip text" id="forgetUnknown" hidden title="${esc(t.forgetUnknownHint)}">${esc(t.forgetUnknown)}</button></div>
           <div class="selbar dev-only" id="selBar" hidden></div>
           <form class="sendform dev-only" id="pickForm" hidden></form>
           <div class="devices" id="devices"></div>
@@ -1463,6 +1463,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayFilter").addEventListener("change", (e) => this._set("gateway", e.target.value));
     $("typeFilter").addEventListener("change", (e) => this._set("type", e.target.value));
     $("resetTop").addEventListener("click", () => this._resetFilters());
+    $("restoreAll").addEventListener("click", () => this._restoreAll());
     $("forgetUnknown").addEventListener("click", (e) => this._forgetMenu(e.currentTarget));
     $("thead").addEventListener("click", (e) => {
       const button = e.target.closest("[data-sort]");
@@ -2119,6 +2120,16 @@ class EnOceanEltakoPanel extends HTMLElement {
     }
     this._notice(this._t.reportCopied(rows.length), true);
     window.open(DEVICE_REQUEST_URL, "_blank", "noopener");
+  }
+
+  async _restoreAll() {
+    // brings every sender of the chip shown (and the gateway chosen) back from parked
+    const kind = this._filter.devStatus;
+    const items = this._deviceItems().filter((d) => d.unknown && d.parked === kind && (!this._filter.gateway || d.gateway === this._filter.gateway));
+    if (!items.length || !window.confirm(this._t.restoreAllConfirm(items.length))) return;
+    const byGateway = new Map();
+    for (const d of items) byGateway.set(d.gateway, [...(byGateway.get(d.gateway) || []), d.id]);
+    for (const [gateway, senders] of byGateway) await this._park(gateway, senders, null);
   }
 
   _forgetMenu(button) {
@@ -2852,6 +2863,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayRow").hidden = !this._multi && !f.gateway;
     const devices = this._view === "devices";
     $("forgetUnknown").hidden = !(devices && f.devStatus === "unknown");
+    $("restoreAll").hidden = !(devices && PARK_KINDS.includes(f.devStatus) && this._deviceItems().some((d) => d.unknown && d.parked === f.devStatus));
     const days = (this._gateways.find((g) => g.entry_id === f.gateway) || this._gateways.find((g) => g.loaded))?.forget_days;
     $("forgetHint").textContent = devices && f.devStatus === "unknown" && days != null ? (days ? t.forgetHintDays(days) : t.forgetHintNever) : "";
     $("resetTop").hidden = !(f.gateway || f.text || (devices ? f.devStatus || f.area : f.dir || f.type || f.repeats || f.unknown));

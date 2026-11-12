@@ -145,8 +145,8 @@ Add a device under the gateway with **Add device** in one of six ways:
 Even simpler: every sender the gateway hears that is not set up yet is listed under
 **Add device → Discovered devices** of that gateway (a card under **Settings → Devices
 & services → Discovered** tells how many there are, and points here). Picking one suggests the kind and fills in the ID. Senders that are not yours
-(a neighbour's, for example) can be hidden there with **Hide this sender**; **Configure →
-Parked senders** on the gateway lists them again. The list keeps the newest 100 senders and
+(a neighbour's, for example) can be hidden there with **Hide this sender**; the chip **Ignored** in the
+panel's device list lists them again (⋮ menu → **Bring back**). The list keeps the newest 100 senders and
 starts empty after a restart; parked senders are remembered.
 
 In the panel's device list you sort unknown senders yourself with the ⋮ menu of a row, nothing is

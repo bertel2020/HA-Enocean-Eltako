@@ -152,8 +152,8 @@ Ein Gerät kommt unter dem Gateway mit **Gerät hinzufügen** dazu, auf einem vo
 Noch einfacher: Jeder Sender, den das Gateway hört und der noch nicht eingerichtet ist,
 steht beim Gateway unter **Gerät hinzufügen → Entdeckte Geräte** (eine Karte unter **Einstellungen →
 Geräte & Dienste → Entdeckt** nennt die Anzahl und weist hierher). Die Auswahl schlägt die Geräteart vor und trägt die ID ein. Fremde Sender (z. B.
-vom Nachbarn) lassen sich dort mit **Diesen Sender ausblenden** verstecken; **Konfigurieren →
-Geparkte Sender** am Gateway zeigt sie wieder an. Die Liste behält die neuesten 100
+vom Nachbarn) lassen sich dort mit **Diesen Sender ausblenden** verstecken; der Chip **Ignoriert** in der
+Geräteliste des Panels zeigt sie wieder an (⋮-Menü → **Zurückholen**). Die Liste behält die neuesten 100
 Sender und beginnt nach einem Neustart leer; geparkte Sender werden gemerkt.
 
 In der Geräteliste des Panels sortierst du unbekannte Sender selbst über das ⋮-Menü einer Zeile,
