@@ -1315,6 +1315,18 @@
       "teach_in_direction_rocker": {
         "name": "Teach-in direction rocker"
       },
+      "unlock_learning_central": {
+        "name": "Unlock learn mode (central command)"
+      },
+      "teach_out_central": {
+        "name": "Teach out central command"
+      },
+      "unlock_learning_controller": {
+        "name": "Unlock learn mode (controller)"
+      },
+      "teach_out_controller": {
+        "name": "Teach out controller"
+      },
       "calibrate": {
         "name": "Calibrate"
       },

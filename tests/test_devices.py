@@ -615,6 +615,36 @@ async def test_dimmer_and_teach_in(hass: HomeAssistant, gateway) -> None:
     assert teach in bytes(server.received)
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "dimmer",
+                "05-00-00-31",
+                "Licht Wohnzimmer",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-82"}],
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_series_62_learn_mode_and_teach_out(hass: HomeAssistant, gateway) -> None:
+    entry, server = gateway
+    registry = er.async_get(hass)
+    for key in ("unlock_learning_central", "teach_out_central"):
+        reg = registry.async_get(_entity(hass, "button", f"{BASE}_05-00-00-31_1_{key}"))
+        assert reg.disabled_by is not None  # other series ignore the telegram
+    device = next(iter(entry.runtime_data.devices.values()))
+    unlock = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00000028"), 0xFFB74482))
+    device.unlock_learning("central")
+    await _settle(hass)
+    assert bytes(server.received).count(unlock) == 1
+    device.teach_out("central")
+    await _settle(hass)
+    assert bytes(server.received).count(unlock) == 4  # three more within the 2 s window
+
+
 async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     result = await hass.config_entries.subentries.async_init(

@@ -70,3 +70,15 @@ Szene-Ab, solange der Kontakt „offen“ meldet. Beim virtuellen Kontakt in den
 **Mit Priorität senden** einschalten: Sein Telegramm überholt dann alle Befehle in der
 Sendewarteschlange, sodass „offen“ den Aktor vor einem gleichzeitig gesendeten
 Zentral-Ab-Befehl erreicht.
+
+## Baureihe 62: Lernmodus entsperren, ausmelden
+
+FL62, FR62, FD62 und FJ62 (auch die NP-Varianten) kennen zwei zusätzliche Telegramme vom Sender
+des Zentralbefehls bzw. der Steuerung (Quelle: Eltako, „Inhalte der Eltako-Funktelegramme“):
+`00 00 00 28` entsperrt den Lernmodus, und dasselbe Telegramm **dreimal innerhalb von 2 Sekunden**
+lässt den Aktor diese Sender-ID vergessen (Ausmelden).
+
+Jeder Aktor hat dafür je Sender zwei Buttons, **Lernmodus entsperren** und **Ausmelden**
+(Diagnose-Entitäten, standardmäßig aus: andere Baureihen kennen das Telegramm nicht). Vor dem
+Löschen eines Geräts ausmelden, danach das Ausmelden bestätigen, damit die Sender-ID wieder frei
+wird. Noch nicht an Hardware getestet.
