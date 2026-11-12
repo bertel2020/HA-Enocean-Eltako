@@ -10,7 +10,9 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
-- **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0, A1, B0, B1, bei zwei gleichzeitig z. B. A1+B1). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
+- **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0 = links oben, A1 = links unten, B0 = rechts oben, B1 = rechts unten; bei zwei gleichzeitig z. B. „A0 + B0“). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
+
+- **Tastenlage in den Auswahllisten**: Wo der Aktor oder Sender eine Wippentaste wählt (Wippen-Sender, virtuelle Taster), steht jetzt die Lage dabei, z. B. „B0 · rechts oben (0x70)“. Bei Kontakten über Tastertelegramme (FTS14EM, FSM14 …) bleibt es bei A0 bis B1, dort sind es Eingänge.
 
 - **Taster sperren** (Schaltaktor, Dimmer, Rollladen mit Zentralbefehl- oder Steuerungs-Sender): Konfigurationsschalter je Gerät. Ist er an, tragen alle Befehle von Home Assistant das Sperr-Bit (DB0.2), der Aktor ignoriert eingelernte Taster, bis die Sperre aufgehoben wird. Beim Setzen wird der aktuelle Zustand einmal neu gesendet (Rollladen: Stopp). Der Aktor meldet die Sperre nicht, der Zustand ist angenommen und wird nach einem Neustart wiederhergestellt. Quelle: Eltako „Inhalte der Eltako-Funktelegramme“, noch nicht an Hardware getestet.
 
@@ -34,7 +36,9 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Added
 
-- **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0, A1, B0, B1, or e.g. A1+B1 for two at once). Releasing does not change the value. Disabled by default.
+- **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
+
+- **Button position in the choice lists**: wherever an actuator or sender picks a rocker button (rocker sender, virtual pushbuttons) the position is now shown, e.g. "B0 · right top (0x70)". Contacts via rocker telegrams (FTS14EM, FSM14 ...) keep plain A0 to B1, as those are inputs.
 
 - **Lock pushbuttons** (switching actuator, dimmer, shutter with a central command or controller sender): a configuration switch per device. While it is on, every command from Home Assistant carries the lock bit (DB0.2) and the actuator ignores taught-in pushbuttons until the lock is lifted. Setting it sends the current state once more (shutter: stop). The actuator does not report the lock, so the state is assumed and restored after a restart. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 
