@@ -38,6 +38,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Geändert
 
+- **Übernahme: Kontakte über Tastertelegramme** (FSM14, FTS14EM …) übernehmen jetzt „Aus bei: losgelassen“, wie die alte Integration. Ohne das blieb ein Kontakt nach dem ersten Öffnen für immer auf „offen“. Bereits übernommene Kontakte lassen sich unter „Aus bei“ umstellen.
+
 - **Bus-Aktoren (Baureihe 14 am FAM14) bestätigen langsamer, als wir warteten**: Das FAM14 fragt die Aktoren nacheinander ab, die Bestätigung kann bis zu 10 s dauern (Eltako „Inhalte der Eltako-Funktelegramme“). Ein Befehl an einen Bus-Aktor wartet deshalb 12 s statt 1 s auf die Bestätigung, bevor er wiederholt wird, und ein Fahrbefehl eines Rollladens wird gar nicht mehr wiederholt (er würde den Rollladen erneut fahren lassen). Unbestätigt bleibt er dann nur gemeldet. Schneller geht es mit einer Geräteliste im PCT14 und FAM14-Betriebsart 5.
 
 - **Zähler: Seriennummer** nur noch bei Zählern, die sie senden (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; laut Eltako-Funktelegramm-Liste). Der Sensor entsteht erst mit dem ersten Seriennummer-Telegramm, beim F3Z14D und bei Aktoren (FSR14M-2x, FSR61VA, FSVA-230V) gibt es ihn nicht mehr. Das Format ist jetzt wie aufgedruckt „S-AABBCC“ (vorher vier Hex-Bytes aus falsch gelesenen Telegrammen). Die Ziffernkodierung ist noch nicht mit einem Mitschnitt geprüft.
@@ -64,9 +66,9 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
 
-- **Lock pushbuttons** (switching actuator, dimmer, shutter with a central command or controller sender): a configuration switch per device. While it is on, every command from Home Assistant carries the lock bit (DB0.2) and the actuator ignores taught-in pushbuttons until the lock is lifted. Setting it sends the current state once more (shutter: stop). The actuator does not report the lock, so the state is assumed and restored after a restart. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
-
 - **Button position in the choice lists**: wherever an actuator or sender picks a rocker button (rocker sender, virtual pushbuttons) the position is now shown, e.g. "B0 · right top (0x70)". Contacts via rocker telegrams (FTS14EM, FSM14 ...) keep plain A0 to B1, as those are inputs.
+
+- **Lock pushbuttons** (switching actuator, dimmer, shutter with a central command or controller sender): a configuration switch per device. While it is on, every command from Home Assistant carries the lock bit (DB0.2) and the actuator ignores taught-in pushbuttons until the lock is lifted. Setting it sends the current state once more (shutter: stop). The actuator does not report the lock, so the state is assumed and restored after a restart. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 
 - **Brightness sensors FAH65S, FIH65S and FHD65SB**: new device types "Brightness sensor" (A5-06-01, twilight range 0...100 lx and 300...30000 lx) and "Brightness sensor with supply voltage" (A5-06-02, 0...1020 lx, voltage 0...5.1 V as a diagnostic). Both in Eltako's own telegram layout from "Inhalte der Eltako-Funktelegramme"; not yet tested on hardware. FSTAP and FSMTB (pushbuttons), FLGTF65, FLGTF55 and FLGTF55E (TVOC) are also listed as models, FSM14 for contacts via rocker telegrams.
 
@@ -78,7 +80,7 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Changed
 
-- **Takeover: contacts via rocker telegrams** (FSM14, FTS14EM …, an old `binary_sensor` with F6-02-01) now take over "Off with: released". The old integration switched on on press and off on release; without it a contact such as "Kontakt Garagentor" stayed "open" forever after its first opening. Contacts taken over earlier can be changed under "Off with".
+- **Takeover: contacts via rocker telegrams** (FSM14, FTS14EM …) now take over "Off with: released", like the old integration. Without it a contact stayed "open" forever after its first opening. Contacts taken over earlier can be changed under "Off with".
 
 - **Bus actuators (series 14 on the FAM14) confirm more slowly than we waited**: the FAM14 polls the actuators one by one, so a confirmation can take up to 10 s (Eltako "Inhalte der Eltako-Funktelegramme"). A command to a bus actuator now waits 12 s instead of 1 s for the confirmation before it is repeated, and a cover's run command is not repeated at all (it would drive the cover again); it is only reported as unconfirmed. It is faster with a device list in the PCT14 and FAM14 operating mode 5.
 
@@ -86,9 +88,9 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
 
-### [1.10.0] - 2026-11-11
-
 - **Documentation: "Rename existing entities now"** (gateway prefix): the user guide now says what the rename does (every entity of the gateway, the disabled diagnostic ones too; the new ID is built from device and entity name, not from the old ID, so switching the prefix off does not bring back every old ID), what it does not adapt (automations, scripts, scenes, groups, dashboards, the Energy dashboard, YAML) and in which order to proceed. The option's help text in the settings says the same in short (scenes, groups and the Energy dashboard too, backup first).
+
+### [1.10.0] - 2026-11-11
 
 **Deutsch**
 
