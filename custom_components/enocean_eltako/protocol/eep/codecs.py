@@ -49,6 +49,8 @@ DECODERS: dict[EEPRef, Decoder] = {
     EEPRef("A5-38-08", "eltako"): _eltako(Rorg.BS4, switching.decode_dim_status),
     EEPRef("G5-3F-7F", "eltako"): _shutter_status,
     EEPRef("A5-04-02", "eltako"): _eltako(Rorg.BS4, sensors.decode_solar_temp_humidity),
+    EEPRef("A5-06-01", "eltako"): _eltako(Rorg.BS4, sensors.decode_brightness),
+    EEPRef("A5-06-02", "eltako"): _eltako(Rorg.BS4, sensors.decode_brightness_voltage),
     EEPRef("A5-08-01", "eltako"): _eltako(Rorg.BS4, sensors.decode_fbh),
     EEPRef("M5-10-06", "eltako"): lambda t: (
         heating.decode_status(t.data) if t.rorg in (Rorg.RPS, Rorg.BS4) else None

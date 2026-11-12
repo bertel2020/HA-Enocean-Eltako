@@ -5,6 +5,13 @@ A5-04-02:eltako (FAFT60, solar-powered outdoor sensor): as official, plus DB3 = 
     from a FAFT60 in use, whose storage reads 2.8 ... 3.5 V, rising by day and falling by night;
     a data byte of 0 means no voltage was sent.
 
+A5-06-01:eltako (FAH65S, FIH65S): DB3 = twilight 0...100 lx (valid only while DB2 = 0), DB2 =
+    300...30000 lx over 0...255, DB0 = 0x0F (the layout of the FAH60 format, see virtual.py).
+    Source: Eltako, "Inhalte der Eltako-Funktelegramme"; official: other fields and ranges.
+
+A5-06-02:eltako (FHD65SB): DB3 = supply voltage 0...5.1 V over 0...255, DB2 = illuminance
+    0...1020 lx over 0...255, DB0 = 0x0F. Official A5-06-02 has the second range in DB1.
+
 A5-08-01:eltako (FBH65, FBH65S, FABH65S, FBH65TF): as official, but DB1 carries no
     temperature (official 0...51 degC) and the occupancy button bit is always "released";
     both are left out.
@@ -41,6 +48,21 @@ def decode_fbh(data: bytes) -> dict[str, Any] | None:
         return None
     values = decode(PROFILES["A5-08-01"], data)
     return {k: v for k, v in values.items() if k not in ("TMP", "OCC", "LRNB")}
+
+
+def decode_brightness(data: bytes) -> dict[str, Any] | None:
+    if len(data) != 4 or not data[3] & 0x08:
+        return None
+    if data[1] == 0:  # twilight range: DB3 in lx
+        return {"illuminance": float(min(data[0], 100))}
+    low, high = 300.0, 30000.0
+    return {"illuminance": round(low + data[1] / 255 * (high - low))}
+
+
+def decode_brightness_voltage(data: bytes) -> dict[str, Any] | None:
+    if len(data) != 4 or not data[3] & 0x08:
+        return None
+    return {"supply_voltage": round(data[0] * 5.1 / 255, 2), "illuminance": data[1] * 4.0}
 
 
 def decode_solar_temp_humidity(data: bytes) -> dict[str, Any] | None:
