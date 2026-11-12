@@ -1297,19 +1297,27 @@ async def ws_external_senders(
 
 
 @websocket_api.websocket_command(
-    {vol.Required("type"): "enocean_eltako/forget_unknown", vol.Required("entry_id"): str}
+    {
+        vol.Required("type"): "enocean_eltako/forget_unknown",
+        vol.Required("entry_id"): str,
+        # only senders not heard for this many days; without it all of them
+        vol.Optional("days"): vol.All(vol.Coerce(float), vol.Range(min=0.01, max=3650)),
+    }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_forget_unknown(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
-    """Panel device list: drop all unknown senders of this gateway (heard again, listed again)."""
+    """Panel device list: drop the unknown senders of this gateway, all or those not heard for
+    `days` (heard again, listed again)."""
     entry = hass.config_entries.async_get_entry(msg["entry_id"])
     if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
         connection.send_error(msg["id"], "not_found", "gateway not loaded")
         return
-    connection.send_result(msg["id"], {"removed": async_forget_unknown(hass, entry, None)})
+    connection.send_result(
+        msg["id"], {"removed": async_forget_unknown(hass, entry, msg.get("days"))}
+    )
 
 
 def _pools(hass: HomeAssistant) -> dict[str, tuple[str, ConfigEntry, Any]]:

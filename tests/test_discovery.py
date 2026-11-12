@@ -416,3 +416,31 @@ async def test_forget_days_can_be_set_from_the_panel(
         {"type": "enocean_eltako/forget_days", "entry_id": entry.entry_id, "days": -1}
     )
     assert not (await client.receive_json())["success"]
+
+
+async def test_forget_unknown_by_days_over_the_websocket(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+    hass_ws_client,
+) -> None:
+    import time
+
+    entry, server = gateway
+    hub = entry.runtime_data.hub
+    notes = hub.notes[entry.entry_id]
+    _push(server, 0x05, b"\x70", 0x002A0B50, 0x30)
+    _push(server, 0x05, b"\x70", 0x002A0B51, 0x30)
+    await _settle(hass)
+    old = time.time() - 10 * 86400
+    notes.heard["00-2A-0B-50"]["last"] = old
+    notes.last["00-2A-0B-50"]["time"] = old
+    hub.discovered[0x002A0B50] = hub.discovered[0x002A0B50].__class__(
+        hub.discovered[0x002A0B50].telegram, entry.entry_id, old, 0x002A0B50
+    )
+    client = await hass_ws_client(hass)
+    await client.send_json_auto_id(
+        {"type": "enocean_eltako/forget_unknown", "entry_id": entry.entry_id, "days": 7}
+    )
+    assert (await client.receive_json())["result"] == {"removed": 1}
+    assert 0x002A0B51 in hub.discovered
+    assert 0x002A0B50 not in hub.discovered

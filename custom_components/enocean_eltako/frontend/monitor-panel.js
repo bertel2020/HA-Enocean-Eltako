@@ -1463,7 +1463,7 @@ class EnOceanEltakoPanel extends HTMLElement {
     $("gatewayFilter").addEventListener("change", (e) => this._set("gateway", e.target.value));
     $("typeFilter").addEventListener("change", (e) => this._set("type", e.target.value));
     $("resetTop").addEventListener("click", () => this._resetFilters());
-    $("forgetUnknown").addEventListener("click", () => this._forgetUnknown());
+    $("forgetUnknown").addEventListener("click", (e) => this._forgetMenu(e.currentTarget));
     $("thead").addEventListener("click", (e) => {
       const button = e.target.closest("[data-sort]");
       if (!button) return;
@@ -2121,19 +2121,38 @@ class EnOceanEltakoPanel extends HTMLElement {
     window.open(DEVICE_REQUEST_URL, "_blank", "noopener");
   }
 
-  async _forgetUnknown() {
-    // drops the unknown senders of the gateway chosen (all gateways when none is): stored and in the buffer
+  _forgetMenu(button) {
+    // "Forget": all unknown senders, or only those not heard for a day, a week, a month
+    const t = this._t;
+    const items = [[1, t.forgetOlder(1)], [7, t.forgetOlder(7)], [30, t.forgetOlder(30)], [0, t.forgetAll]];
+    this._popupMenu(
+      button,
+      "forget",
+      items.map(([days, label]) => `<button role="menuitem" data-addact="${days}"><span>${esc(label)}</span></button>`).join(""),
+      (act) => this._forgetUnknown(Number(act))
+    );
+  }
+
+  async _forgetUnknown(days = 0) {
+    // drops the unknown senders of the gateway chosen (all gateways when none is): stored and in the buffer;
+    // days > 0 only those not heard for that long. Parked senders and labels stay.
     const gateways = this._gateways.filter((g) => g.loaded && (!this._filter.gateway || g.entry_id === this._filter.gateway));
-    if (!window.confirm(this._t.forgetUnknownConfirm)) return;
+    const cutoff = days ? Date.now() - days * 86400000 : null;
+    const open = this._deviceItems().filter((d) => d.unknown && !d.parked && (!this._filter.gateway || d.gateway === this._filter.gateway) && (cutoff == null || (d.time != null && d.time < cutoff)));
+    if (!open.length) {
+      this._notice(this._t.forgetNone);
+      return;
+    }
+    if (!window.confirm(days ? this._t.forgetOlderConfirm(open.length, days) : this._t.forgetUnknownConfirm)) return;
     this._notice("");
     try {
-      for (const g of gateways) await this._hass.callWS({ type: "enocean_eltako/forget_unknown", entry_id: g.entry_id });
+      for (const g of gateways) await this._hass.callWS({ type: "enocean_eltako/forget_unknown", entry_id: g.entry_id, ...(days ? { days } : {}) });
     } catch (err) {
       this._notice(this._t.hideResult.failed);
       return;
     }
     const ids = new Set(gateways.map((g) => g.entry_id));
-    this._rows = this._rows.filter((r) => r.device || r.dir !== "rx" || !ids.has(r.gateway));
+    this._rows = this._rows.filter((r) => r.device || r.dir !== "rx" || !ids.has(r.gateway) || (cutoff != null && Date.parse(r.time) >= cutoff));
     await this._refreshStatus();
     this._render();
   }

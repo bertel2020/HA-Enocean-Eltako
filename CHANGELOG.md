@@ -16,6 +16,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Automatisch vergessen im Panel**: Im ⋮-Menü der Geräteliste stellt „Automatisch vergessen…“ ein, nach wie vielen Tagen unbekannte Sender ohne Telegramm aus der Liste fallen (je Gateway, dieselbe Option wie unter den Einstellungen des Gateways). Unter „Neu“ steht der aktuelle Wert („Vergisst nach 30 Tagen“) neben der Anzahl, und die Rückfrage bei „Alle vergessen“ sagt, dass Geparktes und Beschriftungen bleiben.
 
+- **Manuell vergessen mit Zeitraum**: Der Knopf „Vergessen…“ unter „Neu“ bietet „Seit einem Tag / 7 / 30 Tagen nicht gehört“ und „Alle unbekannten Sender“ an. Jede Wahl fragt vorher nach und nennt die Zahl der betroffenen Sender.
+
 - **Impuls-Aktor (Garagentor)**: Beim Schaltaktor gibt es den neuen Typ „Impuls (Taste)“. Statt Licht oder Schalter legt er einen Button „Auslösen“ an, der den Befehl „Ein“ genau einmal sendet (nie wiederholt, damit der Antrieb nicht zweimal angestoßen wird), und ein Diagnose-Relais, das die Rückmeldung des Aktors zeigt. Das Relais muss von selbst abfallen: als Universaltaster ER einlernen (oberer Drehschalter 10) und die Ausschaltverzögerung (EW-Zeit) auf 1–2 s stellen. Der Teach-in-Hinweis sagt das. Quelle: Eltako-Anleitung FSR14-2x (30 014 002-6), noch nicht an Hardware getestet.
 
 - **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0 = links oben, A1 = links unten, B0 = rechts oben, B1 = rechts unten; bei zwei gleichzeitig z. B. „A0 + B0“). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
@@ -50,13 +52,15 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Labels for unknown senders**: the ⋮ menu of an unknown sender has "Edit label" (function or place, e.g. "Hallway, top left"). The label replaces "Unknown sender" as the name, is searchable and is suggested as the name when you set the sender up as a device. It works for senders that are not parked as well.
 
-- **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
-
 - **Forget automatically in the panel**: the ⋮ menu of the device list has "Forget automatically…", which sets after how many days unknown senders that were not heard drop out of the list (per gateway, the same option as in the gateway's settings). Under "New" the current value ("Forgets after 30 days") shows next to the count, and the "Forget all" confirmation says that parked senders and labels stay.
 
 - **Impulse actuator (garage door)**: switching actuators get a new type "Impulse (button)". Instead of a light or switch it creates a button "Trigger" that sends "on" exactly once (never repeated, so the drive is not triggered twice) and a diagnostic relay that shows the actuator's answer. The relay has to fall back by itself: teach in as universal rocker ER (upper rotary switch 10) and set the off delay (EW time) to 1-2 s. The teach-in hint says so. Source: Eltako manual FSR14-2x (30 014 002-6), not yet tested on hardware.
 
+- **Forget manually with a period**: the "Forget…" button under "New" offers "Not heard for a day / 7 / 30 days" and "All unknown senders". Each choice asks first and names the number of senders affected.
+
 - **Button position in the choice lists**: wherever an actuator or sender picks a rocker button (rocker sender, virtual pushbuttons) the position is now shown, e.g. "B0 · right top (0x70)". Contacts via rocker telegrams (FTS14EM, FSM14 ...) keep plain A0 to B1, as those are inputs.
+
+- **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0 = left top, A1 = left bottom, B0 = right top, B1 = right bottom; e.g. "A0 + B0" for two at once). Releasing does not change the value. Disabled by default.
 
 - **Lock pushbuttons** (switching actuator, dimmer, shutter with a central command or controller sender): a configuration switch per device. While it is on, every command from Home Assistant carries the lock bit (DB0.2) and the actuator ignores taught-in pushbuttons until the lock is lifted. Setting it sends the current state once more (shutter: stop). The actuator does not report the lock, so the state is assumed and restored after a restart. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 
@@ -74,11 +78,11 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 - **Bus actuators (series 14 on the FAM14) confirm more slowly than we waited**: the FAM14 polls the actuators one by one, so a confirmation can take up to 10 s (Eltako "Inhalte der Eltako-Funktelegramme"). A command to a bus actuator now waits 12 s instead of 1 s for the confirmation before it is repeated, and a cover's run command is not repeated at all (it would drive the cover again); it is only reported as unconfirmed. It is faster with a device list in the PCT14 and FAM14 operating mode 5.
 
-- **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
-
 - **Meter serial number** only on meters that send it (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; per Eltako's radio telegram list). The sensor is created with the first serial number telegram; the F3Z14D and actuators (FSR14M-2x, FSR61VA, FSVA-230V) no longer get one. The format is now "S-AABBCC" as printed (before: four hex bytes from misread telegrams). The digit coding is not yet checked against a capture.
 
 - **Documentation: "Rename existing entities now"** (gateway prefix): the user guide now says what the rename does (every entity of the gateway, the disabled diagnostic ones too; the new ID is built from device and entity name, not from the old ID, so switching the prefix off does not bring back every old ID), what it does not adapt (automations, scripts, scenes, groups, dashboards, the Energy dashboard, YAML) and in which order to proceed. The option's help text in the settings says the same in short (scenes, groups and the Energy dashboard too, backup first).
+
+- **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
 
 ### [1.10.0] - 2026-11-11
 
