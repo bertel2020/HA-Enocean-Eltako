@@ -201,7 +201,7 @@ Home Assistant schaltet das Relais über die Sendewarteschlange, mit den Sendern
 - **Luftfeuchte:** Ein optionaler Feuchtesensor wird als Luftfeuchte des Thermostats angezeigt; er
   regelt nichts.
 - **Zusatzwerte:** Leistung, Laufzeit, Pause, Stunden heute und Status als Attribute des
-  Thermostats, und Laufzeit, Pause, Laufzeit heute, „Heizt“ und „Blockiert“ als eigene Entitäten
+  Thermostats, und Laufzeit, Pause, Laufzeit heute, „Heizt“ und „Heizung blockiert“ als eigene Entitäten
   (Diagnose). Beides lässt sich abschalten. Die Laufzeit heute beginnt um Mitternacht und nach
   einem Neustart von Home Assistant neu.
 

@@ -1271,10 +1271,18 @@
         "name": "Weckeingang"
       },
       "thermostat_heating": {
-        "name": "Heizt"
+        "name": "Heizt",
+        "state": {
+          "on": "Heizt",
+          "off": "Aus"
+        }
       },
       "thermostat_blocked": {
-        "name": "Blockiert"
+        "name": "Heizung blockiert",
+        "state": {
+          "on": "Blockiert",
+          "off": "OK"
+        }
       }
     },
     "event": {

@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import callback
@@ -21,11 +21,9 @@ SENSORS: tuple[tuple[str, Callable[[ThermostatController], Any], UnitOfTime], ..
     ("thermostat_cooldown", lambda c: c.cooldown_remaining, UnitOfTime.MINUTES),
     ("thermostat_on_today", lambda c: c.on_hours_today, UnitOfTime.HOURS),
 )
-BINARY_SENSORS: tuple[
-    tuple[str, Callable[[ThermostatController], bool], BinarySensorDeviceClass], ...
-] = (
-    ("thermostat_heating", lambda c: c.is_heating, BinarySensorDeviceClass.HEAT),
-    ("thermostat_blocked", lambda c: c.is_blocked, BinarySensorDeviceClass.PROBLEM),
+BINARY_SENSORS: tuple[tuple[str, Callable[[ThermostatController], bool]], ...] = (
+    ("thermostat_heating", lambda c: c.is_heating),
+    ("thermostat_blocked", lambda c: c.is_blocked),
 )
 
 
@@ -81,11 +79,9 @@ class ThermostatBinarySensor(_Follower, BinarySensorEntity):
         device: EnOceanDevice,
         key: str,
         value_fn: Callable[[ThermostatController], bool],
-        device_class: BinarySensorDeviceClass,
     ) -> None:
         super().__init__(device, key)
         self._value_fn = value_fn
-        self._attr_device_class = device_class
 
     @property
     def is_on(self) -> bool:
@@ -97,4 +93,4 @@ def thermostat_sensors(device: EnOceanDevice) -> list[ThermostatSensor]:
 
 
 def thermostat_binary_sensors(device: EnOceanDevice) -> list[ThermostatBinarySensor]:
-    return [ThermostatBinarySensor(device, key, fn, cls) for key, fn, cls in BINARY_SENSORS]
+    return [ThermostatBinarySensor(device, key, fn) for key, fn in BINARY_SENSORS]

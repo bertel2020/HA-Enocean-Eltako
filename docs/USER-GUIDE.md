@@ -191,7 +191,7 @@ Assistant switches the relay through the send queue, with the senders of the cha
 - **Humidity:** an optional humidity sensor is shown as the thermostat's humidity; it regulates
   nothing.
 - **Extra readings:** power, run time, pause remaining, hours on today and status as attributes of
-  the thermostat, and run time, pause, time on today, "Heating" and "Blocked" as entities of their
+  the thermostat, and run time, pause, time on today, "Heating" and "Heating blocked" as entities of their
   own (diagnostics). Both can be switched off. The time on today starts again at midnight and
   after a restart of Home Assistant.
 
