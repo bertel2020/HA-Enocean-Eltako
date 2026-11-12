@@ -577,8 +577,32 @@ Without the prefix Home Assistant builds entity IDs from device and entity name
 apart the entities of several gateways; every gateway with a prefix needs a number of its own.
 The gateway device shows its prefix in the diagnostic sensor **Entity ID prefix**.
 The setting applies to entities added from then on. **Rename existing entities now** renames
-the gateway's entities right away, in both directions; automations, scripts and dashboards are
-not adapted, so check them afterwards.
+the gateway's entities right away, in both directions.
+
+What the rename does and does not do:
+
+- It renames every entity of the gateway, the disabled diagnostic ones too. Helpers you built
+  on top of the devices (for example a threshold helper) are not renamed.
+- The new ID is built from the **current device and entity name**, not from the old ID. An entity
+  whose ID came from an older name, or got a `_2` after a clash, ends up with a different ID than
+  "prefix + old ID" (`light.bath_2` becomes `light.eno_gw1_bath`). Switching the prefix off again
+  therefore does not bring every old ID back.
+- It does **not** adapt anything that refers to the old IDs: automations, scripts, scenes, groups
+  (their member list can keep the old IDs, and the group goes `unavailable`), dashboards (also IDs
+  inside card templates and JavaScript), the Energy dashboard and YAML files. Helpers that read one
+  entity, such as a threshold helper, follow on their own.
+
+A safe order:
+
+1. Make a backup.
+2. Turn off the automations that use the gateway's entities, and the ones that run scenes with them.
+3. Tick **Rename existing entities now** and save.
+4. Replace the old IDs everywhere they are used; search each place for the old ID, for example
+   `light.kitchen`. Check groups, dashboards and the Energy dashboard too.
+5. Turn the automations back on, and check their traces after the next trigger.
+
+Entities that no longer exist under the old ID show as unavailable or "Entity not found" in the
+log; that is the quickest way to find a missed reference.
 
 Repairs point out what needs a hand:
 
