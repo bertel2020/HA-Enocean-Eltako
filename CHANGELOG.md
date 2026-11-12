@@ -10,6 +10,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
+- **Letzte Taste (Diagnose)** bei Wippentastern und Kontakten über Tastertelegramme (F6-02-01): Sensor mit der zuletzt gedrückten Taste (A0, A1, B0, B1, bei zwei gleichzeitig z. B. A1+B1). Loslassen ändert den Wert nicht. Standardmäßig deaktiviert.
+
 - **Taster sperren** (Schaltaktor, Dimmer, Rollladen mit Zentralbefehl- oder Steuerungs-Sender): Konfigurationsschalter je Gerät. Ist er an, tragen alle Befehle von Home Assistant das Sperr-Bit (DB0.2), der Aktor ignoriert eingelernte Taster, bis die Sperre aufgehoben wird. Beim Setzen wird der aktuelle Zustand einmal neu gesendet (Rollladen: Stopp). Der Aktor meldet die Sperre nicht, der Zustand ist angenommen und wird nach einem Neustart wiederhergestellt. Quelle: Eltako „Inhalte der Eltako-Funktelegramme“, noch nicht an Hardware getestet.
 
 - **Helligkeitssensoren FAH65S, FIH65S und FHD65SB**: Neue Gerätetypen „Helligkeitssensor“ (A5-06-01, Dämmerungsbereich 0…100 lx und 300…30000 lx) und „Helligkeitssensor mit Betriebsspannung“ (A5-06-02, 0…1020 lx, Spannung 0…5,1 V als Diagnose). Beide in Eltakos eigenem Telegrammformat aus „Inhalte der Eltako-Funktelegramme“; noch nicht an Hardware getestet. Außerdem stehen FSTAP und FSMTB (Taster), FLGTF65, FLGTF55 und FLGTF55E (TVOC) als Modelle in den Auswahllisten, FSM14 bei den Kontakten über Tastertelegramme.
@@ -31,6 +33,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 **English**
 
 #### Added
+
+- **Last button (diagnostic)** for rocker switches and contacts via rocker telegrams (F6-02-01): a sensor with the button pressed last (A0, A1, B0, B1, or e.g. A1+B1 for two at once). Releasing does not change the value. Disabled by default.
 
 - **Lock pushbuttons** (switching actuator, dimmer, shutter with a central command or controller sender): a configuration switch per device. While it is on, every command from Home Assistant carries the lock bit (DB0.2) and the actuator ignores taught-in pushbuttons until the lock is lifted. Setting it sends the current state once more (shutter: stop). The actuator does not report the lock, so the state is assumed and restored after a restart. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 

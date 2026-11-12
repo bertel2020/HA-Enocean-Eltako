@@ -1060,6 +1060,9 @@
       "dawn": {
         "name": "Dämmerung"
       },
+      "last_button": {
+        "name": "Letzte Taste"
+      },
       "sun_side": {
         "name": "Sonnigste Seite",
         "state": {

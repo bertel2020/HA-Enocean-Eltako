@@ -159,7 +159,31 @@ def _sun_side(values: dict[str, Any]) -> str | None:
     return side if klx * 1000 >= SUN_MIN_LX else "none"
 
 
+# F6-02-01 rocker action R1/R2: 0 = A1, 1 = A0, 2 = B1, 3 = B0 (as in event.py)
+ROCKER_BUTTONS = ("A1", "A0", "B1", "B0")
+
+
+def _last_button(values: dict[str, Any]) -> str | None:
+    """The button(s) pressed ("A1", or "A1+B1" for two at once); None on release."""
+    if values.get("EB") != 1 or values.get("R1") is None:
+        return None
+    button = ROCKER_BUTTONS[values["R1"]]
+    if values.get("SA") == 1 and values.get("R2") is not None:
+        button += "+" + ROCKER_BUTTONS[values["R2"]]
+    return button
+
+
+LAST_BUTTON = EnOceanSensorDescription(
+    key="last_button",
+    translation_key="last_button",
+    entity_category=EntityCategory.DIAGNOSTIC,
+    entity_registry_enabled_default=False,
+    value_fn=_last_button,
+)
+
 SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
+    "rocker": (LAST_BUTTON,),
+    "rocker_contact": (LAST_BUTTON,),
     "window_handle": (
         EnOceanSensorDescription(
             key="handle",

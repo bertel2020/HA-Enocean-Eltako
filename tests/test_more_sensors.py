@@ -47,6 +47,18 @@ def test_sunniest_side() -> None:
     assert _value("weather", "sun_side", {"DWS": 500.0}) is None  # the other telegram
 
 
+def test_last_button_of_rocker_telegrams() -> None:
+    """Pressed buttons only (A1, A0, B1, B0; two at once joined); a release keeps the last one."""
+    for kind in ("rocker", "rocker_contact"):
+        press = {"EB": 1, "R1": 2, "SA": 0}
+        assert _value(kind, "last_button", press) == "B1"
+        assert _value(kind, "last_button", {"EB": 1, "R1": 1, "SA": 1, "R2": 3}) == "A0+B0"
+        assert _value(kind, "last_button", {"EB": 0}) is None
+    description = SENSORS["rocker"][0]
+    assert description.entity_category == "diagnostic"
+    assert description.entity_registry_enabled_default is False
+
+
 def test_voc_scale_and_unit() -> None:
     assert _value("voc", "voc", {"Conc": 500.0, "SCM": 1}) == 50.0  # x0.1
     assert _value("voc", "voc", {"Conc": 500.0, "SCM": 3}) == 5000.0
