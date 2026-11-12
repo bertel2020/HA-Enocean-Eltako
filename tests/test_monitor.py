@@ -970,7 +970,7 @@ async def test_websocket_external_senders(hass: HomeAssistant, hass_ws_client) -
 
 
 async def test_hidden_store_version_1_becomes_ignored(hass: HomeAssistant) -> None:
-    """Senders hidden before the kinds existed are filed as "ignored", which is what hiding meant."""
+    """Senders hidden before the kinds existed are filed as "ignored"."""
     from custom_components.enocean_eltako.discovery import _HiddenStore
 
     store = _HiddenStore(hass, 2, "enocean_eltako.hidden.test")
