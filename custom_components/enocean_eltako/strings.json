@@ -426,12 +426,12 @@
       "init": {
         "menu_options": {
           "settings": "Settings",
-          "hidden": "Hidden senders"
+          "hidden": "Parked senders"
         }
       },
       "hidden": {
-        "title": "Hidden senders",
-        "description": "Senders you hid. Pick the ones to list again when the gateway hears them.",
+        "title": "Parked senders",
+        "description": "Senders you parked as button, unused or ignored. Pick the ones to list as new again when the gateway hears them.",
         "data": {
           "again": "Show again"
         }

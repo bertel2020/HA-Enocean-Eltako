@@ -21,6 +21,9 @@ RADIO_POOL_SIZE = 127  # base ID + 1 ... + 127
 BUS_POOL_START = 0x0000B000
 
 
+EXTERNAL = "external"  # owner of an ID that another system sends from: kept free of ours, no teach-out
+
+
 class SenderState(StrEnum):
     ASSIGNED = "assigned"
     BLOCKED = "blocked"  # released, teach-out not yet confirmed
@@ -103,6 +106,16 @@ class SenderPool:
         if current is not None and current.state is SenderState.ASSIGNED:
             self._allocations[sender] = Allocation(current.owner, SenderState.BLOCKED)
 
+    def reserve_external(self, sender: int) -> None:
+        """Keep an ID free of our own senders because another system (a legacy controller) uses it."""
+        self.assign(sender, EXTERNAL)
+
+    def release_external(self, sender: int) -> None:
+        """Hand an ID kept for another system back; no teach-out, we never taught it anywhere."""
+        current = self._allocations.get(sender)
+        if current is not None and current.owner == EXTERNAL:
+            del self._allocations[sender]
+
     def restore(self, sender: int, allocation: Allocation | None) -> None:
         """Put an ID back exactly as it was (a rolled-back change); None: it was not allocated."""
         if allocation is None:
@@ -163,6 +176,20 @@ class SenderRegistry:
             self._reserved.pop(sender, None)
 
         return release
+
+    def status(self, sender: int) -> str | None:
+        """What an ID in one of our pools is: "ours" (allocated or reserved here), "external"
+        (kept for another system) or "foreign" (in a pool, allocated to nobody: someone else
+        sends from it). None: not in any pool."""
+        pools = [p for p in self._pools.values() if sender in p]
+        if not pools:
+            return None
+        if sender in self._reserved:
+            return "ours"
+        for pool in pools:
+            if (allocation := pool.get(sender)) is not None:
+                return "external" if allocation.owner == EXTERNAL else "ours"
+        return "foreign"
 
     def in_pool(self, sender: int) -> bool:
         """The ID lies in one of our pools (our own sender, not a foreign device)."""

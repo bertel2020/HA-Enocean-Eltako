@@ -1000,3 +1000,37 @@ async def test_the_place_is_the_same_in_the_devices_tab_and_the_bus_tab(
     assert installation.sync_places(entry, notes) == 1
     assert notes.device(key)["location"] == "UV · R1 · 2" and notes.places_synced
     assert installation.sync_places(entry, notes) == 0
+
+
+def test_bus_ranges_need_a_master_a_base_id_and_a_radio_access() -> None:
+    """Only a bus with its master and base ID written down names a range; wired access has none."""
+    from custom_components.enocean_eltako.installation import Installation
+
+    def bus(**values):
+        return {
+            "id": "b",
+            "name": "FAM14",
+            "master": "m1",
+            "base_id": "FF-C2-4A-80",
+            "access": [{"entry_id": "e1", "via": "radio"}],
+            **values,
+        }
+
+    installation = object.__new__(Installation)
+    installation.data = {"buses": [bus()]}
+    (found,) = installation.bus_ranges("e1")
+    assert found == {
+        "bus": "b",
+        "name": "FAM14",
+        "base": "FF-C2-4A-80",
+        "first": "FF-C2-4A-81",
+        "last": "FF-C2-4A-FE",
+    }
+    for changed in (
+        {"master": None},
+        {"base_id": ""},
+        {"access": [{"entry_id": "e1", "via": "wired"}]},
+        {"access": [{"entry_id": "other", "via": "radio"}]},
+    ):
+        installation.data = {"buses": [bus(**changed)]}
+        assert installation.bus_ranges("e1") == [], changed

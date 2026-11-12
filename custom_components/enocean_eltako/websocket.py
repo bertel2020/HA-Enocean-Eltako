@@ -35,12 +35,19 @@ from .const import (
     DOMAIN,
 )
 from .device import UTE_WINDOW
-from .discovery import async_forget_unknown, async_set_hidden, stored_unknown
+from .discovery import (
+    PARK_KINDS,
+    async_forget_unknown,
+    async_park,
+    async_set_hidden,
+    parked_kinds,
+    stored_unknown,
+)
 from .documentation import IMPORTABLE_VERSIONS
 from .documentation import collect as collect_documentation
 from .heard import heard_by
 from .hub import async_get_hub
-from .installation import async_get_installation
+from .installation import async_get_installation, get_installation
 from .notes import (
     FIELDS,
     LINK_FIELDS,
@@ -61,7 +68,7 @@ from .protocol.ids import format_id, parse_id
 from .protocol.models import MODELS
 from .protocol.monitor import MonitorEntry
 from .protocol.send_queue import Priority
-from .protocol.sender_pool import SenderState
+from .protocol.sender_pool import EXTERNAL, SenderIdError, SenderState
 from .protocol.telegram import RadioTelegram, Rorg
 from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
@@ -101,6 +108,8 @@ def async_setup_websocket(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_set_model)
     websocket_api.async_register_command(hass, ws_remove_devices)
     websocket_api.async_register_command(hass, ws_hide_sender)
+    websocket_api.async_register_command(hass, ws_park_senders)
+    websocket_api.async_register_command(hass, ws_external_senders)
     websocket_api.async_register_command(hass, ws_forget_unknown)
     websocket_api.async_register_command(hass, ws_sender_pools)
     websocket_api.async_register_command(hass, ws_free_sender)
@@ -324,7 +333,13 @@ def ws_gateways(
 ) -> None:
     """The gateway entries with their state: the panel's overview and filter."""
     entries = hass.config_entries.async_entries(DOMAIN, include_ignore=False)
-    connection.send_result(msg["id"], [gateway_status(e) for e in entries])
+    installation = get_installation(hass)
+    statuses = [gateway_status(e) for e in entries]
+    for status in statuses:
+        # the radio ID ranges of the buses (master and base ID written down) this gateway reaches:
+        # the panel marks the unknown senders that lie in one and offers to park them together
+        status["bus_ranges"] = installation.bus_ranges(status["entry_id"]) if installation else []
+    connection.send_result(msg["id"], statuses)
 
 
 def own_senders(runtime: Any) -> list[dict[str, str]]:
@@ -395,6 +410,19 @@ def radio_devices(runtime: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def pool_overview(pool: Any) -> dict[str, Any]:
+    """The radio sender pool for the panel: its range and every ID that is not free for a
+    foreign sender to be using: "ours" (allocated, or a device ID) or "external" (kept for
+    another system). An ID in the range that is not listed and is heard, comes from someone else."""
+    taken = {}
+    for sender in range(pool.start, pool.start + pool.size):
+        if (allocation := pool.get(sender)) is not None:
+            taken[format_id(sender)] = "external" if allocation.owner == EXTERNAL else "ours"
+        elif not pool.is_free(sender):
+            taken[format_id(sender)] = "ours"
+    return {"first": pool.start, "last": pool.start + pool.size - 1, "taken": taken}
+
+
 def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
     model = MODELS.get(entry.data.get(CONF_MODEL, ""))
     status: dict[str, Any] = {
@@ -420,10 +448,13 @@ def gateway_status(entry: ConfigEntry) -> dict[str, Any]:
             "unconfirmed": runtime.queue.stats.unconfirmed + runtime.queue.stats.failed,
             "devices": len(runtime.devices),
             "free_senders": runtime.senders.pool.free_count(),
+            "pool": pool_overview(runtime.senders.pool),
             "senders": own_senders(runtime),
             "radio_devices": radio_devices(runtime),
             # senders hidden from discovery: the panel does not offer them as new devices
             "hidden": sorted(format_id(s) for s in runtime.hub.hidden.get(entry.entry_id, ())),
+            # the same senders by kind (button, unused, ignored): the panel files them in groups
+            "parked": {format_id(s): k for s, k in sorted(parked_kinds(entry).items())},
             # unknown senders heard before the last restart: the panel lists them as well
             "heard_unknown": stored_unknown(entry),
             "note": runtime.hub.notes[entry.entry_id].gateway,
@@ -1118,6 +1149,86 @@ async def ws_hide_sender(
 
 
 @websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/park_senders",
+        vol.Required("entry_id"): str,
+        vol.Required("senders"): vol.All([str], vol.Length(min=1, max=500)),
+        # a kind files the senders there; None takes them out of the parked ones again
+        vol.Required("kind"): vol.Any(None, vol.In(PARK_KINDS)),
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_park_senders(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Panel device list: file unknown senders as button, unused or ignored, or bring them back.
+
+    Nothing is parked on its own: this is always the user's decision. A sender of a set-up
+    device is refused, and so is the whole request (nothing is half done).
+    """
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    try:
+        senders = {parse_id(text) for text in msg["senders"]}
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    runtime = entry.runtime_data
+    if msg["kind"] is not None and any(
+        device.owns(sender) for device in runtime.devices.values() for sender in senders
+    ):
+        connection.send_error(msg["id"], "known_device", "a sender is a set-up device")
+        return
+    await async_park(hass, entry, senders, msg["kind"])
+    connection.send_result(msg["id"], {"count": len(senders)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "enocean_eltako/external_senders",
+        vol.Required("entry_id"): str,
+        vol.Required("senders"): vol.All([str], vol.Length(min=1, max=127)),
+        vol.Required("keep"): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def ws_external_senders(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Keep sender IDs of this gateway's pool for another system (a legacy controller) so Home
+    Assistant never hands them out, or give them back. All or nothing."""
+    entry = hass.config_entries.async_get_entry(msg["entry_id"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(msg["id"], "not_found", "gateway not loaded")
+        return
+    try:
+        senders = [parse_id(text) for text in msg["senders"]]
+    except ValueError:
+        connection.send_error(msg["id"], "invalid_id", "invalid sender ID")
+        return
+    store = entry.runtime_data.senders
+    pool = store.pool
+    before = {s: pool.get(s) for s in senders}
+    try:
+        for sender in senders:
+            if msg["keep"]:
+                pool.reserve_external(sender)
+            else:
+                pool.release_external(sender)
+    except SenderIdError as err:
+        for sender, allocation in before.items():  # nothing is half done
+            pool.restore(sender, allocation)
+        connection.send_error(msg["id"], err.reason, str(err))
+        return
+    await store.async_save()
+    connection.send_result(msg["id"], {"count": len(senders)})
+
+
+@websocket_api.websocket_command(
     {vol.Required("type"): "enocean_eltako/forget_unknown", vol.Required("entry_id"): str}
 )
 @websocket_api.require_admin
@@ -1164,6 +1275,7 @@ def _pool_rows(hass: HomeAssistant, store: Any) -> list[dict[str, Any]]:
                 "ref": device,
                 "profile": profile,
                 "state": allocation.state.value,
+                "external": allocation.owner == EXTERNAL,
             }
         )
     return rows

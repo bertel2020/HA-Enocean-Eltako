@@ -10,6 +10,7 @@ from custom_components.enocean_eltako.protocol.bus.observe import (
     answers,
     base_candidates,
     base_of,
+    bus_address,
     feedback_id,
     telegram_kind,
 )
@@ -70,3 +71,12 @@ def test_base_id_candidates_leave_out_the_gateways_own() -> None:
 def test_the_feedback_id_is_base_plus_address() -> None:
     assert feedback_id(FAM14, 1) == "FF-9A-1C-81"
     assert feedback_id(FAM14, 126) == "FF-9A-1C-FE"
+
+
+def test_the_bus_range_is_base_plus_1_to_126() -> None:
+    assert bus_address(FAM14 + 1, FAM14) == 1
+    assert bus_address(FAM14 + 126, FAM14) == 126
+    assert bus_address(FAM14, FAM14) is None  # the base ID itself
+    assert bus_address(FAM14 + 127, FAM14) is None  # the last ID of the block is no address
+    assert bus_address(FAM14 - 1, FAM14) is None  # the block below
+    assert bus_address(FAM14 + 128, FAM14) is None  # the block above
