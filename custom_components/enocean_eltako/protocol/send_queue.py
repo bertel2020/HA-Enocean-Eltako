@@ -21,6 +21,9 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DELAY = 0.01  # seconds between two telegrams
 DEFAULT_CONFIRM_TIMEOUT = 1.0
+# the FAM14 polls the series 14 actuators one by one: up to 10 s with many actuators on the bus
+# (Eltako, "Inhalte der Eltako-Funktelegramme"), so a bus actuator gets this long to answer
+BUS_CONFIRM_TIMEOUT = 12.0
 MAX_RETRIES = 2
 # a send that hangs fails instead of stalling the queue. The gateway bounds its own write; this
 # is the net below it and must outlast the command a send can wait behind (base ID, repeater)
@@ -75,6 +78,7 @@ class _Job:
     expect: Callable[[RadioTelegram], bool] | None
     timeout: float
     future: asyncio.Future[SendResult]
+    retries: int = MAX_RETRIES
     queued_at: float = field(default_factory=time.monotonic)
     attempts: int = 0
     done: bool = False
@@ -152,19 +156,20 @@ class SendQueue:
         key: Hashable | None = None,
         expect: Callable[[RadioTelegram], bool] | None = None,
         timeout: float = DEFAULT_CONFIRM_TIMEOUT,
+        retries: int = MAX_RETRIES,
     ) -> asyncio.Future[SendResult]:
         """Queue a telegram.
 
         key: commands with the same key (e.g. device + channel) replace a still waiting one.
         expect: predicate for the actuator's answer; without an answer within timeout the
-        telegram is sent again, up to MAX_RETRIES times.
+        telegram is sent again, up to retries times (0 for a command that must not be repeated).
         """
         future: asyncio.Future[SendResult] = asyncio.get_running_loop().create_future()
         if not self._is_connected():
             self.stats.failed += 1
             future.set_result(SendResult.FAILED)
             return future
-        job = _Job(telegram, priority, key, expect, timeout, future)
+        job = _Job(telegram, priority, key, expect, timeout, future, retries)
         if key is not None:
             if (old := self._by_key.get(key)) is not None and not old.done:
                 old.finish(SendResult.REPLACED)
@@ -248,7 +253,7 @@ class SendQueue:
         self._waiting = [(j, h) for j, h in self._waiting if j is not job]
         if job.done:
             return
-        if job.attempts <= MAX_RETRIES:
+        if job.attempts <= job.retries:
             self.stats.retries += 1
             self._push(job)
             return

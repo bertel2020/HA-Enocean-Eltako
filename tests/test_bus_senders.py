@@ -10,12 +10,22 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.protocol import esp2
 from custom_components.enocean_eltako.protocol.models import Protocol
+from custom_components.enocean_eltako.protocol.send_queue import SendResult
 from custom_components.enocean_eltako.protocol.telegram import RadioTelegram, Rorg
 
 from .fake_gateway import FakeGateway
 from .test_devices import _choose_model, _entity, _settle, _subentry
 
 pytestmark = pytest.mark.usefixtures("socket_enabled")
+
+
+@pytest.fixture(autouse=True)
+def _short_bus_confirmation(monkeypatch) -> None:
+    """The fake gateway never confirms: do not wait the 12 s of a real FAM14 per attempt."""
+    from custom_components.enocean_eltako import device
+
+    monkeypatch.setattr(device, "BUS_CONFIRM_TIMEOUT", 0.05)
+
 
 B0 = 0x0000B000
 
@@ -177,6 +187,58 @@ async def test_command_from_a_bus_id_goes_over_the_bus_group(
     await _settle(hass)
     sent = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("01000009"), 0x0000B003, 0))
     assert sent in bytes(server.received)
+
+
+@pytest.mark.parametrize(
+    "bus",
+    [
+        (
+            (
+                _subentry(
+                    "switch",
+                    "05-10-A2-B5",
+                    "Bus light",
+                    senders=[{"profile": "central", "sender_id": "00-00-B0-03"}],
+                    platform="light",
+                ),
+                _subentry(
+                    "cover",
+                    "05-10-A2-B6",
+                    "Bus cover",
+                    senders=[{"profile": "controller", "sender_id": "00-00-B0-04"}],
+                ),
+            ),
+            (),
+        )
+    ],
+    indirect=True,
+)
+async def test_bus_commands_wait_for_the_slow_fam14_confirmation(
+    hass: HomeAssistant, bus, request
+) -> None:
+    """The FAM14 polls the actuators: up to 10 s, so a bus command waits longer and a run
+    command of a cover is never repeated."""
+    from custom_components.enocean_eltako.device import BUS_CONFIRM_TIMEOUT
+    from custom_components.enocean_eltako.protocol.send_queue import MAX_RETRIES
+
+    e_fgw, _ = bus
+    await request.node.fgw_server.connected.wait()
+    group = e_fgw.runtime_data.bus.group
+    calls = []
+
+    async def submit(telegram, priority, **kwargs):
+        calls.append(kwargs)
+        return SendResult.SENT
+
+    group.submit = submit
+    devices = {d.model.kind: d for d in e_fgw.runtime_data.devices.values()}
+    devices["switch"].send(b"\x01\x00\x00\x09", profile="central")
+    devices["cover"].send(b"\x00\x0a\x01\x09", profile="controller")
+    await _settle(hass)
+    assert [(c["timeout"], c["retries"]) for c in calls] == [
+        (BUS_CONFIRM_TIMEOUT, MAX_RETRIES),
+        (BUS_CONFIRM_TIMEOUT, 0),
+    ]
 
 
 @pytest.mark.parametrize(
