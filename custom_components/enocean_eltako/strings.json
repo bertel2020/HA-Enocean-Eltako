@@ -1211,13 +1211,13 @@
         "name": "Driven time"
       },
       "thermostat_run": {
-        "name": "Run time"
+        "name": "Run time (continuous)"
       },
       "thermostat_cooldown": {
-        "name": "Pause remaining"
+        "name": "Cooldown remaining"
       },
       "thermostat_on_today": {
-        "name": "On today"
+        "name": "Run time today"
       }
     },
     "binary_sensor": {

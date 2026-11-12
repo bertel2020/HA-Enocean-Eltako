@@ -1211,13 +1211,13 @@
         "name": "Fahrzeit"
       },
       "thermostat_run": {
-        "name": "Laufzeit"
+        "name": "Laufzeit am Stück"
       },
       "thermostat_cooldown": {
-        "name": "Pause noch"
+        "name": "Abkühlpause verbleibend"
       },
       "thermostat_on_today": {
-        "name": "An heute"
+        "name": "Laufzeit heute"
       }
     },
     "binary_sensor": {
