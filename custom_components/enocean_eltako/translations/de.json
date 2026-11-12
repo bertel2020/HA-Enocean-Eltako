@@ -413,23 +413,9 @@
           "gateway_number": "Die Nummer im Präfix (eno_gw1, eno_gw2 ...). Jedes Gateway mit Präfix braucht eine eigene.",
           "rename_entities": "Gibt den Entitäten, die dieses Gateway schon hat, Entitäts-IDs nach der Einstellung oben (aus Geräte- und Entitätsname, nicht aus der alten ID). Automationen, Skripte, Szenen, Gruppen, Dashboards und das Energie-Dashboard werden nicht angepasst: vorher ein Backup machen, danach prüfen."
         }
-      },
-      "init": {
-        "menu_options": {
-          "settings": "Einstellungen",
-          "hidden": "Geparkte Sender"
-        }
-      },
-      "hidden": {
-        "title": "Geparkte Sender",
-        "description": "Sender, die du als Taster, ungenutzt oder ignoriert geparkt hast. Wähle die, die wieder als neu aufgelistet werden sollen, sobald das Gateway sie hört.",
-        "data": {
-          "again": "Wieder anzeigen"
-        }
       }
     },
     "abort": {
-      "senders_shown": "Die gewählten Sender werden wieder aufgelistet, sobald sie gehört werden.",
       "gateway_not_loaded": "Das Gateway ist nicht geladen. Geräte lassen sich hinzufügen, sobald es verbunden ist."
     },
     "error": {

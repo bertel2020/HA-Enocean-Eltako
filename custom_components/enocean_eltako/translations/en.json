@@ -413,23 +413,9 @@
           "gateway_number": "The number in the prefix (eno_gw1, eno_gw2 ...). Each gateway with a prefix needs its own.",
           "rename_entities": "Gives the entities this gateway already has entity IDs following the setting above (built from device and entity name, not from the old ID). Automations, scripts, scenes, groups, dashboards and the Energy dashboard are not adapted: make a backup first, check them afterwards."
         }
-      },
-      "init": {
-        "menu_options": {
-          "settings": "Settings",
-          "hidden": "Parked senders"
-        }
-      },
-      "hidden": {
-        "title": "Parked senders",
-        "description": "Senders you parked as button, unused or ignored. Pick the ones to list as new again when the gateway hears them.",
-        "data": {
-          "again": "Show again"
-        }
       }
     },
     "abort": {
-      "senders_shown": "The selected senders are listed again when heard.",
       "gateway_not_loaded": "The gateway is not loaded. Devices can be added once it is connected."
     },
     "error": {
