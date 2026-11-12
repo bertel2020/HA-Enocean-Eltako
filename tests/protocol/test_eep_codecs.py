@@ -120,3 +120,16 @@ def test_std_skips_teach_in_and_contact() -> None:
     assert decode_telegram(contact, tg(Rorg.BS1, "09"))["CO"] == 1
     assert decode_telegram(contact, tg(Rorg.BS1, "08"))["CO"] == 0
     assert decode_telegram(contact, tg(Rorg.BS4, "00000009")) is None  # wrong RORG
+
+
+def test_eltako_brightness_layouts() -> None:
+    """FAH65S/FIH65S (A5-06-01) and FHD65SB (A5-06-02), per Eltako's radio telegram list."""
+    fah = EEPRef("A5-06-01", "eltako")
+    assert decode_telegram(fah, tg(Rorg.BS4, "3C00000F")) == {"illuminance": 60.0}
+    assert decode_telegram(fah, tg(Rorg.BS4, "64FF000F")) == {"illuminance": 30000}
+    assert decode_telegram(fah, tg(Rorg.BS4, "64FF0007")) is None  # teach-in telegram
+    fhd = EEPRef("A5-06-02", "eltako")
+    assert decode_telegram(fhd, tg(Rorg.BS4, "FFFF000F")) == {
+        "supply_voltage": 5.1,
+        "illuminance": 1020.0,
+    }

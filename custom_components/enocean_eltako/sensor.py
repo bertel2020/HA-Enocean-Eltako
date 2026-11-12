@@ -230,6 +230,24 @@ SENSORS: dict[str, tuple[EnOceanSensorDescription, ...]] = {
             value_fn=_field("SVC", 2),
         ),
     ),
+    "brightness": (
+        EnOceanSensorDescription(
+            key="illuminance", **ILLUMINANCE, value_fn=_field("illuminance", 0)
+        ),
+    ),
+    "brightness_voltage": (
+        EnOceanSensorDescription(
+            key="illuminance", **ILLUMINANCE, value_fn=_field("illuminance", 0)
+        ),
+        EnOceanSensorDescription(
+            key="voltage",
+            device_class=SensorDeviceClass.VOLTAGE,
+            native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            suggested_display_precision=1,
+            value_fn=_field("supply_voltage", 2),
+        ),
+    ),
     "co2": (
         EnOceanSensorDescription(
             key="co2",

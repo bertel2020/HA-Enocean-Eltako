@@ -645,6 +645,37 @@ async def test_series_62_learn_mode_and_teach_out(hass: HomeAssistant, gateway) 
     assert bytes(server.received).count(unlock) == 4  # three more within the 2 s window
 
 
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry("brightness", "05-00-00-61", "Helligkeit Aussen"),
+            _subentry("brightness_voltage", "05-00-00-62", "Helligkeit FHD"),
+        ]
+    ],
+    indirect=True,
+)
+async def test_eltako_brightness_sensors(hass: HomeAssistant, gateway) -> None:
+    """FAH65S/FIH65S (A5-06-01) and FHD65SB (A5-06-02) in Eltako's layouts."""
+    _entry, server = gateway
+    _push(server, 0x07, bytes.fromhex("3C00000F"), 0x05000061)  # twilight: 60 lx
+    _push(
+        server, 0x07, bytes.fromhex("64FF000F"), 0x05000062
+    )  # FHD65SB: DB3 = 100 -> 2.0 V, DB2 = 0xFF -> 1020 lx
+    await _settle(hass)
+
+    def state(device: str, key: str) -> float:
+        return float(hass.states.get(_entity(hass, "sensor", f"{BASE}_{device}_1_{key}")).state)
+
+    assert state("05-00-00-61", "illuminance") == 60
+    _push(server, 0x07, bytes.fromhex("64FF000F"), 0x05000061)  # DB2 = 255: 30000 lx
+    _push(server, 0x07, bytes.fromhex("640D000F"), 0x05000061)  # DB2 = 13: 300 + 13/255 * 29700
+    await _settle(hass)
+    assert state("05-00-00-61", "illuminance") == 1814
+    assert state("05-00-00-62", "voltage") == pytest.approx(2.0)
+    assert state("05-00-00-62", "illuminance") == 1020
+
+
 async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     result = await hass.config_entries.subentries.async_init(

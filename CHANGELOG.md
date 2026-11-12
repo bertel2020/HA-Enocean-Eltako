@@ -10,6 +10,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
+- **Helligkeitssensoren FAH65S, FIH65S und FHD65SB**: Neue Gerätetypen „Helligkeitssensor“ (A5-06-01, Dämmerungsbereich 0…100 lx und 300…30000 lx) und „Helligkeitssensor mit Betriebsspannung“ (A5-06-02, 0…1020 lx, Spannung 0…5,1 V als Diagnose). Beide in Eltakos eigenem Telegrammformat aus „Inhalte der Eltako-Funktelegramme“; noch nicht an Hardware getestet. Außerdem stehen FSTAP und FSMTB (Taster), FLGTF65, FLGTF55 und FLGTF55E (TVOC) als Modelle in den Auswahllisten.
+
 - **Baureihe 62: Lernmodus entsperren und ausmelden** (FL62, FR62, FD62, FJ62): Je Zentralbefehl- bzw. Steuerungs-Sender zwei Buttons (Diagnose, standardmäßig aus): „Lernmodus entsperren“ sendet `00 00 00 28`, „Ausmelden“ dasselbe dreimal innerhalb von 2 s, wodurch der Aktor die Sender-ID vergisst. Quelle: Eltako „Inhalte der Eltako-Funktelegramme“, noch nicht an Hardware getestet.
 
 - **Thermostat am Schaltaktor-Kanal** (z. B. Konvektor an einem FSR14): Optional unter „Thermostat“ in den Geräteeinstellungen. Home Assistant regelt einen frei wählbaren Raumtemperatursensor um die Solltemperatur und schaltet das Relais über die Sendewarteschlange, mit den Sendern des Kanals; keine eigene Sender-ID. Einstellbar: Hysterese, niedrigste und höchste Solltemperatur, Temperaturschritt, Genauigkeit der Raumtemperatur, kürzeste Zeit an/aus, Höchstlaufzeit mit Abkühlzeit, „Heizt ab Leistung“, Blockade- und Sensor-Zeiten. Ohne Raumtemperatur (oder zu lange stumm) geht das Relais zur Sicherheit aus. Mit einem Zähler, der auf „Gehört zu Gerät“ diesen Aktor steht, zeigt „Heizt“ die echte Leistung der Last und meldet eine Blockade (Relais an, keine Leistung) als Reparaturhinweis. Optionaler Feuchtesensor als Anzeige. Zusatzwerte als Attribute und/oder als eigene Entitäten (Laufzeit am Stück, Abkühlpause verbleibend, Laufzeit heute, „Heizt“, „Heizung blockiert“). Subentry-Schema 7 mit Migration (nichts umzurechnen).
@@ -27,6 +29,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 **English**
 
 #### Added
+
+- **Brightness sensors FAH65S, FIH65S and FHD65SB**: new device types "Brightness sensor" (A5-06-01, twilight range 0...100 lx and 300...30000 lx) and "Brightness sensor with supply voltage" (A5-06-02, 0...1020 lx, voltage 0...5.1 V as a diagnostic). Both in Eltako's own telegram layout from "Inhalte der Eltako-Funktelegramme"; not yet tested on hardware. FSTAP and FSMTB (pushbuttons), FLGTF65, FLGTF55 and FLGTF55E (TVOC) are also listed as models.
 
 - **Series 62: unlock learn mode and teach out** (FL62, FR62, FD62, FJ62): two buttons per central command or controller sender (diagnostic, off by default): "Unlock learn mode" sends `00 00 00 28`, "Teach out" the same three times within 2 s, which makes the actuator forget the sender ID. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 

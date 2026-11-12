@@ -39,15 +39,17 @@ siehe [CONTRIBUTING](../CONTRIBUTING.md).
 | Heizung und Klima | Raumregler mit mehreren IDs (FUTH55ED, FUTH65D) | Eltako | `A5-10-06:eltako` | - | climate, sensor, binary_sensor | - |
 | Taster und Kontakte | Fenstergriff (FTKE, FFG7B …) | Eltako | `F6-10-00:std` | - | sensor, binary_sensor | - |
 | Taster und Kontakte | Tür-/Fensterkontakt (FTK, FTKB …) | Eltako | `D5-00-01:std` | - | binary_sensor | - |
-| Taster und Kontakte | Wippentaster (F4T55E, FT55, FT4F …) | Eltako | `F6-02-01:std` | - | event | - |
+| Taster und Kontakte | Wippentaster (F4T55E, FT55, FT4F, FSTAP …) | Eltako | `F6-02-01:std` | - | event | - |
 | Taster und Kontakte | Kontakt über Tastertelegramme (FTS14EM, Garagentor …) | Eltako | `F6-02-01:std` | - | binary_sensor | - |
 | Taster und Kontakte | Digitaleingang (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor | - |
 | Taster und Kontakte | Vier Digitaleingänge und Temperatur (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor | - |
 | Sensoren | Temperatur und Feuchte (FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
 | Sensoren | Temperatur, Feuchte und Versorgungsspannung (FAFT60 Solarsensor) | Eltako | `A5-04-02:eltako` | - | sensor | - |
 | Sensoren | Bewegungs- und Helligkeitssensor (FBH65 …) | Eltako | `A5-08-01:eltako` | - | sensor, binary_sensor | - |
+| Sensoren | Helligkeitssensor (FAH65S, FIH65S) | Eltako | `A5-06-01:eltako` | - | sensor | - |
+| Sensoren | Helligkeitssensor mit Betriebsspannung (FHD65SB) | Eltako | `A5-06-02:eltako` | - | sensor | - |
 | Sensoren | VOC-Sensor (FLT58) | Eltako | `A5-09-05:std` | - | sensor | - |
-| Sensoren | TVOC-Sensor (FLGTF) | Eltako | `A5-09-0C:std` | - | sensor | - |
+| Sensoren | TVOC-Sensor (FLGTF65 …) | Eltako | `A5-09-0C:std` | - | sensor | - |
 | Sensoren | Multisensor (VLD D2-14-40) (FMS55SB) | Eltako | `D2-14-40:std` | - | sensor | - |
 | Sensoren | Multisensor mit Kontakt (VLD D2-14-41) (FMMS44SB) | Eltako | `D2-14-41:std` | - | sensor, binary_sensor | - |
 | Sensoren | CO2-Sensor (FCO2TF65) | Eltako | `A5-09-04:std` | - | sensor | - |
