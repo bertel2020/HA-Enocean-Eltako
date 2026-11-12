@@ -215,6 +215,15 @@
     },
     "rocker_button": {
       "options": {
+        "b0": "B0 · rechts oben (0x70)",
+        "b1": "B1 · rechts unten (0x50)",
+        "a0": "A0 · links oben (0x30)",
+        "a1": "A1 · links unten (0x10)",
+        "released": "Loslassen"
+      }
+    },
+    "contact_input": {
+      "options": {
         "b0": "B0 (0x70)",
         "b1": "B1 (0x50)",
         "a0": "A0 (0x30)",
@@ -1061,7 +1070,17 @@
         "name": "Dämmerung"
       },
       "last_button": {
-        "name": "Letzte Taste"
+        "name": "Letzte Taste",
+        "state": {
+          "b0": "B0 · rechts oben",
+          "b1": "B1 · rechts unten",
+          "a0": "A0 · links oben",
+          "a1": "A1 · links unten",
+          "a0_b0": "A0 + B0 (beide oben)",
+          "a0_b1": "A0 + B1",
+          "a1_b0": "A1 + B0",
+          "a1_b1": "A1 + B1 (beide unten)"
+        }
       },
       "sun_side": {
         "name": "Sonnigste Seite",

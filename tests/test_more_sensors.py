@@ -48,11 +48,12 @@ def test_sunniest_side() -> None:
 
 
 def test_last_button_of_rocker_telegrams() -> None:
-    """Pressed buttons only (A1, A0, B1, B0; two at once joined); a release keeps the last one."""
+    """Pressed buttons only (a0, a1, b0, b1; two at once joined, sorted); a release keeps the last."""
     for kind in ("rocker", "rocker_contact"):
         press = {"EB": 1, "R1": 2, "SA": 0}
-        assert _value(kind, "last_button", press) == "B1"
-        assert _value(kind, "last_button", {"EB": 1, "R1": 1, "SA": 1, "R2": 3}) == "A0+B0"
+        assert _value(kind, "last_button", press) == "b1"
+        assert _value(kind, "last_button", {"EB": 1, "R1": 1, "SA": 1, "R2": 3}) == "a0_b0"
+        assert _value(kind, "last_button", {"EB": 1, "R1": 3, "SA": 1, "R2": 1}) == "a0_b0"
         assert _value(kind, "last_button", {"EB": 0}) is None
     description = SENSORS["rocker"][0]
     assert description.entity_category == "diagnostic"

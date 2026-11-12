@@ -160,22 +160,27 @@ def _sun_side(values: dict[str, Any]) -> str | None:
 
 
 # F6-02-01 rocker action R1/R2: 0 = A1, 1 = A0, 2 = B1, 3 = B0 (as in event.py)
-ROCKER_BUTTONS = ("A1", "A0", "B1", "B0")
+ROCKER_BUTTONS = ("a1", "a0", "b1", "b0")
+# two rockers pressed at once (the two halves of one rocker cannot be): in this order
+LAST_BUTTON_OPTIONS = ["a0", "a1", "b0", "b1", "a0_b0", "a0_b1", "a1_b0", "a1_b1"]
 
 
 def _last_button(values: dict[str, Any]) -> str | None:
-    """The button(s) pressed ("A1", or "A1+B1" for two at once); None on release."""
+    """The button(s) pressed ("a1", or "a1_b1" for two at once); None on release."""
     if values.get("EB") != 1 or values.get("R1") is None:
         return None
-    button = ROCKER_BUTTONS[values["R1"]]
+    buttons = [ROCKER_BUTTONS[values["R1"]]]
     if values.get("SA") == 1 and values.get("R2") is not None:
-        button += "+" + ROCKER_BUTTONS[values["R2"]]
-    return button
+        buttons.append(ROCKER_BUTTONS[values["R2"]])
+    value = "_".join(sorted(buttons))
+    return value if value in LAST_BUTTON_OPTIONS else None
 
 
 LAST_BUTTON = EnOceanSensorDescription(
     key="last_button",
     translation_key="last_button",
+    device_class=SensorDeviceClass.ENUM,
+    options=LAST_BUTTON_OPTIONS,
     entity_category=EntityCategory.DIAGNOSTIC,
     entity_registry_enabled_default=False,
     value_fn=_last_button,
