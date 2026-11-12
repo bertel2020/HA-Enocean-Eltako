@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.const import Platform
+from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
@@ -26,6 +27,8 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     for subentry_id, device in entry.runtime_data.devices.items():
+        if device.lockable:
+            async_add_entities([LockButtonsSwitch(device)], config_subentry_id=subentry_id)
         platform = device.options.get(OPT_PLATFORM)
         if (device.model.kind == "switch" and platform == Platform.SWITCH) or (
             device.model.kind == "psc" and platform in (None, Platform.SWITCH)
@@ -61,6 +64,48 @@ class EnOceanSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
             return False
         self._attr_is_on = on
         return True
+
+
+class LockButtonsSwitch(EnOceanEntity, SwitchEntity, RestoreEntity):
+    """Lock the pushbuttons of an actuator: every command carries the lock bit (DB0.2), so the
+    taught-in pushbuttons cannot change the state until the lock is lifted. The actuator does
+    not report the lock (a shutter only in a run), so the state is the last one set."""
+
+    _attr_translation_key = "lock_buttons"
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_is_on = False
+
+    def __init__(self, device: EnOceanDevice) -> None:
+        super().__init__(device, "lock_buttons")
+
+    @property
+    def assumed_state(self) -> bool:
+        return True
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_state()) is not None and last.state == "on":
+            self._attr_is_on = True
+            self._device.locked = True
+
+    async def _set(self, locked: bool) -> None:
+        self._device.locked = locked
+        try:
+            self._device.apply_lock()
+        except HomeAssistantError:
+            self._device.locked = not locked
+            raise
+        self._attr_is_on = locked
+        self.async_write_ha_state()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._set(False)
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
 
 
 class VldSwitch(EnOceanSwitch):

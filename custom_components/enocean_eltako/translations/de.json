@@ -321,6 +321,9 @@
     },
     "energy_not_loaded": {
       "message": "Das Energie-Dashboard ist in Home Assistant nicht eingerichtet. Öffne einmal Einstellungen → Dashboards → Energie und versuche es dann erneut."
+    },
+    "lock_state_unknown": {
+      "message": "{device}: Der Zustand ist noch nicht bekannt, die Sperre kann nicht gesetzt werden. Auf die erste Statusmeldung warten oder einmal schalten."
     }
   },
   "services": {
@@ -1402,6 +1405,11 @@
     "climate": {
       "thermostat": {
         "name": "Thermostat"
+      }
+    },
+    "switch": {
+      "lock_buttons": {
+        "name": "Taster sperren"
       }
     }
   },

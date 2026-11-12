@@ -676,6 +676,88 @@ async def test_eltako_brightness_sensors(hass: HomeAssistant, gateway) -> None:
     assert state("05-00-00-62", "illuminance") == 1020
 
 
+def _sent(server, data: str, sender: int) -> bool:
+    telegram = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex(data), sender))
+    return telegram in bytes(server.received)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "dimmer",
+                "05-00-00-31",
+                "Licht Wohnzimmer",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-82"}],
+            ),
+            _subentry(
+                "cover",
+                "05-00-00-32",
+                "Rolladen Bad",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-83"}],
+            ),
+        ]
+    ],
+    indirect=True,
+)
+async def test_lock_pushbuttons(hass: HomeAssistant, gateway) -> None:
+    """DB0.2 on every command of a locked actuator; lifting the lock sends the state without it."""
+    _entry, server = gateway
+    dimmer, cover = 0xFFB74482, 0xFFB74483
+    _push(server, 0x07, bytes.fromhex("02320009"), 0x05000031)  # 50 %, on
+    await _settle(hass)
+    lock = _entity(hass, "switch", f"{BASE}_05-00-00-31_1_lock_buttons")
+    light = _entity(hass, "light", f"{BASE}_05-00-00-31_1_light")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": lock}, blocking=True)
+    await _settle(hass)
+    assert _sent(server, "0232000D", dimmer)  # its state again, locked
+    assert hass.states.get(lock).state == "on"
+    await hass.services.async_call("light", "turn_on", {"entity_id": light, "brightness": 255})
+    await _settle(hass)
+    assert _sent(server, "0264000D", dimmer)
+    await hass.services.async_call("switch", "turn_off", {"entity_id": lock}, blocking=True)
+    await _settle(hass)  # the next command for the same channel would replace a waiting one
+    await hass.services.async_call("light", "turn_on", {"entity_id": light, "brightness": 255})
+    await _settle(hass)
+    assert _sent(server, "02320009", dimmer)  # the state without the lock bit
+    assert _sent(server, "02640009", dimmer)
+    assert hass.states.get(lock).state == "off"
+    # a shutter: the stop that carries the lock bit, run commands follow it
+    cover_lock = _entity(hass, "switch", f"{BASE}_05-00-00-32_1_lock_buttons")
+    await hass.services.async_call("switch", "turn_on", {"entity_id": cover_lock}, blocking=True)
+    await _settle(hass)
+    assert _sent(server, "0000000C", cover)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "switch",
+                "05-00-00-33",
+                "Konvektor",
+                senders=[{"profile": "central", "sender_id": "FF-B7-44-84"}],
+                platform="switch",
+            )
+        ]
+    ],
+    indirect=True,
+)
+async def test_lock_needs_the_known_state(hass: HomeAssistant, gateway) -> None:
+    _entry, server = gateway
+    lock = _entity(hass, "switch", f"{BASE}_05-00-00-33_1_lock_buttons")
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call("switch", "turn_on", {"entity_id": lock}, blocking=True)
+    assert hass.states.get(lock).state == "off"
+    _push(server, 0x05, b"\x70", 0x05000033, 0x30)  # relay on
+    await _settle(hass)
+    await hass.services.async_call("switch", "turn_on", {"entity_id": lock}, blocking=True)
+    await _settle(hass)
+    assert _sent(server, "0100000D", 0xFFB74484)  # on, locked
+
+
 async def test_removed_device_blocks_its_sender(hass: HomeAssistant, gateway) -> None:
     entry, server = gateway
     result = await hass.config_entries.subentries.async_init(
