@@ -3284,11 +3284,11 @@ class EnOceanEltakoPanel extends HTMLElement {
       if (f.gateway && g.entry_id !== f.gateway) continue;
       for (const u of g.heard_unknown || []) {
         const key = `${g.entry_id}|${u.id}`;
-        if (heardKeys.has(key) || setup.has(key) || this._isHidden(g.entry_id, u.id)) continue;
+        if (heardKeys.has(key) || setup.has(key)) continue;
         items.push({
-          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: false, parked: "", bus: this._busOf(g.entry_id, u.id), pool: this._poolOf(g.entry_id, u.id), page: null, devKey: null, senders: [],
+          key: `stored|${key}`, id: u.id, name: null, unknown: true, silent: false, quiet: false, hidden: this._isHidden(g.entry_id, u.id), parked: this._parkedKind(g.entry_id, u.id), bus: this._busOf(g.entry_id, u.id), pool: this._poolOf(g.entry_id, u.id), page: null, devKey: null, senders: [],
           category: "", models: [], entityIds: [], eepFull: "", eep: this._eepLabel(RORG[u.rorg] || u.rorg), model: "", area: null, entities: null, labels: [], disabled: false,
-          gateway: g.entry_id, gateway_name: g.title, time: u.last * 1000, count: 0, perMinute: 0,
+          gateway: g.entry_id, gateway_name: g.title, time: u.last ? u.last * 1000 : null, count: 0, perMinute: 0,
           dbm: u.dbm, trend: [], fields: null, data: u.data || "", teach: null, candidates: null, rorg: u.rorg,
         });
       }
@@ -3786,7 +3786,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       (d.unknown
         ? (d.parked ? `<span class="tag" title="${esc(t.parkMenuHint[d.parked])}">${esc(t.parkKinds[d.parked])}</span>` : "") +
           (d.bus ? `<span class="tag" title="${esc(t.busTagHint)}">${esc(t.busTag(d.bus.address))}</span>` : "") +
-          (d.pool === "foreign" ? `<span class="tag warn" title="${esc(t.poolForeignHint)}">${esc(t.poolForeign)}</span>` : "") +
+          (d.pool ? `<span class="tag warn" title="${esc(t.poolForeignHint)}">${esc(t.poolForeign)}</span>` : "") +
           (d.pool === "external" ? `<span class="tag" title="${esc(t.poolExternalHint)}">${esc(t.poolExternal)}</span>` : "") +
           (d.teach ? `<span class="tag teach">${esc(t.teachIn)} ${esc(d.teach)}</span>` : "")
         : "");

@@ -267,7 +267,7 @@ def stored_unknown(entry: EnOceanEltakoConfigEntry) -> list[dict[str, Any]]:
     hidden = {format_id(s) for s in hub.hidden.get(entry.entry_id, ())}
     rows = []
     for sender, values in notes.heard.items():
-        if sender in configured or sender in hidden or hub.senders.status(parse_id(sender)) == "ours":
+        if sender in configured or hub.senders.status(parse_id(sender)) == "ours":
             continue
         last = notes.last.get(sender, {})
         rows.append(
@@ -279,6 +279,11 @@ def stored_unknown(entry: EnOceanEltakoConfigEntry) -> list[dict[str, Any]]:
                 "data": last.get("data", ""),
             }
         )
+    # parked senders stay listed (the panel files them under their chip) even when they were
+    # never heard since the notes were last pruned
+    listed = {r["id"] for r in rows}
+    for sender in sorted(hidden - listed - configured):
+        rows.append({"id": sender, "rorg": "", "dbm": None, "last": 0, "data": ""})
     return sorted(rows, key=lambda r: r["last"], reverse=True)
 
 
