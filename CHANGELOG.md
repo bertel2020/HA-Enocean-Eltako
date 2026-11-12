@@ -6,6 +6,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 ### [Unreleased]
 
+### [1.11.0] - 2026-11-12
+
 **Deutsch**
 
 #### Hinzugefügt
