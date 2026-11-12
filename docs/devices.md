@@ -39,8 +39,8 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 | Heating and climate | Room controller with several IDs (FUTH55ED, FUTH65D) | Eltako | `A5-10-06:eltako` | - | climate, sensor, binary_sensor | - |
 | Buttons and contacts | Window handle (FTKE, FFG7B …) | Eltako | `F6-10-00:std` | - | sensor, binary_sensor | - |
 | Buttons and contacts | Door / window contact (FTK, FTKB …) | Eltako | `D5-00-01:std` | - | binary_sensor | - |
-| Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F, FSTAP …) | Eltako | `F6-02-01:std` | - | event | - |
-| Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor | - |
+| Buttons and contacts | Rocker switch (F4T55E, FT55, FT4F, FSTAP …) | Eltako | `F6-02-01:std` | - | event, sensor | - |
+| Buttons and contacts | Contact via rocker telegrams (FTS14EM, garage door …) | Eltako | `F6-02-01:std` | - | binary_sensor, sensor | - |
 | Buttons and contacts | Digital input (FSM60B) | Eltako | `A5-30-01:std` | - | binary_sensor | - |
 | Buttons and contacts | Four digital inputs and temperature (FHMB) | Eltako | `A5-30-03:std` | - | binary_sensor, sensor | - |
 | Sensors | Temperature and humidity (FFT65B …) | Eltako | `A5-04-02:std` | - | sensor | - |
@@ -60,7 +60,7 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 | Lighting and switching | Permundo PSC132 / PSC234 plug | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std`<br>`rocker: F6-02-01:std` | switch, light, sensor | - |
 | Lighting and switching | Switch or dimmer actuator (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch | - |
 | Shutters and blinds | Shutter actuator (VLD D2-05) | EnOcean | `D2-05-00:std` | `vld: D2-05-00:std` | cover | - |
-| Buttons and contacts | Rocker switch (PTM 210/215, NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event | - |
+| Buttons and contacts | Rocker switch (PTM 210/215, NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event, sensor | - |
 | Buttons and contacts | Window handle (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor | - |
 | Buttons and contacts | Door / window contact (NodOn …) | EnOcean | `D5-00-01:std` | - | binary_sensor | - |
 | Virtual sensor (Home Assistant sends) | Virtual window contact | Home Assistant | - | `contact: D5-00-01:std` | button, sensor | - |

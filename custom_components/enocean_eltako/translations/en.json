@@ -1060,6 +1060,9 @@
       "dawn": {
         "name": "Dawn"
       },
+      "last_button": {
+        "name": "Last button"
+      },
       "sun_side": {
         "name": "Sunniest side",
         "state": {

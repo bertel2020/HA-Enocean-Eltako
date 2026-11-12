@@ -151,6 +151,9 @@
       "dawn": {
         "default": "mdi:weather-sunset-up"
       },
+      "last_button": {
+        "default": "mdi:gesture-tap-button"
+      },
       "sun_side": {
         "default": "mdi:white-balance-sunny",
         "state": {

@@ -366,7 +366,7 @@ CATALOG: dict[str, DeviceModel] = {
         DeviceModel(
             "rocker",
             _ref("F6-02-01:std"),
-            (Platform.EVENT,),
+            (Platform.EVENT, Platform.SENSOR),
             category="buttons",
             options=(OPT_LONG_PRESS, OPT_DOUBLE_PRESS),
             examples="F4T55E, FT55, FT4F, FSTAP",
@@ -375,7 +375,7 @@ CATALOG: dict[str, DeviceModel] = {
         DeviceModel(
             "rocker_contact",
             _ref("F6-02-01:std"),
-            (Platform.BINARY_SENSOR,),
+            (Platform.BINARY_SENSOR, Platform.SENSOR),
             category="buttons",
             options=(OPT_ON_BUTTON, OPT_OFF_BUTTON, OPT_DEVICE_CLASS, OPT_INVERT),
             examples="FSM14, FTS14EM, FSM61, garage door controllers",
@@ -559,7 +559,7 @@ CATALOG: dict[str, DeviceModel] = {
         DeviceModel(
             "enocean_rocker",
             _ref("F6-02-01:std"),
-            (Platform.EVENT,),
+            (Platform.EVENT, Platform.SENSOR),
             category="buttons",
             group=GROUP_ENOCEAN,
             base="rocker",
