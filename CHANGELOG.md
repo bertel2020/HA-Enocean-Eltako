@@ -10,6 +10,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Hinzugefügt
 
+- **Baureihe 62: Lernmodus entsperren und ausmelden** (FL62, FR62, FD62, FJ62): Je Zentralbefehl- bzw. Steuerungs-Sender zwei Buttons (Diagnose, standardmäßig aus): „Lernmodus entsperren“ sendet `00 00 00 28`, „Ausmelden“ dasselbe dreimal innerhalb von 2 s, wodurch der Aktor die Sender-ID vergisst. Quelle: Eltako „Inhalte der Eltako-Funktelegramme“, noch nicht an Hardware getestet.
+
 - **Thermostat am Schaltaktor-Kanal** (z. B. Konvektor an einem FSR14): Optional unter „Thermostat“ in den Geräteeinstellungen. Home Assistant regelt einen frei wählbaren Raumtemperatursensor um die Solltemperatur und schaltet das Relais über die Sendewarteschlange, mit den Sendern des Kanals; keine eigene Sender-ID. Einstellbar: Hysterese, niedrigste und höchste Solltemperatur, Temperaturschritt, Genauigkeit der Raumtemperatur, kürzeste Zeit an/aus, Höchstlaufzeit mit Abkühlzeit, „Heizt ab Leistung“, Blockade- und Sensor-Zeiten. Ohne Raumtemperatur (oder zu lange stumm) geht das Relais zur Sicherheit aus. Mit einem Zähler, der auf „Gehört zu Gerät“ diesen Aktor steht, zeigt „Heizt“ die echte Leistung der Last und meldet eine Blockade (Relais an, keine Leistung) als Reparaturhinweis. Optionaler Feuchtesensor als Anzeige. Zusatzwerte als Attribute und/oder als eigene Entitäten (Laufzeit am Stück, Abkühlpause verbleibend, Laufzeit heute, „Heizt“, „Heizung blockiert“). Subentry-Schema 7 mit Migration (nichts umzurechnen).
 
 - **Zähler unter einem Gerät**: Ein Zähler (z. B. F3Z14D) kann „Gehört zu Gerät“ auf den Schaltaktor ohne eigene Messung (FSR14) an derselben Last gesetzt bekommen. Auf der Geräteseite steht dann „Verbunden über …“, und der Schalter verlinkt den Zähler. Beide bleiben eigene Geräte mit eigenen Entitäten; Entity-IDs, Gerätekennungen, Sender-IDs und Verlauf ändern sich nicht. Jederzeit nachträglich setzbar. Subentry-Schema 6 mit Migration (nichts umzurechnen). Namenstipp im Dialog: die Funktion mit benennen („Bad Konvektor Schalter“ / „… Zähler“).
@@ -23,6 +25,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 **English**
 
 #### Added
+
+- **Series 62: unlock learn mode and teach out** (FL62, FR62, FD62, FJ62): two buttons per central command or controller sender (diagnostic, off by default): "Unlock learn mode" sends `00 00 00 28`, "Teach out" the same three times within 2 s, which makes the actuator forget the sender ID. Source: Eltako "Inhalte der Eltako-Funktelegramme", not yet tested on hardware.
 
 - **Thermostat on a switching actuator channel** (for example a convector on an FSR14): optional under "Thermostat" in the device settings. Home Assistant regulates a room temperature sensor of your choice around the setpoint and switches the relay through the send queue with the channel's senders; no sender ID of its own. Settings: hysteresis, lowest and highest setpoint, setpoint step, room temperature precision, shortest time on/off, longest run with forced pause, "Heating from power", blockade and sensor times. Without a room temperature (or silent for too long) the relay goes off for safety. With a meter set to "Belongs to device" this actuator, "heating" shows that power really flows and a blockade (relay on, no power) raises a repair issue. Optional humidity sensor as a display. Extra readings as attributes and/or entities of their own (run time, cooldown remaining, run time today, "Heating", "Heating blocked"). Subentry schema 7 with a migration (nothing to convert).
 

@@ -78,6 +78,18 @@
       "press_b1": {
         "default": "mdi:gesture-tap-button"
       },
+      "unlock_learning_central": {
+        "default": "mdi:lock-open-variant-outline"
+      },
+      "teach_out_central": {
+        "default": "mdi:school-off-outline"
+      },
+      "unlock_learning_controller": {
+        "default": "mdi:lock-open-variant-outline"
+      },
+      "teach_out_controller": {
+        "default": "mdi:school-off-outline"
+      },
       "teach_in_central": {
         "default": "mdi:school-outline"
       },

@@ -24,6 +24,9 @@ ROCKER_BUTTONS = {"b0": 0x70, "b1": 0x50, "a0": 0x30, "a1": 0x10}
 # 180/200): scene 1...4 = left top, left bottom, right top, right bottom
 SCENE_BUTTONS = ("a0", "a1", "b0", "b1")
 
+# kinds with a 4BS sender that the series 62 actuators (FL62, FR62, FD62, FJ62) learn
+LEARN_LOCK_KINDS = ("switch", "dimmer", "cover")
+
 PARALLEL_UPDATES = 0
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,6 +41,13 @@ async def async_setup_entry(
         async_add_entities([GatewayReconnectButton(entry)])
     for subentry_id, device in entry.runtime_data.devices.items():
         buttons: list[ButtonEntity] = [TeachInButton(device, p) for p in device.senders]
+        if device.model.kind in LEARN_LOCK_KINDS:  # series 62: unlock learn mode, teach out
+            buttons += [
+                LearnButton(device, p, out)
+                for p in device.senders
+                if p in ("central", "controller")
+                for out in (False, True)
+            ]
         if device.model.kind == "cover":
             buttons.append(CalibrateButton(device))
         if device.model.kind == "virtual_rocker":
@@ -64,6 +74,30 @@ class TeachInButton(EnOceanEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         self._device.teach_in(self._profile)
+
+    def _apply(self, values: dict[str, Any]) -> bool:
+        return False
+
+
+class LearnButton(EnOceanEntity, ButtonEntity):
+    """Series 62 actuators (FL62, FR62, FD62, FJ62): unlock the learn mode, or teach the sender
+    out (the same telegram three times within 2 s). Off by default: other series ignore it."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, device: EnOceanDevice, profile: str, teach_out: bool) -> None:
+        key = f"{'teach_out' if teach_out else 'unlock_learning'}_{profile}"
+        super().__init__(device, key)
+        self._profile = profile
+        self._teach_out = teach_out
+        self._attr_translation_key = key
+
+    async def async_press(self) -> None:
+        if self._teach_out:
+            self._device.teach_out(self._profile)
+        else:
+            self._device.unlock_learning(self._profile)
 
     def _apply(self, values: dict[str, Any]) -> bool:
         return False

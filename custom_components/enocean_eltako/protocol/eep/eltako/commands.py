@@ -4,6 +4,9 @@ The layouts are the ones the encoders in switching.py, shutter.py and heating.py
 a telegram is read exactly as it was built. None for anything that is not such a command.
 
 A5-38-08:eltako (central command): 4BS 00 00 00 08 asks the actuator to send its status,
+    00 00 00 28 (DB0.5) unlocks the learn mode of the series 62 actuators (FL62, FR62, FD62,
+    FJ62; source: Eltako "Inhalte der Eltako-Funktelegramme"), and the same telegram three times
+    within 2 s deletes the sender ID of the actuator (teach-out),
     otherwise command 1 (switching) or 2 (dimming) as in switching.py, DB0.2 = lock.
 
 H5-3F-7F (shutter command): see shutter.py. DB1 = command, DB2 (or DB3/DB2 with DB0.1) = run time.
@@ -20,6 +23,9 @@ from typing import Any
 from . import shutter, switching
 
 STATUS_REQUEST = bytes.fromhex("00000008")
+LEARN_UNLOCK = bytes.fromhex("00000028")
+TEACH_OUT_REPEATS = 3  # LEARN_UNLOCK this many times within TEACH_OUT_WINDOW seconds
+TEACH_OUT_WINDOW = 2.0
 COMMANDS = {shutter.STOP: "stop", shutter.UP: "up", shutter.DOWN: "down"}
 NIGHT_SETBACK_STEPS = (0x00, 0x06, 0x0C, 0x13, 0x19, 0x1F)
 
@@ -27,6 +33,8 @@ NIGHT_SETBACK_STEPS = (0x00, 0x06, 0x0C, 0x13, 0x19, 0x1F)
 def decode_central(data: bytes) -> dict[str, Any] | None:
     if data == STATUS_REQUEST:
         return {"command": "status_request"}
+    if data == LEARN_UNLOCK:
+        return {"command": "learn_unlock"}
     if len(data) != 4 or data[0] not in (0x01, 0x02):
         return None
     values = switching.decode_dim_status(data)

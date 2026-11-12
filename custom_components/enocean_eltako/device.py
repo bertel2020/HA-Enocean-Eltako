@@ -46,6 +46,7 @@ from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
 from .protocol.eep.eltako import futh, switching
+from .protocol.eep.eltako.commands import LEARN_UNLOCK, TEACH_OUT_REPEATS
 from .protocol.eep.model import out_of_range
 from .protocol.eep.std.profiles import PROFILES
 from .protocol.eep.teach_in import decode_teach_in_4bs
@@ -630,6 +631,18 @@ class EnOceanDevice:
             self.press(profile, sender.teach_in, confirm=False)
         else:
             self.send(sender.teach_in, profile=profile, priority=Priority.BACKGROUND, confirm=False)
+
+    @callback
+    def unlock_learning(self, profile: str, times: int = 1) -> None:
+        """Series 62 actuators (FL62, FR62, FD62, FJ62): unlock the learn mode with DB0.5 set.
+        Three times within two seconds the actuator forgets the sender ID (teach-out)."""
+        _LOGGER.info("%s: learn mode telegram x%d (%s)", self.subentry.title, times, profile)
+        for _ in range(times):
+            self.send(LEARN_UNLOCK, profile=profile, priority=Priority.USER, confirm=False)
+
+    @callback
+    def teach_out(self, profile: str) -> None:
+        self.unlock_learning(profile, TEACH_OUT_REPEATS)
 
     @callback
     def _answer_ute(self, telegram: RadioTelegram) -> None:

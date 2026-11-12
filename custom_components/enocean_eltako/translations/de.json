@@ -1315,6 +1315,18 @@
       "teach_in_direction_rocker": {
         "name": "Einlernen Richtungstaster"
       },
+      "unlock_learning_central": {
+        "name": "Lernmodus entsperren (Zentralbefehl)"
+      },
+      "teach_out_central": {
+        "name": "Zentralbefehl ausmelden"
+      },
+      "unlock_learning_controller": {
+        "name": "Lernmodus entsperren (Steuerung)"
+      },
+      "teach_out_controller": {
+        "name": "Steuerung ausmelden"
+      },
       "calibrate": {
         "name": "Kalibrieren"
       },

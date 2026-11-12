@@ -65,3 +65,15 @@ Once a window contact is taught into an FSB14, the actuator blocks central down 
 down while the contact reports open. For a virtual contact, turn on **Send with priority**
 in its options: its telegram then overtakes every command waiting in the send queue, so an
 "open" reaches the actuator before a central down command sent at the same moment.
+
+## Series 62: unlock learn mode, teach out
+
+FL62, FR62, FD62 and FJ62 (and their NP variants) know two extra telegrams from the sender of
+the central command or controller (source: Eltako, "Inhalte der Eltako-Funktelegramme"):
+`00 00 00 28` unlocks the learn mode, and the same telegram **three times within 2 seconds**
+makes the actuator forget that sender ID (teach-out).
+
+Each actuator has two buttons for this per sender, **Unlock learn mode** and **Teach out**
+(diagnostic entities, off by default: other series do not know the telegram). Teach out before
+you delete a device, then confirm the teach-out so the sender ID is free again. Not tested on
+hardware yet.
