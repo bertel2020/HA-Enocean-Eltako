@@ -153,6 +153,19 @@ Discovery can be switched off per gateway in its settings.
 Eltako series 14 actuators learn a sender ID through a learn function on the actuator; which
 function belongs to which teach-in button is in [teach_in.md](teach_in.md).
 
+### Locking the pushbuttons
+
+Switching actuators, dimmers and shutters with a central command or controller sender have a
+configuration switch **Lock pushbuttons**. While it is on, every command Home Assistant sends
+carries the lock bit (Eltako, "Inhalte der Eltako-Funktelegramme"): the actuator then ignores
+the pushbuttons taught into it, for example a shutter held closed in a storm. Turning it on
+sends the actuator's current state once with the bit, turning it off sends it without. A
+shutter gets a **stop** instead (it halts a run in progress). The actuator does not report
+the lock, so the switch shows the last state set ("assumed") and is restored after a restart.
+Switchers and dimmers need a known state first. A lock set by another program, or one the
+actuator lost, is not seen. Not tested on hardware yet. Use `switch.turn_on` and `turn_off` on
+it in automations.
+
 ### Switching actuators that do not report
 
 For older or 230 V-only actuators: enter the ID of a pushbutton taught into the actuator under

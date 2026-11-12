@@ -336,6 +336,14 @@
           "heat": "mdi:radiator"
         }
       }
+    },
+    "switch": {
+      "lock_buttons": {
+        "default": "mdi:lock-outline",
+        "state": {
+          "off": "mdi:lock-open-variant-outline"
+        }
+      }
     }
   },
   "services": {

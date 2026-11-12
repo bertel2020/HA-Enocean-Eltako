@@ -16,6 +16,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 from .catalog import (
     CENTRAL,
+    CONTROLLER,
     DIRECTION_ROCKER,
     GROUP_VIRTUAL,
     OPT_PART_OF,
@@ -45,7 +46,7 @@ from .notes import device_key
 from .protocol.dispatcher import ReceivedTelegram
 from .protocol.eep import EEPRef
 from .protocol.eep.codecs import decode_telegram
-from .protocol.eep.eltako import futh, switching
+from .protocol.eep.eltako import futh, shutter, switching
 from .protocol.eep.eltako.commands import LEARN_UNLOCK, TEACH_OUT_REPEATS
 from .protocol.eep.model import out_of_range
 from .protocol.eep.std.profiles import PROFILES
@@ -62,6 +63,11 @@ _LOGGER = logging.getLogger(__name__)
 
 Listener = Callable[[dict[str, Any]], None]
 LATENCY_SAMPLES = 10  # E11: confirmation times kept per device
+# commands that carry the lock bit: the sender's EEP -> (index of the command byte, its values)
+LOCK_COMMANDS: dict[EEPRef, tuple[int, tuple[int, ...]]] = {
+    EEPRef("A5-38-08", "eltako"): (0, (1, 2)),  # switching, dimming
+    EEPRef("H5-3F-7F", "eltako"): (2, (0, 1, 2)),  # stop, up, down
+}
 UTE_WINDOW = 60.0  # seconds a teach-in button waits for the actuator's UTE query
 
 
@@ -162,6 +168,7 @@ class EnOceanDevice:
         self.last_values: dict[str, Any] = {}  # the last decoded values of the device's channel
         self.wall_state: bool | None = None  # I4: last known on/off, for a toggling button
         self.state_heard = False  # a status telegram of the actuator itself has arrived
+        self.locked = False  # commands carry the lock bit: the actuator ignores its pushbuttons
         # a device sending from several IDs (FUTH): the ID it listens to -> what that ID means
         self.linked: dict[int, LinkedId] = {
             (self.device_id + link.offset) & 0xFFFFFFFF: link for link in self.model.linked
@@ -468,6 +475,7 @@ class EnOceanDevice:
                 translation_key="device_no_sender",
                 translation_placeholders={"device": self.subentry.title},
             )
+        data = self._with_lock(data, profile)
         sender_id = self.senders[profile]
         rorg = rorg or self.model.sender_profile(profile).rorg
         telegram = RadioTelegram(rorg, data, sender_id, status, destination)
@@ -639,6 +647,44 @@ class EnOceanDevice:
             self.press(profile, sender.teach_in, confirm=False)
         else:
             self.send(sender.teach_in, profile=profile, priority=Priority.BACKGROUND, confirm=False)
+
+    @property
+    def lockable(self) -> bool:
+        """Switching actuators, dimmers and shutters with a central command or controller
+        sender can lock their pushbuttons (DB0.2, Eltako "Inhalte der Eltako-Funktelegramme")."""
+        return self.model.kind in ("switch", "dimmer", "cover") and any(
+            self.model.sender_profile(p).eep in LOCK_COMMANDS for p in self.senders
+        )
+
+    def _with_lock(self, data: bytes, profile: str) -> bytes:
+        """The command with DB0.2 set while the device is locked; status requests, learn
+        telegrams and everything of other profiles stay as they are."""
+        if not self.locked or len(data) != 4 or not data[3] & 0x08 or data[3] & 0x20:
+            return data
+        index = LOCK_COMMANDS.get(self.model.sender_profile(profile).eep)
+        if index is None or data[index[0]] not in index[1]:
+            return data
+        return data[:3] + bytes([data[3] | 0x04])
+
+    @callback
+    def apply_lock(self) -> None:
+        """Tell the actuator the new lock state: its current state again, now with or without
+        the lock bit. A shutter gets a stop (it halts a run in progress)."""
+        if self.model.kind == "cover":
+            self.send(shutter.encode_command(shutter.STOP), profile=CONTROLLER.id, confirm=False)
+            return
+        if self.wall_state is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="lock_state_unknown",
+                translation_placeholders={"device": self.subentry.title},
+            )
+        on = bool(self.wall_state)
+        if self.model.kind == "dimmer":
+            data = switching.encode_dim(self.last_values.get("brightness", 0), on=on)
+        else:
+            data = switching.encode_switch(on)
+        self.send(data, profile=CENTRAL.id, key="switch", confirm=False)
 
     @callback
     def unlock_learning(self, profile: str, times: int = 1) -> None:

@@ -321,6 +321,9 @@
     },
     "energy_not_loaded": {
       "message": "The Energy dashboard is not set up in Home Assistant. Open Settings → Dashboards → Energy once, then try again."
+    },
+    "lock_state_unknown": {
+      "message": "{device}: the state is not known yet, so the lock cannot be set. Wait for its first status or switch it once."
     }
   },
   "services": {
@@ -1402,6 +1405,11 @@
     "climate": {
       "thermostat": {
         "name": "Thermostat"
+      }
+    },
+    "switch": {
+      "lock_buttons": {
+        "name": "Lock pushbuttons"
       }
     }
   },

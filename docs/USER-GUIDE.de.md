@@ -160,6 +160,20 @@ Einstellungen des Gateways lässt sich die Discovery abschalten.
 Eltako-Aktoren der Baureihe 14 lernen eine Sender-ID über eine Einlernfunktion am Aktor; welche
 Funktion zu welchem Einlern-Button gehört, steht in [teach_in.de.md](teach_in.de.md).
 
+### Taster sperren
+
+Schaltaktoren, Dimmer und Rollladenaktoren mit Zentralbefehl- oder Steuerungs-Sender haben einen
+Konfigurationsschalter **Taster sperren**. Solange er an ist, trägt jeder Befehl von Home
+Assistant das Sperr-Bit (Eltako, „Inhalte der Eltako-Funktelegramme“): der Aktor ignoriert dann
+die eingelernten Taster, zum Beispiel ein Rollladen, der bei Sturm geschlossen bleibt. Beim
+Einschalten wird der aktuelle Zustand des Aktors einmal mit dem Bit gesendet, beim Ausschalten
+ohne. Ein Rollladen bekommt stattdessen ein **Stopp** (es hält eine laufende Fahrt an). Der
+Aktor meldet die Sperre nicht zurück, der Schalter zeigt also den zuletzt gesetzten Zustand
+(„angenommen“) und wird nach einem Neustart wiederhergestellt. Schalter und Dimmer brauchen
+vorher einen bekannten Zustand. Eine Sperre durch ein anderes Programm oder eine, die der Aktor
+verloren hat, wird nicht erkannt. Noch nicht an Hardware getestet. In Automationen mit
+`switch.turn_on` und `turn_off` auf dem Schalter.
+
 ### Schaltaktoren ohne Rückmeldung
 
 Für ältere oder reine 230-V-Aktoren: unter **Wandtaster** die ID eines im Aktor eingelernten

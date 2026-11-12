@@ -318,7 +318,7 @@ async def test_websocket_sends_only_from_a_device_sender(hass: HomeAssistant, ha
             "models": ["FSR61", "FSR14", "FL62", "FSR71"],
             "category": "lighting",
             "area": None,
-            "entities": 3,
+            "entities": 4,
             "entity_ids": [e.entity_id for e in registered_entities if e.entity_category is None],
             "ha_device": registered.id,
             "labels": [],
