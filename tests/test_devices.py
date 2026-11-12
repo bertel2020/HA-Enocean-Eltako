@@ -2391,13 +2391,33 @@ async def test_blind_tilt(hass: HomeAssistant, gateway) -> None:
 async def test_meter_serial_number(hass: HomeAssistant, gateway) -> None:
     _entry, server = gateway
     prefix = f"{BASE}_05-00-00-15_1"
-    _push(server, 0x07, bytes.fromhex("1B0A008F"), 0x05000015)  # S1 S0 00
-    _push(server, 0x07, bytes.fromhex("3D2C018F"), 0x05000015)  # S3 S2 01
+    # no serial entity before a meter has sent one (F3Z14D and the actuators never do)
+    assert (
+        er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{prefix}_serial_number") is None
+    )
+    _push(server, 0x07, bytes.fromhex("1200008F"), 0x05000015)  # DB3 = AA, DB1 = 0
+    _push(server, 0x07, bytes.fromhex("5634018F"), 0x05000015)  # DB3 = CC, DB2 = BB, DB1 = 1
     await _settle(hass)
     serial = hass.states.get(_entity(hass, "sensor", f"{prefix}_serial_number"))
-    assert serial.state == "0A 1B 2C 3D"
+    assert serial.state == "S-123456"
     power = hass.states.get(_entity(hass, "sensor", f"{prefix}_power"))
     assert power.state == "unknown"  # the serial telegrams are no power readings
+
+
+def test_meter_serial_format() -> None:
+    from custom_components.enocean_eltako.protocol.eep.eltako.sensors import (
+        decode_meter,
+        format_meter_serial,
+    )
+
+    part0 = decode_meter(bytes.fromhex("1200008F"))
+    part1 = decode_meter(bytes.fromhex("5634018F"))
+    assert part0 == {"serial_part": 0, "serial_bytes": b"\x12"}
+    assert part1 == {"serial_part": 1, "serial_bytes": b"\x34\x56"}
+    assert format_meter_serial(bytes.fromhex("123456")) == "S-123456"
+    assert format_meter_serial(bytes.fromhex("0C2263")) == "S-123499"  # binary pairs
+    assert format_meter_serial(bytes.fromhex("12FF56")) is None
+    assert format_meter_serial(b"\x12\x34") is None
 
 
 async def test_device_form_shows_teach_in_hint(hass: HomeAssistant, gateway) -> None:

@@ -16,6 +16,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Geändert
 
+- **Zähler: Seriennummer** nur noch bei Zählern, die sie senden (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; laut Eltako-Funktelegramm-Liste). Der Sensor entsteht erst mit dem ersten Seriennummer-Telegramm, beim F3Z14D und bei Aktoren (FSR14M-2x, FSR61VA, FSVA-230V) gibt es ihn nicht mehr. Das Format ist jetzt wie aufgedruckt „S-AABBCC“ (vorher vier Hex-Bytes aus falsch gelesenen Telegrammen). Die Ziffernkodierung ist noch nicht mit einem Mitschnitt geprüft.
+
 - **Katalog**: Beim Energiezähler steht der F3Z14D auch in der Beispielliste (Geräte-Dialog, Übersetzungen, Gerätedokumentation) an erster Stelle.
 
 **English**
@@ -27,6 +29,8 @@ has a German and an English part (German first). The format follows [Keep a Chan
 - **Meter under a device**: a meter (for example the F3Z14D) can be set to "Belongs to device" the switching actuator without a measurement of its own (FSR14) on the same load. The device page then says "Connected via …" and the switch links the meter. Both stay devices of their own with their own entities; entity IDs, device identifiers, sender IDs and history do not change. Can be set later at any time. Subentry schema 6 with a migration (nothing to convert). Naming tip in the dialog: name the function too ("Bath convector switch" / "… meter").
 
 #### Changed
+
+- **Meter serial number** only on meters that send it (FWZ12, FWZ14, FSDG14, DSZ14DRS, DSZ14WDRS; per Eltako's radio telegram list). The sensor is created with the first serial number telegram; the F3Z14D and actuators (FSR14M-2x, FSR61VA, FSVA-230V) no longer get one. The format is now "S-AABBCC" as printed (before: four hex bytes from misread telegrams). The digit coding is not yet checked against a capture.
 
 - **Catalog**: the F3Z14D is also first in the example list of the energy meter (device flow, translations, device documentation).
 

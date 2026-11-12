@@ -34,6 +34,7 @@ from homeassistant.const import (
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
@@ -49,12 +50,13 @@ from .catalog import (
     custom_key,
     generic_fields,
 )
-from .const import CONF_DEVICE, CONF_MODEL
+from .const import CONF_DEVICE, CONF_MODEL, DOMAIN
 from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
 from .entity_ids import gateway_prefix
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
+from .protocol.eep.eltako.sensors import format_meter_serial
 from .protocol.ids import format_id
 from .protocol.models import MODELS
 from .thermostat_entities import thermostat_sensors, wanted
@@ -543,13 +545,13 @@ async def async_setup_entry(
         entities: list[SensorEntity] = [EnOceanSensor(device, d) for d in descriptions]
         if device.model.kind == "meter":
             entities.append(MeterTotalSensor(device))
+        async_add_entities(entities, config_subentry_id=subentry_id)
         if (
             device.model.receive is not None
             and device.model.receive.variant == "eltako"
-            and (device.model.receive.eep.startswith("A5-12-"))
+            and device.model.receive.eep.startswith("A5-12-")
         ):
-            entities.append(MeterSerialSensor(device))
-        async_add_entities(entities, config_subentry_id=subentry_id)
+            _add_meter_serial(hass, entry, async_add_entities, subentry_id, device)
 
 
 class EnOceanSensor(EnOceanEntity, RestoreSensor):
@@ -595,8 +597,49 @@ def _decreases(current: Any, new: Any) -> bool:
         return False
 
 
+@callback
+def _add_meter_serial(
+    hass: HomeAssistant,
+    entry: EnOceanEltakoConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    subentry_id: str,
+    device: EnOceanDevice,
+) -> None:
+    """Only meters that send a serial number get the sensor: at once when it exists already
+    (restored value), else with the first serial telegram."""
+    unique_id = f"{device.entity_prefix}_serial_number"
+    if er.async_get(hass).async_get_entity_id("sensor", DOMAIN, unique_id):
+        async_add_entities([MeterSerialSensor(device)], config_subentry_id=subentry_id)
+        return
+
+    removed = False
+
+    @callback
+    def stop() -> None:
+        nonlocal removed
+        if not removed:
+            removed = True
+            remove()
+
+    @callback
+    def on_values(values: dict[str, Any]) -> None:
+        if "serial_part" not in values:
+            return
+        stop()
+        sensor = MeterSerialSensor(device)
+        sensor.feed(values)  # the telegram that created the sensor must not get lost
+        async_add_entities([sensor], config_subentry_id=subentry_id)
+
+    remove = device.add_listener(on_values)
+    entry.async_on_unload(stop)
+
+
 class MeterSerialSensor(EnOceanEntity, RestoreSensor):
-    """E7: serial number of Eltako meters, sent in two telegrams (S0 S1, then S2 S3)."""
+    """E7: serial number S-AABBCC of the Eltako meters FWZ12, FWZ14, FSDG14 and DSZ14(W)DRS.
+
+    Sent every 10 minutes in two telegrams (AA, then BB CC). Other meters and actuators never
+    send it, so the sensor is only created once such a telegram arrives (see async_setup_entry).
+    """
 
     _attr_translation_key = "serial_number"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -610,14 +653,18 @@ class MeterSerialSensor(EnOceanEntity, RestoreSensor):
         if (last := await self.async_get_last_sensor_data()) is not None:
             self._attr_native_value = last.native_value
 
+    def feed(self, values: dict[str, Any]) -> None:
+        """Take a telegram that came in before the entity was added."""
+        self._apply(values)
+
     def _apply(self, values: dict[str, Any]) -> bool:
         if "serial_part" not in values:
             return False
         self._parts[values["serial_part"]] = values["serial_bytes"]
         if len(self._parts) < 2:
             return False
-        serial = (self._parts[0] + self._parts[1]).hex(" ").upper()
-        if serial == self._attr_native_value:
+        serial = format_meter_serial(self._parts[0] + self._parts[1])
+        if serial is None or serial == self._attr_native_value:
             return False
         self._attr_native_value = serial
         return True
