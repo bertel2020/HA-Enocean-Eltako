@@ -349,3 +349,15 @@ async def test_unknown_senders_are_forgotten_by_age_or_by_hand(
     assert (await client.receive_json())["result"] == {"removed": 1}
     assert not stored_unknown(entry)
     assert not hub.discovered
+
+
+async def test_parked_senders_stay_in_the_stored_list(hass: HomeAssistant, gateway) -> None:  # noqa: F811
+    from custom_components.enocean_eltako.discovery import async_park, stored_unknown
+
+    entry, server = gateway
+    _push(server, 0x05, b"\x70", 0x002A0B30, 0x30)
+    await _settle(hass)
+    await async_park(hass, entry, {0x002A0B30, 0x002A0B31}, "button")  # the second one never heard
+    rows = {r["id"]: r for r in stored_unknown(entry)}
+    assert set(rows) == {"00-2A-0B-30", "00-2A-0B-31"}
+    assert rows["00-2A-0B-31"]["last"] == 0

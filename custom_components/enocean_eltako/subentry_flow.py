@@ -563,11 +563,11 @@ class DeviceForm:
             )
         if OPT_ON_BUTTON in model.options:
             schema[vol.Required(OPT_ON_BUTTON, default="b0")] = SelectSelector(
-                SelectSelectorConfig(options=BUTTONS, translation_key="contact_input")
+                SelectSelectorConfig(options=BUTTONS, translation_key="rocker_button")
             )
             schema[vol.Required(OPT_OFF_BUTTON, default="b1")] = SelectSelector(
                 SelectSelectorConfig(
-                    options=[*BUTTONS, "released"], translation_key="contact_input"
+                    options=[*BUTTONS, "released"], translation_key="rocker_button"
                 )
             )
         if OPT_BUTTONS in model.options:
