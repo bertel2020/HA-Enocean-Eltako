@@ -10,12 +10,14 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Behoben
 
+- **Panel:** Die Einträge des ⋮-Menüs (u. a. „Automatisch vergessen…“, Export, Dokumentation) taten beim Anklicken nichts: das Menü schloss sich schon beim Drücken der Maustaste.
 - **Rollläden:** Der Zustandssensor zeigt „Offen“ bzw. „Geschlossen“, wenn die gemeldete Fahrzeit eine volle Fahrt war (Fahrten mit Laufzeit aus Home Assistant enden mit der Fahrzeit, nicht mit 0x70/0x50), statt „Gestoppt“.
 
 **English**
 
 #### Fixed
 
+- **Panel:** the entries of the ⋮ menu (including "Forget automatically…", export, documentation) did nothing when clicked: the menu closed as soon as the mouse button went down.
 - **Covers:** the state sensor shows "Open" or "Closed" when the reported driven time was a full run (runs with a run time from Home Assistant end with the driven time, not with 0x70/0x50), instead of "Stopped".
 
 ### [1.11.0] - 2026-11-12
