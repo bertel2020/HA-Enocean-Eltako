@@ -782,7 +782,7 @@ Taster melden je Taste kurzes, langes und doppeltes Drücken. Fertige Automation
 Die optionale App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) (Home Assistant OS oder Supervised) hält die seriellen
 Ports der Gateways und bietet jedes EnOcean-Gateway auf einem TCP-Port an. So können mehrere
 Programme ein Gateway gleichzeitig nutzen, z. B. die alte Integration `eltako` während des
-Umstiegs, eo_man oder PCT14.
+Umstiegs oder ein zweites Home Assistant (zum Beispiel ein Testsystem).
 
 - Die App meldet ihre Gateways an: Jedes erscheint hier als entdeckt (**Device Proxy**);
   Modell wählen, und das Gateway ist mit **Nachlieferung über den Device Proxy** eingerichtet.

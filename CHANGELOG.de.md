@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+### Neu
+
+- **Einrichtung:**
+  - Der Schritt „Verbindung“ beim Hinzufügen eines Gateways weist auf die optionale App Device Proxy hin (geteiltes Gateway, Nachlieferung, Ersatz-Gateway, Werkzeuge zur Fehlersuche).
+- **Panel:**
+  - Die Details eines Gateways, das nicht über die App Device Proxy läuft, zeigen denselben Tipp mit Link.
+
 ### Geändert
 
 - **Panel:**

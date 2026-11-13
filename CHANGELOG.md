@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+### New
+
+- **Setup:**
+  - The connection step of "Add gateway" points to the optional Device Proxy app (shared gateway, replay, fallback gateway, troubleshooting tools).
+- **Panel:**
+  - The details of a gateway that is not reached through the Device Proxy app carry the same tip with a link.
+
 ### Changed
 
 - **Panel:**

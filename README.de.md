@@ -23,7 +23,7 @@
 <p align="center"><em><a href="README.md">English version</a></em></p>
 
 > [!IMPORTANT]
-> **App Device Proxy (empfohlen):** Die App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) für Home Assistant OS und Supervised behält die serielle Schnittstelle des Gateways und teilt sie: Home Assistant, die alte Integration `eltako`, eo_man oder PCT14 können ein Gateway gleichzeitig nutzen. Nach einem Neustart liefert sie die verpassten Telegramme nach und kann mit einem Ersatz-Gateway einspringen. Die Integration findet die Gateways der App von selbst. Siehe [Benutzerhandbuch](docs/USER-GUIDE.de.md#app-device-proxy).
+> **App Device Proxy (empfohlen):** Die App [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) für Home Assistant OS und Supervised behält die serielle Schnittstelle des Gateways und teilt sie: Home Assistant, die alte Integration `eltako` oder ein zweites Home Assistant (zum Beispiel ein Testsystem) können ein Gateway gleichzeitig nutzen. Nach einem Neustart liefert sie die verpassten Telegramme nach und kann mit einem Ersatz-Gateway einspringen. Die Integration findet die Gateways der App von selbst. Siehe [Benutzerhandbuch](docs/USER-GUIDE.de.md#app-device-proxy).
 
 EnOcean Eltako bindet Eltako-Geräte (Baureihe 14 am Bus und Funk) und andere EnOcean-Geräte in Home Assistant ein. Die Integration ist neu geschrieben, braucht keine fremde EnOcean-Bibliothek und wird komplett über die Oberfläche eingerichtet: ein Eintrag pro Gateway, ein Untereintrag pro Gerät, kein YAML.
 
@@ -114,7 +114,7 @@ Diese Integration ist neu geschrieben, wäre aber ohne die Arbeit und Erfahrung 
 - [grimmpp/eltako14bus](https://github.com/grimmpp/eltako14bus): ursprünglich von Christian Amsüss und Energy Harvesting Solutions (2016–2020), weiterentwickelt von Philipp Grimm.
 - [grimmpp/esp2_gateway_adapter](https://github.com/grimmpp/esp2_gateway_adapter) (Philipp Grimm).
 - [kipe/enocean](https://github.com/kipe/enocean) (Kimmo Huoman).
-- [grimmpp/enocean-device-manager](https://github.com/grimmpp/enocean-device-manager) (eo_man).
+- [grimmpp/enocean-device-manager](https://github.com/grimmpp/enocean-device-manager).
 
 Aus diesen Projekten wurde kein Code übernommen. Lizenzpflichten stehen in [LICENSE](LICENSE) und [NOTICE](NOTICE).
 
