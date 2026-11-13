@@ -231,7 +231,6 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     assert set(result["data_schema"].schema) == {
         "message_delay",
         "discovery",
-        "forget_unknown_days",
         "mode",
         *PREFIX,
     }
@@ -249,6 +248,19 @@ async def test_options_flow(hass: HomeAssistant) -> None:
     }
 
 
+async def test_options_flow_keeps_forget_days_set_in_the_panel(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(
+        domain=DOMAIN, data={"model": "fam_usb"}, options={"forget_unknown_days": 7}
+    )
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"message_delay": 25.0, "discovery": True}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["forget_unknown_days"] == 7
+
+
 async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
     entry.add_to_hass(hass)
@@ -256,7 +268,6 @@ async def test_options_flow_radio_gateway_has_no_mode(hass: HomeAssistant) -> No
     assert set(result["data_schema"].schema) == {
         "message_delay",
         "discovery",
-        "forget_unknown_days",
         *PREFIX,
     }
 
