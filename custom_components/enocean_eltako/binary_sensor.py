@@ -175,7 +175,7 @@ def _rocker_contact(on_button: str, off_button: str) -> Callable[[dict[str, Any]
     def value(values: dict[str, Any]) -> bool | None:
         if values.get("EB") == 0:
             return False if off_button == "released" else None
-        if values.get("EB") != 1:
+        if values.get("EB") != 1 or values.get("NU") == 0 or not 0 <= values["R1"] < len(BUTTONS):
             return None
         button = BUTTONS[values["R1"]]
         if button == on_button:

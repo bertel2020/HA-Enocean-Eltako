@@ -39,3 +39,21 @@ async def test_an_unanswered_command_is_repeated_twice_by_default() -> None:
 
 async def test_a_command_without_retries_is_sent_once() -> None:
     assert await _unanswered(0) == (SendResult.UNCONFIRMED, 1)
+
+
+async def test_an_unexpected_exception_does_not_stop_the_worker() -> None:
+    class TransportError(Exception):  # like serialx.SerialException: not an OSError
+        pass
+
+    calls: list[RadioTelegram] = []
+
+    async def send(telegram: RadioTelegram) -> None:
+        calls.append(telegram)
+        if len(calls) == 1:
+            raise TransportError("boom")
+
+    queue = SendQueue(send)
+    task = asyncio.create_task(queue.run())
+    assert await queue.submit(TELEGRAM) == SendResult.FAILED
+    assert await asyncio.wait_for(queue.submit(TELEGRAM), 2) == SendResult.SENT
+    task.cancel()

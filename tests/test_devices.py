@@ -1830,6 +1830,48 @@ async def test_meter_tariffs_total_and_backward_jump(hass: HomeAssistant, gatewa
     ],
     indirect=True,
 )
+async def test_stop_during_the_anchor_run_cancels_the_position_move(
+    hass: HomeAssistant,
+    gateway,
+) -> None:
+    _entry, server = gateway
+    entity_id = _entity(hass, "cover", f"{BASE}_05-00-00-24_1_cover")
+    _push(server, 0x07, bytes.fromhex("0064020A"), 0x05000024)
+    await _settle(hass)
+    cover = _entry.runtime_data.devices[next(iter(_entry.runtime_data.devices))].cover_entity
+    cover.position.position = 50
+    task = hass.async_create_task(
+        hass.services.async_call(
+            "cover", "set_cover_position", {"entity_id": entity_id, "position": 75}, blocking=True
+        )
+    )
+    await asyncio.sleep(0.1)
+    server.received.clear()
+    await hass.services.async_call("cover", "stop_cover", {"entity_id": entity_id}, blocking=True)
+    await asyncio.wait_for(task, 5)  # the wait for the anchor ends with the stop
+    await _settle(hass)
+    # no run to 75 % after the stop: neither a down nor an up run command
+    down = esp2.encode_radio(RadioTelegram(Rorg.BS4, bytes.fromhex("00050208"), 0xFFB74493))
+    assert down not in bytes(server.received)
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [
+        [
+            _subentry(
+                "cover",
+                "05-00-00-24",
+                "Rollladen Bad",
+                senders=[{"profile": "controller", "sender_id": "FF-B7-44-93"}],
+                time_opens=20,
+                time_closes=20,
+                calibration="before_move",
+            )
+        ]
+    ],
+    indirect=True,
+)
 async def test_cover_calibrates_before_uncertain_move(hass: HomeAssistant, gateway) -> None:
     _entry, server = gateway
     entity_id = _entity(hass, "cover", f"{BASE}_05-00-00-24_1_cover")

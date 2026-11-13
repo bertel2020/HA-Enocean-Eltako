@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### Behoben
+
+- **Thermostat:** Nach einem Neuladen oder Neustart wird das Relais nicht mehr kurz eingeschaltet, wenn der Modus „Aus“ ist oder der wiederhergestellte Sollwert niedrig ist; entschieden wird erst, wenn die Climate-Entity ihren Zustand wiederhergestellt hat.
+- **Bus-Gateways:** Ein Rollladenlauf oder Impuls (Garagentor), dessen Bestätigung verloren geht, wird nicht mehr über das nächste Gateway der Busgruppe wiederholt.
+- **Gateway:** Ein unerwarteter Fehler des Transports legt Sendequeue und Empfang nicht mehr dauerhaft lahm; das Gateway verbindet sich stattdessen neu.
+- **Rollläden:** Ein Stopp (oder ein neuer Befehl) während die Fahrt zum Anker noch wartet, bricht jetzt auch die anschließende Fahrt zur Zielposition ab; es startet keine Fahrt aus einer unbestätigten Position.
+- **Übernahme:** Sender-IDs der alten Integration im Busbereich (`00-00-B0-xx`) werden auf Bus-Gateways übernommen statt verworfen.
+- **Wandtaster:** Telegramme mit unmöglichem Wippencode oder mehreren Tasten gleichzeitig (NU=0) werden ignoriert, statt einen Fehler auszulösen oder als Tastendruck zu zählen.
+- **ESP3:** Ein falscher Paketkopf hält die folgenden Pakete nicht mehr zurück (Neu-Synchronisierung nach 2 s).
+- Der Speicher des Duplikatfilters ist begrenzt; kein Fehler im Log, wenn ein Sendevorgang beim Entladen abgebrochen wird.
+
 ## 1.12.0 - 2026-11-13
 
 ### Neu

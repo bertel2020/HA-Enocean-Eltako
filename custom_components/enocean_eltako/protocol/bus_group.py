@@ -126,6 +126,9 @@ class BusGroup:
             member._touch()
             if result not in FAILOVER_RESULTS:
                 return result
+            if result is SendResult.UNCONFIRMED and retries == 0:
+                # may have arrived anyway: a repeat would move the cover / the door again
+                return result
         return result
 
     def pause(self) -> None:

@@ -101,3 +101,22 @@ async def test_all_offline_fails_and_pause_holds() -> None:
     remove()
     assert len(group) == 0
     await _cleanup(member)
+
+
+async def test_no_failover_for_an_unconfirmed_command_without_retries() -> None:
+    # a cover run or a door impulse may have arrived: a second gateway must not repeat it
+    a, b = await FakeGateway(Protocol.ESP2).start(), await FakeGateway(Protocol.ESP2).start()
+    m_a, m_b = await _member(a, "a"), await _member(b, "b")
+    await m_a.gateway.connect()
+    await m_b.gateway.connect()
+    group = BusGroup("bus")
+    group.add(m_a)
+    group.add(m_b)
+    result = await group.submit(CMD, expect=lambda t: False, timeout=0.01, retries=0)
+    assert result == SendResult.UNCONFIRMED
+    assert group.failovers == 0
+    await asyncio.sleep(0.05)
+    assert esp2.encode_radio(CMD) not in bytes(b.received)
+    await _cleanup(m_a, m_b)
+    await a.stop()
+    await b.stop()

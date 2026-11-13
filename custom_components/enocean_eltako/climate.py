@@ -293,13 +293,15 @@ class ThermostatClimate(EnOceanEntity, ClimateEntity, RestoreEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        self._ctl.start()
         if (last := await self.async_get_last_state()) is not None:
             target = last.attributes.get(ATTR_TEMPERATURE)
             self._ctl.restore(
                 float(target) if target is not None else None,
                 None if last.state not in ("heat", "off") else last.state == "heat",
             )
-        self._ctl.start()
+        else:
+            self._ctl.restore(None, None)
         self.async_on_remove(self._ctl.stop)
         self.async_on_remove(self._ctl.add_listener(self._changed))
         self.async_on_remove(self._drop_issues)

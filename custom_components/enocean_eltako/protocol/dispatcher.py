@@ -18,6 +18,8 @@ from .telegram import RadioTelegram
 _LOGGER = logging.getLogger(__name__)
 
 DEDUP_WINDOW = 0.2  # seconds
+LAST_MAX = 1024  # senders remembered for the duplicate filter; older ones are pruned
+LAST_MAX_AGE = 3600.0  # seconds
 WILDCARD = None
 
 
@@ -145,6 +147,8 @@ class Dispatcher:
             duplicate = now - last[1] < self._window
         if not duplicate:
             self._last[sender] = (key, now, received_at)
+            if len(self._last) > LAST_MAX:
+                self._prune_last(now)
         received = ReceivedTelegram(
             telegram, gateway, received_at, sender, duplicate, replayed=timestamp is not None
         )
@@ -168,6 +172,14 @@ class Dispatcher:
         self._call(self._listeners.get(WILDCARD, ()), received)
         self.stats.dispatch_time += self._clock() - start
         return received
+
+    def _prune_last(self, now: float) -> None:
+        """Forget senders not heard for an hour (line noise invents IDs)."""
+        for sender in [s for s, last in self._last.items() if now - last[1] > LAST_MAX_AGE]:
+            del self._last[sender]
+        if len(self._last) > LAST_MAX:  # all recent: keep the newest half
+            newest = sorted(self._last.items(), key=lambda item: item[1][1], reverse=True)
+            self._last = dict(newest[: LAST_MAX // 2])
 
     @staticmethod
     def _call(listeners: Iterable[Listener], received: ReceivedTelegram) -> None:

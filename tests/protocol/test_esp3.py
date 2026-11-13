@@ -87,3 +87,16 @@ def test_encode_repeater() -> None:
     assert off.data == bytes([esp3.CO_WR_REPEATER, 0, 0])
     with pytest.raises(ValueError):
         esp3.encode_repeater(3)
+
+
+def test_a_false_header_does_not_hold_back_later_packets(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = [1000.0]
+    monkeypatch.setattr(esp3.time, "monotonic", lambda: now[0])
+    header = bytes([0x01, 0x00, 0x00, 0x01])  # claims 256 data bytes, CRC8H valid
+    false_start = bytes([esp3.SYNC]) + header + bytes([esp3.crc8(header)])
+    good = esp3.Esp3Packet(esp3.PacketType.RESPONSE, b"\x00").encode()
+    decoder = esp3.Esp3Decoder()
+    assert decoder.feed(false_start + good) == []  # waits for the 256 bytes
+    now[0] += esp3.STALL_TIMEOUT + 1
+    packets = decoder.feed(b"")
+    assert [p.data for p in packets] == [b"\x00"]

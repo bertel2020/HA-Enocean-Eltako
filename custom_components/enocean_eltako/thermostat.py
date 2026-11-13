@@ -218,6 +218,10 @@ class ThermostatController:
         self._users = 0
         self._meter: EnOceanDevice | None = None
         self.snapshot: tuple[Any, ...] = ()
+        # nothing is sent before the climate entity restored setpoint and mode (or the first
+        # tick passed): the defaults would switch the relay on after every reload
+        self._settled = False
+        self._first = True
 
     # -- lifecycle ---------------------------------------------------------------------------
 
@@ -242,7 +246,6 @@ class ThermostatController:
         )
         self._read_sensors()
         self.relay_on = self._relay_of(self.device.last_values)
-        self._evaluate(initial=True)
 
     @callback
     def stop(self) -> None:
@@ -253,6 +256,7 @@ class ThermostatController:
             unsubscribe()
         self._unsubscribe.clear()
         self._listeners.clear()
+        self._settled, self._first = False, True
 
     def add_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
         self._listeners.append(listener)
@@ -359,7 +363,10 @@ class ThermostatController:
         )
 
     @callback
-    def _evaluate(self, *, initial: bool = False) -> None:
+    def _evaluate(self) -> None:
+        if not self._settled:
+            return
+        initial, self._first = self._first, False
         now = time.monotonic()
         self._account(now)
         decision = decide(self.settings, self._inputs(now))
@@ -391,6 +398,7 @@ class ThermostatController:
 
     @callback
     def _tick(self, _now: Any) -> None:
+        self._settled = True  # no climate entity restored anything: the defaults stand
         self._read_sensors()
         self._evaluate()
 
@@ -414,6 +422,9 @@ class ThermostatController:
             )
         if heating is not None:
             self.heating = heating
+        self._settled = True
+        if self._users:
+            self._evaluate()
 
     # -- outputs -----------------------------------------------------------------------------
 
