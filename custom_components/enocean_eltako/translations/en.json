@@ -18,7 +18,7 @@
       },
       "connection": {
         "title": "Connection",
-        "description": "How is the gateway connected?",
+        "description": "How is the gateway connected?\n\nTip: the optional [Device Proxy app](https://github.com/bertel2020/HA-Device-Proxy) shares one gateway with a second Home Assistant (a test system, for example), replays missed telegrams after a restart, stands in with a fallback gateway and has troubleshooting tools. Its gateways are found automatically.",
         "menu_options": {
           "serial": "USB (direct)",
           "tcp": "Network (ser2net)"

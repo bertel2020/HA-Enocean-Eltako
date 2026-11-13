@@ -738,8 +738,8 @@ Rockers report short, long and double presses per button. Ready-made automations
 
 The optional [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app (Home Assistant OS or Supervised) keeps the gateways'
 serial ports and offers each EnOcean gateway on a TCP port, so several programs can use one
-gateway at the same time, for example the old `eltako` integration while moving over, eo_man
-or PCT14.
+gateway at the same time, for example the old `eltako` integration while moving over, or a
+second Home Assistant (a test system, for example).
 
 - The app announces its gateways: each one shows up here as discovered (**Device Proxy**);
   pick the model and the gateway is set up with **Replay over the Device Proxy** switched on.

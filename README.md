@@ -23,7 +23,7 @@
 <p align="center"><em><a href="README.de.md">Deutsche Version</a></em></p>
 
 > [!IMPORTANT]
-> **Device Proxy app (recommended):** the [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app for Home Assistant OS and Supervised keeps the gateway's serial port and shares it: Home Assistant, the old `eltako` integration, eo_man or PCT14 can use one gateway at the same time. After a restart it replays the telegrams Home Assistant missed, and it can stand in with a fallback gateway. The integration finds the app's gateways by itself. See the [User Guide](docs/USER-GUIDE.md#device-proxy-app).
+> **Device Proxy app (recommended):** the [Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) app for Home Assistant OS and Supervised keeps the gateway's serial port and shares it: Home Assistant, the old `eltako` integration or a second Home Assistant (a test system, for example) can use one gateway at the same time. After a restart it replays the telegrams Home Assistant missed, and it can stand in with a fallback gateway. The integration finds the app's gateways by itself. See the [User Guide](docs/USER-GUIDE.md#device-proxy-app).
 
 EnOcean Eltako brings Eltako devices (series 14 bus and wireless) and other EnOcean devices into Home Assistant. It is written from scratch, needs no third-party EnOcean library and is configured entirely in the UI: one entry per gateway, one sub-entry per device, no YAML.
 
@@ -111,7 +111,7 @@ This integration is written from scratch, but it would not exist without the wor
 - [grimmpp/eltako14bus](https://github.com/grimmpp/eltako14bus): originally by Christian Amsüss and Energy Harvesting Solutions (2016–2020), maintained by Philipp Grimm.
 - [grimmpp/esp2_gateway_adapter](https://github.com/grimmpp/esp2_gateway_adapter) (Philipp Grimm).
 - [kipe/enocean](https://github.com/kipe/enocean) (Kimmo Huoman).
-- [grimmpp/enocean-device-manager](https://github.com/grimmpp/enocean-device-manager) (eo_man).
+- [grimmpp/enocean-device-manager](https://github.com/grimmpp/enocean-device-manager).
 
 No code was taken from these projects. License terms are in [LICENSE](LICENSE) and [NOTICE](NOTICE).
 

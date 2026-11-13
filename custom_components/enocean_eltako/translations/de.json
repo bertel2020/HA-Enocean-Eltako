@@ -18,7 +18,7 @@
       },
       "connection": {
         "title": "Verbindung",
-        "description": "Wie ist das Gateway angeschlossen?",
+        "description": "Wie ist das Gateway angeschlossen?\n\nTipp: Die optionale [App Device Proxy](https://github.com/bertel2020/HA-Device-Proxy) teilt ein Gateway mit einem zweiten Home Assistant (zum Beispiel einem Testsystem), liefert nach einem Neustart verpasste Telegramme nach, springt mit einem Ersatz-Gateway ein und bringt Werkzeuge zur Fehlersuche mit. Ihre Gateways werden automatisch gefunden.",
         "menu_options": {
           "serial": "USB (direkt)",
           "tcp": "Netzwerk (ser2net)"
