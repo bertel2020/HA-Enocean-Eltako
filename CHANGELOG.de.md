@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.12.1 - 2026-11-13
+
 ### Behoben
 
 - **Thermostat:** Nach einem Neuladen oder Neustart wird das Relais nicht mehr kurz eingeschaltet, wenn der Modus „Aus“ ist oder der wiederhergestellte Sollwert niedrig ist; entschieden wird erst, wenn die Climate-Entity ihren Zustand wiederhergestellt hat.
