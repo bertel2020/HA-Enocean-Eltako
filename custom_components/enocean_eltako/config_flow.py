@@ -63,6 +63,7 @@ from .const import (
     DOMAIN,
     MODE_ALWAYS,
     MODE_ON_DEMAND,
+    PROXY_APP_URL,
     REPEATER_LEVELS,
     REPEATER_UNCHANGED,
 )
@@ -459,7 +460,11 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """USB gateways: direct or via ser2net."""
-        return self.async_show_menu(step_id="connection", menu_options=["serial", "tcp"])
+        return self.async_show_menu(
+            step_id="connection",
+            menu_options=["serial", "tcp"],
+            description_placeholders={"proxy_url": PROXY_APP_URL},
+        )
 
     async def async_step_serial(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         assert self._model is not None
