@@ -880,7 +880,7 @@ class EnOceanEltakoPanel extends HTMLElement {
       const look = this.shadowRoot.querySelector(".look");
       if (look && !e.composedPath().includes(look) && !this.shadowRoot.getElementById("lookMenu").hidden) this._toggleLook(false);
       if (!e.composedPath().some((el) => el.classList?.contains("addmenu") || el.classList?.contains("add") || el.classList?.contains("rowmore"))) this._closeAddMenu();
-      const more = this.shadowRoot.querySelector(".more");
+      const more = this.shadowRoot.getElementById("more")?.closest(".more"); // not the look menu, which is a .more too
       if (more && !e.composedPath().includes(more) && !this.shadowRoot.getElementById("moreMenu").hidden) this._toggleMenu(false);
     };
     // a hidden tab asks for no status; back in view it catches up at once
