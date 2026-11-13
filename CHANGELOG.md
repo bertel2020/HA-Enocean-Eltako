@@ -10,23 +10,29 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 #### Geändert
 
-- **Gateway-Einstellungen:** „Unbekannte Sender vergessen nach“ steht nur noch im Panel („Automatisch vergessen…“ im ⋮-Menü der Geräteliste); der Wert bleibt erhalten.
+- **Panel:**
+  - „Unbekannte Sender vergessen nach“ steht nur noch im Panel („Automatisch vergessen…“ im ⋮-Menü der Geräteliste), nicht mehr in den Gateway-Einstellungen. Der Wert bleibt erhalten.
 
 #### Behoben
 
-- **Panel:** Die Einträge des ⋮-Menüs (u. a. „Automatisch vergessen…“, Export, Dokumentation) taten beim Anklicken nichts: das Menü schloss sich schon beim Drücken der Maustaste.
-- **Rollläden:** Der Zustandssensor zeigt „Offen“ bzw. „Geschlossen“, wenn die gemeldete Fahrzeit eine volle Fahrt war (Fahrten mit Laufzeit aus Home Assistant enden mit der Fahrzeit, nicht mit 0x70/0x50), statt „Gestoppt“.
+- **Panel:**
+  - Die Einträge des ⋮-Menüs (u. a. „Automatisch vergessen…“, Export, Dokumentation) taten beim Anklicken nichts: das Menü schloss sich schon beim Drücken der Maustaste.
+- **Rollläden:**
+  - Der Zustandssensor zeigt „Offen“ bzw. „Geschlossen“, wenn die gemeldete Fahrzeit eine volle Fahrt war (Fahrten mit Laufzeit aus Home Assistant enden mit der Fahrzeit, nicht mit 0x70/0x50), statt „Gestoppt“.
 
 **English**
 
 #### Changed
 
-- **Gateway settings:** "Forget unknown senders after" is now set only in the panel ("Forget automatically…" in the ⋮ menu of the device list); the value is kept.
+- **Panel:**
+  - "Forget unknown senders after" is now set only in the panel ("Forget automatically…" in the ⋮ menu of the device list), no longer in the gateway settings. The value is kept.
 
 #### Fixed
 
-- **Panel:** the entries of the ⋮ menu (including "Forget automatically…", export, documentation) did nothing when clicked: the menu closed as soon as the mouse button went down.
-- **Covers:** the state sensor shows "Open" or "Closed" when the reported driven time was a full run (runs with a run time from Home Assistant end with the driven time, not with 0x70/0x50), instead of "Stopped".
+- **Panel:**
+  - The entries of the ⋮ menu (including "Forget automatically…", export, documentation) did nothing when clicked: the menu closed as soon as the mouse button went down.
+- **Covers:**
+  - The state sensor shows "Open" or "Closed" when the reported driven time was a full run (runs with a run time from Home Assistant end with the driven time, not with 0x70/0x50), instead of "Stopped".
 
 ### [1.11.0] - 2026-11-12
 
