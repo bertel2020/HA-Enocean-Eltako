@@ -8,12 +8,20 @@ has a German and an English part (German first). The format follows [Keep a Chan
 
 **Deutsch**
 
+#### Geändert
+
+- **Gateway-Einstellungen:** „Unbekannte Sender vergessen nach“ steht nur noch im Panel („Automatisch vergessen…“ im ⋮-Menü der Geräteliste); der Wert bleibt erhalten.
+
 #### Behoben
 
 - **Panel:** Die Einträge des ⋮-Menüs (u. a. „Automatisch vergessen…“, Export, Dokumentation) taten beim Anklicken nichts: das Menü schloss sich schon beim Drücken der Maustaste.
 - **Rollläden:** Der Zustandssensor zeigt „Offen“ bzw. „Geschlossen“, wenn die gemeldete Fahrzeit eine volle Fahrt war (Fahrten mit Laufzeit aus Home Assistant enden mit der Fahrzeit, nicht mit 0x70/0x50), statt „Gestoppt“.
 
 **English**
+
+#### Changed
+
+- **Gateway settings:** "Forget unknown senders after" is now set only in the panel ("Forget automatically…" in the ⋮ menu of the device list); the value is kept.
 
 #### Fixed
 

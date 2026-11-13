@@ -726,7 +726,8 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
     """Settings (send spacing, discovery; bus gateways always vs on demand; ESP3 repeater;
     gateway prefix in entity IDs).
 
-    Sender IDs and the takeover from the old eltako integration live in the panel.
+    Sender IDs, the takeover from the old eltako integration and after how many days unknown
+    senders are forgotten live in the panel.
 
     No OptionsFlowWithReload: the entry's update listener reloads it on every change
     (subentries as well), and Home Assistant refuses the two together.
@@ -743,7 +744,10 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
             data = {
                 **user_input,
                 CONF_MESSAGE_DELAY: int(user_input[CONF_MESSAGE_DELAY]),
-                CONF_FORGET_DAYS: int(user_input[CONF_FORGET_DAYS]),
+                # set in the panel, kept as it is
+                CONF_FORGET_DAYS: self.config_entry.options.get(
+                    CONF_FORGET_DAYS, DEFAULT_FORGET_DAYS
+                ),
             }
             data[CONF_GATEWAY_NUMBER] = int(data[CONF_GATEWAY_NUMBER])
             rename = data.pop(CONF_RENAME_ENTITIES, False)
@@ -763,11 +767,6 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
             )
         }
         schema[vol.Required(CONF_DISCOVERY, default=True)] = BooleanSelector()
-        schema[vol.Required(CONF_FORGET_DAYS, default=DEFAULT_FORGET_DAYS)] = NumberSelector(
-            NumberSelectorConfig(
-                min=0, max=3650, step=1, unit_of_measurement="d", mode=NumberSelectorMode.BOX
-            )
-        )
         if self.config_entry.data.get(CONF_DEVICE, {}).get("type") == "tcp":
             schema[vol.Required(CONF_PROXY_REPLAY, default=False)] = BooleanSelector()
         if MODELS[self.config_entry.data[CONF_MODEL]].bus:
