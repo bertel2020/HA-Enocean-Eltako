@@ -27,6 +27,7 @@ CONF_FORGET_DAYS: Final = "forget_unknown_days"  # unknown senders not heard for
 DEFAULT_FORGET_DAYS: Final = 30  # 0 keeps them for ever
 CONF_PROXY_REPLAY: Final = "proxy_replay"  # TCP gateway is the Device Proxy app: replay
 # telegrams missed while HA was away, each with its reception time
+PROXY_APP_URL: Final = "https://github.com/bertel2020/HA-Device-Proxy"  # shown as a tip in the flow
 PROXY_REPLAY_REQUEST: Final = b"EOPX REPLAY TS\n"
 CONF_ENTITY_PREFIX: Final = "entity_prefix"  # new entity IDs start with eno_gw<number>
 CONF_GATEWAY_NUMBER: Final = "gateway_number"
