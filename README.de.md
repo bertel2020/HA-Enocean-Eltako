@@ -104,7 +104,7 @@ Jeder Schritt, alle Gerätearten, das Panel, die Übernahme, Blueprints, bekannt
 - [Unterstützte Geräte](docs/devices.de.md)
 - [Einlernfunktionen der Eltako-Aktoren Baureihe 14](docs/teach_in.de.md)
 - [Quality Scale](docs/quality_scale.de.md)
-- [Änderungsprotokoll](CHANGELOG.md) (Englisch und Deutsch)
+- [Änderungsprotokoll](CHANGELOG.de.md) ([English](CHANGELOG.md))
 
 ## Dank
 

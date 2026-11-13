@@ -101,7 +101,7 @@ Every step, all device types, the panel, the takeover, blueprints, known limitat
 - [Supported devices](docs/devices.md)
 - [Learn functions of Eltako series 14 actuators](docs/teach_in.md)
 - [Quality scale](docs/quality_scale.md)
-- [Changelog](CHANGELOG.md)
+- [Changelog](CHANGELOG.md) ([Deutsch](CHANGELOG.de.md))
 
 ## Thanks
 
