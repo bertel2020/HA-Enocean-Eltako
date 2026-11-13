@@ -870,6 +870,16 @@ async def test_cover_state_and_driven_time(hass: HomeAssistant, gateway) -> None
     assert hass.states.get(state_id).state == "stopped"
     driven = hass.states.get(time_id)
     assert float(driven.state) == 10.0 and driven.attributes["direction"] == "up"
+    # a run with a run time of ours ends with the driven time of a full run: end position
+    _push(server, 0x07, bytes.fromhex("0258010A"), 0x05000022)  # 60.0 s up
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "open"
+    _push(server, 0x07, bytes.fromhex("0258020A"), 0x05000022)  # 60.0 s down
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "closed"
+    _push(server, 0x07, bytes.fromhex("0064020A"), 0x05000022)  # 10.0 s down: in between
+    await _settle(hass)
+    assert hass.states.get(state_id).state == "stopped"
 
 
 async def test_reconfigure_device(hass: HomeAssistant, gateway) -> None:

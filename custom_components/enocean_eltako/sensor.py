@@ -936,8 +936,8 @@ COVER_STATES = ["opening", "closing", "open", "closed", "stopped"]
 
 
 class CoverStateSensor(EnOceanEntity, SensorEntity, RestoreEntity):
-    """What the FSB confirmed last: a run started (up / down), an end position reached, or the
-    run stopped in between (its driven-time telegram)."""
+    """What the FSB confirmed last: a run started (up / down), an end position reached (its
+    status, or a driven time of a full run), or the run stopped in between."""
 
     _attr_translation_key = "cover_state"
     _attr_device_class = SensorDeviceClass.ENUM
@@ -952,7 +952,14 @@ class CoverStateSensor(EnOceanEntity, SensorEntity, RestoreEntity):
             self._attr_native_value = last.state
 
     def _apply(self, values: dict[str, Any]) -> bool:
-        state = values.get("state") or ("stopped" if "driven_time" in values else None)
+        state = values.get("state")
+        if state is None and "driven_time" in values:
+            # a run with a run time of ours ends with the driven time, not 0x70/0x50: a full run
+            # anchors the cover, so it stands at the end position
+            up = values["direction"] == "up"
+            cover = self._device.cover_entity
+            full = cover is not None and cover.position.reaches_end(values["driven_time"], up)
+            state = ("open" if up else "closed") if full else "stopped"
         if state is None or state == self._attr_native_value:
             return False
         self._attr_native_value = state
