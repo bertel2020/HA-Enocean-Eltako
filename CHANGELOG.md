@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.12.1 - 2026-11-13
+
 ### Fixed
 
 - **Thermostat:** after a reload or restart the relay is no longer switched on for a moment while the mode is "Off" or the restored setpoint is low; nothing is decided before the climate entity has restored its state.
