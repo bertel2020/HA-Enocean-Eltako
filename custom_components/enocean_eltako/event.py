@@ -66,7 +66,11 @@ class RockerGestures:
         if last is not None and last.replayed:
             return  # gestures are timed live; a press from before the restart is no event now
         if values.get("EB") == 1:
-            second = BUTTONS[values["R2"]] if values.get("SA") == 1 else None
+            if values.get("NU") == 0 or not 0 <= values["R1"] < len(BUTTONS):
+                return  # several buttons at once, or no rocker code
+            second = None
+            if values.get("SA") == 1 and 0 <= values["R2"] < len(BUTTONS):
+                second = BUTTONS[values["R2"]]
             self._detector.press(BUTTONS[values["R1"]], second)
         elif values.get("EB") == 0:
             self._detector.release()

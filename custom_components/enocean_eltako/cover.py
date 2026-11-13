@@ -21,7 +21,6 @@ query commands and shows the reply (D2-05 counts closed percent, HA open percent
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import math
 from collections.abc import Callable
 from typing import Any
@@ -129,6 +128,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         self._cancel_stop: Callable[[], None] | None = None
         self._rocker_direction: bytes | None = None
         self._anchored = asyncio.Event()
+        self._interrupt = asyncio.Event()  # a stop or a new command ends the wait for an anchor
         self._last_calibrated: str | None = None
         device.cover_entity = self
 
@@ -166,12 +166,15 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
         self._cancel_timed_stop()
 
     async def async_open_cover(self, **kwargs: Any) -> None:
+        self._interrupt.set()
         self._full_run(up=True)
 
     async def async_close_cover(self, **kwargs: Any) -> None:
+        self._interrupt.set()
         self._full_run(up=False)
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
+        self._interrupt.set()
         self._cancel_timed_stop()
         for profile in self._via:
             if profile == CONTROLLER.id:
@@ -183,6 +186,7 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         target = kwargs[ATTR_POSITION]
+        self._interrupt.set()  # a calibration run still waiting for its anchor is replaced
         if target >= 100 or target <= 0:
             self._full_run(up=target >= 100)
             return
@@ -191,7 +195,8 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
                 translation_domain=DOMAIN, translation_key="cover_position_unknown"
             )
         if self._before_move and self.position.inaccuracy > DEFAULT_THRESHOLD:
-            await self._drive_to_anchor(self.position.nearer_end())
+            if not await self._drive_to_anchor(self.position.nearer_end()):
+                return  # stopped, replaced or no anchor: do not move on from a doubtful position
         self._partial_run(target)
 
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
@@ -229,12 +234,22 @@ class EnOceanCover(EnOceanEntity, CoverEntity, RestoreEntity):
 
     async def _drive_to_anchor(self, end: int) -> bool:
         self._anchored.clear()
+        self._interrupt.clear()
         self._full_run(up=end == 100)
         timeout = self.position.full_run_time(up=end == 100) + ANCHOR_WAIT_EXTRA
-        with contextlib.suppress(TimeoutError):
-            async with asyncio.timeout(timeout):
-                await self._anchored.wait()
-                return True
+        anchored = asyncio.ensure_future(self._anchored.wait())
+        interrupted = asyncio.ensure_future(self._interrupt.wait())
+        try:
+            done, _ = await asyncio.wait(
+                {anchored, interrupted}, timeout=timeout, return_when=asyncio.FIRST_COMPLETED
+            )
+        finally:
+            anchored.cancel()
+            interrupted.cancel()
+        if anchored in done:
+            return True
+        if interrupted in done:
+            return False  # the user took over; the position stays as the run left it
         self.position.no_answer()
         self._changed()
         self.async_write_ha_state()

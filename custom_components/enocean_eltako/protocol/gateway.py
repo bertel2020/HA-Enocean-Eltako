@@ -280,7 +280,7 @@ class Gateway:
                     pending = None
                 for item in self._codec.decoder.feed(chunk):
                     self._handle(item)
-        except OSError as err:
+        except Exception as err:  # noqa: BLE001  # OSError, or a transport's own exception type
             self._log_outage("Connection to %s lost: %s", self.connection, err)
         if not self._disconnected.is_set():
             # stream ended by the other side (EOF or error), not by _disconnect()

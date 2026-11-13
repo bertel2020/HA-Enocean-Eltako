@@ -128,3 +128,15 @@ def test_heard_listener_sees_duplicates_from_every_gateway() -> None:
     remove()  # twice is harmless
     d.dispatch("gw1", RadioTelegram(Rorg.RPS, b"\x10", SWITCH.sender, 0x30))
     assert len(heard) == 2
+
+
+def test_the_duplicate_filter_forgets_old_senders() -> None:
+    from custom_components.enocean_eltako.protocol import dispatcher as module
+
+    clock = Clock()
+    d = Dispatcher(clock=clock)
+    for sender in range(module.LAST_MAX + 10):
+        d.dispatch("gw", RadioTelegram(Rorg.RPS, b"\x10", sender, 0x30))
+    clock.now += module.LAST_MAX_AGE + 1
+    d.dispatch("gw", RadioTelegram(Rorg.RPS, b"\x10", 0xFFFFFF, 0x30))
+    assert len(d._last) < module.LAST_MAX

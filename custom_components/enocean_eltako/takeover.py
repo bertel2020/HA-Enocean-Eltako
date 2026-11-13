@@ -685,7 +685,14 @@ async def async_take_over(
     if not devices:
         return TakeoverResult(0, [], 0)
     runtime = entry.runtime_data
-    pool = runtime.senders.pool
+    bus = runtime.bus
+
+    def pool_of(sender: int) -> Any:
+        # a bus gateway's senders (00-00-B0-xx) belong to the bus group's pool
+        if bus is not None and sender in bus.senders.pool:
+            return bus.senders.pool
+        return runtime.senders.pool
+
     old = old_entities(hass)
     carried = {d.target_id: carried_from(hass, old.get(d.device_id, [])) for d in devices}
     existing = {s.unique_id for s in entry.subentries.values()}
@@ -701,7 +708,7 @@ async def async_take_over(
             senders: dict[str, int] = {}
             for profile, sender in device.senders.items():
                 try:
-                    pool.assign(sender, sender_owner(device.target_id, profile))
+                    pool_of(sender).assign(sender, sender_owner(device.target_id, profile))
                 except SenderIdError as err:
                     skipped.append(f"{format_id(sender)} ({device.name}): {err.reason}")
                     continue
@@ -718,6 +725,8 @@ async def async_take_over(
             added += 1
     finally:  # what was added stays: its senders saved, the entry set up again
         await runtime.senders.async_save()
+        if bus is not None:
+            await bus.senders.async_save()
         await hass.config_entries.async_reload(entry.entry_id)
     if prefix_ids and entry.state is ConfigEntryState.LOADED and gateway_prefix(entry.options):
         # Home Assistant gives a returning entity the ID it had before; the prefix is applied

@@ -67,7 +67,11 @@ DECODERS: dict[EEPRef, Decoder] = {
 def decode_telegram(ref: EEPRef, telegram: RadioTelegram) -> dict[str, Any] | None:
     """Decoded values, or None for teach-in, foreign or undecodable telegrams."""
     decoder = DECODERS.get(ref)
-    return decoder(telegram) if decoder else None
+    values = decoder(telegram) if decoder else None
+    if values is not None and ref == EEPRef("F6-02-01", "std"):
+        # NU=0 is a U-message ("several buttons"): R1 is no rocker code then
+        values["NU"] = 1 if telegram.status & 0x10 else 0
+    return values
 
 
 ROCKER_BUTTONS = {0: "AI", 1: "AO", 2: "BI", 3: "BO"}

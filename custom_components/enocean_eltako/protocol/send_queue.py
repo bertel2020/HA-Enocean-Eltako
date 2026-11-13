@@ -228,7 +228,8 @@ class SendQueue:
         try:
             async with asyncio.timeout(SEND_TIMEOUT):
                 await self._send(job.telegram)
-        except (OSError, ValueError) as err:  # TimeoutError is an OSError
+        except Exception as err:  # noqa: BLE001  # one bad write must not stop the worker
+            # OSError (TimeoutError included), ValueError, a transport's own exception type
             _LOGGER.warning("Sending %s failed: %s", job.telegram, err)
             self.stats.failed += 1
             job.finish(SendResult.FAILED)

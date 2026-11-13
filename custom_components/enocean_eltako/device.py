@@ -337,7 +337,7 @@ class EnOceanDevice:
     def _on_wall_switch(self, received: ReceivedTelegram) -> None:
         """I4: a press on the wall switch teached into the actuator sets the assumed state."""
         values = decode_telegram(WALL_SWITCH_EEP, received.telegram)
-        if values is None or values.get("EB") != 1 or "R1" not in values:
+        if values is None or values.get("EB") != 1 or "R1" not in values or values.get("NU") == 0:
             return
         on = wall_switch_state(
             values["R1"],
@@ -508,7 +508,9 @@ class EnOceanDevice:
                 ),
                 f"{DOMAIN} send {self.subentry.title}",
             )
-            task.add_done_callback(lambda t: self._log_result(t.result(), started))
+            task.add_done_callback(
+                lambda t: None if t.cancelled() else self._log_result(t.result(), started)
+            )
             if confirm:
                 self.stats.commands += 1
             return

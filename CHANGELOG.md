@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Thermostat:** after a reload or restart the relay is no longer switched on for a moment while the mode is "Off" or the restored setpoint is low; nothing is decided before the climate entity has restored its state.
+- **Bus gateways:** a cover run or an impulse (garage door) whose confirmation is lost is no longer repeated over the next gateway of the bus group.
+- **Gateway:** an unexpected error from the transport no longer stops the send queue or the receive loop for good; the gateway reconnects instead.
+- **Covers:** a stop (or a new command) while a run to the anchor is still waiting now cancels the pending move to the target position; no move starts from an unconfirmed position.
+- **Takeover:** sender IDs of the old integration in the bus range (`00-00-B0-xx`) are taken over on bus gateways instead of being dropped.
+- **Wall switches:** telegrams with an impossible rocker code or several buttons at once (NU=0) are ignored instead of raising an error or counting as a button press.
+- **ESP3:** a false packet header no longer holds back the packets behind it (resync after 2 s).
+- Memory of the duplicate filter is bounded; no error in the log when a send is cancelled while unloading.
+
 ## 1.12.0 - 2026-11-13
 
 ### New

@@ -390,3 +390,36 @@ async def test_thermostat_form_validates_and_saves(hass: HomeAssistant, gateway)
     await hass.async_block_till_done()
     assert _entity(hass, "climate", f"{PREFIX}_thermostat") is None
     assert _entity(hass, "sensor", f"{PREFIX}_thermostat_run") is None
+
+
+@pytest.mark.parametrize(
+    "gateway",
+    [[_subentry("switch", "05-10-A2-B9", "Konvektor Bad", **THERMOSTAT)]],
+    indirect=True,
+)
+async def test_the_restored_mode_is_known_before_the_controller_decides(
+    hass: HomeAssistant,
+    gateway,  # noqa: F811
+) -> None:
+    from custom_components.enocean_eltako.thermostat import ThermostatController
+
+    entry, _server = gateway
+    device = next(iter(entry.runtime_data.devices.values()))
+    hass.states.async_set("sensor.room_temperature", "15")
+    controller = ThermostatController(hass, device)
+    sent: list[bool] = []
+    controller._send = lambda relay, now: sent.append(relay)  # type: ignore[method-assign]
+    controller.start()  # the extra entities start it before the climate entity restores
+    assert sent == []  # the defaults (21 °C, heating) must not switch the relay on
+    controller.restore(None, False)  # last mode: off
+    assert True not in sent
+    controller.stop()
+
+
+def test_a_rocker_telegram_with_an_impossible_code_is_ignored() -> None:
+    from custom_components.enocean_eltako.binary_sensor import _rocker_contact
+
+    value = _rocker_contact("a0", "a1")
+    assert value({"EB": 1, "R1": 7, "NU": 1}) is None  # three bits, only 0...3 are buttons
+    assert value({"EB": 1, "R1": 3, "NU": 0}) is None  # several buttons at once
+    assert value({"EB": 1, "R1": 1, "NU": 1}) is True  # a0

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -13,6 +14,8 @@ HEADER_LEN = 4
 # far above any packet a gateway sends (radio telegrams, responses, events: below 100 bytes);
 # a false header with a larger length would hold back every packet behind it
 MAX_DATA_LEN = 512
+# a packet that stays incomplete this long was a false header: skip its sync byte and resync
+STALL_TIMEOUT = 2.0
 
 
 class PacketType(IntEnum):
@@ -79,6 +82,7 @@ class Esp3Decoder:
     def __init__(self) -> None:
         self._buf = bytearray()
         self.dropped = 0
+        self._stalled: float | None = None  # since when an incomplete packet waits
 
     def feed(self, chunk: bytes) -> list[Esp3Packet]:
         self._buf += chunk
@@ -107,6 +111,14 @@ class Esp3Decoder:
                 continue
             total = 6 + data_len + opt_len + 1
             if len(self._buf) < total:
+                now = time.monotonic()
+                if self._stalled is None:
+                    self._stalled = now
+                elif now - self._stalled > STALL_TIMEOUT:
+                    self.dropped += 1
+                    del self._buf[:1]
+                    self._stalled = None
+                    continue
                 return packets
             payload = bytes(self._buf[6 : total - 1])
             if crc8(payload) != self._buf[total - 1]:
@@ -114,6 +126,7 @@ class Esp3Decoder:
                 del self._buf[:1]
                 continue
             del self._buf[:total]
+            self._stalled = None
             packets.append(Esp3Packet(header[3], payload[:data_len], payload[data_len:]))
 
 
