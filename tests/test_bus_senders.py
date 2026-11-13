@@ -291,3 +291,23 @@ async def test_swapping_the_only_bus_gateway_keeps_the_bus_ids(
     pool = e_fgw.runtime_data.bus.senders.pool
     allocation = pool.get(B0 + 3)
     assert (allocation.owner, allocation.state) == ("device:05-10-A2-B5:central", "assigned")
+
+
+async def test_takeover_assigns_bus_sender_ids_from_the_bus_pool(hass: HomeAssistant, bus) -> None:
+    from custom_components.enocean_eltako.takeover import TakeoverDevice, async_take_over
+
+    e_fgw, _ = bus
+    device = TakeoverDevice(
+        device_id=0x0510A2B3,
+        name="Licht",
+        old="light EEP",
+        model="switch",
+        data={"platform": "switch"},
+        senders={"central": B0 + 7},
+    )
+    result = await async_take_over(hass, e_fgw, [device], carry=set())
+    assert result.count == 1
+    assert result.skipped == []  # not "out_of_range": the ID is in the bus range
+    pool = e_fgw.runtime_data.bus.senders.pool
+    assert pool.get(B0 + 7).owner == "device:05-10-A2-B3:central"
+    assert e_fgw.runtime_data.senders.pool.get(B0 + 7) is None  # not the radio pool
