@@ -58,6 +58,9 @@ jobs:
             exit 1
           fi
           cat notes.md
+      - name: Append the support footer
+        if: steps.version.outputs.exists != 'true'
+        run: cat .github/release-footer.md >> notes.md
       - name: Create the release
         if: steps.version.outputs.exists != 'true'
         run: |
