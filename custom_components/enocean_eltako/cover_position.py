@@ -82,10 +82,14 @@ class CoverPosition:
         if self.is_blind and position in (0, 100):
             self.tilt = position
 
+    def reaches_end(self, seconds: float, up: bool) -> bool:
+        """A driven time that is a full run: the cover stands at the end position."""
+        travel = self.time_opens if up else self.time_closes
+        return seconds >= travel + margin(travel) - 0.05
+
     def driven(self, seconds: float, up: bool) -> None:
         """The actuator reports the time it drove after a stop."""
-        travel = self.time_opens if up else self.time_closes
-        if seconds >= travel + margin(travel) - 0.05:
+        if self.reaches_end(seconds, up):
             self.anchor(100 if up else 0)
             return
         if self.position is None:
