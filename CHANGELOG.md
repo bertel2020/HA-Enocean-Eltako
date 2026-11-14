@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Changed
+
+- **Monitor panel:** look aligned with the Fritzbox Network panel: sticky header with blur, tabs with an accent underline, 16 px cards with a 12 px gap, buttons and fields with 10 px corners, softer menus and shadows; the same corners and menus in the installation and takeover views.
+
 ## 1.12.1 - 2026-11-13
 
 ### Fixed

@@ -33,7 +33,7 @@ const COMMON = {
   warn: ["#8a4b00", "#f2c27a"], "warn-soft": ["#fff1de", "#3a2a12"], "warn-line": ["#f3d19e", "#6b4a1c"],
   bad: ["#a1261b", "#f2a29a"], "bad-soft": ["#fdecea", "#3d1c19"], "bad-line": ["#f2b8b5", "#6e2f2a"],
   "code-bg": ["#14181d", "#0b0e11"], "code-text": ["#d7dee6", "#d7dee6"],
-  focus: ["#7db8e0", "#7db8e0"], "shadow-c": ["rgba(16, 24, 40, .06)", "rgba(0, 0, 0, .4)"],
+  focus: ["#7db8e0", "#7db8e0"], "shadow-c": ["rgba(16, 24, 40, .14)", "rgba(0, 0, 0, .4)"],
 };
 
 // base font size in px; every size in the panel is a multiple of it (14 px = factor 1)

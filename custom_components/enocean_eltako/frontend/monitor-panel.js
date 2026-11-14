@@ -81,7 +81,8 @@ const STYLE = `
   :host {
     display: block; min-height: 100%; background: var(--bg); color: var(--text);
     font-family: Roboto, "Noto Sans", system-ui, -apple-system, sans-serif; font-size: calc(14px * var(--fs));
-    --radius: 18px; --shadow: 0 1px 2px var(--shadow-c), 0 6px 18px -10px var(--shadow-c);
+    --radius: 16px; --gap: 12px; --control-radius: 10px;
+    --shadow: 0 1px 2px color-mix(in srgb, var(--shadow-c) 45%, transparent), 0 8px 24px -16px var(--shadow-c);
   }
   * { box-sizing: border-box; }
   svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
@@ -94,29 +95,30 @@ const STYLE = `
   input[type="checkbox"]:checked::after { content: ""; width: 9px; height: 5px; border: solid var(--surface); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
   input[type="checkbox"]:indeterminate::after { content: ""; width: 8px; height: 2px; background: var(--surface); border-radius: 1px; }
 
-  .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line);
+  /* sticky with a blur, as in the Fritzbox Network panel; --head-h (measured) keeps the bar and the table head below it */
+  .header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0 24px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
     /* logo and tabs line up with the content (max 1200 px, centred), not with the window's edges */
     padding: 0 max(24px, calc((100% - 1200px) / 2 + 24px)); }
   .brand { display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 60px; }
   .brand ha-menu-button { margin-left: -12px; color: var(--text); }
-  .brand b { display: block; font-size: calc(18px * var(--fs)); font-weight: 600; line-height: 1.1; }
+  .brand b { display: block; font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }
   .brand small { display: block; font-size: calc(12px * var(--fs)); color: var(--muted); }
-  .header .logo { width: 36px; height: 36px; flex: none; }
-  /* the view tabs: their own look, not the segmented filter buttons */
-  #view { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 0; }
-  #view button { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; font-size: calc(14px * var(--fs)); font-weight: 500; white-space: nowrap;
-    color: var(--muted); border-radius: 20px; transition: background .15s, color .15s; }
-  #view button:hover { color: var(--text); background: var(--neutral-soft); }
-  #view button[aria-selected="true"] { color: var(--accent-hover); background: var(--accent-soft); }
+  .header .logo { width: 36px; height: 36px; border-radius: 10px; flex: none; }
+  /* the view tabs: text with an accent line under the chosen one, as in the Fritzbox Network panel */
+  #view { display: flex; gap: 4px; align-self: stretch; }
+  #view button { display: inline-flex; align-items: center; min-height: 56px; padding: 0 14px; font-size: calc(14px * var(--fs)); font-weight: 500; white-space: nowrap;
+    color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; }
+  #view button:hover { color: var(--text); }
+  #view button[aria-selected="true"] { color: var(--accent-hover); border-bottom-color: var(--accent); }
   #view button[hidden] { display: none; }
   #view button svg { display: none; }
   .header-end { display: flex; align-items: center; gap: 8px; min-width: 0; }
   /* palette and integration link as in the Fritzbox Network panel: round 24px icon buttons */
   .header-end .icon-btn svg { width: 24px; height: 24px; }
   .integration-link svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; display: grid;
-    grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 24px 64px; display: grid;
+    grid-template-columns: minmax(0, 1fr); gap: var(--gap); }
   main > section { min-width: 0; }
   h2 { margin: 0; font-size: calc(16px * var(--fs)); font-weight: 500; }
   .mono { font-family: var(--code-font-family, ui-monospace, monospace); }
@@ -126,7 +128,7 @@ const STYLE = `
   .card { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 20px;
     background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
     box-shadow: var(--shadow); transition: border-color .15s, box-shadow .15s; }
-  .card.selected { border: 2px solid var(--accent); padding: 19px; background: var(--accent-soft); }
+  .card.selected { border-color: var(--accent); background: var(--accent-soft); }
   .card .name { font-size: calc(16px * var(--fs)); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .sub { font-size: calc(12px * var(--fs)); color: var(--muted); overflow-wrap: anywhere; }
   .gateway-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px;
@@ -170,7 +172,7 @@ const STYLE = `
   .panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line);
     box-shadow: var(--shadow); overflow: clip; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 12px 12px 16px;
-    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; background: var(--surface); }
+    border-bottom: 1px solid var(--line); position: sticky; top: var(--head-h, 0px); z-index: 2; background: var(--surface); }
   /* the gateway status in the bar, once the cards are scrolled away */
   .mini { display: inline-flex; align-items: center; gap: 12px; min-width: 0; padding: 0 4px; font-size: calc(12px * var(--fs)); color: var(--muted); border-radius: 8px; }
   .mini[hidden] { display: none; }
@@ -196,7 +198,7 @@ const STYLE = `
   /* phones: export and clear sit in the "more" menu, so the bar stays on one line */
   .more { position: relative; }
   .menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; display: grid; min-width: 220px; padding: 6px 0;
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%); }
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px var(--shadow-c); }
   .menu[hidden] { display: none; }
   /* clearing the list lives in the more menu; its export item repeats the icon only where the icon is hidden */
   #clear, .menu .dup { display: none; }
@@ -219,7 +221,7 @@ const STYLE = `
 
   .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
   .search { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 6px 0 12px;
-    border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface); color: var(--muted); }
+    border-radius: var(--control-radius); border: 1px solid var(--input-line); background: var(--surface); color: var(--muted); }
   .search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; font: inherit;
     font-size: calc(14px * var(--fs)); color: var(--text); }
   .search input::placeholder { color: var(--muted); }
@@ -230,11 +232,11 @@ const STYLE = `
   @media (hover: none) { .search .key { display: none; } }
   .search .icon-btn { width: 30px; height: 30px; }
   .search .icon-btn svg { width: 18px; height: 18px; }
-  .segmented { display: inline-flex; border: 1px solid var(--input-line); border-radius: 10px; overflow: hidden; }
+  .segmented { display: inline-flex; border: 1px solid var(--input-line); border-radius: var(--control-radius); overflow: hidden; }
   .segmented button { min-height: 38px; padding: 0 14px; font-size: calc(13px * var(--fs)); font-weight: 500; color: var(--text); background: var(--surface); white-space: nowrap; }
   .segmented button + button { border-left: 1px solid var(--input-line); }
   .segmented button[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); }
-  .chip { min-height: 36px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--input-line); font-size: calc(13px * var(--fs)); font-weight: 500;
+  .chip { min-height: 40px; padding: 0 16px; border-radius: var(--control-radius); border: 1px solid var(--input-line); font-size: calc(13px * var(--fs)); font-weight: 500;
     display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--accent); background: var(--surface); white-space: nowrap; }
   .chip:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-hover); }
   .chip svg { width: 16px; height: 16px; }
@@ -243,7 +245,7 @@ const STYLE = `
   .chip.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .chip.primary:hover:not(:disabled) { background: var(--accent-hover); color: var(--on-accent); }
   .chip:disabled { opacity: .5; cursor: default; }
-  .chip.only-icon { padding: 0; width: 36px; }
+  .chip.only-icon { padding: 0; width: 40px; }
   /* three ranks of buttons: filled for the main action, outlined for others, text only for minor ones */
   .chip.text { border-color: transparent; background: none; padding: 0 10px; }
   .chip.text.warn { color: var(--warn); }
@@ -251,7 +253,7 @@ const STYLE = `
   .meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; padding: 8px 16px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .meta .active { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .meta .active:empty { display: none; }
-  .chip.set { padding: 0 6px 0 10px; color: var(--text); background: var(--accent-soft); border-color: transparent; }
+  .chip.set { min-height: 32px; border-radius: 16px; padding: 0 6px 0 10px; color: var(--text); background: var(--accent-soft); border-color: transparent; }
   .chip.set svg { width: 14px; height: 14px; color: var(--muted); }
   .chip.set:hover svg { color: var(--text); }
   .filters:has(+ .statusrow) { border-bottom: 0; }
@@ -308,7 +310,7 @@ const STYLE = `
   .telegrams col.c-signal { width: 92px; }
   .telegrams col.c-gw { width: 140px; }
   .telegrams col.c-end { width: 48px; }
-  .telegrams th { position: sticky; top: var(--bar-height, 0px); z-index: 1; padding: 0; text-align: left;
+  .telegrams th { position: sticky; top: calc(var(--head-h, 0px) + var(--bar-height, 0px)); z-index: 1; padding: 0; text-align: left;
     background: var(--soft); border-bottom: 1px solid var(--line); }
   .telegrams th > button, .telegrams th > span { display: flex; align-items: center; gap: 2px; width: 100%; height: 38px;
     padding: 0 8px; font-size: calc(11px * var(--fs)); font-weight: 500; color: var(--muted); text-align: left; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
@@ -1265,6 +1267,8 @@ class EnOceanEltakoPanel extends HTMLElement {
     });
     $("view").addEventListener("scroll", () => this._fadeTabs(), { passive: true });
     // the table head sticks below the bar; the bar shows the gateways once their cards are out of view
+    const header = this.shadowRoot.querySelector(".header");
+    new ResizeObserver(() => this.style.setProperty("--head-h", `${header.offsetHeight}px`)).observe(header);
     new ResizeObserver(() => this.style.setProperty("--bar-height", `${this.shadowRoot.querySelector(".bar").offsetHeight}px`)).observe(this.shadowRoot.querySelector(".bar"));
     new IntersectionObserver(([entry]) => {
       this._cardsAway = !entry.isIntersecting && entry.boundingClientRect.top < 0; // scrolled off above

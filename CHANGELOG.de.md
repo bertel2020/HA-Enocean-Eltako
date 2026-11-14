@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Geändert
+
+- **Monitor-Panel:** Optik an das Fritzbox-Network-Panel angeglichen: fester Kopf mit Unschärfe, Tabs mit Akzentlinie, Karten mit 16 px und 12 px Abstand, Buttons und Felder mit 10 px Ecken, weichere Menüs und Schatten; dieselben Ecken und Menüs in Installation und Übernahme.
+
 ## 1.12.1 - 2026-11-13
 
 ### Behoben

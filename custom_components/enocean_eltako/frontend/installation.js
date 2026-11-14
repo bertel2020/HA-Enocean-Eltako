@@ -210,7 +210,7 @@ export const INSTALLATION_STYLE = `
   .installation .itable input.cell:hover { border-color: var(--line); }
   .installation .itable input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .itable input.cell.bad { border-color: var(--warn); }
-  .installation input.isearch { width: 100%; max-width: 320px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+  .installation input.isearch { width: 100%; max-width: 320px; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 10px; border: 1px solid var(--input-line); border-radius: var(--control-radius); background: transparent; color: inherit; }
   .installation .bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
   .installation .bulk input, .installation .bulk select { font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .installation textarea.paste { width: 100%; min-height: 90px; box-sizing: border-box; font: calc(12px * var(--fs)) ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
@@ -250,7 +250,7 @@ export const INSTALLATION_STYLE = `
   .installation .ibody > p.isub { max-width: 100ch; margin: 0; }
   .installation .gcard { grid-template-columns: minmax(0, 1fr); }
   .installation .gcard li { white-space: normal; overflow-wrap: anywhere; }
-  .installation .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .installation .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: var(--control-radius); overflow: hidden; }
   .installation .seg button { font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: none; border: 0; padding: 5px 14px; cursor: pointer; }
   .installation .seg button + button { border-left: 1px solid var(--line); }
   .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
@@ -262,7 +262,7 @@ export const INSTALLATION_STYLE = `
   .installation details.imenu { position: relative; }
   .installation details.imenu summary { list-style: none; cursor: pointer; }
   .installation details.imenu summary::-webkit-details-marker { display: none; }
-  .installation .imenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 220px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .installation .imenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 220px; display: grid; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px var(--shadow-c); }
   .installation .imenu .items button { text-align: left; font: inherit; font-size: calc(13px * var(--fs)); color: inherit; background: none; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
   .installation .imenu .items button:hover { background: var(--soft); }
   .installation .imenu summary.iconbtn { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 18px; display: grid; place-items: center; color: var(--text); }
@@ -405,7 +405,7 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu { position: relative; }
   .installation details.colmenu summary { list-style: none; cursor: pointer; }
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
-  .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px var(--shadow-c); }
   .installation details.supplymenu .items { position: static; margin-top: 8px; justify-items: start; }
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 

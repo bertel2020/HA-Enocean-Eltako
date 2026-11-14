@@ -95,7 +95,7 @@ export const TAKEOVER_STYLE = `
   .takeover .stratcard input { margin-top: 3px; }
   .takeover .link { font: inherit; font-weight: 500; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
   .takeover .link:hover { color: var(--accent-hover); text-decoration: underline; }
-  .takeover .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: 20px; overflow: hidden; }
+  .takeover .seg { display: inline-flex; border: 1px solid var(--input-line); border-radius: var(--control-radius); overflow: hidden; }
   .takeover .seg button { height: 32px; padding: 0 14px; font: inherit; font-size: calc(13px * var(--fs)); color: var(--muted); background: var(--surface); border: 0; cursor: pointer; }
   .takeover .seg button[aria-pressed="true"] { color: var(--accent-hover); background: var(--accent-soft); font-weight: 500; }
   .takeover .skel { padding: 16px; display: grid; gap: 12px; }
