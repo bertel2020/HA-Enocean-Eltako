@@ -77,7 +77,7 @@ from .protocol.telegram import RadioTelegram, Rorg
 from .subentry_flow import candidates
 from .takeover_ws import async_setup_takeover_websocket
 
-MAX_CANDIDATES = 4
+MAX_CANDIDATES = 5
 COMMAND_UNITS = {
     "dim": "%",
     "setpoint": "°C",

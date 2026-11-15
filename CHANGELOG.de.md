@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+### Neu
+
+- **Katalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro-Unterputz-Schaltaktoren, 1 und 2 Kanäle) bei den anderen Herstellern als VLD-Schaltaktor aufgenommen (D2-01-08, UTE-Anlernen, Kanal 1 oder 2). Nach Datenblatt; noch nicht mit einem Gerät getestet. Die Energiemessung wird noch nicht ausgewertet.
+- **Katalog:** Thermokon SR-MDS (Bewegungs- und Helligkeitssensor, A5-08-01 Standard) bei den anderen Herstellern aufgenommen. Helligkeit, Bewegung und Versorgungsspannung werden angezeigt; Temperatur und Anwesenheitstaste werden noch nicht ausgewertet.
+
 ### Geändert
 
 - **Monitor-Panel:** Optik an das Fritzbox-Network-Panel angeglichen: fester Kopf mit Unschärfe, Tabs mit Akzentlinie, Karten mit 16 px und 12 px Abstand, Buttons und Felder mit 10 px Ecken, weichere Menüs und Schatten; dieselben Ecken und Menüs in Installation und Übernahme.

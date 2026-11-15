@@ -99,5 +99,9 @@ async def test_ute_teach_in_is_answered_while_armed(hass: HomeAssistant, esp3_ga
 
 
 def test_ute_query_suggests_the_vld_kind() -> None:
-    assert candidates(Rorg.UTE, None, encode_ute_request("D2-01-12")) == ["psc", "vld_switch"]
+    assert candidates(Rorg.UTE, None, encode_ute_request("D2-01-12")) == [
+        "psc",
+        "vld_switch",
+        "peha_fu_ebim",
+    ]
     assert candidates(Rorg.UTE, None, encode_ute_request("D2-05-00")) == ["vld_cover"]

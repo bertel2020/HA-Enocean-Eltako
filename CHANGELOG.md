@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+### New
+
+- **Catalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro flush-mounted switch actuators, 1 and 2 channels) added under other manufacturers as a VLD switch actuator (D2-01-08, UTE teach-in, channel 1 or 2). Based on the data sheet; not yet tested with a device. The energy meter is not evaluated yet.
+- **Catalog:** Thermokon SR-MDS (motion and brightness sensor, A5-08-01 standard) added under other manufacturers. Brightness, motion and supply voltage are shown; temperature and the occupancy button are not evaluated yet.
+
 ### Changed
 
 - **Monitor panel:** look aligned with the Fritzbox Network panel: sticky header with blur, tabs with an accent underline, 16 px cards with a 12 px gap, buttons and fields with 10 px corners, softer menus and shadows; the same corners and menus in the installation and takeover views.

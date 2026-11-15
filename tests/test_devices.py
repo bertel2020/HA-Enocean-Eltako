@@ -2195,6 +2195,7 @@ async def test_add_device_menus(hass: HomeAssistant, gateway) -> None:
         "enocean_lighting",
         "enocean_covers",
         "enocean_buttons",
+        "enocean_sensors",
         "user",
     ]
     result = await configure(result["flow_id"], {"next_step_id": "enocean_covers"})
@@ -2220,15 +2221,21 @@ async def test_learn_first_suggests_the_kind(hass: HomeAssistant, gateway) -> No
     assert device_id.description["suggested_value"] == "01-00-00-99"
 
 
-async def test_learn_first_single_fit_skips_the_choice(hass: HomeAssistant, gateway) -> None:
+async def test_learn_first_a5_08_01_offers_eltako_and_standard(
+    hass: HomeAssistant, gateway
+) -> None:
     entry, server = gateway
     configure = hass.config_entries.subentries.async_configure
     result = await _init_flow(hass, entry)
     result = await configure(result["flow_id"], {"next_step_id": "learn"})
-    # 4BS teach-in A5-08-01 from Eltako: only the motion and brightness entry decodes it
+    # 4BS teach-in A5-08-01: the Eltako entry (FBH65) and the standard one (Thermokon SR-MDS)
     _push(server, 0x07, encode_teach_in_4bs("A5-08-01"), 0x01820A11)
     await _settle(hass)
     result = await configure(result["flow_id"])
+    assert result["step_id"] == "learned"
+    options = result["data_schema"].schema["model"].config["options"]
+    assert set(options) == {"fbh", "enocean_motion"}
+    result = await configure(result["flow_id"], {"model": "fbh"})
     assert result["step_id"] == "device"
     assert "A5-08-01:eltako" in result["description_placeholders"]["receive"]
 

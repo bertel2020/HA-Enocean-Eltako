@@ -31,6 +31,7 @@ SAMPLES: dict[str, tuple[int, str, int]] = {
     "G5-3F-7F:eltako": (Rorg.RPS, "70", 0x30),
     "D2-01-09:std": (0xD2, "0460E4", 0),
     "D2-01-00:std": (0xD2, "040164", 0),  # status: channel 1 at 100 %
+    "D2-01-08:std": (0xD2, "040164", 0),  # same layout, PEHA FU-EBIM
     "D2-05-00:std": (0xD2, "1E7F0004", 0),  # position reply: 30 % closed
     "A5-12-01:std": (Rorg.BS4, "00100009", 0),
     "A5-12-01:eltako": (Rorg.BS4, "00100009", 0),
@@ -44,6 +45,7 @@ SAMPLES: dict[str, tuple[int, str, int]] = {
     "A5-06-01:eltako": (Rorg.BS4, "3C00000F", 0),  # twilight 60 lx
     "A5-06-02:eltako": (Rorg.BS4, "64FF000F", 0),  # 2.0 V, 1020 lx
     "A5-08-01:eltako": (Rorg.BS4, "00800009", 0),
+    "A5-08-01:std": (Rorg.BS4, "00800009", 0),
     "A5-09-04:std": (Rorg.BS4, "40606008", 0),
     "A5-09-05:std": (Rorg.BS4, "01F40209", 0),  # 500 x0.1 ppb
     "A5-09-0C:std": (Rorg.BS4, "01F40109", 0),
