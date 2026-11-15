@@ -482,6 +482,8 @@ for (const lang of ["en", "de"]) {
     expect("a card per actuator (four: the room controller is none)", root.querySelectorAll("#installation .lcard").length, 4);
     expect("link rows by actuator", root.querySelectorAll("#installation .lrow").length, 4);
     expect("each link row has its columns, the actions last", [...root.querySelectorAll("#installation .lrow")].every((r) => r.children.length === 6 && r.lastElementChild.matches(".lacts")), true);
+    expect("every link row has a menu to copy the sender ID and to see its links", root.querySelectorAll("#installation .lrow details.rowmenu [data-copy-id]").length, 4);
+    expect("the menu of a link row leads to the links of its sender", root.querySelectorAll("#installation .lrow details.rowmenu [data-in-sndlinks]").length, 4);
     expect("a sender ID of Home Assistant leads to its row in the Sender IDs tab", root.querySelectorAll("#installation .lrow .nm [data-in-snd]").length >= 2, true);
     expect("the time of a proof is short, the full time its tooltip", [...root.querySelectorAll("#installation .lrow .lstate .isub")].every((x) => x.title && !/\d{4}/.test(x.textContent)), true);
     expect("an entry by hand as sender leads to its row", !!root.querySelector('#installation .lrow [data-in-goto^="manual|"]'), true);

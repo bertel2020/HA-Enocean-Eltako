@@ -310,18 +310,20 @@ export const INSTALLATION_STYLE = `
   .installation .docform .dfbtns { display: flex; gap: 8px; }
   .installation .docform .cerr { margin-top: 8px; }
   .installation .itable select.cell { font: inherit; font-size: calc(12px * var(--fs)); padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
-  .installation .lcard { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 10px; }
+  .installation .lcard { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 10px; }
+  .installation .lcard > :first-child { border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0; }
+  .installation .lcard > :last-child { border-radius: 0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px); }
   .installation .lhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; background: var(--soft); }
   .installation .lhead .grow { flex: 1; }
   .installation .lhead b { font-weight: 500; font-size: calc(14px * var(--fs)); }
-  .installation .lrow { display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(110px, .9fr) minmax(200px, 1.3fr) 76px; gap: 8px 12px; align-items: center; padding: 8px 16px; border-top: 1px solid var(--line); min-height: 56px; box-sizing: border-box; }
+  .installation .lrow { display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(110px, .9fr) minmax(200px, 1.3fr) 108px; gap: 8px 12px; align-items: center; padding: 8px 16px; border-top: 1px solid var(--line); min-height: 56px; box-sizing: border-box; }
   .installation .lrow .nm { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
   .installation .lrow .lcol .tag, .installation .lrow .nm .tag, .installation .lrow .lstate .tag { white-space: nowrap; }
   .installation .lrow .lacts { display: flex; justify-content: flex-end; gap: 2px; }
   .installation .lrow .lacts .icon-btn { width: 32px; height: 32px; }
   .installation .lrow .lstate { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
   .installation .lrow .lstate .isub { overflow: hidden; text-overflow: ellipsis; }
-  .installation .nolearn .lrow { grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(200px, 1.3fr) 76px; }
+  .installation .nolearn .lrow { grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(200px, 1.3fr) 108px; }
   .installation .lrow input.cell { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; font-size: calc(13px * var(--fs)); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; }
   .installation .lrow input.cell:focus { border-color: var(--accent); outline: none; background: var(--surface); }
   .installation .lnone { padding: 10px 12px; color: var(--warn); font-size: calc(13px * var(--fs)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--warn) 12%, transparent); }
@@ -410,7 +412,10 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu { position: relative; }
   .installation .itable summary.icon-btn { opacity: 0; transition: opacity .15s; }
   .installation .itable tr:hover summary.icon-btn, .installation .itable tr:focus-within summary.icon-btn, .installation .itable details[open] > summary.icon-btn { opacity: 1; }
-  @media (hover: none) { .installation .itable summary.icon-btn { opacity: 1; } }
+  .installation .lrow summary.icon-btn { opacity: 0; transition: opacity .15s; }
+  .installation .lrow:hover summary.icon-btn, .installation .lrow:focus-within summary.icon-btn, .installation .lrow details[open] > summary.icon-btn { opacity: 1; }
+  .installation .lrow details.rowmenu .items { z-index: 8; }
+  @media (hover: none) { .installation .itable summary.icon-btn, .installation .lrow summary.icon-btn { opacity: 1; } }
   .installation details.colmenu summary { list-style: none; cursor: pointer; }
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px var(--shadow-c); }
@@ -1304,7 +1309,12 @@ export const installation = {
       : "";
     const device = model.byNote.get(l.to_key)?.key ?? "";
     const actions = `${device && mode === "actuator" && l.source !== "entered" ? `<button class="icon-btn" data-in-goto="${esc(device)}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>` : ""}${mode === "sender" && device ? `<button class="icon-btn" data-in-goto="${esc(device)}" title="${esc(L.changeAtDevice)}" aria-label="${esc(L.changeAtDevice)}">${svg(ICON.open)}</button>` : ""}${l.source === "entered" ? `<button class="icon-btn" data-in-del="${esc(l.id)}" data-in-gw="${esc(gw.entry_id)}" title="${esc(L.remove)}" aria-label="${esc(L.remove)}">${svg(ICON.close)}</button>` : ""}`;
-    return `<div class="lrow">${who}<span class="lcol"><span class="tag role">${esc(role || "–")}</span></span><span class="lcol"><span class="tag src-${l.source}" title="${esc(L.sourceHint[l.source])}">${esc(L.source[l.source])}</span></span>${learn}<div class="lstate">${state}</div><div class="lacts">${actions}</div></div>`;
+    // the more menu: copy the ID of the other end, and (from the actuator view) all links of that sender
+    const endId = mode === "actuator" ? l.from_id : l.to_id;
+    const menu = endId
+      ? `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${mode === "actuator" ? `<button data-in-sndlinks="${esc(endId)}">${esc(t.inst.linksOfSender)}</button>` : ""}<button data-copy-id="${esc(endId)}">${esc(t.copyId)}</button></div></details>`
+      : "";
+    return `<div class="lrow">${who}<span class="lcol"><span class="tag role">${esc(role || "–")}</span></span><span class="lcol"><span class="tag src-${l.source}" title="${esc(L.sourceHint[l.source])}">${esc(L.source[l.source])}</span></span>${learn}<div class="lstate">${state}</div><div class="lacts">${actions}${menu}</div></div>`;
   },
 
   _instLinkAddForm(gw, model, key, mode) {
