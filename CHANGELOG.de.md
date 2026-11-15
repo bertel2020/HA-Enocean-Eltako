@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Behoben
+
+- **Panel:** Auf dem Handy hing die untere Leiste mit den Ansichten im Header fest (der Blur des Headers machte ihn zum Bezug für feste Positionierung); der Blur liegt jetzt hinter dem Header, die Leiste sitzt wieder am unteren Bildschirmrand.
+
 ## 1.13.0 - 2026-11-15
 
 ### Neu

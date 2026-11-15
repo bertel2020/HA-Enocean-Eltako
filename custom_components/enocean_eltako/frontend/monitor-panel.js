@@ -97,9 +97,11 @@ const STYLE = `
 
   /* sticky with a blur, as in the Fritzbox Network panel; --head-h (measured) keeps the bar and the table head below it */
   .header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 0 24px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+    gap: 0 24px; border-bottom: 1px solid var(--line);
     /* logo and tabs line up with the content (max 1200 px, centred), not with the window's edges */
     padding: 0 max(24px, calc((100% - 1200px) / 2 + 24px)); }
+  /* the blur sits on a pseudo-element: backdrop-filter on the header itself would make it the containing block of the fixed bottom bar on a phone */
+  .header::before { content: ""; position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(12px); }
   .brand { display: flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 60px; }
   .brand ha-menu-button { margin-left: -12px; color: var(--text); }
   .brand b { display: block; font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }

@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- **Panel:** on a phone the bottom bar with the views was stuck in the header (the header's blur made it the reference for fixed positioning); the blur now sits behind the header, so the bar is at the bottom of the screen again.
+
 ## 1.13.0 - 2026-11-15
 
 ### New
