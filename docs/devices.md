@@ -58,8 +58,8 @@ a model without it follows the manufacturer's documentation. Captures are welcom
 | Meters | Gas meter (F3Z14D …) | Eltako | `A5-12-02:eltako` | - | sensor | - |
 | Meters | Water meter (F3Z14D …) | Eltako | `A5-12-03:eltako` | - | sensor | - |
 | Lighting and switching | Permundo PSC132 / PSC234 plug | Permundo | `D2-01-09:std`<br>`A5-12-01:std`<br>`M5-38-08:eltako` | `controller: A5-38-08:std`<br>`rocker: F6-02-01:std` | switch, light, sensor | - |
-| Lighting and switching | Switch or dimmer actuator (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch | - |
-| Lighting and switching | Switch actuator (PEHA 451/452 FU-EBIM …) | PEHA | `D2-01-08:std` | `vld: D2-01-00:std` | light, switch | - |
+| Lighting and switching | Switch or dimmer actuator (VLD D2-01) | EnOcean | `D2-01-00:std` | `vld: D2-01-00:std` | light, switch, sensor | - |
+| Lighting and switching | Switch actuator (PEHA 451/452 FU-EBIM …) | PEHA | `D2-01-08:std` | `vld: D2-01-00:std` | light, switch, sensor | - |
 | Shutters and blinds | Shutter actuator (VLD D2-05) | EnOcean | `D2-05-00:std` | `vld: D2-05-00:std` | cover | - |
 | Buttons and contacts | Rocker switch (PTM 210/215, NodOn, PEHA, Jung …) | EnOcean | `F6-02-01:std` | - | event, sensor | - |
 | Buttons and contacts | Window handle (Hoppe SecuSignal …) | EnOcean | `F6-10-00:std` | - | sensor, binary_sensor | - |

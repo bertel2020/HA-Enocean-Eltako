@@ -6,8 +6,9 @@
 
 ### New
 
-- **Catalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro flush-mounted switch actuators, 1 and 2 channels) added under other manufacturers as a VLD switch actuator (D2-01-08, UTE teach-in, channel 1 or 2). Based on the data sheet; not yet tested with a device. The energy meter is not evaluated yet.
+- **Catalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro flush-mounted switch actuators, 1 and 2 channels) added under other manufacturers as a VLD switch actuator (D2-01-08, UTE teach-in, channel 1 or 2). Based on the data sheet; not yet tested with a device.
 - **Catalog:** Thermokon SR-MDS (motion and brightness sensor, A5-08-01 standard) added under other manufacturers. Brightness, motion and supply voltage are shown; temperature and the occupancy button are not evaluated yet.
+- **VLD switch actuators (D2-01):** energy and power sensors for each output channel (PEHA 451 / 452 FU-EBIM and the generic D2-01 switch actuator), read from the actuator's measurement telegram. The actuator has to report the measurement by itself; asking for it is not implemented yet.
 
 ### Changed
 

@@ -80,6 +80,35 @@ async def test_vld_switch_and_blind(hass: HomeAssistant, esp3_gateway) -> None: 
     assert _sent(server, 0xD2, "02", BLIND_SENDER)
 
 
+METERED = [
+    _vld("vld_switch", "05-AA-00-01", "FF-8A-1B-10", "Licht NodOn", channel=1),
+    _vld("peha_fu_ebim", "05-AA-00-03", "FF-8A-1B-12", "Licht PEHA", channel=0),
+]
+PEHA = 0x05AA0003
+
+
+@pytest.mark.parametrize("esp3_gateway", [METERED], indirect=True)
+async def test_vld_switch_energy_and_power_per_channel(hass: HomeAssistant, esp3_gateway) -> None:  # noqa: F811
+    """D2-01 measurement (command 7): each channel's device reads only its own channel."""
+    _entry, server = esp3_gateway
+    nodon = {k: _entity(hass, "sensor", f"{PREFIX}_05-AA-00-01_1_{k}") for k in ("energy", "power")}
+    peha = {k: _entity(hass, "sensor", f"{PREFIX}_05-AA-00-03_1_{k}") for k in ("energy", "power")}
+
+    def push(data: str, sender: int) -> None:
+        server.push(esp3.encode_radio(RadioTelegram(0xD2, bytes.fromhex(data), sender)))
+
+    push("0721000003E8", SWITCH)  # channel 1: 1000 Wh
+    push("07610000004C", SWITCH)  # channel 1: 76 W
+    push("072000000064", SWITCH)  # channel 0 of the same actuator: not this device
+    push("074000000002", PEHA)  # channel 0, kWh: 2 kWh
+    push("0763000001F4", PEHA)  # channel 3: not this device
+    await _settle(hass)
+    assert float(hass.states.get(nodon["energy"]).state) == pytest.approx(1.0)
+    assert float(hass.states.get(nodon["power"]).state) == 76
+    assert float(hass.states.get(peha["energy"]).state) == pytest.approx(2.0)
+    assert hass.states.get(peha["power"]).state == "unknown"
+
+
 @pytest.mark.parametrize("esp3_gateway", [DEVICES], indirect=True)
 async def test_ute_teach_in_is_answered_while_armed(hass: HomeAssistant, esp3_gateway) -> None:  # noqa: F811
     _entry, server = esp3_gateway

@@ -606,7 +606,7 @@ CATALOG: dict[str, DeviceModel] = {
         DeviceModel(
             "vld_switch",
             _ref("D2-01-00:std"),
-            (Platform.LIGHT, Platform.SWITCH),
+            (Platform.LIGHT, Platform.SWITCH, Platform.SENSOR),
             category="lighting",
             group=GROUP_ENOCEAN,
             senders=(VLD_SWITCH,),
@@ -618,7 +618,7 @@ CATALOG: dict[str, DeviceModel] = {
         DeviceModel(
             "peha_fu_ebim",
             _ref("D2-01-08:std"),
-            (Platform.LIGHT, Platform.SWITCH),
+            (Platform.LIGHT, Platform.SWITCH, Platform.SENSOR),
             category="lighting",
             group=GROUP_ENOCEAN,
             base="vld_switch",

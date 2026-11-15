@@ -44,6 +44,7 @@ from .catalog import (
     CUSTOM,
     GENERIC_EEP,
     GROUP_VIRTUAL,
+    OPT_CHANNEL,
     OPT_FIELDS,
     OPT_INVERT,
     custom_definition,
@@ -482,6 +483,25 @@ def _psc_sensor(description: EnOceanSensorDescription) -> EnOceanSensorDescripti
     return replace(description, fallback_value_fn=_vld_power)
 
 
+# D2-01 actuators report their measurement (command 7) per output channel
+SENSORS["vld_switch"] = (
+    EnOceanSensorDescription(
+        key="energy",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        monotonic=True,
+        value_fn=_vld_energy,
+    ),
+    EnOceanSensorDescription(
+        key="power",
+        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=_vld_power,
+    ),
+)
+
 SENSORS["psc"] = tuple(
     _psc_sensor(d) for d in SENSORS["meter"] if d.key not in ("energy_tariff_1", "active_tariff")
 )
@@ -530,6 +550,20 @@ def custom_descriptions(definition: CustomDevice) -> tuple[EnOceanSensorDescript
     return tuple(descriptions)
 
 
+def _vld_channel(values: dict[str, Any], channel: int) -> bool:
+    """Whether a D2-01 telegram is about this output channel (I/O 0...29)."""
+    return values.get("I/O") == channel
+
+
+def _on_channel(description: EnOceanSensorDescription, channel: int) -> EnOceanSensorDescription:
+    """The description reads only the measurement of one output channel."""
+    value_fn = description.value_fn
+    return replace(
+        description,
+        value_fn=lambda values: value_fn(values) if _vld_channel(values, channel) else None,
+    )
+
+
 def model_descriptions(device: EnOceanDevice) -> tuple[EnOceanSensorDescription, ...]:
     """Sensor descriptions of a device: by kind, by EEP, or by the user's definition."""
     model = device.model
@@ -540,6 +574,9 @@ def model_descriptions(device: EnOceanDevice) -> tuple[EnOceanSensorDescription,
         if (chosen := device.options.get(OPT_FIELDS)) is not None:
             descriptions = tuple(d for d in descriptions if d.key in chosen)
         return descriptions
+    if model.kind == "vld_switch":  # one device per output channel: its own measurement only
+        channel = int(device.options.get(OPT_CHANNEL, 0))
+        return tuple(_on_channel(d, channel) for d in SENSORS["vld_switch"])
     return SENSORS.get(model.kind, ()) + (SENSORS.get(model.id, ()) if model.base else ())
 
 
