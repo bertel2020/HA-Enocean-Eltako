@@ -167,6 +167,10 @@ export const INSTALLATION_STYLE = `
   /* the narrow last column of every table: the row menu (⋮) at the same place in each row */
   .installation .itable th.rmenu, .installation .itable td.rmenu { width: 1%; padding: 2px 6px 2px 0; text-align: right; white-space: nowrap; }
   .installation details.colmenu .items, .installation details.rowmenu .items { max-width: calc(100vw - 32px); }
+  /* the menu column stays in view when a wide table scrolls sideways */
+  .installation .itable td.rmenu { position: sticky; right: 0; z-index: 1; background: var(--surface); }
+  .installation .itable td.rmenu:has(details[open]) { z-index: 4; }
+  .installation .itable th.rmenu { position: sticky; right: 0; background: var(--soft); }
   .installation .colgroup { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
   .installation .colgroup:first-child { margin-top: 0; }
   .installation .colgroup b { font-weight: 500; flex: 1; }
@@ -404,6 +408,9 @@ export const INSTALLATION_STYLE = `
   .installation .place input:focus { outline: none; }
   .installation .place i { color: var(--muted); font-style: normal; }
   .installation details.colmenu { position: relative; }
+  .installation .itable summary.icon-btn { opacity: 0; transition: opacity .15s; }
+  .installation .itable tr:hover summary.icon-btn, .installation .itable tr:focus-within summary.icon-btn, .installation .itable details[open] > summary.icon-btn { opacity: 1; }
+  @media (hover: none) { .installation .itable summary.icon-btn { opacity: 1; } }
   .installation details.colmenu summary { list-style: none; cursor: pointer; }
   .installation details.colmenu summary::-webkit-details-marker { display: none; }
   .installation details.colmenu .items { position: absolute; right: 0; z-index: 5; margin-top: 4px; min-width: 200px; display: grid; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px var(--shadow-c); }
@@ -431,7 +438,7 @@ export const INSTALLATION_STYLE = `
   .installation .stable input.cell { min-width: 64px; }
   .installation .stable td.mono { white-space: nowrap; }
   .installation .stable th { padding: 9px 10px; }
-  .installation .stable td { padding: 8px 10px; }
+  .installation .stable td { padding: 8px 10px; height: 56px; }
   .installation .stable th:first-child, .installation .stable td:first-child { width: 64px; padding-left: 14px; }
   .installation .stable th.sortable { cursor: pointer; user-select: none; }
   .installation .stable th .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
@@ -694,15 +701,21 @@ export const installation = {
       const th = (col, label) => `<th class="sortable" data-in-sids="${key}|${col}"${v.sort === col ? ` aria-sort="${v.dir > 0 ? "ascending" : "descending"}"` : ""}><span>${esc(label)}</span><i class="sarrow">${v.sort === col && v.dir < 0 ? "↓" : "↑"}</i></th>`;
       const head = `<tr>${th("nr", S.nr)}<th>${esc(T.senderId)}</th>${th("name", S.device)}${th("fn", T.function)}${th("use", S.role)}<th>${esc(T.busAddress)}</th><th>${esc(T.feedbackId)}</th>${th("st", S.status)}<th class="rmenu"></th></tr>`;
       const tag = (st) => `<span class="stag ${st}">${esc(S.state[st])}</span>`;
-      const body = withMenu(page.map((r) => {
+      // the menu of a row (shown on hover): the links of a used ID, and copying any ID
+      const sndMenu = (r) => {
+        const links = r.st === "u" || r.st === "x" ? `<button data-in-sndlinks="${esc(r.id)}">${esc(t.inst.linksOfSender)}</button>` : "";
+        return `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${links}<button data-copy-id="${esc(r.id)}">${esc(t.copyId)}</button></div></details>`;
+      };
+      const rowHtml = (r) => {
         const base = `<tr class="s-${r.st}"${r.st === "u" ? ` data-in-row="snd|${key}|${r.nr}"` : ""}><td class="mono snr">${r.nr ?? "–"}</td><td class="mono">${esc(r.id)}${r.second ? `<div class="isub">+ ${esc(r.second)}</div>` : ""}</td>`;
         if (r.st === "f") return `${base}<td colspan="5" class="isub">${esc(T.free)}</td><td>${tag("f")}</td></tr>`;
         if (r.st === "g") return `${base}<td colspan="5">${esc(T.gateway)}</td><td>${tag("g")}</td></tr>`;
         if (r.st === "w") return `${base}<td colspan="4" class="isub">${esc(T.blocked)}</td><td><button class="chip" data-in-free="${esc(r.id)}">${esc(t.freeAction)}</button></td><td>${tag("w")}</td></tr>`;
         if (r.st === "x") return `${base}<td>${esc(r.name)}<div class="isub">${esc(r.device)}</div></td><td></td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td></td><td></td><td>${tag("x")}</td></tr>`;
-        const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ") + ` <button class="tag" data-in-sndlinks="${esc(r.id)}" title="${esc(t.inst.linksOfSender)}">→ ${esc(t.inst.tabNames.links)}</button>`;
+        const name = [r.key ? `<a data-in-goto="${esc(r.key)}">${esc(r.name)}</a>` : esc(r.name), r.place].filter(Boolean).join(", ");
         return `${base}<td>${name}${r.device ? `<div class="isub">${esc(r.device)}</div>` : ""}</td><td>${r.fn ? `<span class="tag kind k-${hue(r.fn)}">${esc(r.fn)}</span>` : ""}</td><td>${r.use ? `<span class="tag">${esc(r.use)}</span>` : ""}</td><td>${this._instCell(gw, r.key, "bus_address", r.bus, T.busAddress, "1–126")}</td><td>${this._instCell(gw, r.key, "feedback_id", r.feedback, T.feedbackId, "00000081")}</td><td>${tag("u")}</td></tr>`;
-      }).join(""));
+      };
+      const body = page.map((r) => withMenu(rowHtml(r), () => sndMenu(r))).join("");
       const sizes = [25, 50, 100].map((n) => `<option${v.ps === n ? " selected" : ""}>${n}</option>`).join("");
       const from = rows.length ? v.pg * v.ps + 1 : 0;
       const pager = `<div class="spager"><span>${esc(S.range(from, from + page.length - (rows.length ? 1 : 0), rows.length))}</span><div><label>${esc(S.perPage)} <select data-in-sidps="${key}" aria-label="${esc(S.perPage)}">${sizes}</select></label><button class="chip" data-in-sidpg="${key}|-1" aria-label="${esc(S.prev)}"${v.pg === 0 ? " disabled" : ""}>‹</button><span>${esc(S.page(v.pg + 1, pages))}</span><button class="chip" data-in-sidpg="${key}|1" aria-label="${esc(S.next2)}"${v.pg >= pages - 1 ? " disabled" : ""}>›</button></div></div>`;
@@ -887,7 +900,12 @@ export const installation = {
     // the more menu of a row of the devices table: an entry by hand, or a power supply
     const t = this._t;
     if (d.manual) return this._instManualMenu(gw, d);
-    if (!d.psu) return "";
+    if (!d.psu) {
+      // a documented device: show it in the Devices view (when it is there), copy its ID
+      if (!d.key) return "";
+      const show = this._inPanel(d.key) ? `<button data-in-goto="${esc(d.key)}">${esc(t.inPanel)}</button>` : "";
+      return `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items">${show}<button data-copy-id="${esc(d.id)}">${esc(t.copyId)}</button></div></details>`;
+    }
     return `<details class="colmenu rowmenu"><summary class="icon-btn" title="${esc(t.more)}" aria-label="${esc(t.more)}">${svg(ICON.more)}</summary><div class="items"><button data-in-supply-del="${esc(d.sid)}" data-in-gw="${esc(gw.entry_id)}">${esc(t.doc.supplyRemove)}</button></div></details>`;
   },
 
@@ -1632,7 +1650,7 @@ export const installation = {
       this._renderInstallation();
       return;
     }
-    for (const menu of this.shadowRoot.querySelectorAll("#installation details.supplymenu[open], #installation details.kindmenu[open], #installation details.rowmenu[open]")) if (!menu.contains(e.target)) menu.removeAttribute("open");
+    for (const menu of this.shadowRoot.querySelectorAll("#installation details.supplymenu[open], #installation details.kindmenu[open], #installation details.rowmenu[open]")) if (!menu.contains(e.target) || e.target.closest("[data-copy-id]")) menu.removeAttribute("open");
     const nameEdit = e.target.closest("[data-in-nameedit]");
     if (nameEdit) {
       state.nameEdit = nameEdit.dataset.inNameedit;

@@ -157,7 +157,8 @@ for (const lang of ["en", "de"]) {
     expect("discarding leaves the drawer", !root.querySelector("#installation aside.bv-drawer") && !panel._in.bus.dirty, true);
     expect("Back returns to the devices table", root.querySelector('#installation [data-in-view="all"]').getAttribute("aria-pressed") === "true" && !root.querySelector("#installation [data-in-back]"), true);
     expect("every row ends in the menu column", [...deviceRows()].every((r) => r.lastElementChild.matches("td.rmenu")) && !!root.querySelector("#installation .itable thead th.rmenu:last-child"), true);
-    expect("entries by hand and power supplies have their menu there", root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length, 5);
+    expect("every row with a device ID, every entry by hand and every power supply has its menu there", root.querySelectorAll("#installation .itable td.rmenu details.rowmenu").length, 15);
+    expect("a documented device's menu copies its ID", !!root.querySelector("#installation .itable td.rmenu details.rowmenu [data-copy-id]"), true);
     const cell = root.querySelector('#installation [data-in-field="fuse"][data-in-key="sub2"]');
     expect("an empty field shows the same quiet dash as one that does not apply", cell.placeholder, "–");
     cell.value = "F4 B10";

@@ -11,7 +11,7 @@
 
 ### Geändert
 
-- **Monitor-Panel:** Optik an das Fritzbox-Network-Panel angeglichen: fester Kopf mit Unschärfe, Tabs mit Akzentlinie, Karten mit 16 px und 12 px Abstand, Buttons und Felder mit 10 px Ecken, weichere Menüs und Schatten; dieselben Ecken und Menüs in Installation und Übernahme. In der Anlage sind die Unterseiten Tabs mit Akzentlinie, Karten und Tabellen haben dieselben Ecken und Schatten, Tabellenzeilen sind 48 px hoch mit ruhigem Kopf. Der Sender-ID-Pool ist eine Karte, und die Statusfilter der Geräte sind Chips statt Tab-Streifen. In der Übernahme haben Schritte, Auswahlzeilen und Hinweise die Maße und Farben der übrigen Ansichten.
+- **Monitor-Panel:** Optik an das Fritzbox-Network-Panel angeglichen: fester Kopf mit Unschärfe, Tabs mit Akzentlinie, Karten mit 16 px und 12 px Abstand, Buttons und Felder mit 10 px Ecken, weichere Menüs und Schatten; dieselben Ecken und Menüs in Installation und Übernahme. In der Anlage sind die Unterseiten Tabs mit Akzentlinie, Karten und Tabellen haben dieselben Ecken und Schatten, Tabellenzeilen sind 48 px hoch mit ruhigem Kopf. Der Sender-ID-Pool ist eine Karte, und die Statusfilter der Geräte sind Chips statt Tab-Streifen. In der Übernahme haben Schritte, Auswahlzeilen und Hinweise die Maße und Farben der übrigen Ansichten. In der Anlage haben alle Zeilen der Dokumentation und der Sender-IDs ein Menü (⋮), das beim Überfahren erscheint: ID kopieren, Gerät in der Geräteansicht zeigen, Verbindungen einer Sender-ID.
 
 ## 1.12.1 - 2026-11-13
 
