@@ -170,6 +170,9 @@ export const INSTALLATION_STYLE = `
   /* the menu column stays in view when a wide table scrolls sideways */
   .installation .itable td.rmenu { position: sticky; right: 0; z-index: 1; background: var(--surface); }
   .installation .itable td.rmenu:has(details[open]) { z-index: 4; }
+  .installation .stable tr.s-w > td.rmenu { background: color-mix(in srgb, var(--warn) 12%, var(--surface)); }
+  .installation .itable tr.dup > td.rmenu { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
+  .installation .itable tr.hl > td.rmenu { background: color-mix(in srgb, var(--warn) 22%, var(--surface)); }
   .installation .itable th.rmenu { position: sticky; right: 0; background: var(--soft); }
   .installation .colgroup { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
   .installation .colgroup:first-child { margin-top: 0; }
