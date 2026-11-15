@@ -46,13 +46,13 @@ export const TAKEOVER_STYLE = `
   .takeover { padding-bottom: 8px; }
   .takeover .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
   .takeover .step { display: flex; gap: 10px; align-items: flex-start; text-align: left; font: inherit; font-size: calc(12px * var(--fs)); color: var(--muted);
-    background: none; border: 0; border-bottom: 2px solid transparent; padding: 12px 14px 10px; cursor: pointer; }
+    background: none; border: 0; border-bottom: 2px solid transparent; padding: 14px 16px 12px; min-height: 56px; box-sizing: border-box; cursor: pointer; }
   .takeover .step:hover:not(:disabled) b { color: var(--accent); }
   .takeover .step:disabled { cursor: default; opacity: .55; }
   .takeover .step.cur { border-bottom-color: var(--accent); }
   .takeover .step b { display: block; font-weight: 500; font-size: calc(13px * var(--fs)); color: var(--text); }
   .takeover .num { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: calc(12px * var(--fs)); }
-  .takeover .step.cur .num { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .takeover .step.cur .num { border-color: var(--accent); color: var(--accent-hover); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
   .takeover .step.done .num { border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 15%, var(--surface)); }
   .takeover .step.warn .num { border-color: var(--warn); color: var(--warn); }
   .takeover .topbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
@@ -61,13 +61,14 @@ export const TAKEOVER_STYLE = `
   .takeover .toolbar .grow { flex: 1; }
   .takeover .search { flex: 1; min-width: 140px; height: 40px; border-radius: var(--control-radius); border: 1px solid var(--input-line); background: var(--surface);
     color: var(--text); font: inherit; font-size: calc(14px * var(--fs)); padding: 0 12px; }
-  .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: calc(12px * var(--fs)); background: color-mix(in srgb, var(--warn) 18%, transparent); }
-  .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
+  .takeover .banner { margin: 0 16px 10px; padding: 10px 14px; border-radius: 12px; font-size: calc(13px * var(--fs)); background: var(--warn-soft); border: 1px solid var(--warn-line); }
+  .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); border-color: transparent; }
   .takeover .counts { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
-  .takeover .group { display: flex; gap: 10px; align-items: center; padding: 7px 16px; border-top: 1px solid var(--line); background: var(--soft); font-size: calc(12px * var(--fs)); }
+  .takeover .group { display: flex; gap: 10px; align-items: center; padding: 8px 16px; min-height: 40px; box-sizing: border-box; border-top: 1px solid var(--line); background: var(--soft); font-size: calc(12px * var(--fs)); }
   .takeover .group .sub { margin-left: auto; }
   .takeover .fold { font: inherit; font-weight: 500; color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
-  .takeover .pickrow { display: flex; gap: 10px; align-items: center; padding: 7px 16px 7px 40px; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); cursor: pointer; }
+  .takeover .pickrow { display: flex; gap: 10px; align-items: center; padding: 8px 16px 8px 40px; min-height: 56px; box-sizing: border-box; border-top: 1px solid var(--line); font-size: calc(13px * var(--fs)); cursor: pointer; }
+  .takeover .pickrow:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .takeover .pick-name { flex: 1; min-width: 0; }
   .takeover .sub { color: var(--muted); font-size: calc(12px * var(--fs)); }
   .takeover .skiprow { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px 6px 40px; font-size: calc(13px * var(--fs)); color: var(--muted); border-top: 1px solid var(--line); }
@@ -80,7 +81,7 @@ export const TAKEOVER_STYLE = `
   .takeover .section h3 .sub { font-weight: 400; }
   .takeover .section .lead { margin: 0 0 10px; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .takeover .optcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
-  .takeover .optcard { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border: 1px solid var(--input-line); border-radius: 10px; cursor: pointer; font-size: calc(13px * var(--fs)); }
+  .takeover .optcard { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border: 1px solid var(--input-line); border-radius: var(--control-radius); cursor: pointer; font-size: calc(13px * var(--fs)); }
   .takeover .optcard b { display: block; font-weight: 500; }
   .takeover .optcard .sub { display: block; overflow-wrap: anywhere; }
   .takeover .optcard:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
@@ -106,7 +107,7 @@ export const TAKEOVER_STYLE = `
   .takeover .skel i:nth-child(3n) { width: 55%; }
   @keyframes tkshimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
   .takeover .devblock { border-top: 1px solid var(--line); }
-  .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; font-size: calc(13px * var(--fs)); }
+  .takeover .devhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding: 8px 16px; min-height: 56px; box-sizing: border-box; font-size: calc(13px * var(--fs)); }
   .takeover .devhead[data-tk-open], .takeover .devhead[data-tk-open-run] { cursor: pointer; }
   .takeover .devhead[data-tk-open]:hover, .takeover .devhead[data-tk-open-run]:hover { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .takeover .devhead b { font-weight: 500; }
@@ -114,7 +115,7 @@ export const TAKEOVER_STYLE = `
   .takeover .devstate { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .takeover .ents { padding: 0 16px 8px 34px; }
   .takeover .ent { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; padding: 6px 0; border-top: 1px dashed var(--line); font-size: calc(12px * var(--fs)); overflow-wrap: anywhere; }
-  .takeover .olddl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 6px; padding: 8px 12px; border-radius: 8px; background: var(--soft); font-size: calc(12px * var(--fs)); }
+  .takeover .olddl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; margin: 0 0 6px; padding: 10px 14px; border-radius: 12px; background: var(--soft); font-size: calc(12px * var(--fs)); }
   .takeover .olddl dt { color: var(--muted); }
   .takeover .olddl dd { margin: 0; overflow-wrap: anywhere; }
   .takeover .olddl .title { grid-column: 1 / -1; font-weight: 500; color: var(--text); }
