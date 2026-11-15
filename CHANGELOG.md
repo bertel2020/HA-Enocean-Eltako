@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.13.0 - 2026-11-15
+
 ### New
 
 - **Catalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro flush-mounted switch actuators, 1 and 2 channels) added under other manufacturers as a VLD switch actuator (D2-01-08, UTE teach-in, channel 1 or 2). Based on the data sheet; not yet tested with a device.

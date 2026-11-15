@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.13.0 - 2026-11-15
+
 ### Neu
 
 - **Katalog:** PEHA 451 / 452 FU-EBIM (Easyclickpro-Unterputz-Schaltaktoren, 1 und 2 Kanäle) bei den anderen Herstellern als VLD-Schaltaktor aufgenommen (D2-01-08, UTE-Anlernen, Kanal 1 oder 2). Nach Datenblatt; noch nicht mit einem Gerät getestet.
