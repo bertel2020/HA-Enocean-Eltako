@@ -180,7 +180,8 @@ export const INSTALLATION_STYLE = `
   .installation .colgroup .tag { cursor: pointer; border: 0; font: inherit; font-size: calc(11px * var(--fs)); }
   /* the counters of the devices view: text, not boxes */
   .installation .stiles.quiet { gap: 6px 8px; }
-  .installation .stiles.quiet .stile { background: var(--soft); border-color: var(--line); padding: 3px 12px; border-radius: 999px; }
+  .installation .stiles.quiet .stile { background: var(--surface); border-color: var(--line); padding: 3px 12px; border-radius: 16px; }
+  .installation .stiles.quiet .stile:hover { background: var(--soft); }
   .installation .stiles.quiet .stile b { font-size: calc(15px * var(--fs)); }
   .installation .stiles.quiet .stile[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
   /* an empty place: a quiet dash that turns into "+ add place" on hover or focus */
@@ -347,6 +348,13 @@ export const INSTALLATION_STYLE = `
   .installation .mcell.entered { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: transparent; }
   .installation .mplus { cursor: pointer; color: var(--muted); background: none; border: 0; font: inherit; width: 26px; height: 26px; border-radius: 50%; }
   .installation .mplus:hover { background: var(--accent-soft); color: var(--accent); }
+  .installation .mwrap { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
+  .installation table.matrix th:first-child, .installation table.matrix td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); padding-left: 16px; }
+  .installation table.matrix th:first-child { background: var(--soft); }
+  .installation table.matrix td { height: 52px; }
+  .installation .mcell { padding: 3px 10px; border-radius: 12px; }
+  .installation .mplus { border: 1px dashed var(--input-line); width: 28px; height: 28px; }
+  .installation table.matrix tbody tr:hover td:first-child { background: color-mix(in srgb, var(--soft) 60%, var(--surface)); }
   @media (max-width: 720px) {
     .installation .lrow, .installation .nolearn .lrow { grid-template-columns: minmax(0, 1fr) auto; }
     .installation .lrow .nm { grid-column: 1; }
@@ -426,7 +434,8 @@ export const INSTALLATION_STYLE = `
   .installation details.colmenu label { display: flex; gap: 8px; align-items: center; font-size: calc(13px * var(--fs)); padding: 3px 0; cursor: pointer; }
 
   .installation .stiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .installation .stile { flex: 0 1 auto; text-align: left; font: inherit; color: inherit; background: var(--soft); border: 1px solid transparent; border-radius: 12px; padding: 6px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+  .installation .stile { flex: 0 1 auto; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; min-height: 32px; box-sizing: border-box; padding: 4px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+  .installation .stile:hover { background: var(--soft); }
   .installation .stile b { font-size: calc(18px * var(--fs)); font-weight: 500; line-height: 1.2; }
   .installation .stile span { font-size: calc(13px * var(--fs)); color: var(--muted); }
   .installation .stile.u b { color: var(--accent); }
@@ -435,7 +444,7 @@ export const INSTALLATION_STYLE = `
   .installation .stile.d b { color: var(--danger, var(--warn)); }
   .installation .stile.zero b { color: var(--muted); }
   .installation .nolearn .lrow input.cell[data-in-learn], .installation .nolearn .lrow input.cell[data-in-efield="learn"] { display: none; }
-  .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--soft)); }
+  .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
   .installation .snext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; background: color-mix(in srgb, var(--ok) 12%, transparent); font-size: calc(14px * var(--fs)); }
   .installation .snext.none { background: var(--warn-soft); border: 1px solid var(--warn-line); }
   .installation .snext b { font-weight: 500; }
@@ -1400,7 +1409,7 @@ export const installation = {
       const l = a.links.find((y) => (y.from_id ? model.plain(y.from_id) : `name|${y.from_name}`) === x.key);
       return `<td>${l ? `<span class="mcell ${l.source}" title="${esc(L.source[l.source])}${l.learn ? ` · ${esc(l.learn)}` : ""}">${esc(short(l.source === "assigned" ? this._profile(l.role) : l.role))}</span>` : `<button class="mplus" data-in-mx data-in-gw="${esc(gw.entry_id)}" data-in-a="${esc(a.key)}" data-in-s="${esc(x.key)}" title="${esc(L.addLink)}">+</button>`}</td>`;
     }).join("")}</tr>`).join("");
-    return `<div class="tablewrap"><table class="itable matrix"><thead>${head}</thead><tbody>${rows}</tbody></table></div><p class="isub">${esc(L.matrixHint)}</p>`;
+    return `<div class="tablewrap mwrap"><table class="itable matrix"><thead>${head}</thead><tbody>${rows}</tbody></table></div><p class="isub">${esc(L.matrixHint)}</p>`;
   },
 
   _instLogRows() {
