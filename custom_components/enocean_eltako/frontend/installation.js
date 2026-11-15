@@ -146,14 +146,14 @@ export const INSTALLATION_STYLE = `
   .installation h3 { margin: 0 0 8px; font-size: calc(14px * var(--fs)); font-weight: 500; }
   .installation .isub { color: var(--muted); font-size: calc(12px * var(--fs)); }
   .installation .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-  .installation .gcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .installation .gcard { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
   .installation .gcard b { font-weight: 500; }
   .installation .gcard ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: calc(13px * var(--fs)); }
   .installation .gcard .open { font-size: calc(12px * var(--fs)); color: var(--warn); }
   .installation .tablewrap { overflow-x: auto; }
   .installation table.itable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
   .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  .installation .itable td { padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .installation .itable td { padding: 8px 8px 8px 0; height: 48px; box-sizing: border-box; border-bottom: 1px solid var(--line); vertical-align: middle; }
   .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 18px; padding-right: 4px; }
   .installation .tabwarn { color: var(--warn); font-weight: 500; }
   .installation .itable td.name { min-width: 160px; }
@@ -175,7 +175,7 @@ export const INSTALLATION_STYLE = `
   .installation .stiles.quiet { gap: 6px 8px; }
   .installation .stiles.quiet .stile { background: var(--soft); border-color: var(--line); padding: 3px 12px; border-radius: 999px; }
   .installation .stiles.quiet .stile b { font-size: calc(15px * var(--fs)); }
-  .installation .stiles.quiet .stile[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; }
+  .installation .stiles.quiet .stile[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
   /* an empty place: a quiet dash that turns into "+ add place" on hover or focus */
   .installation .placeadd.empty { min-width: 90px; color: color-mix(in srgb, var(--muted) 70%, transparent); }
   .installation .placeadd.empty .hv { display: none; }
@@ -238,10 +238,10 @@ export const INSTALLATION_STYLE = `
   .installation .itab:hover { color: var(--text); }
   .installation .itab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
   .installation .itab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
-  .installation .isubtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 16px 0; }
-  .installation .isubtabs .itab { font-size: calc(13px * var(--fs)); font-weight: 400; padding: 5px 12px; margin: 0; border: 0; border-radius: 14px; }
-  .installation .isubtabs .itab[aria-selected="true"] { background: var(--accent-soft); font-weight: 500; }
-  .installation section.gw { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+  .installation .isubtabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 0 16px; border-bottom: 1px solid var(--line); }
+  .installation .isubtabs .itab { font-size: calc(14px * var(--fs)); font-weight: 500; padding: 0 14px; min-height: 44px; margin: 0 0 -1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; }
+  .installation .isubtabs .itab[aria-selected="true"] { background: none; color: var(--accent-hover); border-bottom-color: var(--accent); }
+  .installation section.gw { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); padding: 14px 16px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
   .installation .itools .seg { flex-wrap: wrap; max-width: 100%; }
   .installation .lnone { overflow-wrap: anywhere; white-space: normal; }
   .installation .gwhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -278,7 +278,7 @@ export const INSTALLATION_STYLE = `
   .installation .progress .barbg { flex: 1; max-width: 260px; height: 6px; border-radius: 3px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
   .installation .progress .barbg i { display: block; height: 100%; background: var(--ok); }
   .installation .cerr { font-size: calc(11px * var(--fs)); color: var(--warn); padding: 2px 8px; }
-  .installation .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: calc(11px * var(--fs)); background: var(--soft); color: var(--muted); white-space: nowrap; }
+  .installation .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: calc(11px * var(--fs)); background: var(--soft); color: var(--muted); white-space: nowrap; }
   .installation .tag.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: inherit; }
   .installation .tag.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: inherit; }
   .installation .load { display: grid; grid-template-columns: minmax(120px, 220px) minmax(80px, 1fr) minmax(120px, 200px); gap: 10px; align-items: center; font-size: calc(13px * var(--fs)); }
@@ -302,15 +302,15 @@ export const INSTALLATION_STYLE = `
   .installation .docform label > span { font-size: calc(11px * var(--fs)); color: var(--muted); }
   .installation .docform label.wide { grid-column: span 2; }
   .installation .docform .place { display: flex; align-items: center; gap: 4px; }
-  .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
+  .installation .docform input, .installation .docform select { font: inherit; font-size: calc(13px * var(--fs)); padding: 6px 8px; border: 1px solid var(--input-line); border-radius: 8px; background: var(--surface); color: inherit; min-width: 0; width: 100%; box-sizing: border-box; }
   .installation .docform .dfbtns { display: flex; gap: 8px; }
   .installation .docform .cerr { margin-top: 8px; }
   .installation .itable select.cell { font: inherit; font-size: calc(12px * var(--fs)); padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
-  .installation .lcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+  .installation .lcard { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 10px; }
   .installation .lhead { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; background: var(--soft); }
   .installation .lhead .grow { flex: 1; }
   .installation .lhead b { font-weight: 500; font-size: calc(14px * var(--fs)); }
-  .installation .lrow { display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(110px, .9fr) minmax(200px, 1.3fr) 76px; gap: 8px 12px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line); min-height: 44px; box-sizing: border-box; }
+  .installation .lrow { display: grid; grid-template-columns: minmax(170px, 1.4fr) minmax(84px, .5fr) minmax(84px, .5fr) minmax(110px, .9fr) minmax(200px, 1.3fr) 76px; gap: 8px 12px; align-items: center; padding: 8px 16px; border-top: 1px solid var(--line); min-height: 56px; box-sizing: border-box; }
   .installation .lrow .nm { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
   .installation .lrow .lcol .tag, .installation .lrow .nm .tag, .installation .lrow .lstate .tag { white-space: nowrap; }
   .installation .lrow .lacts { display: flex; justify-content: flex-end; gap: 2px; }
@@ -346,7 +346,7 @@ export const INSTALLATION_STYLE = `
     .installation .lrow > .lcol + .lcol { margin-top: -6px; }
     .installation .lrow > input.cell, .installation .lrow > .lstate { grid-column: 1 / -1; }
   }
-  .installation .sheet { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 14px; margin: 0 0 12px; background: var(--surface); }
+  .installation .sheet { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 16px 14px; margin: 0 0 12px; background: var(--surface); }
   .installation .sheet .sheethead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(14px * var(--fs)); }
   .installation .sheet .sheethead .iconbtn { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
   .installation .sheet .sheethead .iconbtn:hover { background: var(--soft); color: var(--text); }
@@ -360,7 +360,7 @@ export const INSTALLATION_STYLE = `
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
   .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
-  .installation .tile.bad { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .tile.bad { background: var(--warn-soft); }
   .installation .itable tr.psu td { background: var(--soft); padding: 8px; }
   .installation .itable tr.psu.bad td { background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .installation .itable tr.dup td { background: color-mix(in srgb, var(--warn) 14%, transparent); }
@@ -375,7 +375,7 @@ export const INSTALLATION_STYLE = `
   .installation .fbar { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 2px; scrollbar-width: thin; }
   .installation .fbar .seg { flex: none; overflow: visible; }
   .installation .fbar .chips { flex-wrap: nowrap; flex: none; gap: 4px; }
-  .installation .fbar .chips .chip { min-height: 30px; padding: 0 12px; border-radius: 16px; white-space: nowrap; font-weight: 400; }
+  .installation .fbar .chips .chip { min-height: 32px; padding: 0 12px; border-radius: 16px; white-space: nowrap; font-weight: 500; }
   .installation .fbar .chips .chip b { font-weight: 500; margin-left: 2px; }
   .installation .fbar .fsep { flex: none; width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
   .installation .gbar .seg button { white-space: nowrap; }
@@ -420,11 +420,11 @@ export const INSTALLATION_STYLE = `
   .installation .stile.zero b { color: var(--muted); }
   .installation .nolearn .lrow input.cell[data-in-learn], .installation .nolearn .lrow input.cell[data-in-efield="learn"] { display: none; }
   .installation .stile[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--soft)); }
-  .installation .snext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; background: color-mix(in srgb, var(--ok) 12%, transparent); font-size: calc(14px * var(--fs)); }
-  .installation .snext.none { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+  .installation .snext { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-radius: 12px; margin-bottom: 10px; background: color-mix(in srgb, var(--ok) 12%, transparent); font-size: calc(14px * var(--fs)); }
+  .installation .snext.none { background: var(--warn-soft); border: 1px solid var(--warn-line); }
   .installation .snext b { font-weight: 500; }
   .installation .sintro .info { cursor: help; color: var(--muted); }
-  .installation .swrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .installation .swrap { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
   .installation .swrap .tablewrap { margin: 0; }
   .installation .stable { font-size: calc(14px * var(--fs)); }
   .installation .stable input.cell { min-width: 64px; }
@@ -485,18 +485,18 @@ export const INSTALLATION_STYLE = `
   .installation .itable tr[data-k] > td:first-child { box-shadow: inset 3px 0 0 var(--k); }
   .installation .chip[data-k]::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--k); display: inline-block; margin-right: 6px; }
   .installation .chip[data-k][aria-pressed="true"] { border-color: var(--k); background: color-mix(in srgb, var(--k) 14%, transparent); color: color-mix(in srgb, var(--k) 75%, var(--text)); }
-  .installation .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-hover); }
   .installation .seg button[aria-pressed="true"] .isub { color: inherit; opacity: 0.85; }
   .installation .tile { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--soft)); font-size: calc(16px * var(--fs)); font-weight: 500; line-height: 1.35; }
   .installation .tile small { font-weight: 400; text-transform: none; letter-spacing: 0; }
   .installation .tile.ok { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 9%, var(--soft)); }
   .installation .tile.bad { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, transparent); }
-  .installation .itable th { border-bottom: 2px solid var(--line); }
-  .installation .itable tbody tr:not(.grp):not(.psu):not(.free):hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .installation .itable th { border-bottom: 1px solid var(--line); background: var(--soft); font-size: calc(11px * var(--fs)); text-transform: uppercase; letter-spacing: .04em; padding-top: 10px; padding-bottom: 10px; }
+  .installation .itable tbody tr:not(.grp):not(.psu):not(.free):hover td { background: color-mix(in srgb, var(--soft) 60%, transparent); }
   .installation .itable tr.grp td { background: color-mix(in srgb, var(--accent) 10%, var(--soft)); }
   .installation .itable tr.psu td { background: color-mix(in srgb, var(--k-psu) 14%, transparent); }
   .installation .itable tr.psu.bad td { background: color-mix(in srgb, var(--warn) 20%, transparent); }
-  .installation .gwhead h3 { border-left: 3px solid var(--accent); padding-left: 10px; }
+  .installation .gwhead h3 { font-size: calc(16px * var(--fs)); }
   .installation .progress .barbg { height: 8px; border-radius: 4px; }
   .installation .lcard { border-left: 4px solid var(--k, var(--line)); }
   .installation .lhead { background: color-mix(in srgb, var(--k, var(--accent)) 9%, var(--soft)); }

@@ -115,7 +115,7 @@ const SECTION_COLORS = ["var(--k-bus)", "var(--k-aktor)", "var(--k-sensor)", "va
 
 export const BUS_STYLE = `
   .installation .bv-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-  .installation .bv-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 4px; background: var(--surface); min-width: 0; }
+  .installation .bv-card { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 14px; display: grid; gap: 4px; background: var(--surface); min-width: 0; }
   .installation .bv-card.master { border-left: 3px solid var(--k-bus); }
   .installation .bv-card.access { border-left: 3px solid var(--input-line); }
   .installation .bv-role { font-size: calc(11px * var(--fs)); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
@@ -153,7 +153,7 @@ export const BUS_STYLE = `
   .installation button.bv-cell.dup { background: var(--bad-soft); border: 2px solid var(--bad); }
   .installation .bv-cell .t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(10px * var(--fs)); }
   .installation .bv-secs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-  .installation .bv-sec { border: 1px solid var(--line); border-left: 4px solid var(--k-psu); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+  .installation .bv-sec { border: 1px solid var(--line); border-left: 4px solid var(--k-psu); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
   .installation .bv-sec.over { border-left-color: var(--bad); }
   .installation .bv-sec.reserve { border-left-color: var(--warn); }
   .installation .bv-load { position: relative; height: 12px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); margin-bottom: 14px; }
@@ -173,7 +173,7 @@ export const BUS_STYLE = `
   .installation .bv-check .chips { margin-top: 4px; }
   .installation .chip.small { min-height: 26px; padding: 0 10px; font-size: calc(12px * var(--fs)); }
   .bv-ask-scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 40; display: grid; place-items: center; padding: 16px; }
-  .bv-ask { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px var(--shadow-c); padding: 18px; width: min(420px, 100%); display: grid; gap: 12px; }
+  .bv-ask { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 40px var(--shadow-c); padding: 18px; width: min(420px, 100%); display: grid; gap: 12px; }
   .bv-ask h2 { margin: 0; font-size: calc(16px * var(--fs)); font-weight: 600; overflow-wrap: anywhere; }
   .bv-ask p { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
   .bv-ask .bar { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
@@ -217,7 +217,7 @@ export const BUS_STYLE = `
   .installation .bv-chedit { display: grid; grid-template-columns: 34px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .9fr); gap: 6px; align-items: center; }
   .installation .bv-chedit .no { font-family: ui-monospace, monospace; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .installation .bv-note { font-size: calc(12px * var(--fs)); color: var(--muted); border-left: 3px solid var(--line); padding: 2px 0 2px 10px; margin: 0; }
-  .installation .bv-cab { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; }
+  .installation .bv-cab { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; display: grid; gap: 10px; }
   .installation .bv-cab.hl, .installation .bv-rowedit.hl { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
   .installation .bv-rowedit { display: grid; grid-template-columns: minmax(0, 1.4fr) 70px minmax(0, 1fr) 80px 32px; gap: 6px; align-items: center; border-radius: 8px; padding: 2px; }
   .installation .bv-rowuse { font-size: calc(12px * var(--fs)); color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; grid-column: 1 / -1; padding: 0 2px 6px; }

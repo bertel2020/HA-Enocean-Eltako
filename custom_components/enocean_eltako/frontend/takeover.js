@@ -59,7 +59,7 @@ export const TAKEOVER_STYLE = `
   .takeover .topbar b { flex: 1; font-size: calc(15px * var(--fs)); font-weight: 500; }
   .takeover .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .takeover .toolbar .grow { flex: 1; }
-  .takeover .search { flex: 1; min-width: 140px; height: 38px; border-radius: 10px; border: 1px solid var(--input-line); background: var(--surface);
+  .takeover .search { flex: 1; min-width: 140px; height: 40px; border-radius: var(--control-radius); border: 1px solid var(--input-line); background: var(--surface);
     color: var(--text); font: inherit; font-size: calc(14px * var(--fs)); padding: 0 12px; }
   .takeover .banner { margin: 0 16px 10px; padding: 8px 12px; border-radius: 8px; font-size: calc(12px * var(--fs)); background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .takeover .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
@@ -88,7 +88,7 @@ export const TAKEOVER_STYLE = `
   .takeover .optcard input { margin-top: 2px; }
   .takeover .note { margin: 8px 0 0; font-size: calc(12px * var(--fs)); color: var(--muted); }
   .takeover .stratcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .takeover .stratcard { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--input-line); border-radius: 12px; cursor: pointer; font-size: calc(13px * var(--fs)); }
+  .takeover .stratcard { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--input-line); border-radius: var(--radius); cursor: pointer; font-size: calc(13px * var(--fs)); }
   .takeover .stratcard b { display: block; font-weight: 500; font-size: calc(14px * var(--fs)); margin-bottom: 2px; }
   .takeover .stratcard .sub { display: block; margin-bottom: 8px; }
   .takeover .stratcard:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
