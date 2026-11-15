@@ -3,3 +3,6 @@ contact_links:
   - name: Security problem / Sicherheitsproblem
     url: https://github.com/bertel2020/HA-Enocean-Eltako/security/advisories/new
     about: Report vulnerabilities privately, not as an issue.
+  - name: Question or help / Frage oder Hilfe
+    url: https://github.com/bertel2020/HA-Enocean-Eltako/discussions/new?category=q-a
+    about: Ask usage questions in Discussions; issues are for bugs and requests.
