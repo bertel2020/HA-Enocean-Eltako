@@ -154,7 +154,7 @@ export const INSTALLATION_STYLE = `
   .installation table.itable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs)); }
   .installation .itable th { text-align: left; font-weight: 500; font-size: calc(12px * var(--fs)); color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
   .installation .itable td { padding: 8px 8px 8px 0; height: 48px; box-sizing: border-box; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 18px; padding-right: 4px; }
+  .installation .itable th:first-child, .installation .itable td:first-child { width: 36px; padding-left: 18px; padding-right: 10px; }
   .installation .tabwarn { color: var(--warn); font-weight: 500; }
   .installation .itable td.name { min-width: 160px; }
   .installation .unnamed { font-style: italic; color: var(--muted); }
@@ -165,10 +165,10 @@ export const INSTALLATION_STYLE = `
   .installation details.kindmenu .items, .installation details.rowmenu .items { left: 0; right: auto; min-width: 0; z-index: 6; }
   .installation details.rowmenu .items { left: auto; right: 0; white-space: nowrap; }
   /* the narrow last column of every table: the row menu (⋮) at the same place in each row */
-  .installation .itable th.rmenu, .installation .itable td.rmenu { width: 1%; padding: 2px 6px 2px 0; text-align: right; white-space: nowrap; }
+  .installation .itable th.rmenu, .installation .itable td.rmenu { width: 1%; padding: 2px 4px 2px 0; text-align: right; white-space: nowrap; }
   .installation details.colmenu .items, .installation details.rowmenu .items { max-width: calc(100vw - 32px); }
   /* the menu column stays in view when a wide table scrolls sideways */
-  .installation .itable td.rmenu { position: sticky; right: 0; z-index: 1; background: var(--surface); }
+  .installation .itable td.rmenu { position: sticky; right: 0; z-index: 1; background: var(--surface); box-shadow: -8px 0 8px -8px var(--shadow-c); }
   .installation .itable td.rmenu:has(details[open]) { z-index: 4; }
   .installation .stable tr.s-w > td.rmenu { background: color-mix(in srgb, var(--warn) 12%, var(--surface)); }
   .installation .itable tr.dup > td.rmenu { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); }
@@ -375,7 +375,7 @@ export const INSTALLATION_STYLE = `
   .installation ol.sheetsteps textarea.paste { min-height: 72px; font: inherit; font-size: calc(13px * var(--fs)); }
   .installation .sheetrun { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   .installation .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
-  .installation .tile { background: var(--soft); border-radius: 8px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
+  .installation .tile { background: var(--soft); border-radius: 12px; padding: 8px 10px; font-size: calc(13px * var(--fs)); }
   .installation .tile small { display: block; color: var(--muted); font-size: calc(11px * var(--fs)); }
   .installation .tile.bad { background: var(--warn-soft); }
   .installation .itable tr.psu td { background: var(--soft); padding: 8px; }
@@ -398,6 +398,7 @@ export const INSTALLATION_STYLE = `
   .installation .fbar .fsep { flex: none; width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
   .installation .gbar .seg button { white-space: nowrap; }
   .installation .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .installation .chips .chip { min-height: 32px; padding: 0 12px; border-radius: 16px; font-weight: 500; }
   .installation .chips .isub.lead { min-width: 40px; }
   .installation button.tag { border: 0; font: inherit; font-size: calc(11px * var(--fs)); cursor: pointer; }
   .installation button.tag:hover { color: var(--text); }
@@ -451,17 +452,17 @@ export const INSTALLATION_STYLE = `
   .installation .sintro .info { cursor: help; color: var(--muted); }
   .installation .swrap { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
   .installation .swrap .tablewrap { margin: 0; }
-  .installation .stable { font-size: calc(14px * var(--fs)); }
+  .installation .stable { font-size: calc(13px * var(--fs)); }
   .installation .stable input.cell { min-width: 64px; }
   .installation .stable td.mono { white-space: nowrap; }
-  .installation .stable th { padding: 9px 10px; }
-  .installation .stable td { padding: 8px 10px; height: 56px; }
-  .installation .stable th:first-child, .installation .stable td:first-child { width: 64px; padding-left: 14px; }
+  .installation .stable th { padding: 9px 6px; white-space: normal; vertical-align: bottom; }
+  .installation .stable td { padding: 8px 6px; height: 56px; }
+  .installation .stable th:first-child, .installation .stable td:first-child { width: 52px; padding-left: 14px; }
   .installation .stable th.sortable { cursor: pointer; user-select: none; }
   .installation .stable th .sarrow { font-style: normal; margin-left: 4px; opacity: 0; }
   .installation .stable th.sortable:hover .sarrow { opacity: .45; }
   .installation .stable th[aria-sort] .sarrow { opacity: 1; color: var(--accent); }
-  .installation .stable td.snr { font-weight: 500; font-size: calc(14px * var(--fs)); }
+  .installation .stable td.snr { font-weight: 500; font-size: calc(13px * var(--fs)); }
   .installation .stable tr.s-u > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
   .installation .stable tr.s-w > td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
   .installation .stable tr.s-w > td { background: color-mix(in srgb, var(--warn) 12%, transparent); }
@@ -518,7 +519,7 @@ export const INSTALLATION_STYLE = `
   .installation .tile.bad { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, transparent); }
   .installation .itable th { border-bottom: 1px solid var(--line); background: var(--soft); font-size: calc(11px * var(--fs)); text-transform: uppercase; letter-spacing: .04em; padding-top: 10px; padding-bottom: 10px; }
   .installation .itable tbody tr:not(.grp):not(.psu):not(.free):hover td { background: color-mix(in srgb, var(--soft) 60%, transparent); }
-  .installation .itable tr.grp td { background: color-mix(in srgb, var(--accent) 10%, var(--soft)); }
+  .installation .itable tr.grp td { background: var(--soft); border-top: 1px solid var(--line); }
   .installation .itable tr.psu td { background: color-mix(in srgb, var(--k-psu) 14%, transparent); }
   .installation .itable tr.psu.bad td { background: color-mix(in srgb, var(--warn) 20%, transparent); }
   .installation .gwhead h3 { font-size: calc(16px * var(--fs)); }
