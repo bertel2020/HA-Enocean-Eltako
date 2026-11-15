@@ -264,12 +264,11 @@ const STYLE = `
   .statusrow .chip { min-height: 32px; color: var(--text); }
   .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); }
   /* the status filter: a calm tab strip under the tools, the pressed one underlined */
-  .filters > .statusrow { order: 10; flex: 1 0 calc(100% + 32px); gap: 2px; flex-wrap: nowrap; margin: 4px -16px -12px; padding: 0 8px; border-top: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+  .filters > .statusrow { order: 10; flex: 1 0 100%; gap: 6px; flex-wrap: nowrap; margin: 0; padding: 2px 0 0; border: 0; overflow-x: auto; scrollbar-width: none; }
   .filters > .statusrow::-webkit-scrollbar { display: none; }
-  .filters > .statusrow .chip { position: relative; flex: none; min-height: 42px; padding: 0 12px; border: 0; border-radius: 0; background: none; color: var(--muted); }
-  .filters > .statusrow .chip:hover:not(:disabled) { background: none; color: var(--text); }
-  .filters > .statusrow .chip[aria-pressed="true"] { color: var(--accent); }
-  .filters > .statusrow .chip[aria-pressed="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px; background: var(--accent); }
+  .filters > .statusrow .chip { flex: none; min-height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--muted); }
+  .filters > .statusrow .chip:hover:not(:disabled) { background: var(--soft); color: var(--text); }
+  .filters > .statusrow .chip[aria-pressed="true"] { color: var(--accent-hover); border-color: var(--accent); background: var(--accent-soft); }
   .filters > .statusrow .chip.zero { opacity: .55; }
   .filters > .statusrow .chip[data-status="weak"]:not(.zero) { color: var(--warn); }
   .filters > .statusrow .chip[data-status="weak"]:not(.zero)::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }

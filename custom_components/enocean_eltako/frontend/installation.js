@@ -256,7 +256,7 @@ export const INSTALLATION_STYLE = `
   .installation .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
   .installation .gwempty { display: grid; justify-items: start; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: calc(13px * var(--fs)); }
   .installation .gwempty p { margin: 0; max-width: 60ch; }
-  .installation details.poolbox { border-bottom: 1px solid var(--line); }
+  .installation details.poolbox { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); margin: 12px 16px; overflow: clip; }
   .installation details.poolbox > summary { cursor: pointer; padding: 10px 16px; font-size: calc(14px * var(--fs)); font-weight: 500; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .installation details.poolbox > summary .isub { font-weight: 400; }
   .installation details.imenu { position: relative; }
@@ -372,7 +372,8 @@ export const INSTALLATION_STYLE = `
   .installation .seg button .isub { margin-left: 4px; }
   .installation .gbar .seg { max-width: 100%; overflow-x: auto; }
   /* the filter bar of the devices tab: views and kinds in one line, alike in look */
-  .installation .fbar { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 2px; scrollbar-width: thin; }
+  .installation .fbar { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 2px; scrollbar-width: none; }
+  .installation .fbar::-webkit-scrollbar { display: none; }
   .installation .fbar .seg { flex: none; overflow: visible; }
   .installation .fbar .chips { flex-wrap: nowrap; flex: none; gap: 4px; }
   .installation .fbar .chips .chip { min-height: 32px; padding: 0 12px; border-radius: 16px; white-space: nowrap; font-weight: 500; }
