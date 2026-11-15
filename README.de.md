@@ -71,16 +71,18 @@ Die Screenshots zeigen Beispieldaten aus dem Seitenleisten-Panel **EnOcean**.
 
 ### Über HACS (empfohlen)
 
+EnOcean Eltako gehört zu den HACS-Standard-Repositories: HACS öffnen, nach **EnOcean Eltako** suchen und herunterladen. Ein benutzerdefiniertes Repository ist nicht nötig.
+
 [![HACS-Repository in My Home Assistant öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bertel2020&repository=HA-Enocean-Eltako&category=integration)
 [![EnOcean Eltako zu My Home Assistant hinzufügen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=enocean_eltako)
 
-1. Über den ersten Button das EnOcean-Eltako-Repository in HACS öffnen.
+1. In HACS nach **EnOcean Eltako** suchen oder über den ersten Button direkt öffnen.
 2. **EnOcean Eltako** herunterladen und Home Assistant neu starten.
 3. Über den zweiten Button die Integration hinzufügen. Alternativ in Home
    Assistant **Einstellungen → Geräte & Dienste → Integration hinzufügen →
    EnOcean Eltako** öffnen.
 
-Falls der erste Button nicht funktioniert, in HACS unter **Integrationen →
+Falls die Integration in der HACS-Suche noch nicht erscheint (zum Beispiel bei einer alten HACS-Version), in HACS unter **Integrationen →
 Benutzerdefinierte Repositories** `https://github.com/bertel2020/HA-Enocean-Eltako`
 als Kategorie **Integration** eintragen.
 

@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Geändert
+
+- **README:** Die Installation verweist jetzt auf die HACS-Suche (die Integration ist ein HACS-Standard-Repository); das benutzerdefinierte Repository ist nur noch Ausweichweg.
+
 ### Behoben
 
 - **Panel:** Auf dem Handy hing die untere Leiste mit den Ansichten im Header fest (der Blur des Headers machte ihn zum Bezug für feste Positionierung); der Blur liegt jetzt hinter dem Header, die Leiste sitzt wieder am unteren Bildschirmrand.

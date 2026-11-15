@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Changed
+
+- **README:** installation now points to the HACS search (the integration is a HACS default repository); the custom repository is only a fallback.
+
 ### Fixed
 
 - **Panel:** on a phone the bottom bar with the views was stuck in the header (the header's blur made it the reference for fixed positioning); the blur now sits behind the header, so the bar is at the bottom of the screen again.
