@@ -544,6 +544,7 @@ async def test_device_proxy_app_discovery(hass: HomeAssistant) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
     assert result["options"]["proxy_replay"] is True
+    assert result["title"] == "EnOcean Gateway"  # neutral: the hardware behind it can be swapped
 
     again = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_HASSIO}, data=info

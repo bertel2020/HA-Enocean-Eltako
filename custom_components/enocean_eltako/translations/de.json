@@ -1132,6 +1132,9 @@
       "gateway_base_id": {
         "name": "Base-ID"
       },
+      "gateway_active_gateway": {
+        "name": "Aktives Gateway"
+      },
       "gateway_entity_prefix": {
         "name": "Entitäts-ID-Präfix"
       },

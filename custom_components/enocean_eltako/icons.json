@@ -190,6 +190,9 @@
       "gateway_base_id": {
         "default": "mdi:identifier"
       },
+      "gateway_active_gateway": {
+        "default": "mdi:router-wireless"
+      },
       "gateway_entity_prefix": {
         "default": "mdi:form-textbox"
       },

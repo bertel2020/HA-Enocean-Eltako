@@ -4,8 +4,13 @@
 
 ## Unreleased
 
+### New
+
+- **Device Proxy:** gateways reached through the Device Proxy app get a diagnostic sensor "Active gateway" that shows which physical gateway currently serves the port (main or fallback), so the swap is visible without the gateway's name changing.
+
 ### Changed
 
+- **Device Proxy:** the suggested name of a gateway set up through the app is now neutral ("EnOcean Gateway", numbered when taken) instead of the gateway model, because the hardware behind the port can be swapped for the fallback and the name is the base of device name and entity IDs. Existing gateways keep their names and entity IDs.
 - **Covers:** the driven-time sensor of a shutter actuator is now a diagnostic entity. Its attributes `last_full_up` and `last_full_down` hold the last full run in each direction (end position reached), to compare with the configured travel times.
 - **README:** installation now points to the HACS search (the integration is a HACS default repository); the custom repository is only a fallback.
 

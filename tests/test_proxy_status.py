@@ -3,6 +3,7 @@
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_component import async_update_entity
 
 from custom_components.enocean_eltako.const import DOMAIN
 from custom_components.enocean_eltako.protocol.models import Protocol
@@ -139,5 +140,47 @@ async def test_no_fallback_attributes_without_a_fallback(
     state = hass.states.get(entity_id or "")
     assert state is not None and "via_fallback" not in state.attributes
 
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+@pytest.mark.parametrize(("active", "shown"), [("main", "FAM-USB"), ("fallback", "FAM-USB 2")])
+async def test_active_gateway_sensor_follows_the_swap(
+    hass: HomeAssistant, aioclient_mock, active: str, shown: str
+) -> None:
+    server = await FakeGateway(Protocol.ESP2).start()
+    gateway = {**STATUS["gateways"][0], "port": server.port, "active": active}
+    gateway["fallback"] = {"name": "FAM-USB 2", "ready": True}
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json={**STATUS, "gateways": [gateway]})
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, options={"proxy_replay": True})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await server.connected.wait()
+    await hass.async_block_till_done()
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_gateway_active_gateway"
+    )
+    assert entity_id is not None
+    await async_update_entity(hass, entity_id)
+    state = hass.states.get(entity_id)
+    assert state is not None and state.state == shown
+
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_no_active_gateway_sensor_without_the_proxy(hass: HomeAssistant) -> None:
+    server = await FakeGateway(Protocol.ESP2).start()
+    entry = _entry(server.port)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert (
+        er.async_get(hass).async_get_entity_id(
+            "sensor", DOMAIN, f"{entry.entry_id}_gateway_active_gateway"
+        )
+        is None
+    )
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()

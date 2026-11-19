@@ -4,8 +4,13 @@
 
 ## Unreleased
 
+### Neu
+
+- **Device Proxy:** Gateways über die Device-Proxy-App haben einen Diagnose-Sensor „Aktives Gateway“, der zeigt, welches physische Gateway den Port gerade bedient (Haupt- oder Ersatz-Gateway). Der Wechsel ist so sichtbar, ohne dass sich der Name des Gateways ändert.
+
 ### Geändert
 
+- **Device Proxy:** Der vorgeschlagene Name eines über die App eingerichteten Gateways ist jetzt neutral („EnOcean Gateway“, bei Bedarf nummeriert) statt des Gateway-Modells, weil die Hardware hinter dem Port gegen das Ersatz-Gateway getauscht werden kann und der Name Grundlage für Gerätename und Entity-IDs ist. Bestehende Gateways behalten Namen und Entity-IDs.
 - **Rollläden:** Der Sensor der gefahrenen Zeit eines Rollladenaktors ist jetzt eine Diagnose-Entität. Seine Attribute `last_full_up` und `last_full_down` halten die letzte volle Fahrt je Richtung (Endlage erreicht), zum Vergleich mit den eingestellten Fahrzeiten.
 - **README:** Die Installation verweist jetzt auf die HACS-Suche (die Integration ist ein HACS-Standard-Repository); das benutzerdefinierte Repository ist nur noch Ausweichweg.
 

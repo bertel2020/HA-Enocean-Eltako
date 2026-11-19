@@ -85,11 +85,20 @@ class GatewaySensorDescription(SensorEntityDescription):
     bus_only: bool = False
     tcp_only: bool = False
     prefix_only: bool = False  # only while the gateway's entity IDs carry its prefix
+    proxy_only: bool = False  # only for gateways reached through the Device Proxy app
 
 
 def _last_telegram(runtime: GatewayRuntime, _entry: Any) -> datetime | None:
     last = runtime.gateway.last_telegram
     return dt_util.utc_from_timestamp(last) if last is not None else None
+
+
+def _active_gateway(runtime: GatewayRuntime, _entry: Any) -> str | None:
+    """The physical gateway behind the Device Proxy port: the app's main or its fallback."""
+    proxy = runtime.proxy
+    if not proxy:
+        return None
+    return proxy["fallback_name"] if proxy["via_fallback"] else proxy["name"]
 
 
 GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (
@@ -139,6 +148,12 @@ GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (
         key="base_id",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda _r, e: e.data[CONF_BASE_ID],
+    ),
+    GatewaySensorDescription(
+        key="active_gateway",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        proxy_only=True,
+        value_fn=_active_gateway,
     ),
     GatewaySensorDescription(
         key="entity_prefix",

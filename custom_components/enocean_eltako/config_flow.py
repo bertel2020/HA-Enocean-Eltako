@@ -694,12 +694,24 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         assert self._model is not None
         return self._model.name
 
+    def _default_name(self) -> str:
+        """Behind the Device Proxy the hardware can be swapped (main/fallback), so its model
+        must not end up in device name and entity IDs: a neutral, numbered name instead."""
+        if self._proxy is None:
+            return self._model_name()
+        taken = {e.title for e in self._async_current_entries(include_ignore=False)}
+        name, number = "EnOcean Gateway", 1
+        while name in taken:
+            number += 1
+            name = f"EnOcean Gateway {number}"
+        return name
+
     @callback
     def _async_show_name(self) -> ConfigFlowResult:
         return self.async_show_form(
             step_id="name",
             data_schema=vol.Schema(
-                {vol.Required(CONF_NAME, default=self._model_name()): TextSelector()}
+                {vol.Required(CONF_NAME, default=self._default_name()): TextSelector()}
             ),
             description_placeholders={"base_id": format_id(self._base_id)},
         )
@@ -709,7 +721,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self._async_show_name()
         return self.async_create_entry(
-            title=user_input[CONF_NAME].strip() or self._model_name(),
+            title=user_input[CONF_NAME].strip() or self._default_name(),
             data=self._data,
             options=self._options,
         )
