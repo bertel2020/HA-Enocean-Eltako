@@ -16,7 +16,7 @@ from .fake_gateway import FakeGateway
 
 pytestmark = pytest.mark.usefixtures("socket_enabled")
 
-PREFIX = {"entity_prefix", "gateway_number", "rename_entities"}  # gateway prefix in entity IDs
+PREFIX = {"entity_prefix", "rename_entities"}  # gateway prefix in entity IDs
 
 PORT = "/dev/serial/by-id/usb-EnOcean_FAM-USB"
 

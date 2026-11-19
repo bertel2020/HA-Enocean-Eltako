@@ -68,7 +68,7 @@ from .const import (
     REPEATER_UNCHANGED,
 )
 from .discovery import async_set_hidden, card_title, card_unique_id, pending, sender_options
-from .entity_ids import free_gateway_number, rename_entities, taken_gateway_numbers
+from .entity_ids import free_gateway_number, rename_entities
 from .protocol.gateway import Gateway
 from .protocol.ids import format_id, is_valid_base_id, parse_id
 from .protocol.models import MODELS, GatewayModel, Protocol
@@ -769,15 +769,15 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
                 CONF_FORGET_DAYS: self.config_entry.options.get(
                     CONF_FORGET_DAYS, DEFAULT_FORGET_DAYS
                 ),
+                # assigned once (setup or migration), not editable
+                CONF_GATEWAY_NUMBER: self.config_entry.options.get(
+                    CONF_GATEWAY_NUMBER, free_gateway_number(self.hass, self.config_entry)
+                ),
             }
-            data[CONF_GATEWAY_NUMBER] = int(data[CONF_GATEWAY_NUMBER])
             rename = data.pop(CONF_RENAME_ENTITIES, False)
-            if data[CONF_GATEWAY_NUMBER] in taken_gateway_numbers(self.hass, self.config_entry):
-                errors[CONF_GATEWAY_NUMBER] = "gateway_number_taken"
-            else:
-                if rename:
-                    rename_entities(self.hass, self.config_entry, data)
-                return self.async_create_entry(data=data)
+            if rename:
+                rename_entities(self.hass, self.config_entry, data)
+            return self.async_create_entry(data=data)
         schema: dict[Any, Any] = {
             vol.Required(CONF_MESSAGE_DELAY, default=DEFAULT_MESSAGE_DELAY): NumberSelector(
                 NumberSelectorConfig(
@@ -805,10 +805,6 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
                 )
             )
         schema[vol.Required(CONF_ENTITY_PREFIX, default=False)] = BooleanSelector()
-        number = free_gateway_number(self.hass, self.config_entry)
-        schema[vol.Required(CONF_GATEWAY_NUMBER, default=number)] = NumberSelector(
-            NumberSelectorConfig(min=1, max=99, step=1, mode=NumberSelectorMode.BOX)
-        )
         schema[vol.Required(CONF_RENAME_ENTITIES, default=False)] = BooleanSelector()
         suggested = {**self.config_entry.options, **(user_input or {})}
         return self.async_show_form(

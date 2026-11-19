@@ -627,9 +627,10 @@ Discovery, Bus-Verbindung, ESP3-Repeater und Gateway-Präfix in Entitäts-IDs.
 
 Ohne Präfix bildet Home Assistant Entitäts-IDs aus Geräte- und Entitätsname (`light.kuche`,
 `sensor.kuche_signalstarke`). **Gateway-Präfix in Entitäts-IDs** stellt `eno_gw` und die
-**Gateway-Nummer** davor (`light.eno_gw1_kuche`); so lassen sich die Entitäten mehrerer
-Gateways unterscheiden. Jedes Gateway mit Präfix braucht eine eigene Nummer; das Gateway-Gerät
-zeigt seinen Präfix im Diagnose-Sensor **Entitäts-ID-Präfix**. Die Einstellung
+Nummer des Gateways vor die Entitäten seiner Geräte (`light.eno_gw1_kuche`); so lassen sich die
+Entitäten mehrerer Gateways unterscheiden. Die eigenen Entitäten des Gateways tragen den Präfix
+immer (`sensor.eno_gw1_letztes_telegramm`); jedes Gateway hat eine eigene Nummer, die beim
+Einrichten vergeben wird. Das Gateway-Gerät zeigt seinen Präfix im Diagnose-Sensor **Entitäts-ID-Präfix**. Die Einstellung
 gilt für Entitäten, die ab dann dazukommen. **Bestehende Entitäten jetzt umbenennen** benennt
 die Entitäten des Gateways sofort um, in beide Richtungen.
 

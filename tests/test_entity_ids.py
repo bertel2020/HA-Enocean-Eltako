@@ -81,14 +81,12 @@ async def test_prefix_on_new_entities(hass: HomeAssistant) -> None:
 async def test_options_rename_existing_entities(hass: HomeAssistant) -> None:
     entry, server = await _setup(hass, {})
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["data_schema"]({})["gateway_number"] == 1  # first free number
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         {
             "message_delay": 0,
             "discovery": True,
             "entity_prefix": True,
-            "gateway_number": 1.0,
             "rename_entities": True,
         },
     )
@@ -111,7 +109,6 @@ async def test_options_rename_existing_entities(hass: HomeAssistant) -> None:
             "message_delay": 0,
             "discovery": True,
             "entity_prefix": False,
-            "gateway_number": 1,
             "rename_entities": True,
         },
     )
@@ -126,31 +123,20 @@ async def test_options_without_rename_keep_existing_ids(hass: HomeAssistant) -> 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {"message_delay": 0, "discovery": True, "entity_prefix": True, "gateway_number": 1},
+        {"message_delay": 0, "discovery": True, "entity_prefix": True},
     )
     await hass.async_block_till_done()
     assert "light.licht_flur" in _ids(hass, entry)  # registered before: Home Assistant keeps it
     await _teardown(hass, entry, server)
 
 
-async def test_gateway_number_taken(hass: HomeAssistant) -> None:
-    other = MockConfigEntry(
-        domain=DOMAIN, data={"model": "fam_usb"}, options={"entity_prefix": True}
-    )
-    other.add_to_hass(hass)
-    entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"})
+async def test_gateway_number_is_not_editable_and_kept(hass: HomeAssistant) -> None:
+    entry = MockConfigEntry(domain=DOMAIN, data={"model": "fam_usb"}, options={"gateway_number": 3})
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert result["data_schema"]({})["gateway_number"] == 2  # 1 is taken
+    assert "gateway_number" not in result["data_schema"].schema
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {"message_delay": 10, "discovery": True, "entity_prefix": True, "gateway_number": 1},
-    )
-    assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"gateway_number": "gateway_number_taken"}
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {"message_delay": 10, "discovery": True, "entity_prefix": True, "gateway_number": 2},
+        result["flow_id"], {"message_delay": 10, "discovery": True, "entity_prefix": True}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert entry.options["gateway_number"] == 2
+    assert entry.options["gateway_number"] == 3

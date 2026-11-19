@@ -591,8 +591,9 @@ connection, the ESP3 repeater and the gateway prefix in entity IDs.
 
 Without the prefix Home Assistant builds entity IDs from device and entity name
 (`light.kitchen`, `sensor.kitchen_signal_strength`). **Gateway prefix in entity IDs** puts
-`eno_gw` and the **Gateway number** in front (`light.eno_gw1_kitchen`), which tells
-apart the entities of several gateways; every gateway with a prefix needs a number of its own.
+`eno_gw` and the gateway's number in front of its devices' entities (`light.eno_gw1_kitchen`), which tells
+apart the entities of several gateways. The gateway's own entities always carry the prefix
+(`sensor.eno_gw1_last_telegram`); every gateway has a number of its own, assigned when it is set up.
 The gateway device shows its prefix in the diagnostic sensor **Entity ID prefix**.
 The setting applies to entities added from then on. **Rename existing entities now** renames
 the gateway's entities right away, in both directions.
