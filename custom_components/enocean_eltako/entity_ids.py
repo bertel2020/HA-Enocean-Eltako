@@ -8,7 +8,7 @@ request (rename_entities), since automations and dashboards are not adapted with
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -29,16 +29,27 @@ def gateway_prefix(options: Mapping[str, Any]) -> str | None:
     return f"eno_gw{int(options.get(CONF_GATEWAY_NUMBER, 1))}"
 
 
-def taken_gateway_numbers(hass: HomeAssistant, entry: ConfigEntry) -> set[int]:
-    """Numbers the other gateways use in their entity IDs."""
+def own_prefix(options: Mapping[str, Any]) -> str:
+    """The prefix of the gateway's own entities: always there, whatever the option says."""
+    return f"eno_gw{int(options.get(CONF_GATEWAY_NUMBER, 1))}"
+
+
+def taken_gateway_numbers(
+    hass: HomeAssistant, entry: ConfigEntry | None, extra: Iterable[ConfigEntry] = ()
+) -> set[int]:
+    """Numbers the other gateways use: every gateway has one (its own entities carry it)."""
+    others = {e.entry_id: e for e in (*hass.config_entries.async_entries(DOMAIN), *extra)}
+    if entry is not None:
+        others.pop(entry.entry_id, None)
     return {
-        int(other.options.get(CONF_GATEWAY_NUMBER, 1))
-        for other in hass.config_entries.async_entries(DOMAIN)
-        if other.entry_id != entry.entry_id and other.options.get(CONF_ENTITY_PREFIX)
+        int(number)
+        for other in others.values()
+        if (number := other.options.get(CONF_GATEWAY_NUMBER)) is not None
+        or (number := 1 if other.options.get(CONF_ENTITY_PREFIX) else None) is not None
     }
 
 
-def free_gateway_number(hass: HomeAssistant, entry: ConfigEntry) -> int:
+def free_gateway_number(hass: HomeAssistant, entry: ConfigEntry | None) -> int:
     taken = taken_gateway_numbers(hass, entry)
     return next(n for n in range(1, len(taken) + 2) if n not in taken)
 
@@ -69,7 +80,9 @@ class PrefixedEntityId(Entity):
         self, hass: HomeAssistant, platform: EntityPlatform, parallel_updates: Any
     ) -> None:
         super().add_to_platform_start(hass, platform, parallel_updates)
-        if (prefix := gateway_prefix(self._gateway_entry.options)) is None:
+        options = self._gateway_entry.options
+        prefix = own_prefix(options) if self._prefix_names_device else gateway_prefix(options)
+        if prefix is None:
             return  # Home Assistant's own entity ID
         info = self.device_info or {}
         device = (
@@ -101,7 +114,9 @@ def rename_entities(
         device = devices.async_get(reg.device_id) if reg.device_id else None
         own = device is not None and (DOMAIN, entry.entry_id) in device.identifiers
         device_name = (device.name_by_user or device.name) if device and not own else None
-        wanted = object_id(prefix, device_name, reg.name or reg.original_name)
+        wanted = object_id(
+            own_prefix(options) if own else prefix, device_name, reg.name or reg.original_name
+        )
         if not wanted or reg.entity_id == f"{reg.domain}.{wanted}":
             continue
         new_id = entities.async_get_available_entity_id(

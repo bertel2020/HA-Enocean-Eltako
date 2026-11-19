@@ -24,7 +24,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.util import dt as dt_util
 
 from .const import CONF_BASE_ID, CONF_DEVICE, DOMAIN
-from .entity_ids import PrefixedEntityId, gateway_prefix
+from .entity_ids import PrefixedEntityId, own_prefix
 from .proxy_status import active_gateway
 
 if TYPE_CHECKING:
@@ -86,7 +86,6 @@ class GatewaySensorDescription(SensorEntityDescription):
     value_fn: Callable[[GatewayRuntime, EnOceanEltakoConfigEntry], Any]
     bus_only: bool = False
     tcp_only: bool = False
-    prefix_only: bool = False  # only while the gateway's entity IDs carry its prefix
     proxy_only: bool = False  # only for gateways reached through the Device Proxy app
 
 
@@ -156,8 +155,7 @@ GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (
     GatewaySensorDescription(
         key="entity_prefix",
         entity_category=EntityCategory.DIAGNOSTIC,
-        prefix_only=True,
-        value_fn=lambda _r, e: gateway_prefix(e.options),
+        value_fn=lambda _r, e: own_prefix(e.options),
     ),
     GatewaySensorDescription(
         key="free_senders",

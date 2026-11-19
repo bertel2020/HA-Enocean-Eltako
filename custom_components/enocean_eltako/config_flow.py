@@ -119,8 +119,9 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = (
-        7  # 1.2: senders (2); 1.3: rocker buttons (3); 1.4: model name (4); 1.5: routing;
-        # 1.6: meter under an actuator (6); 1.7: thermostat of a switching actuator (7)
+        8  # 1.2: senders (2); 1.3: rocker buttons (3); 1.4: model name (4); 1.5: routing;
+        # 1.6: meter under an actuator (6); 1.7: thermostat of a switching actuator (7);
+        # 1.8: gateway number for every gateway
     )
 
     def __init__(self) -> None:
@@ -678,7 +679,10 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             CONF_DEVICE: self._connection.as_dict(),
             CONF_BASE_ID: format_id(self._base_id),
         }
-        self._options = {CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY}
+        self._options = {
+            CONF_MESSAGE_DELAY: DEFAULT_MESSAGE_DELAY,
+            CONF_GATEWAY_NUMBER: free_gateway_number(self.hass, None),
+        }
         if self._proxy is not None and self._proxy.get("replay"):
             self._options[CONF_PROXY_REPLAY] = True  # telegrams missed during restarts
         if self._proxy is not None and self._proxy.get("status_port"):
@@ -768,9 +772,7 @@ class EnOceanEltakoOptionsFlow(OptionsFlow):
             }
             data[CONF_GATEWAY_NUMBER] = int(data[CONF_GATEWAY_NUMBER])
             rename = data.pop(CONF_RENAME_ENTITIES, False)
-            if data[CONF_ENTITY_PREFIX] and data[CONF_GATEWAY_NUMBER] in taken_gateway_numbers(
-                self.hass, self.config_entry
-            ):
+            if data[CONF_GATEWAY_NUMBER] in taken_gateway_numbers(self.hass, self.config_entry):
                 errors[CONF_GATEWAY_NUMBER] = "gateway_number_taken"
             else:
                 if rename:

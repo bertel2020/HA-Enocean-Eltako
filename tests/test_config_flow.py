@@ -199,7 +199,7 @@ async def test_fam14_joins_bus_group_of_fgw14_on_demand(hass: HomeAssistant, fak
     result = await _name(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"]["bus_group"] == "b1"
-    assert result["options"] == {"message_delay": 10, "mode": "on_demand"}
+    assert result["options"] == {"message_delay": 10, "mode": "on_demand", "gateway_number": 1}
 
 
 async def test_first_bus_gateway_creates_new_group(hass: HomeAssistant, fake_esp2) -> None:

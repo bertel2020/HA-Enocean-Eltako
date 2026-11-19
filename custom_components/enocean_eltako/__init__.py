@@ -44,6 +44,7 @@ from .const import (
     CONF_BASE_ID,
     CONF_BUS_GROUP,
     CONF_DEVICE,
+    CONF_GATEWAY_NUMBER,
     CONF_MESSAGE_DELAY,
     CONF_MODE,
     CONF_MODEL,
@@ -69,7 +70,7 @@ from .discovery import (
     async_remove_labels,
     async_setup_discovery,
 )
-from .entity_ids import gateway_prefix
+from .entity_ids import free_gateway_number, gateway_prefix
 from .health import async_set_silent, async_setup_health
 from .hub import BusGroupRuntime, Hub, async_get_hub
 from .installation import async_get_installation
@@ -172,6 +173,10 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
 
     1.6 -> 1.7: a switching actuator channel can have a thermostat ("thermostat" and its
     settings, all optional); nothing to convert (schema 7).
+
+    1.7 -> 1.8: every gateway has an entity ID number (option "gateway_number"): the
+    gateway's own entities always carry eno_gw<number>. Gateways without one get the first
+    free number; entity IDs already registered stay as they are.
     """
     if entry.version > 1:
         return False  # downgrade not supported
@@ -238,6 +243,15 @@ async def async_migrate_entry(hass: HomeAssistant, entry: EnOceanEltakoConfigEnt
             data["schema"] = 7
             hass.config_entries.async_update_subentry(entry, subentry, data=data)
         hass.config_entries.async_update_entry(entry, minor_version=7)
+    if entry.minor_version < 8:
+        # every gateway has a number now (its own entities carry eno_gw<number>)
+        if CONF_GATEWAY_NUMBER not in entry.options:
+            number = free_gateway_number(hass, entry)
+            hass.config_entries.async_update_entry(
+                entry, options={**entry.options, CONF_GATEWAY_NUMBER: number}, minor_version=8
+            )
+        else:
+            hass.config_entries.async_update_entry(entry, minor_version=8)
     return True
 
 

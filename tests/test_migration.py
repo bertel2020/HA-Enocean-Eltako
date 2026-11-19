@@ -191,4 +191,20 @@ async def test_thermostat_option_needs_no_conversion(hass: HomeAssistant) -> Non
     assert data["schema"] == SUBENTRY_SCHEMA == 7
     assert "thermostat" not in data  # off unless the user switches it on
     assert data["part_of"] == "abc"  # everything else is kept
-    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 7
+    assert entry.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION == 8
+
+
+async def test_gateways_get_a_number_for_their_own_entity_ids(hass: HomeAssistant) -> None:
+    """1.7 -> 1.8: gateways without a number get the first free one; set ones are kept."""
+    numbered = _entry(7, [])
+    numbered.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        numbered, options={"entity_prefix": True, "gateway_number": 1}
+    )
+    plain = _entry(7, [])
+    plain.add_to_hass(hass)
+    assert await async_migrate_entry(hass, numbered)
+    assert await async_migrate_entry(hass, plain)
+    assert numbered.options["gateway_number"] == 1
+    assert plain.options["gateway_number"] == 2  # 1 is taken
+    assert plain.minor_version == EnOceanEltakoConfigFlow.MINOR_VERSION

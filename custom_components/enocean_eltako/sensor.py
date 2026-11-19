@@ -55,7 +55,6 @@ from .const import CONF_DEVICE, CONF_MODEL, CONF_PROXY_REPLAY, DOMAIN
 from .custom_devices import CustomDevice
 from .device import EnOceanDevice
 from .entity import EnOceanEntity
-from .entity_ids import gateway_prefix
 from .gateway_entity import GATEWAY_SENSORS, GatewaySensor
 from .protocol.eep.eltako.sensors import format_meter_serial
 from .protocol.ids import format_id
@@ -587,16 +586,12 @@ async def async_setup_entry(
 ) -> None:
     bus = MODELS[entry.data[CONF_MODEL]].bus
     tcp = entry.data[CONF_DEVICE].get("type") == "tcp"
-    prefix = gateway_prefix(entry.options) is not None
     proxy = bool(entry.options.get(CONF_PROXY_REPLAY))
     async_add_entities(
         [
             GatewaySensor(entry, d)
             for d in GATEWAY_SENSORS
-            if (bus or not d.bus_only)
-            and (tcp or not d.tcp_only)
-            and (prefix or not d.prefix_only)
-            and (proxy or not d.proxy_only)
+            if (bus or not d.bus_only) and (tcp or not d.tcp_only) and (proxy or not d.proxy_only)
         ]
     )
     for subentry_id, device in entry.runtime_data.devices.items():

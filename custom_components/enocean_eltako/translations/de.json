@@ -409,8 +409,8 @@
           "repeater": "Ob das Gateway Telegramme anderer Geräte wiederholt (nur ESP3). Wird bei jedem Verbinden gesetzt.",
           "discovery": "Unbekannte Sender, die dieses Gateway empfängt, als entdeckte Geräte anbieten.",
           "proxy_replay": "Nur wenn dieses Gateway über die App Device Proxy verbunden ist: Nach jedem Verbinden liefert die App die Telegramme nach, die während eines Neustarts von Home Assistant ankamen.",
-          "entity_prefix": "Neue Entitäten dieses Gateways bekommen Entitäts-IDs wie light.eno_gw1_kuche statt light.kuche. Nützlich bei mehreren Gateways.",
-          "gateway_number": "Die Nummer im Präfix (eno_gw1, eno_gw2 ...). Jedes Gateway mit Präfix braucht eine eigene.",
+          "entity_prefix": "Neue Entitäten der Geräte dieses Gateways bekommen Entitäts-IDs wie light.eno_gw1_kuche statt light.kuche. Nützlich bei mehreren Gateways. Die Entitäten des Gateways selbst tragen das Präfix immer (sensor.eno_gw1_letztes_telegramm).",
+          "gateway_number": "Die Nummer im Präfix (eno_gw1, eno_gw2 ...). Jedes Gateway braucht eine eigene.",
           "rename_entities": "Gibt den Entitäten, die dieses Gateway schon hat, Entitäts-IDs nach der Einstellung oben (aus Geräte- und Entitätsname, nicht aus der alten ID). Automationen, Skripte, Szenen, Gruppen, Dashboards und das Energie-Dashboard werden nicht angepasst: vorher ein Backup machen, danach prüfen."
         }
       }
