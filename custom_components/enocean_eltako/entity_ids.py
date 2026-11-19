@@ -60,6 +60,9 @@ class PrefixedEntityId(Entity):
     """Suggests the prefixed entity ID when the entity is added for the first time."""
 
     _gateway_entry: ConfigEntry
+    # The gateway's own entities: the prefix already names the gateway, so the device name
+    # (the gateway's) would only repeat it - and could name hardware that gets swapped.
+    _prefix_names_device = False
 
     @callback
     def add_to_platform_start(
@@ -69,7 +72,11 @@ class PrefixedEntityId(Entity):
         if (prefix := gateway_prefix(self._gateway_entry.options)) is None:
             return  # Home Assistant's own entity ID
         info = self.device_info or {}
-        device = _device_name(hass, info.get("identifiers", set()), info.get("name"))
+        device = (
+            None
+            if self._prefix_names_device
+            else _device_name(hass, info.get("identifiers", set()), info.get("name"))
+        )
         name = self.name if isinstance(self.name, str) else None
         # taken over by Home Assistant only for an entity it has not registered yet
         self.entity_id = f"{platform.domain}.{object_id(prefix, device, name)}"
@@ -92,7 +99,8 @@ def rename_entities(
         if only is not None and not only(reg):
             continue
         device = devices.async_get(reg.device_id) if reg.device_id else None
-        device_name = (device.name_by_user or device.name) if device else None
+        own = device is not None and (DOMAIN, entry.entry_id) in device.identifiers
+        device_name = (device.name_by_user or device.name) if device and not own else None
         wanted = object_id(prefix, device_name, reg.name or reg.original_name)
         if not wanted or reg.entity_id == f"{reg.domain}.{wanted}":
             continue

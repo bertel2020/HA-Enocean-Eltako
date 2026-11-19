@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 class GatewayEntity(PrefixedEntityId):
     _attr_has_entity_name = True
     _attr_should_poll = False
+    _prefix_names_device = True  # eno_gw1_last_telegram, not eno_gw1_<gateway name>_last_telegram
 
     def __init__(self, entry: EnOceanEltakoConfigEntry, key: str) -> None:
         self._entry = self._gateway_entry = entry

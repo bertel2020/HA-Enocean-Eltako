@@ -70,10 +70,10 @@ async def test_prefix_on_new_entities(hass: HomeAssistant) -> None:
     ids = _ids(hass, entry)
     assert "light.eno_gw2_licht_flur" in ids
     assert "sensor.eno_gw2_licht_flur_enocean_id" in ids
-    assert "binary_sensor.eno_gw2_fam_usb_connection" in ids
+    assert "binary_sensor.eno_gw2_connection" in ids
     assert hass.states.get("light.eno_gw2_licht_flur") is not None
     sensor = _prefix_sensor(hass, entry)
-    assert sensor == "sensor.eno_gw2_fam_usb_entity_id_prefix"
+    assert sensor == "sensor.eno_gw2_entity_id_prefix"
     assert hass.states.get(sensor).state == "eno_gw2"
     await _teardown(hass, entry, server)
 
@@ -98,7 +98,7 @@ async def test_options_rename_existing_entities(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
     ids = _ids(hass, entry)
     assert "light.eno_gw1_licht_flur" in ids
-    assert "binary_sensor.eno_gw1_fam_usb_connection" in ids
+    assert "binary_sensor.eno_gw1_connection" in ids
     assert "light.licht_flur" not in ids
     assert hass.states.get("light.eno_gw1_licht_flur") is not None
     assert hass.states.get(_prefix_sensor(hass, entry)).state == "eno_gw1"
