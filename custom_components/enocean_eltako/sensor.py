@@ -1004,20 +1004,28 @@ class CoverStateSensor(EnOceanEntity, SensorEntity, RestoreEntity):
 
 
 class CoverDrivenTimeSensor(EnOceanEntity, SensorEntity, RestoreEntity):
-    """The FSB's report after a stop: how long the last run took, in which direction."""
+    """The FSB's report after a stop: how long the last run took, in which direction. The
+    attributes keep the last full run (end position reached) per direction, to compare with the
+    configured travel times."""
 
     _attr_translation_key = "driven_time"
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.SECONDS
     _attr_suggested_display_precision = 1
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, device: EnOceanDevice) -> None:
         super().__init__(device, "driven_time")
         self._direction: str | None = None
+        self._last_full: dict[str, float | None] = {"up": None, "down": None}
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"direction": self._direction}
+        return {
+            "direction": self._direction,
+            "last_full_up": self._last_full["up"],
+            "last_full_down": self._last_full["down"],
+        }
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -1025,16 +1033,25 @@ class CoverDrivenTimeSensor(EnOceanEntity, SensorEntity, RestoreEntity):
             with contextlib.suppress(ValueError):
                 self._attr_native_value = float(last.state)
                 self._direction = last.attributes.get("direction")
+            for way in ("up", "down"):
+                with contextlib.suppress(TypeError, ValueError):
+                    self._last_full[way] = float(last.attributes[f"last_full_{way}"])
 
     def _apply(self, values: dict[str, Any]) -> bool:
         if "driven_time" not in values:
             return False
-        changed = (values["driven_time"], values["direction"]) != (
-            self._attr_native_value,
-            self._direction,
-        )
-        self._attr_native_value = values["driven_time"]
-        self._direction = values["direction"]
+        driven, direction = values["driven_time"], values["direction"]
+        changed = (driven, direction) != (self._attr_native_value, self._direction)
+        self._attr_native_value = driven
+        self._direction = direction
+        cover = self._device.cover_entity
+        if (
+            cover is not None
+            and cover.position.reaches_end(driven, direction == "up")
+            and self._last_full[direction] != driven
+        ):
+            self._last_full[direction] = driven
+            changed = True
         return changed
 
 

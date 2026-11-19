@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState, ConfigSubentryData
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
@@ -870,6 +871,8 @@ async def test_cover_state_and_driven_time(hass: HomeAssistant, gateway) -> None
     assert hass.states.get(state_id).state == "stopped"
     driven = hass.states.get(time_id)
     assert float(driven.state) == 10.0 and driven.attributes["direction"] == "up"
+    assert driven.attributes["last_full_up"] is None  # a stop in between is no full run
+    assert er.async_get(hass).async_get(time_id).entity_category is EntityCategory.DIAGNOSTIC
     # a run with a run time of ours ends with the driven time of a full run: end position
     _push(server, 0x07, bytes.fromhex("0258010A"), 0x05000022)  # 60.0 s up
     await _settle(hass)
@@ -877,6 +880,8 @@ async def test_cover_state_and_driven_time(hass: HomeAssistant, gateway) -> None
     _push(server, 0x07, bytes.fromhex("0258020A"), 0x05000022)  # 60.0 s down
     await _settle(hass)
     assert hass.states.get(state_id).state == "closed"
+    attrs = hass.states.get(time_id).attributes
+    assert attrs["last_full_up"] == 60.0 and attrs["last_full_down"] == 60.0
     _push(server, 0x07, bytes.fromhex("0064020A"), 0x05000022)  # 10.0 s down: in between
     await _settle(hass)
     assert hass.states.get(state_id).state == "stopped"

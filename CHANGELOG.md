@@ -6,6 +6,7 @@
 
 ### Changed
 
+- **Covers:** the driven-time sensor of a shutter actuator is now a diagnostic entity. Its attributes `last_full_up` and `last_full_down` hold the last full run in each direction (end position reached), to compare with the configured travel times.
 - **README:** installation now points to the HACS search (the integration is a HACS default repository); the custom repository is only a fallback.
 
 ### Fixed

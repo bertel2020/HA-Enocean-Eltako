@@ -6,6 +6,7 @@
 
 ### Geändert
 
+- **Rollläden:** Der Sensor der gefahrenen Zeit eines Rollladenaktors ist jetzt eine Diagnose-Entität. Seine Attribute `last_full_up` und `last_full_down` halten die letzte volle Fahrt je Richtung (Endlage erreicht), zum Vergleich mit den eingestellten Fahrzeiten.
 - **README:** Die Installation verweist jetzt auf die HACS-Suche (die Integration ist ein HACS-Standard-Repository); das benutzerdefinierte Repository ist nur noch Ausweichweg.
 
 ### Behoben
