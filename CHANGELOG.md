@@ -6,7 +6,7 @@
 
 ### New
 
-- **Device Proxy:** gateways reached through the Device Proxy app get a diagnostic sensor "Active gateway" that shows which physical gateway currently serves the port (main or fallback), so the swap is visible without the gateway's name changing.
+- **Device Proxy:** gateways reached through the Device Proxy app get a diagnostic sensor "Active gateway" that shows which physical gateway currently serves the port (main or fallback), and the device's model field follows it, so the swap is visible without the gateway's name changing.
 
 ### Changed
 

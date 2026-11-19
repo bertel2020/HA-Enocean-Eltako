@@ -2,6 +2,7 @@
 
 import pytest
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_component import async_update_entity
 
@@ -165,6 +166,8 @@ async def test_active_gateway_sensor_follows_the_swap(
     await async_update_entity(hass, entity_id)
     state = hass.states.get(entity_id)
     assert state is not None and state.state == shown
+    device = dr.async_get(hass).async_get(entry.runtime_data.gateway_device_id)
+    assert device is not None and device.model == shown  # the device shows the real hardware
 
     await hass.config_entries.async_unload(entry.entry_id)
     await server.stop()

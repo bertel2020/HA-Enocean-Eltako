@@ -25,6 +25,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_BASE_ID, CONF_DEVICE, DOMAIN
 from .entity_ids import PrefixedEntityId, gateway_prefix
+from .proxy_status import active_gateway
 
 if TYPE_CHECKING:
     from . import EnOceanEltakoConfigEntry, GatewayRuntime
@@ -94,11 +95,7 @@ def _last_telegram(runtime: GatewayRuntime, _entry: Any) -> datetime | None:
 
 
 def _active_gateway(runtime: GatewayRuntime, _entry: Any) -> str | None:
-    """The physical gateway behind the Device Proxy port: the app's main or its fallback."""
-    proxy = runtime.proxy
-    if not proxy:
-        return None
-    return proxy["fallback_name"] if proxy["via_fallback"] else proxy["name"]
+    return active_gateway(runtime.proxy)
 
 
 GATEWAY_SENSORS: tuple[GatewaySensorDescription, ...] = (

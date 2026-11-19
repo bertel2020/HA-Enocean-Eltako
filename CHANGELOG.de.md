@@ -6,7 +6,7 @@
 
 ### Neu
 
-- **Device Proxy:** Gateways über die Device-Proxy-App haben einen Diagnose-Sensor „Aktives Gateway“, der zeigt, welches physische Gateway den Port gerade bedient (Haupt- oder Ersatz-Gateway). Der Wechsel ist so sichtbar, ohne dass sich der Name des Gateways ändert.
+- **Device Proxy:** Gateways über die Device-Proxy-App haben einen Diagnose-Sensor „Aktives Gateway“, der zeigt, welches physische Gateway den Port gerade bedient (Haupt- oder Ersatz-Gateway). Auch das Modell-Feld des Geräts folgt dem aktiven Gateway. Der Wechsel ist so sichtbar, ohne dass sich der Name des Gateways ändert.
 
 ### Geändert
 

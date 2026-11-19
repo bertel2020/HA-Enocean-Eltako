@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import aiohttp
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 
@@ -66,6 +67,13 @@ def listed_ports(status: dict[str, Any]) -> list[Any]:
     return [g.get("port") for g in status.get("gateways", []) if isinstance(g, dict)]
 
 
+def active_gateway(proxy: dict[str, Any] | None) -> str | None:
+    """Name of the physical gateway serving the port: the app's main one or its fallback."""
+    if not proxy:
+        return None
+    return (proxy["fallback_name"] if proxy["via_fallback"] else proxy["name"]) or None
+
+
 def fallback_state(proxy: dict[str, Any] | None) -> tuple[Any, ...]:
     """What the connection sensor shows of the app's fallback gateway."""
     if not proxy:
@@ -88,6 +96,7 @@ def async_setup_proxy_status(
     async def poll(_now: Any = None) -> None:
         runtime = entry.runtime_data
         before = fallback_state(runtime.proxy)
+        was = active_gateway(runtime.proxy)
         error: dict[str, str] | None = None
         try:
             async with session.get(url, timeout=TIMEOUT) as response:
@@ -107,6 +116,9 @@ def async_setup_proxy_status(
             if error is not None:
                 _LOGGER.debug("Proxy app status from %s unavailable: %s", url, error["detail"])
             runtime.proxy_error = error
+        now = active_gateway(runtime.proxy)
+        if now and now != was and runtime.gateway_device_id:  # device shows the real hardware
+            dr.async_get(hass).async_update_device(runtime.gateway_device_id, model=now)
         if fallback_state(runtime.proxy) != before:  # the connection sensor's attributes
             for listener in list(runtime.connection_listeners):
                 listener()
