@@ -409,6 +409,10 @@ async def _reconfigure(hass: HomeAssistant, entry: MockConfigEntry, model: str |
     """Start the reconfigure flow and answer its model step (default: keep the model)."""
     result = await entry.start_reconfigure_flow(hass)
     assert result["step_id"] == "reconfigure"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_direct"}
+    )
+    assert result["step_id"] == "reconfigure_direct"
     return await hass.config_entries.flow.async_configure(
         result["flow_id"], {"model": model or entry.data["model"]}
     )
@@ -490,10 +494,126 @@ async def test_reconfigure_offers_only_models_of_the_same_kind(hass: HomeAssista
     entry = _configured(4000)
     entry.add_to_hass(hass)
     result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_direct"}
+    )
     selector = next(iter(result["data_schema"].schema.values()))
     options = selector.config["options"]
     assert "mgw_eth" in options and "fam_usb" in options
     assert "fam14" not in options and "fgw14_usb" not in options
+
+
+async def test_reconfigure_offers_the_proxy_and_direct_connections(hass: HomeAssistant) -> None:
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.MENU
+    assert result["menu_options"] == ["reconfigure_proxy", "reconfigure_direct"]
+
+
+PROXY_STATUS = {
+    "gateways": [
+        {"name": "PioTek MGW-ETH Enocean", "port": 9100, "base_id": "FF-B7-44-80"},
+        {"name": "Symcon LAN-GW Enocean", "port": 9105, "base_id": "FF-B7-44-80"},
+    ]
+}
+
+
+async def test_reconfigure_moves_a_direct_gateway_behind_the_proxy(
+    hass: HomeAssistant, aioclient_mock
+) -> None:
+    server = await FakeGateway(Protocol.ESP3).start()
+    status = {"gateways": [{**PROXY_STATUS["gateways"][0], "port": server.port}]}
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", json=status)
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_proxy"}
+    )
+    assert result["step_id"] == "reconfigure_proxy"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "proxy_status_port": 9199}
+    )
+    assert result["step_id"] == "reconfigure_proxy_gateway"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"port": str(server.port)}
+    )
+    assert result["step_id"] == "proxy_confirm"
+    selector = next(iter(result["data_schema"].schema.values()))
+    assert "mgw_eth" in selector.config["options"] and "fam14" not in selector.config["options"]
+    with patch(
+        "custom_components.enocean_eltako.config_flow.probe_gateway",
+        AsyncMock(return_value=0xFFB74480),
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"model": "mgw_eth"}
+        )
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["model"] == "mgw_eth"
+    assert entry.data["device"] == {"type": "tcp", "host": "127.0.0.1", "port": server.port}
+    assert entry.data["proxy_status_port"] == 9199
+    assert entry.options["proxy_replay"] is True
+    await hass.config_entries.async_unload(entry.entry_id)
+    await server.stop()
+
+
+async def test_reconfigure_proxy_must_be_reachable(hass: HomeAssistant, aioclient_mock) -> None:
+    aioclient_mock.get("http://127.0.0.1:9199/api/status", exc=TimeoutError)
+    entry = _configured(4000)
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_proxy"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "proxy_status_port": 9199}
+    )
+    assert result["step_id"] == "reconfigure_proxy"
+    assert result["errors"] == {"base": "proxy_unreachable"}
+
+
+async def test_reconfigure_proxy_suggests_the_known_app(hass: HomeAssistant) -> None:
+    entry = _configured(9100)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry,
+        data={**entry.data, "proxy_status_port": 9299},
+        options={"proxy_replay": True},
+    )
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_proxy"}
+    )
+    suggested = {
+        str(k): k.description["suggested_value"]
+        for k in result["data_schema"].schema
+        if k.description
+    }
+    assert suggested == {"host": "10.0.0.9", "proxy_status_port": 9299}
+
+
+async def test_reconfigure_to_a_direct_gateway_drops_the_proxy_settings(
+    hass: HomeAssistant, fake_esp2
+) -> None:
+    entry = _configured(9100)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry,
+        data={**entry.data, "proxy_status_port": 9199},
+        options={"proxy_replay": True, "message_delay": 10},
+    )
+    result = await _reconfigure(hass, entry)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "tcp"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "127.0.0.1", "port": fake_esp2.port}
+    )
+    assert result["reason"] == "reconfigure_successful"
+    assert "proxy_status_port" not in entry.data
+    assert "proxy_replay" not in entry.options
+    assert entry.options["message_delay"] == 10  # everything else stays
 
 
 async def test_reconfigure_fam14_keeps_its_base_id(hass: HomeAssistant, fake_esp2) -> None:

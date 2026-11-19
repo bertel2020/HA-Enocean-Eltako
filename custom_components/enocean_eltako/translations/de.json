@@ -11,9 +11,32 @@
       },
       "reconfigure": {
         "title": "Gateway wechseln",
-        "description": "Aktuell {model}, Base-ID {base_id}. Wähle das Modell des Gateways, das ab jetzt genutzt wird, zum Beispiel beim Ersatz eines defekten Gateways oder wenn ein USB-Gateway durch ein Netzwerk-Gateway ersetzt wird. Geräte und Sender-IDs bleiben unverändert. Die nächsten Schritte lesen die Base-ID des neuen Gateways; sie muss {base_id} sein, sonst würden die Aktoren es nicht kennen.",
+        "description": "Aktuell {model}, Base-ID {base_id}. Wie ist das neue Gateway angeschlossen? Geräte und Sender-IDs bleiben unverändert. Die Base-ID des neuen Gateways muss {base_id} sein, sonst würden die Aktoren es nicht kennen.\n\nHaupt- und Ersatz-Gateway der App Device Proxy tauschst du in der App, hier ist dafür nichts zu ändern.",
+        "menu_options": {
+          "reconfigure_proxy": "Über die App Device Proxy",
+          "reconfigure_direct": "Direkt angeschlossen (USB oder Netzwerk)"
+        }
+      },
+      "reconfigure_direct": {
+        "title": "Direkt angeschlossenes Gateway",
+        "description": "Aktuell {model}, Base-ID {base_id}. Wähle das Modell des Gateways, das ab jetzt genutzt wird, zum Beispiel beim Ersatz eines defekten Gateways oder wenn ein USB-Gateway durch ein Netzwerk-Gateway ersetzt wird. Die Proxy-Einstellungen dieses Eintrags werden entfernt. Die nächsten Schritte lesen die Base-ID des neuen Gateways; sie muss {base_id} sein.",
         "data": {
           "model": "Gateway"
+        }
+      },
+      "reconfigure_proxy": {
+        "title": "App Device Proxy",
+        "description": "Wo die App Device Proxy läuft. Ihre Gateways werden von ihrer Statusseite gelesen. Aktuell {model}.",
+        "data": {
+          "host": "Host",
+          "proxy_status_port": "Status-Port"
+        }
+      },
+      "reconfigure_proxy_gateway": {
+        "title": "Gateway der App",
+        "description": "Welches Gateway der App (nach Port) dieser Eintrag ab jetzt nutzt.",
+        "data": {
+          "port": "Gateway"
         }
       },
       "connection": {
@@ -103,6 +126,8 @@
       }
     },
     "error": {
+      "proxy_unreachable": "Die App Device Proxy antwortet nicht. Prüfe Host und Status-Port.",
+      "proxy_no_gateways": "Die App listet keine Gateways.",
       "cannot_connect": "Die Verbindung lässt sich nicht öffnen. Prüfe Schnittstelle, Host und Baudrate.",
       "invalid_base_id": "Keine gültige Base-ID. Sie liegt zwischen FF-80-00-00 und FF-FF-FF-80 und endet auf 00 oder 80.",
       "invalid_id": "Keine gültige ID. Vier Hex-Bytes, zum Beispiel 05-10-A2-B3, 05:10:A2:B3, 05 10 A2 B3 oder 0510A2B3.",

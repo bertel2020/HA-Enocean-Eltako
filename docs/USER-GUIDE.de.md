@@ -94,8 +94,12 @@ Base-ID. Welche Gateways unterstützt sind und wie sie angebunden werden, steht 
   Der FAM14 ist der Bus-Master und hat keine eigene Verbindung zum Rechner; er braucht nur
   dann einen Gateway-Eintrag, wenn er über eine eigene Schnittstelle erreichbar ist. Gateways
   am selben Bus bilden eine Bus-Gruppe mit Failover.
-- **Gateway tauschen:** Menü des Gateways → **Neu konfigurieren** fragt Modell und
-  Verbindung ab. Ein defektes Gateway oder ein FAM-USB lässt sich durch ein anderes Modell
+- **Gateway tauschen:** Menü des Gateways → **Neu konfigurieren** fragt zuerst, wie das
+  neue Gateway angeschlossen ist: **über die App Device Proxy** (Host und Status-Port der App,
+  dann das Gateway der App nach Port) oder **direkt angeschlossen** (Modell, dann USB-Port oder
+  Netzwerkadresse). Beim Wechsel zwischen beiden ändern sich die Proxy-Einstellungen des
+  Eintrags passend. Haupt- und Ersatz-Gateway des Proxys tauschst du in der App, hier ist dafür
+  nichts zu ändern. Ein defektes Gateway oder ein FAM-USB lässt sich durch ein anderes Modell
   ersetzen, z. B. ein Netzwerk-Gateway; Geräte, Sender-IDs und das Einlernen der Aktoren
   bleiben. Das gelingt nur, wenn das neue Gateway dieselbe Base-ID meldet; bei einer anderen
   wird der Wechsel abgelehnt (die Aktoren kennen nur die alten Sender-IDs). Bus-Gateways

@@ -273,6 +273,9 @@ async def test_swapping_the_only_bus_gateway_keeps_the_bus_ids(
     server = request.node.fgw_server
     result = await e_fgw.start_reconfigure_flow(hass)
     result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "reconfigure_direct"}
+    )
+    result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"model": "fgw14_usb"}
     )
     result = await hass.config_entries.flow.async_configure(

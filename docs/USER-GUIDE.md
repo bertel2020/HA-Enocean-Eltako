@@ -88,8 +88,11 @@ Supported gateways and how they connect are listed in [devices.md](devices.md).
   A FAM14 is the bus master and has no connection of its own to the computer; it needs a
   gateway entry only when it is reached through an interface of its own. Gateways on the same
   bus form a bus group with failover.
-- **Swapping a gateway:** the gateway's menu → **Reconfigure** asks for the model and the
-  connection. A defective gateway or a FAM-USB can be replaced by another model, for example
+- **Swapping a gateway:** the gateway's menu → **Reconfigure** first asks how the new gateway is
+  connected: **through the Device Proxy app** (host and status port of the app, then the app's
+  gateway by port) or **connected directly** (model, then USB port or network address).
+  Switching between the two changes the entry's proxy settings accordingly. Swapping the
+  proxy's main and fallback gateway is done in the app and needs nothing here. A defective gateway or a FAM-USB can be replaced by another model, for example
   a network gateway; devices, sender IDs and the actuators' teach-in stay as they are. This
   only works when the new gateway reports the same base ID; with another one the change is
   refused (the actuators know only the old sender IDs). Bus gateways (FGW14-USB, FAM14) swap

@@ -133,6 +133,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
         self._options: dict[str, Any] = {}
         self._suggested: dict[str, Any] = {}  # reconfigure: the current connection
         self._proxy: dict[str, Any] | None = None  # gateway announced by a proxy app
+        self._proxy_gateways: dict[str, Any] = {}  # reconfigure: the app's status
         self._gateway_entry: ConfigEntry | None = None  # the discovery card's gateway
         self._device_model: DeviceModel | None = None
 
@@ -160,16 +161,32 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Change the model and how the gateway is reached; the base ID must stay the same.
+        """Change the gateway: through the Device Proxy app or connected directly.
 
-        Bus gateways only swap among themselves: the bus group belongs to the entry.
+        The base ID must stay the same. Bus gateways only swap among themselves: the bus
+        group belongs to the entry. Swapping the proxy's main and fallback gateway is done in
+        the app and needs nothing here.
         """
+        entry = self._get_reconfigure_entry()
+        return self.async_show_menu(
+            step_id="reconfigure",
+            menu_options=["reconfigure_proxy", "reconfigure_direct"],
+            description_placeholders={
+                "model": MODELS[entry.data[CONF_MODEL]].name,
+                "base_id": _base_part(entry) or entry.data[CONF_BASE_ID],
+            },
+        )
+
+    async def async_step_reconfigure_direct(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """A gateway connected directly (USB or network): pick its model."""
         entry = self._get_reconfigure_entry()
         current = MODELS[entry.data[CONF_MODEL]]
         if user_input is not None:
             self._model = MODELS[user_input[CONF_MODEL]]
             device = entry.data[CONF_DEVICE]
-            if self._model is not current:
+            if self._model is not current or self._through_proxy(entry):
                 self._suggested = {}
             elif device.get("type") == "serial":
                 self._suggested = {
@@ -182,7 +199,7 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 return await self.async_step_connection()
             return await self.async_step_tcp()
         return self.async_show_form(
-            step_id="reconfigure",
+            step_id="reconfigure_direct",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_MODEL, default=current.key): SelectSelector(
@@ -198,6 +215,108 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
                 "model": current.name,
                 "base_id": _base_part(entry) or entry.data[CONF_BASE_ID],
             },
+        )
+
+    @staticmethod
+    def _through_proxy(entry: ConfigEntry) -> bool:
+        return bool(entry.options.get(CONF_PROXY_REPLAY)) or CONF_PROXY_STATUS_PORT in entry.data
+
+    async def async_step_reconfigure_proxy(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Through the Device Proxy app: where it runs; its status lists the gateways."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        known = next(
+            (
+                e
+                for e in [entry, *self._async_current_entries(include_ignore=False)]
+                if self._through_proxy(e) and e.data.get(CONF_DEVICE, {}).get(CONF_HOST)
+            ),
+            None,
+        )
+        if user_input is not None:
+            host = str(user_input[CONF_HOST]).strip()
+            status_port = int(user_input[CONF_PROXY_STATUS_PORT])
+            gateways = await self._async_proxy_gateways(host, status_port)
+            if gateways:
+                self._proxy_gateways = {"host": host, "status_port": status_port, "list": gateways}
+                return await self.async_step_reconfigure_proxy_gateway()
+            errors["base"] = "proxy_unreachable" if gateways is None else "proxy_no_gateways"
+        suggested = user_input or {
+            CONF_HOST: known.data[CONF_DEVICE][CONF_HOST] if known else "",
+            CONF_PROXY_STATUS_PORT: (known.data.get(CONF_PROXY_STATUS_PORT) if known else None)
+            or DEFAULT_STATUS_PORT,
+        }
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_HOST): TextSelector(),
+                vol.Required(CONF_PROXY_STATUS_PORT): NumberSelector(
+                    NumberSelectorConfig(min=1, max=65535, mode=NumberSelectorMode.BOX)
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure_proxy",
+            data_schema=self.add_suggested_values_to_schema(schema, suggested),
+            errors=errors,
+            description_placeholders={"model": MODELS[entry.data[CONF_MODEL]].name},
+        )
+
+    async def _async_proxy_gateways(
+        self, host: str, status_port: int
+    ) -> list[dict[str, Any]] | None:
+        """The gateways the app lists; None when its status cannot be read."""
+        url = f"http://{host}:{status_port}/api/status"
+        try:
+            async with async_get_clientsession(self.hass).get(url, timeout=TIMEOUT) as response:
+                response.raise_for_status()
+                status = await response.json()
+            return [
+                {**g, "port": int(g["port"])}
+                for g in status["gateways"]
+                if isinstance(g, dict) and "port" in g
+            ]
+        except (aiohttp.ClientError, TimeoutError, KeyError, TypeError, ValueError):
+            return None
+
+    async def async_step_reconfigure_proxy_gateway(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Which gateway of the app (its port) this entry talks to."""
+        entry = self._get_reconfigure_entry()
+        found = self._proxy_gateways
+        gateways = {str(g["port"]): g for g in found["list"]}
+        if user_input is not None:
+            gateway = gateways[user_input[CONF_PORT]]
+            self._proxy = {
+                "host": found["host"],
+                "status_port": found["status_port"],
+                "replay": True,
+                **gateway,
+            }
+            self._connection = TcpConnection(found["host"], gateway["port"])
+            model = MODELS.get(str(gateway.get("model", "")))
+            if model is not None and model.protocol.value == (gateway.get("protocol") or "esp2"):
+                return await self.async_step_proxy_confirm({CONF_MODEL: model.key})
+            return await self.async_step_proxy_confirm()
+        device = entry.data.get(CONF_DEVICE, {})
+        current = str(device.get(CONF_PORT)) if device.get(CONF_HOST) == found["host"] else None
+        options = [
+            SelectOptionDict(value=port, label=f"{g['port']} · {g.get('name') or found['host']}")
+            for port, g in gateways.items()
+        ]
+        return self.async_show_form(
+            step_id="reconfigure_proxy_gateway",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_PORT, default=current if current in gateways else options[0]["value"]
+                    ): SelectSelector(
+                        SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST)
+                    )
+                }
+            ),
         )
 
     async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
@@ -415,8 +534,15 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
             result = await self._async_test_connection(errors)
             if result is not None:
                 return result
-        protocol = Protocol.ESP3 if self._proxy.get("protocol") == "esp3" else Protocol.ESP2
-        models = [key for key, model in MODELS.items() if model.protocol is protocol]
+        announced = self._proxy.get("protocol")
+        if announced in ("esp2", "esp3"):
+            protocol = Protocol.ESP3 if announced == "esp3" else Protocol.ESP2
+            models = [key for key, model in MODELS.items() if model.protocol is protocol]
+        elif self.source == SOURCE_RECONFIGURE:  # the app's status does not name the protocol
+            bus = MODELS[self._get_reconfigure_entry().data[CONF_MODEL]].bus
+            models = [key for key, model in MODELS.items() if model.bus == bus]
+        else:
+            models = [key for key, model in MODELS.items() if model.protocol is Protocol.ESP2]
         name = str(self._proxy.get("name", "")).lower().replace("-", "").replace(" ", "")
         guess = next((k for k in models if k.replace("_", "") in name), models[0])
         return self.async_show_form(
@@ -626,11 +752,16 @@ class EnOceanEltakoConfigFlow(DeviceForm, ConfigFlow, domain=DOMAIN):
 
     @callback
     def _async_update_connection(self) -> ConfigFlowResult:
+        """Through the app the entry gets its proxy settings, connected directly it loses them."""
         assert self._connection is not None and self._model is not None
-        return self.async_update_reload_and_abort(
-            self._get_reconfigure_entry(),
-            data_updates={CONF_MODEL: self._model.key, CONF_DEVICE: self._connection.as_dict()},
-        )
+        entry = self._get_reconfigure_entry()
+        data = {k: v for k, v in entry.data.items() if k != CONF_PROXY_STATUS_PORT}
+        options = {k: v for k, v in entry.options.items() if k != CONF_PROXY_REPLAY}
+        data |= {CONF_MODEL: self._model.key, CONF_DEVICE: self._connection.as_dict()}
+        if self._proxy is not None:
+            data[CONF_PROXY_STATUS_PORT] = int(self._proxy["status_port"])
+            options[CONF_PROXY_REPLAY] = True  # telegrams missed during restarts
+        return self.async_update_reload_and_abort(entry, data=data, options=options)
 
     async def async_step_bus_group(
         self, user_input: dict[str, Any] | None = None

@@ -6,6 +6,7 @@
 
 ### New
 
+- **Swapping a gateway:** the Reconfigure dialog now first asks whether the new gateway is reached through the Device Proxy app or connected directly. Through the app: host and status port, then the app's gateway by port. Directly: the model as before. Moving an entry behind the app sets its proxy settings (status port, replay of missed telegrams), moving it away removes them; before, a proxy entry kept them after a change to a direct network gateway.
 - **Device Proxy:** gateways reached through the Device Proxy app get a diagnostic sensor "Active gateway" that shows which physical gateway currently serves the port (main or fallback), and the device's model field follows it, so the swap is visible without the gateway's name changing.
 
 ### Changed
