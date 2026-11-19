@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 1.14.0 - 2026-11-19
+
 ### Neu
 
 - **Gateway tauschen:** Der Dialog „Neu konfigurieren“ fragt jetzt zuerst, ob das neue Gateway über die App Device Proxy erreicht wird oder direkt angeschlossen ist. Über die App: Host und Status-Port, dann das Gateway der App nach Port. Direkt: das Modell wie bisher. Beim Wechsel hinter die App setzt der Eintrag seine Proxy-Einstellungen (Status-Port, Nachliefern verpasster Telegramme), beim Wechsel weg davon werden sie entfernt; bisher behielt ein Proxy-Eintrag sie nach dem Wechsel auf ein direktes Netzwerk-Gateway.
