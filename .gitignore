@@ -19,8 +19,6 @@ CLAUDE.md
 /scripts/build_protocol_package.py
 /docs/assets/
 /docs/mockups/
-/CHANGELOG.internal.md
-/ROADMAP.md
 
 # local Claude Code preview servers
 .claude/launch.json
